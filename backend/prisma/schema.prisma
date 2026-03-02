@@ -1,0 +1,341 @@
+// Mitroo – Prisma Schema
+// Organisation asset management, team dispatch & volunteer coordination
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────────────
+// Departments
+// ──────────────────────────────────────────────
+
+model Department {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  location    String?  @db.VarChar(255)
+  imagePath   String?  @map("image_path")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  services        Service[]
+  userDepartments UserDepartment[]
+  vehicles        Vehicle[]
+  attachments     FileAttachment[]
+
+  @@map("departments")
+}
+
+// ──────────────────────────────────────────────
+// Role Types (lookup / reference table)
+// ──────────────────────────────────────────────
+
+model RoleType {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique @db.VarChar(100)
+  description String? @db.Text
+
+  @@map("role_types")
+}
+
+// ──────────────────────────────────────────────
+// Services (missions / events / shifts)
+// ──────────────────────────────────────────────
+
+model Service {
+  id                   Int       @id @default(autoincrement())
+  departmentId         Int       @map("department_id")
+  name                 String    @db.VarChar(255)
+  description          String?   @db.Text
+  location             String?   @db.VarChar(255)
+  carrier              String?   @db.VarChar(255)   /// hosting organisation / provider
+  imagePath            String?   @map("image_path")
+
+  defaultHours         Int       @default(0) @map("default_hours")
+  defaultHoursVol      Int       @default(0) @map("default_hours_vol")
+  defaultHoursTraining Int       @default(0) @map("default_hours_training")
+  defaultHoursTrainers Int       @default(0) @map("default_hours_trainers")
+
+  startAt              DateTime? @map("start_at")
+  endAt                DateTime? @map("end_at")
+
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  department      Department          @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  userServices    UserService[]
+  itemServices    ItemService[]
+  vehicleLogs     VehicleLog[]
+  visibility      ServiceVisibility[]
+  attachments     FileAttachment[]
+
+  @@map("services")
+}
+
+// ──────────────────────────────────────────────
+// Users
+// ──────────────────────────────────────────────
+
+model User {
+  id             Int       @id @default(autoincrement())
+  ename          String    @unique @db.VarChar(50)   // internal identity code
+  password       String                               // bcrypt hash
+
+  forename       String    @db.VarChar(150)
+  surname        String    @db.VarChar(150)
+
+  address        String?   @db.Text
+  phonePrimary   String?   @map("phone_primary") @db.VarChar(30)
+  phoneSecondary String?   @map("phone_secondary") @db.VarChar(30)
+  email          String    @unique @db.VarChar(255)
+
+  birthDate      DateTime? @map("birth_date") @db.Date
+  imagePath      String?   @map("image_path")
+  extraInfo      String?   @map("extra_info") @db.Text
+
+  isAdmin        Boolean   @default(false) @map("is_admin")
+
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  departments     UserDepartment[]
+  services        UserService[]
+  itemServices    ItemService[]
+  vehicleLogs     VehicleLog[]
+  specializations UserSpecialization[]
+  attachments     FileAttachment[]
+
+  @@map("users")
+}
+
+// ──────────────────────────────────────────────
+// Department ↔ User (with role)
+// ──────────────────────────────────────────────
+
+enum DepartmentRole {
+  missionAdmin   // can create & assign users to services
+  itemAdmin      // can edit / update / delete items
+  volunteer      // can request access to services, view info
+
+  @@map("department_role_enum")
+}
+
+model UserDepartment {
+  userId       Int            @map("user_id")
+  departmentId Int            @map("department_id")
+  role         DepartmentRole
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, departmentId])
+  @@map("user_departments")
+}
+
+// ──────────────────────────────────────────────
+// Service enrolment (user ↔ service)
+// ──────────────────────────────────────────────
+
+enum ServiceStatus {
+  requested
+  accepted
+  rejected
+
+  @@map("service_status")
+}
+
+model UserService {
+  userId        Int           @map("user_id")
+  serviceId     Int           @map("service_id")
+  status        ServiceStatus
+
+  hours         Int           @default(0)
+  hoursVol      Int           @default(0) @map("hours_vol")
+  hoursTraining Int           @default(0) @map("hours_training")
+  hoursTrainers Int           @default(0) @map("hours_trainers")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, serviceId])
+  @@map("user_services")
+}
+
+// ──────────────────────────────────────────────
+// Items (equipment / containers)
+// ──────────────────────────────────────────────
+
+model Item {
+  id            Int      @id @default(autoincrement())
+  name          String   @db.VarChar(255)
+  description   String?  @db.Text
+  barCode       String?  @map("bar_code") @db.VarChar(255)
+  imagePath     String?  @map("image_path")
+
+  containedById Int?     @map("contained_by_id")
+  isContainer   Boolean  @default(false) @map("is_container")
+  location      String?  @db.VarChar(255)
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  containedBy  Item?          @relation("ItemContainment", fields: [containedById], references: [id], onDelete: SetNull)
+  contents     Item[]         @relation("ItemContainment")
+  itemServices ItemService[]
+  attachments  FileAttachment[]
+
+  @@map("items")
+}
+
+// ──────────────────────────────────────────────
+// Item ↔ Service assignment
+// ──────────────────────────────────────────────
+
+model ItemService {
+  id         Int      @id @default(autoincrement())
+  serviceId  Int      @map("service_id")
+  userId     Int      @map("user_id")
+  itemId     Int      @map("item_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  comment    String?  @db.Text
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item    Item    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@map("item_services")
+}
+
+// ──────────────────────────────────────────────
+// Specializations (hierarchical)
+// ──────────────────────────────────────────────
+
+model Specialization {
+  id             Int     @id @default(autoincrement())
+  name           String  @unique @db.VarChar(255)
+  description    String? @db.Text
+  hoursTraining  Int     @default(0) @map("hours_training")
+  rootId         Int?    @map("root_id")
+
+  root     Specialization?  @relation("SpecTree", fields: [rootId], references: [id], onDelete: SetNull)
+  children Specialization[] @relation("SpecTree")
+
+  users             UserSpecialization[]
+  serviceVisibility ServiceVisibility[]
+
+  @@map("specializations")
+}
+
+model UserSpecialization {
+  userId           Int      @map("user_id")
+  specializationId Int      @map("specialization_id")
+  assignedAt       DateTime @default(now()) @map("assigned_at")
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialization Specialization @relation(fields: [specializationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, specializationId])
+  @@map("user_specializations")
+}
+
+// ──────────────────────────────────────────────
+// Service visibility (by specialization)
+// ──────────────────────────────────────────────
+
+model ServiceVisibility {
+  serviceId        Int @map("service_id")
+  specializationId Int @map("specialization_id")
+
+  service        Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  specialization Specialization @relation(fields: [specializationId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, specializationId])
+  @@map("service_visibility")
+}
+
+// ──────────────────────────────────────────────
+// Vehicles
+// ──────────────────────────────────────────────
+
+model Vehicle {
+  id                 Int      @id @default(autoincrement())
+  name               String   @db.VarChar(255)
+  type               String   @db.VarChar(100)   // boat, car, jet_ski …
+  registrationNumber String?  @map("registration_number") @db.VarChar(100)
+  serialNumber       String?  @map("serial_number") @db.VarChar(100)
+  departmentId       Int?     @map("department_id")
+  imagePath          String?  @map("image_path")
+
+  meterType          String   @map("meter_type") @db.VarChar(20) // "km" | "hours"
+  currentMeter       Decimal  @default(0) @map("current_meter") @db.Decimal(12, 2)
+
+  location           String?  @db.VarChar(255)
+  description        String?  @db.Text
+
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  department  Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  logs        VehicleLog[]
+  attachments FileAttachment[]
+
+  @@map("vehicles")
+}
+
+// ──────────────────────────────────────────────
+// Vehicle usage logs
+// ──────────────────────────────────────────────
+
+model VehicleLog {
+  id         Int      @id @default(autoincrement())
+  vehicleId  Int      @map("vehicle_id")
+  userId     Int      @map("user_id")
+  serviceId  Int?     @map("service_id")
+
+  startAt    DateTime @map("start_at")
+  endAt      DateTime @map("end_at")
+  meterStart Decimal  @map("meter_start") @db.Decimal(12, 2)
+  meterEnd   Decimal  @map("meter_end") @db.Decimal(12, 2)
+
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  vehicle Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@map("vehicle_logs")
+}
+
+// ──────────────────────────────────────────────
+// File Attachments (polymorphic – one FK set per row)
+// ──────────────────────────────────────────────
+
+model FileAttachment {
+  id         Int      @id @default(autoincrement())
+  fileName   String   @map("file_name") @db.VarChar(500)
+  filePath   String   @map("file_path")
+  mimeType   String?  @map("mime_type") @db.VarChar(255)
+  fileSize   Int?     @map("file_size")   // bytes
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  // Nullable FKs – exactly one should be non-null per row
+  userId       Int? @map("user_id")
+  departmentId Int? @map("department_id")
+  serviceId    Int? @map("service_id")
+  itemId       Int? @map("item_id")
+  vehicleId    Int? @map("vehicle_id")
+
+  user       User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  service    Service?    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  item       Item?       @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  vehicle    Vehicle?    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("file_attachments")
+}

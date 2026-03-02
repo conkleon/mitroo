@@ -1,0 +1,56 @@
+# ─────────────────────────────────────────────────
+# Mitroo – Development Docker Compose
+# Only starts databases (Postgres + Redis).
+# Backend and Frontend are run locally on the host.
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d
+#
+# Then run the backend:
+#   cd backend && npm install && npm run prisma:generate && npm run prisma:migrate && npm run dev
+#
+# Then run the frontend:
+#   cd frontend && flutter pub get && flutter run -d chrome
+# ─────────────────────────────────────────────────
+
+services:
+  # ── PostgreSQL ─────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ──────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata_dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# ── Volumes ──────────────────────────────────────
+volumes:
+  pgdata_dev:
+    driver: local
+  redisdata_dev:
+    driver: local

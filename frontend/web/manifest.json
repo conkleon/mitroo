@@ -1,0 +1,11 @@
+{
+  "name": "Mitroo",
+  "short_name": "Mitroo",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#1565c0",
+  "description": "Organisation asset management & team dispatch",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
+}
