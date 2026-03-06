@@ -19,8 +19,14 @@ class ServiceProvider extends ChangeNotifier {
     try {
       final q = departmentId != null ? '?departmentId=$departmentId' : '';
       final res = await _api.get('/services$q');
-      if (res.statusCode == 200) _services = jsonDecode(res.body);
-    } catch (_) {}
+      if (res.statusCode == 200) {
+        _services = jsonDecode(res.body);
+      } else {
+        debugPrint('fetchServices failed: ${res.statusCode} ${res.body}');
+      }
+    } catch (e) {
+      debugPrint('fetchServices error: $e');
+    }
     _loading = false;
     notifyListeners();
   }
@@ -31,8 +37,14 @@ class ServiceProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final res = await _api.get('/services/my');
-      if (res.statusCode == 200) _services = jsonDecode(res.body);
-    } catch (_) {}
+      if (res.statusCode == 200) {
+        _services = jsonDecode(res.body);
+      } else {
+        debugPrint('fetchMyServices failed: ${res.statusCode} ${res.body}');
+      }
+    } catch (e) {
+      debugPrint('fetchMyServices error: $e');
+    }
     _loading = false;
     notifyListeners();
   }
@@ -48,10 +60,16 @@ class ServiceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String?> create(Map<String, dynamic> data) async {
+  /// Creates a service and returns its ID on success, or an error string.
+  Future<Object?> create(Map<String, dynamic> data) async {
     try {
       final res = await _api.post('/services', body: data);
-      if (res.statusCode == 201) { await fetchServices(); return null; }
+      if (res.statusCode == 201) {
+        final created = jsonDecode(res.body);
+        await fetchServices();
+        // Return the new service's ID so callers can do follow-up work.
+        return created['id'] as int;
+      }
       return jsonDecode(res.body)['error'] ?? 'Failed';
     } catch (e) { return 'Error: $e'; }
   }

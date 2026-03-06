@@ -23,17 +23,26 @@ String _dayLabel(DateTime dt) {
   return '$dayName, ${dt.day}/${dt.month}';
 }
 
-/// "19:30 → 22:30" — shown as subtitle on each card
+/// "2/3 19:30 → 11/3 22:30" — shown as subtitle on each card
+/// Shows dates when start and end are on different days; time-only when same day.
 String _timeRange(Map<String, dynamic> svc) {
   final start = DateTime.tryParse(svc['startAt'] ?? '');
   final end   = DateTime.tryParse(svc['endAt']   ?? '');
   if (start == null) return '';
-  final s = '${_pad2(start.hour)}:${_pad2(start.minute)}';
-  if (end != null) {
-    final e = '${_pad2(end.hour)}:${_pad2(end.minute)}';
-    return '$s → $e';
-  }
-  return s;
+
+  final sTime = '${_pad2(start.hour)}:${_pad2(start.minute)}';
+  final sDate = '${start.day}/${start.month}';
+
+  if (end == null) return '$sDate $sTime';
+
+  final eTime = '${_pad2(end.hour)}:${_pad2(end.minute)}';
+  final eDate = '${end.day}/${end.month}';
+  final sameDay = start.year == end.year &&
+      start.month == end.month &&
+      start.day == end.day;
+
+  if (sameDay) return '$sTime → $eTime';
+  return '$sDate $sTime → $eDate $eTime';
 }
 
 class ServicesScreen extends StatefulWidget {
@@ -158,10 +167,10 @@ class _ServicesScreenState extends State<ServicesScreen> {
                 'departmentId': int.tryParse(deptIdCtrl.text.trim()) ?? 0,
               };
               if (descCtrl.text.isNotEmpty) data['description'] = descCtrl.text.trim();
-              final err = await context.read<ServiceProvider>().create(data);
+              final result = await context.read<ServiceProvider>().create(data);
               if (ctx.mounted) Navigator.pop(ctx);
-              if (err != null && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+              if (result is String && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
               }
             },
             child: const Text('Δημιουργία'),
@@ -182,6 +191,23 @@ class _ServicesScreenState extends State<ServicesScreen> {
         : (auth.user?['ename'] ?? 'User');
 
     final userSpecs = auth.specializations; // [{id, name, description}, ...]
+
+    // Build dynamic spec filters from services that actually exist
+    final allServices = svcProv.services;
+    final specMap = <int, String>{}; // id -> name
+    for (final svc in allServices) {
+      final vis = svc['visibility'] as List<dynamic>? ?? [];
+      for (final v in vis) {
+        final spec = v['specialization'] as Map<String, dynamic>?;
+        if (spec != null) {
+          specMap[spec['id'] as int] = spec['name'] as String? ?? '';
+        }
+      }
+    }
+    // Sort by name for consistent order
+    final dynamicSpecs = specMap.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+
     final filtered = _filteredServices;
 
     return Scaffold(
@@ -228,15 +254,16 @@ class _ServicesScreenState extends State<ServicesScreen> {
                   padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
                   child: SizedBox(
                     height: 40,
-                    child: ListView.separated(
+                    child: dynamicSpecs.isEmpty
+                        ? const SizedBox.shrink()
+                        : ListView.separated(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemCount: userSpecs.length,
+                      itemCount: dynamicSpecs.length,
                       itemBuilder: (context, i) {
-                        final spec = userSpecs[i];
-                        final specId = spec['id'] as int;
-                        final specName = spec['name'] ?? '';
+                        final specId = dynamicSpecs[i].key;
+                        final specName = dynamicSpecs[i].value;
                         final count = _countForSpec(specId);
                         final selected = _selectedSpecId == specId;
 
@@ -429,6 +456,8 @@ class _ServiceAccordion extends StatelessWidget {
 
     final status = _enrollmentStatus();
     final isApplied = status != null;
+    final Color accentColor = isApplied ? _statusColor(status!) : cs.primary;
+    final Color lightBg = isApplied ? _statusBgColor(status!) : cs.primary.withAlpha(8);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -445,7 +474,7 @@ class _ServiceAccordion extends StatelessWidget {
           ],
           border: Border.all(
             color: isApplied
-                ? const Color(0xFF059669).withAlpha(80)
+                ? accentColor.withAlpha(80)
                 : isExpanded
                     ? cs.primary.withAlpha(60)
                     : const Color(0xFFE5E7EB),
@@ -461,7 +490,7 @@ class _ServiceAccordion extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: isApplied
-                      ? const Color(0xFFF0FDF4)
+                      ? lightBg
                       : isExpanded
                           ? cs.primary.withAlpha(8)
                           : Colors.white,
@@ -472,18 +501,14 @@ class _ServiceAccordion extends StatelessWidget {
                       // Left accent bar
                       Container(
                         width: 4,
-                        color: isApplied
-                            ? const Color(0xFF059669)
-                            : cs.primary,
+                        color: accentColor,
                       ),
                       const SizedBox(width: 12),
                       Icon(
                         isExpanded
                             ? Icons.expand_less_rounded
                             : Icons.expand_more_rounded,
-                        color: isApplied
-                            ? const Color(0xFF059669)
-                            : cs.primary,
+                        color: accentColor,
                         size: 24,
                       ),
                       const SizedBox(width: 8),
@@ -497,9 +522,7 @@ class _ServiceAccordion extends StatelessWidget {
                                 carrier,
                                 style: tt.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  color: isApplied
-                                      ? const Color(0xFF059669)
-                                      : cs.primary,
+                                  color: accentColor,
                                 ),
                               ),
                               if (timeRange.isNotEmpty) ...
@@ -508,9 +531,7 @@ class _ServiceAccordion extends StatelessWidget {
                                   Text(
                                     timeRange,
                                     style: tt.bodySmall?.copyWith(
-                                      color: isApplied
-                                          ? const Color(0xFF059669).withAlpha(180)
-                                          : cs.primary.withAlpha(160),
+                                      color: accentColor.withAlpha(180),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -525,13 +546,13 @@ class _ServiceAccordion extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF059669).withAlpha(25),
+                              color: accentColor.withAlpha(25),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              _statusLabel(status),
+                              _statusLabel(status!),
                               style: tt.labelSmall?.copyWith(
-                                color: const Color(0xFF059669),
+                                color: accentColor,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -706,6 +727,14 @@ class _ServiceAccordion extends StatelessWidget {
       case 'accepted': return const Color(0xFF059669);
       case 'rejected': return const Color(0xFFDC2626);
       default:         return const Color(0xFFD97706);
+    }
+  }
+
+  static Color _statusBgColor(String status) {
+    switch (status) {
+      case 'accepted': return const Color(0xFFF0FDF4); // light green
+      case 'rejected': return const Color(0xFFFEF2F2); // light red
+      default:         return const Color(0xFFFFFBEB); // light amber
     }
   }
 }

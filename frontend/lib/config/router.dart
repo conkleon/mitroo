@@ -1,12 +1,18 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/auth_provider.dart';
 import '../screens/login_screen.dart';
 import '../screens/admin_panel_screen.dart';
 import '../screens/create_service_screen.dart';
+import '../screens/manage_services_screen.dart';
+import '../screens/service_detail_screen.dart';
 import '../screens/manage_users_screen.dart';
+import '../screens/user_detail_screen.dart';
 import '../screens/manage_departments_screen.dart';
+import '../screens/department_detail_screen.dart';
 import '../screens/manage_specializations_screen.dart';
+import '../screens/specialization_detail_screen.dart';
 import '../screens/services_screen.dart';
 import '../screens/items_screen.dart';
 import '../screens/vehicles_screen.dart';
@@ -36,30 +42,6 @@ GoRouter appRouter(AuthProvider auth) {
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
       ),
-      // Admin sub-screens (full-screen, outside shell)
-      GoRoute(
-        path: '/admin/services/create',
-        builder: (context, state) {
-          final deptId = int.tryParse(state.uri.queryParameters['departmentId'] ?? '');
-          final deptName = state.uri.queryParameters['departmentName'];
-          return CreateServiceScreen(
-            initialDepartmentId: deptId,
-            initialDepartmentName: deptName,
-          );
-        },
-      ),
-      GoRoute(
-        path: '/admin/users',
-        builder: (context, state) => const ManageUsersScreen(),
-      ),
-      GoRoute(
-        path: '/admin/departments',
-        builder: (context, state) => const ManageDepartmentsScreen(),
-      ),
-      GoRoute(
-        path: '/admin/specializations',
-        builder: (context, state) => const ManageSpecializationsScreen(),
-      ),
       ShellRoute(
         builder: (context, state, child) => ShellScreen(child: child),
         routes: [
@@ -78,6 +60,82 @@ GoRouter appRouter(AuthProvider auth) {
           GoRoute(
             path: '/admin',
             builder: (context, state) => const AdminPanelScreen(),
+          ),
+          GoRoute(
+            path: '/admin/services',
+            builder: (context, state) {
+              final deptId = int.tryParse(state.uri.queryParameters['departmentId'] ?? '');
+              final deptName = state.uri.queryParameters['departmentName'] ?? 'Department';
+              return ManageServicesScreen(
+                key: ValueKey('manage-services-${deptId ?? 0}'),
+                departmentId: deptId ?? 0,
+                departmentName: deptName,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/admin/services/create',
+            builder: (context, state) {
+              final deptId = int.tryParse(state.uri.queryParameters['departmentId'] ?? '');
+              final deptName = state.uri.queryParameters['departmentName'];
+              return CreateServiceScreen(
+                initialDepartmentId: deptId,
+                initialDepartmentName: deptName,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/admin/services/:id',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+              return ServiceDetailScreen(serviceId: id);
+            },
+          ),
+          GoRoute(
+            path: '/admin/services/:id/edit',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+              final deptId = int.tryParse(state.uri.queryParameters['departmentId'] ?? '');
+              final deptName = state.uri.queryParameters['departmentName'];
+              return CreateServiceScreen(
+                editServiceId: id,
+                initialDepartmentId: deptId,
+                initialDepartmentName: deptName,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/admin/users',
+            builder: (context, state) => const ManageUsersScreen(),
+          ),
+          GoRoute(
+            path: '/admin/users/:id',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+              return UserDetailScreen(userId: id);
+            },
+          ),
+          GoRoute(
+            path: '/admin/departments',
+            builder: (context, state) => const ManageDepartmentsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/departments/:id',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+              return DepartmentDetailScreen(departmentId: id);
+            },
+          ),
+          GoRoute(
+            path: '/admin/specializations',
+            builder: (context, state) => const ManageSpecializationsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/specializations/:id',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+              return SpecializationDetailScreen(specializationId: id);
+            },
           ),
           GoRoute(
             path: '/chat',

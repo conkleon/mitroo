@@ -34,6 +34,60 @@ router.get("/", async (_req: Request, res: Response) => {
   res.json(users);
 });
 
+// ── GET /api/users/stats ────────────────────────
+// Returns all users + aggregated hours (total & this year)
+router.get("/stats", async (_req: Request, res: Response) => {
+  const now = new Date();
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+
+  const users = await prisma.user.findMany({
+    select: {
+      ...USER_SELECT,
+      departments: { include: { department: { select: { id: true, name: true } } } },
+      services: {
+        where: { status: "accepted" },
+        select: {
+          hours: true,
+          hoursVol: true,
+          hoursTraining: true,
+          hoursTrainers: true,
+          service: { select: { startAt: true } },
+        },
+      },
+    },
+    orderBy: { surname: "asc" },
+  });
+
+  const result = users.map((u) => {
+    let totalHours = 0;
+    let yearHours = 0;
+    let yearVolHours = 0;
+    let yearTrainingHours = 0;
+    let yearTrainerHours = 0;
+
+    for (const us of u.services) {
+      const h = us.hours ?? 0;
+      const hv = us.hoursVol ?? 0;
+      const ht = us.hoursTraining ?? 0;
+      const htr = us.hoursTrainers ?? 0;
+      totalHours += h + hv + ht + htr;
+
+      const serviceStart = us.service?.startAt;
+      if (serviceStart && serviceStart >= yearStart) {
+        yearHours += h + hv + ht + htr;
+        yearVolHours += hv;
+        yearTrainingHours += ht;
+        yearTrainerHours += htr;
+      }
+    }
+
+    const { services, ...rest } = u;
+    return { ...rest, totalHours, yearHours, yearVolHours, yearTrainingHours, yearTrainerHours };
+  });
+
+  res.json(result);
+});
+
 // ── GET /api/users/:id ──────────────────────────
 router.get("/:id", async (req: Request, res: Response) => {
   const user = await prisma.user.findUnique({
@@ -85,6 +139,42 @@ router.get("/:id/specializations", async (req: Request, res: Response) => {
     include: { specialization: true },
   });
   res.json(specs);
+});
+
+// ── GET /api/users/:id/services ─────────────────
+// Returns user's service enrolments with service details & hours
+router.get("/:id/services", async (req: Request, res: Response) => {
+  const userId = Number(req.params.id);
+  const enrolments = await prisma.userService.findMany({
+    where: { userId },
+    include: {
+      service: {
+        select: {
+          id: true,
+          name: true,
+          location: true,
+          carrier: true,
+          startAt: true,
+          endAt: true,
+          department: { select: { id: true, name: true } },
+        },
+      },
+    },
+    orderBy: { service: { startAt: "desc" } },
+  });
+
+  const result = enrolments.map((e) => ({
+    serviceId: e.serviceId,
+    status: e.status,
+    hours: e.hours,
+    hoursVol: e.hoursVol,
+    hoursTraining: e.hoursTraining,
+    hoursTrainers: e.hoursTrainers,
+    totalHours: (e.hours ?? 0) + (e.hoursVol ?? 0) + (e.hoursTraining ?? 0) + (e.hoursTrainers ?? 0),
+    service: e.service,
+  }));
+
+  res.json(result);
 });
 
 // ── POST /api/users/:id/specializations ─────────

@@ -12,11 +12,17 @@ class CreateServiceScreen extends StatefulWidget {
   final int? initialDepartmentId;
   final String? initialDepartmentName;
 
+  /// When non-null, the screen operates in **edit** mode.
+  final int? editServiceId;
+
   const CreateServiceScreen({
     super.key,
     this.initialDepartmentId,
     this.initialDepartmentName,
+    this.editServiceId,
   });
+
+  bool get isEditing => editServiceId != null;
 
   @override
   State<CreateServiceScreen> createState() => _CreateServiceScreenState();
@@ -46,6 +52,10 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
   // Specialization selection
   List<dynamic> _allSpecs = [];
   final Set<int> _selectedSpecIds = {};
+  // Original spec IDs when editing (to diff removals)
+  Set<int> _originalSpecIds = {};
+
+  bool _initialLoading = true;
 
   @override
   void initState() {
@@ -78,7 +88,37 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
       }
     } catch (_) {}
 
-    if (mounted) setState(() {});
+    // If editing, load existing service data
+    if (widget.isEditing) {
+      try {
+        final res = await _api.get('/services/${widget.editServiceId}');
+        if (res.statusCode == 200 && mounted) {
+          final svc = jsonDecode(res.body) as Map<String, dynamic>;
+          _nameCtrl.text = svc['name'] ?? '';
+          _descCtrl.text = svc['description'] ?? '';
+          _locationCtrl.text = svc['location'] ?? '';
+          _carrierCtrl.text = svc['carrier'] ?? '';
+          _hoursCtrl.text = '${svc['defaultHours'] ?? 0}';
+          _hoursVolCtrl.text = '${svc['defaultHoursVol'] ?? 0}';
+          _hoursTrainingCtrl.text = '${svc['defaultHoursTraining'] ?? 0}';
+          _hoursTrainersCtrl.text = '${svc['defaultHoursTrainers'] ?? 0}';
+          if (svc['startAt'] != null) _startAt = DateTime.tryParse(svc['startAt']);
+          if (svc['endAt'] != null) _endAt = DateTime.tryParse(svc['endAt']);
+          _selectedDeptId = svc['departmentId'] as int?;
+          final dept = svc['department'] as Map<String, dynamic>?;
+          if (dept != null) _selectedDeptName = dept['name'] as String?;
+          // Pre-select existing visibility specializations
+          final vis = svc['visibility'] as List<dynamic>? ?? [];
+          for (final v in vis) {
+            final specId = v['specializationId'] as int?;
+            if (specId != null) _selectedSpecIds.add(specId);
+          }
+          _originalSpecIds = Set<int>.from(_selectedSpecIds);
+        }
+      } catch (_) {}
+    }
+
+    if (mounted) setState(() => _initialLoading = false);
   }
 
   @override
@@ -147,36 +187,72 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
     if (_startAt != null) data['startAt'] = _startAt!.toUtc().toIso8601String();
     if (_endAt != null) data['endAt'] = _endAt!.toUtc().toIso8601String();
 
-    // 1. Create the service
-    final err = await context.read<ServiceProvider>().create(data);
-    if (!mounted) return;
+    if (widget.isEditing) {
+      // ── Update existing service ──
+      final err = await context.read<ServiceProvider>().update(widget.editServiceId!, data);
+      if (!mounted) return;
+      if (err != null) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+        return;
+      }
 
-    if (err != null) {
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-      return;
-    }
+      final sid = widget.editServiceId!;
 
-    // 2. Find the newly created service's ID (latest in the provider)
-    final services = context.read<ServiceProvider>().services;
-    final newService = services.isNotEmpty ? services.last : null;
-    final serviceId = newService?['id'] as int?;
-
-    // 3. Assign specialization visibility requirements
-    if (serviceId != null && _selectedSpecIds.isNotEmpty) {
-      for (final specId in _selectedSpecIds) {
+      // Remove specs that were deselected
+      final toRemove = _originalSpecIds.difference(_selectedSpecIds);
+      for (final specId in toRemove) {
         try {
-          await _api.post('/services/$serviceId/visibility', body: {'specializationId': specId});
+          await _api.delete('/services/$sid/visibility/$specId');
         } catch (_) {}
       }
-    }
 
-    if (!mounted) return;
-    setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Service created successfully')),
-    );
-    context.pop();
+      // Add newly selected specs
+      final toAdd = _selectedSpecIds.difference(_originalSpecIds);
+      for (final specId in toAdd) {
+        try {
+          await _api.post('/services/$sid/visibility',
+              body: {'specializationId': specId});
+        } catch (_) {}
+      }
+
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Service updated successfully')),
+      );
+      context.pop();
+    } else {
+      // ── Create new service ──
+      // create() returns int (service ID) on success, or String (error).
+      final result = await context.read<ServiceProvider>().create(data);
+      if (!mounted) return;
+
+      if (result is String) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
+        return;
+      }
+
+      final serviceId = result as int?;
+
+      // Assign specialization visibility requirements
+      if (serviceId != null && _selectedSpecIds.isNotEmpty) {
+        for (final specId in _selectedSpecIds) {
+          try {
+            await _api.post('/services/$serviceId/visibility',
+                body: {'specializationId': specId});
+          } catch (_) {}
+        }
+      }
+
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Service created successfully')),
+      );
+      context.pop();
+    }
   }
 
   @override
@@ -184,19 +260,40 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
 
+    final isEditing = widget.isEditing;
+    final title = isEditing ? 'Edit Service' : 'New Service';
+
+    if (_initialLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        appBar: AppBar(
+          title: Text(title, style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+          centerTitle: true,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text('New Service', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+        title: Text(title, style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: SafeArea(
-        child: Form(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 800;
+            final hPad = isWide ? ((constraints.maxWidth - 700) / 2).clamp(20.0, 200.0) : 20.0;
+
+            return Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 24),
             children: [
               // ── Department selector ──
               Text('Department *', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
@@ -405,11 +502,15 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                   icon: _saving
                       ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.check),
-                  label: Text(_saving ? 'Creating...' : 'Create Service'),
+                  label: Text(_saving
+                      ? (isEditing ? 'Saving...' : 'Creating...')
+                      : (isEditing ? 'Save Changes' : 'Create Service')),
                 ),
               ),
             ],
           ),
+        );
+          },
         ),
       ),
     );

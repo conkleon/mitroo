@@ -49,10 +49,12 @@ router.get("/", async (req: Request, res: Response) => {
 
 // ── GET /api/services/my ────────────────────────
 // Returns services visible to the authenticated user:
-//   • service is in one of the user's departments
-//   • AND (service has no visibility restrictions OR user has a matching specialization)
+//   • Global admins see ALL services (no department/specialization filter)
+//   • Regular users: service must be in one of the user's departments
+//     AND (service has no visibility restrictions OR user has a matching specialization)
 router.get("/my", async (req: Request, res: Response) => {
   const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
 
   // Gather user's department IDs and specialization IDs
   const [userDepts, userSpecs] = await Promise.all([
@@ -63,16 +65,33 @@ router.get("/my", async (req: Request, res: Response) => {
   const deptIds = userDepts.map((d) => d.departmentId);
   const specIds = userSpecs.map((s) => s.specializationId);
 
+  // Build the WHERE clause – admins bypass department & specialization filters
+  // Only return upcoming/current services (not yet ended)
+  const now = new Date();
+  const upcomingFilter = {
+    OR: [
+      { endAt: { gte: now } },          // end date in the future
+      { endAt: null, startAt: { gte: now } }, // no end date but starts in the future
+      { endAt: null, startAt: null },    // no dates at all → still relevant
+    ],
+  };
+  const where: any = { ...upcomingFilter };
+  if (!isAdmin) {
+    where.departmentId = { in: deptIds };
+    where.AND = [
+      {
+        OR: [
+          // services with NO visibility restrictions → visible to all dept members
+          { visibility: { none: {} } },
+          // services whose required specializations overlap the user's
+          { visibility: { some: { specializationId: { in: specIds } } } },
+        ],
+      },
+    ];
+  }
+
   const services = await prisma.service.findMany({
-    where: {
-      departmentId: { in: deptIds },
-      OR: [
-        // services with NO visibility restrictions → visible to all dept members
-        { visibility: { none: {} } },
-        // services whose required specializations overlap the user's
-        { visibility: { some: { specializationId: { in: specIds } } } },
-      ],
-    },
+    where,
     include: {
       department: { select: { id: true, name: true } },
       visibility: { include: { specialization: { select: { id: true, name: true } } } },
