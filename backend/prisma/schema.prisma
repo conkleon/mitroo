@@ -56,6 +56,8 @@ model Service {
   carrier              String?   @db.VarChar(255)   /// hosting organisation / provider
   imagePath            String?   @map("image_path")
 
+  responsibleUserId   Int?      @map("responsible_user_id")
+
   defaultHours         Int       @default(0) @map("default_hours")
   defaultHoursVol      Int       @default(0) @map("default_hours_vol")
   defaultHoursTraining Int       @default(0) @map("default_hours_training")
@@ -68,6 +70,7 @@ model Service {
   updatedAt            DateTime  @updatedAt @map("updated_at")
 
   department      Department          @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  responsibleUser User?               @relation("ResponsibleServices", fields: [responsibleUserId], references: [id], onDelete: SetNull)
   userServices    UserService[]
   itemServices    ItemService[]
   vehicleLogs     VehicleLog[]
@@ -103,12 +106,14 @@ model User {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  departments     UserDepartment[]
-  services        UserService[]
-  itemServices    ItemService[]
-  vehicleLogs     VehicleLog[]
-  specializations UserSpecialization[]
-  attachments     FileAttachment[]
+  departments          UserDepartment[]
+  services             UserService[]
+  itemServices         ItemService[]
+  vehicleLogs          VehicleLog[]
+  specializations      UserSpecialization[]
+  attachments          FileAttachment[]
+  responsibleServices  Service[]           @relation("ResponsibleServices")
+  assignedItems        Item[]              @relation("AssignedItems")
 
   @@map("users")
 }
@@ -181,11 +186,16 @@ model Item {
   isContainer   Boolean  @default(false) @map("is_container")
   location      String?  @db.VarChar(255)
 
+  expirationDate        DateTime? @map("expiration_date")
+  assignedToId          Int?      @map("assigned_to_id")
+  availableForAssignment Boolean  @default(false) @map("available_for_assignment")
+
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   containedBy  Item?          @relation("ItemContainment", fields: [containedById], references: [id], onDelete: SetNull)
   contents     Item[]         @relation("ItemContainment")
+  assignedTo   User?          @relation("AssignedItems", fields: [assignedToId], references: [id], onDelete: SetNull)
   itemServices ItemService[]
   attachments  FileAttachment[]
 

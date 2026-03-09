@@ -391,6 +391,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                             },
                             onApply: () => _applyToService(svcId),
                             onUnenroll: () => _withdrawFromService(svcId),
+
                           );
                         },
                         childCount: rows.length,
@@ -421,7 +422,6 @@ class _ServiceAccordion extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onApply;
   final VoidCallback onUnenroll;
-
   const _ServiceAccordion({
     required this.svc,
     required this.isExpanded,
@@ -486,7 +486,9 @@ class _ServiceAccordion extends StatelessWidget {
           children: [
             // ── Colored left-accent header ───────────
             InkWell(
-              onTap: onToggle,
+              onTap: status == 'accepted'
+                  ? () => context.push('/services/${svc['id']}')
+                  : onToggle,
               child: Container(
                 decoration: BoxDecoration(
                   color: isApplied
@@ -574,6 +576,48 @@ class _ServiceAccordion extends StatelessWidget {
                   children: [
                     Divider(color: Colors.grey.shade200, height: 1),
                     const SizedBox(height: 14),
+
+                    // Responsible user
+                    Builder(builder: (context) {
+                      final responsible = svc['responsibleUser'] as Map<String, dynamic>?;
+                      if (responsible == null) return const SizedBox.shrink();
+                      final rName = '${responsible['forename'] ?? ''} ${responsible['surname'] ?? ''}'.trim();
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.star_rounded, size: 16, color: Color(0xFF7C3AED)),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 140,
+                              child: Text(
+                                'Υπεύθυνος',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF374151)),
+                              ),
+                            ),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF7C3AED).withAlpha(15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  rName,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF7C3AED),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
 
                     // Location
                     if (location.isNotEmpty)
@@ -692,6 +736,22 @@ class _ServiceAccordion extends StatelessWidget {
                         ),
                       ],
                     ),
+
+                    // ── Details button (accepted members) ──
+                    if (status == 'accepted') ...[                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => context.push('/services/${svc['id']}'),
+                        icon: const Icon(Icons.open_in_new, size: 15),
+                        label: const Text('Λεπτομέρειες',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

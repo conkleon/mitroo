@@ -12,6 +12,7 @@ const createSchema = z.object({
   description: z.string().optional(),
   location: z.string().optional(),
   carrier: z.string().max(255).optional(),
+  responsibleUserId: z.number().int().nullable().optional(),
   defaultHours: z.number().int().min(0).optional(),
   defaultHoursVol: z.number().int().min(0).optional(),
   defaultHoursTraining: z.number().int().min(0).optional(),
@@ -31,17 +32,50 @@ const statusSchema = z.object({
 
 // ── GET /api/services ───────────────────────────
 router.get("/", async (req: Request, res: Response) => {
-  const { departmentId } = req.query;
+  const { departmentId, includeEnrollments, fromDate, toDate, specializationId, pastOnly } = req.query;
   const where: any = {};
   if (departmentId) where.departmentId = Number(departmentId);
 
+  // Date range filters
+  if (fromDate || toDate) {
+    where.startAt = {};
+    if (fromDate) where.startAt.gte = new Date(fromDate as string);
+    if (toDate) where.startAt.lte = new Date(toDate as string);
+  }
+
+  // Only past services (endAt < now)
+  if (pastOnly === "true") {
+    where.endAt = { lt: new Date() };
+  }
+
+  // Filter by specialization visibility
+  if (specializationId) {
+    where.visibility = {
+      some: { specializationId: Number(specializationId) },
+    };
+  }
+
+  const includeBlock: any = {
+    department: { select: { id: true, name: true } },
+    responsibleUser: { select: { id: true, ename: true, forename: true, surname: true, imagePath: true } },
+    visibility: { include: { specialization: { select: { id: true, name: true } } } },
+    _count: { select: { userServices: true, itemServices: true } },
+  };
+
+  // When admin requests enrollments, include user details per service
+  if (includeEnrollments === "true") {
+    includeBlock.userServices = {
+      include: {
+        user: {
+          select: { id: true, ename: true, forename: true, surname: true, imagePath: true },
+        },
+      },
+    };
+  }
+
   const services = await prisma.service.findMany({
     where,
-    include: {
-      department: { select: { id: true, name: true } },
-      visibility: { include: { specialization: { select: { id: true, name: true } } } },
-      _count: { select: { userServices: true, itemServices: true } },
-    },
+    include: includeBlock,
     orderBy: { startAt: "asc" },
   });
   res.json(services);
@@ -94,6 +128,7 @@ router.get("/my", async (req: Request, res: Response) => {
     where,
     include: {
       department: { select: { id: true, name: true } },
+      responsibleUser: { select: { id: true, ename: true, forename: true, surname: true, imagePath: true } },
       visibility: { include: { specialization: { select: { id: true, name: true } } } },
       // Include ONLY the current user's enrollment so the client knows if already applied
       userServices: {
@@ -133,10 +168,19 @@ router.get("/:id", async (req: Request, res: Response) => {
     where: { id: Number(req.params.id) },
     include: {
       department: true,
+      responsibleUser: { select: { id: true, ename: true, forename: true, surname: true, imagePath: true } },
       userServices: {
-        include: { user: { select: { id: true, ename: true, forename: true, surname: true, imagePath: true } } },
+        include: {
+          user: {
+            select: {
+              id: true, ename: true, forename: true, surname: true, imagePath: true,
+              assignedItems: {
+                select: { id: true, name: true, barCode: true, isContainer: true, location: true, imagePath: true, expirationDate: true },
+              },
+            },
+          },
+        },
       },
-      itemServices: { include: { item: true, user: { select: { id: true, forename: true, surname: true } } } },
       vehicleLogs: { include: { vehicle: true } },
       visibility: { include: { specialization: true } },
     },
@@ -254,6 +298,18 @@ router.delete("/:sid/users/:uid", async (req: Request, res: Response) => {
     where: { userId_serviceId: { userId: Number(req.params.uid), serviceId: Number(req.params.sid) } },
   });
   res.status(204).end();
+});
+
+// ── PATCH /api/services/:id/responsible ──────────
+router.patch("/:id/responsible", async (req: Request, res: Response) => {
+  const serviceId = Number(req.params.id);
+  const { responsibleUserId } = req.body; // null to clear
+  const service = await prisma.service.update({
+    where: { id: serviceId },
+    data: { responsibleUserId: responsibleUserId ?? null },
+    include: { responsibleUser: { select: { id: true, ename: true, forename: true, surname: true, imagePath: true } } },
+  });
+  res.json(service);
 });
 
 // ── Service visibility (specialization requirements) ──

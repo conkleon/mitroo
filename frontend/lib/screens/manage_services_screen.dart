@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
 import '../services/api_client.dart';
 
-/// Lists all services for a given department.
-/// Mission admins can view details, create new, edit, and delete services.
+/// Lists all services for a given department using a card layout.
+/// Enrollments are shown inline inside each card.
 class ManageServicesScreen extends StatefulWidget {
   final int departmentId;
   final String departmentName;
@@ -27,7 +28,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   List<dynamic> _services = [];
   bool _loading = true;
   String _search = '';
-  String _statusFilter = 'all'; // all, upcoming, past, active
+  final Set<int> _expandedCards = {};
 
   @override
   void initState() {
@@ -46,8 +47,8 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final res =
-          await _api.get('/services?departmentId=${widget.departmentId}');
+      final res = await _api.get(
+          '/services?departmentId=${widget.departmentId}&includeEnrollments=true');
       if (res.statusCode == 200 && mounted) {
         _services = jsonDecode(res.body);
       }
@@ -59,39 +60,78 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     var list = List<dynamic>.from(_services);
     final now = DateTime.now();
 
-    // Status filter
-    if (_statusFilter == 'upcoming') {
-      list = list.where((s) {
-        final start = DateTime.tryParse(s['startAt'] ?? '');
-        return start != null && start.isAfter(now);
-      }).toList();
-    } else if (_statusFilter == 'active') {
-      list = list.where((s) {
-        final start = DateTime.tryParse(s['startAt'] ?? '');
-        final end = DateTime.tryParse(s['endAt'] ?? '');
-        return start != null &&
-            start.isBefore(now) &&
-            (end == null || end.isAfter(now));
-      }).toList();
-    } else if (_statusFilter == 'past') {
-      list = list.where((s) {
-        final end = DateTime.tryParse(s['endAt'] ?? '');
-        return end != null && end.isBefore(now);
-      }).toList();
-    }
+    // Show only current & upcoming (exclude past)
+    list = list.where((s) {
+      final end = DateTime.tryParse(s['endAt'] ?? '');
+      if (end != null && end.isBefore(now)) return false;
+      return true;
+    }).toList();
 
-    // Text search
     if (_search.isNotEmpty) {
       final q = _search.toLowerCase();
       list = list.where((s) {
         final name = (s['name'] ?? '').toString().toLowerCase();
         final loc = (s['location'] ?? '').toString().toLowerCase();
         final carrier = (s['carrier'] ?? '').toString().toLowerCase();
-        return name.contains(q) || loc.contains(q) || carrier.contains(q);
+        final desc = (s['description'] ?? '').toString().toLowerCase();
+        return name.contains(q) ||
+            loc.contains(q) ||
+            carrier.contains(q) ||
+            desc.contains(q);
       }).toList();
     }
 
+    // Sort: closest start date first
+    list.sort((a, b) {
+      final aDate = DateTime.tryParse(a['startAt'] ?? '') ?? DateTime(2099);
+      final bDate = DateTime.tryParse(b['startAt'] ?? '') ?? DateTime(2099);
+      return aDate.compareTo(bDate);
+    });
+
     return list;
+  }
+
+  String _fmtDate(String? iso) {
+    if (iso == null) return '—';
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return '—';
+    return DateFormat('dd/MM/yy HH:mm').format(dt.toLocal());
+  }
+
+  String _statusLabel(Map<String, dynamic> svc) {
+    final now = DateTime.now();
+    final start = DateTime.tryParse(svc['startAt'] ?? '');
+    final end = DateTime.tryParse(svc['endAt'] ?? '');
+    if (start == null) return 'No date';
+    if (start.isAfter(now)) return 'Upcoming';
+    if (end != null && end.isBefore(now)) return 'Completed';
+    return 'Active';
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'Upcoming':
+        return const Color(0xFF2563EB);
+      case 'Active':
+        return const Color(0xFF059669);
+      case 'Completed':
+        return const Color(0xFF6B7280);
+      default:
+        return const Color(0xFF9CA3AF);
+    }
+  }
+
+  Color _enrollColor(String status) {
+    switch (status) {
+      case 'accepted':
+        return const Color(0xFF059669);
+      case 'rejected':
+        return const Color(0xFFDC2626);
+      case 'requested':
+        return const Color(0xFFF59E0B);
+      default:
+        return const Color(0xFF6B7280);
+    }
   }
 
   Future<void> _deleteService(int id, String name) async {
@@ -99,7 +139,8 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Service'),
-        content: Text('Are you sure you want to delete "$name"?\nThis cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete "$name"?\nThis cannot be undone.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -120,48 +161,147 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(err)));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Service deleted')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Service deleted')));
       _load();
     }
   }
 
-  String _formatDate(String? iso) {
-    if (iso == null) return '—';
-    final dt = DateTime.tryParse(iso);
-    if (dt == null) return '—';
-    final local = dt.toLocal();
-    return '${local.day}/${local.month}/${local.year} '
-        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
-  }
-
-  String _serviceStatusLabel(Map<String, dynamic> svc) {
-    final now = DateTime.now();
-    final start = DateTime.tryParse(svc['startAt'] ?? '');
-    final end = DateTime.tryParse(svc['endAt'] ?? '');
-    if (start == null) return 'No date';
-    if (start.isAfter(now)) return 'Upcoming';
-    if (end != null && end.isBefore(now)) return 'Completed';
-    return 'Active';
-  }
-
-  Color _serviceStatusColor(String status) {
-    switch (status) {
-      case 'Upcoming':
-        return const Color(0xFF2563EB);
-      case 'Active':
-        return const Color(0xFF059669);
-      case 'Completed':
-        return const Color(0xFF6B7280);
-      default:
-        return const Color(0xFF9CA3AF);
+  Future<void> _updateEnrollmentStatus(
+      int serviceId, int userId, String status) async {
+    try {
+      final res = await _api.patch(
+          '/services/$serviceId/users/$userId/status',
+          body: {'status': status});
+      if (res.statusCode == 200) {
+        _load();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to update status')));
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error updating status')));
+      }
     }
+  }
+
+  Future<void> _updateEnrollmentHours(
+      int serviceId, int userId, Map<String, dynamic> currentUs) async {
+    final hrsCtrl =
+        TextEditingController(text: '${currentUs['hours'] ?? 0}');
+    final volCtrl =
+        TextEditingController(text: '${currentUs['hoursVol'] ?? 0}');
+    final trnCtrl =
+        TextEditingController(text: '${currentUs['hoursTraining'] ?? 0}');
+    final trnrCtrl =
+        TextEditingController(text: '${currentUs['hoursTrainers'] ?? 0}');
+
+    final user = currentUs['user'] as Map<String, dynamic>?;
+    final uName = user != null
+        ? '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim()
+        : 'Unknown';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Edit Hours — $uName'),
+        content: SizedBox(
+          width: 300,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _HoursField(controller: hrsCtrl, label: 'Hours'),
+              const SizedBox(height: 8),
+              _HoursField(controller: volCtrl, label: 'Volunteer Hours'),
+              const SizedBox(height: 8),
+              _HoursField(controller: trnCtrl, label: 'Training Hours'),
+              const SizedBox(height: 8),
+              _HoursField(controller: trnrCtrl, label: 'Trainer Hours'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Save')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final res = await _api.patch(
+          '/services/$serviceId/users/$userId/hours',
+          body: {
+            'hours': int.tryParse(hrsCtrl.text) ?? 0,
+            'hoursVol': int.tryParse(volCtrl.text) ?? 0,
+            'hoursTraining': int.tryParse(trnCtrl.text) ?? 0,
+            'hoursTrainers': int.tryParse(trnrCtrl.text) ?? 0,
+          });
+      if (res.statusCode == 200) {
+        _load();
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to update hours')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error updating hours')));
+      }
+    }
+  }
+
+  Future<void> _removeEnrollment(int serviceId, int userId, String name) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Enrollment'),
+        content: Text('Remove "$name" from this service?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _api.delete('/services/$serviceId/users/$userId');
+      _load();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error removing enrollment')));
+      }
+    }
+  }
+
+  void _openDetail(Map<String, dynamic> svc) =>
+      context.push('/admin/services/${svc['id']}');
+
+  void _editService(Map<String, dynamic> svc) async {
+    final id = svc['id'] as int;
+    await context.push(
+        '/admin/services/$id/edit?departmentId=${widget.departmentId}&departmentName=${Uri.encodeComponent(widget.departmentName)}');
+    if (mounted) _load();
   }
 
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
     final filtered = _filtered;
 
     return Scaffold(
@@ -173,11 +313,18 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _load,
-            tooltip: 'Refresh',
+          TextButton.icon(
+            onPressed: () {
+              context.push(
+                  '/admin/services/past?departmentId=${widget.departmentId}&departmentName=${Uri.encodeComponent(widget.departmentName)}');
+            },
+            icon: const Icon(Icons.history, size: 18),
+            label: const Text('Past Services'),
           ),
+          IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _load,
+              tooltip: 'Refresh'),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -190,20 +337,19 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
         label: const Text('New Service'),
       ),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 800;
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : LayoutBuilder(builder: (context, box) {
+                final isWide = box.maxWidth >= 800;
+                final hPad = isWide ? 32.0 : 16.0;
 
-            return Column(
-              children: [
-                // ── Search & Filters ──
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: isWide ? 32 : 16, vertical: 12),
-                  child: Column(
-                    children: [
-                      // Search bar
-                      TextField(
+                return Column(
+                  children: [
+                    // ── Search bar ──
+                    Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: hPad, vertical: 4),
+                      child: TextField(
                         decoration: InputDecoration(
                           hintText: 'Search services...',
                           prefixIcon: const Icon(Icons.search),
@@ -216,96 +362,34 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                         ),
                         onChanged: (v) => setState(() => _search = v),
                       ),
-                      const SizedBox(height: 12),
-                      // Filter chips
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _FilterChip(
-                              label: 'All',
-                              selected: _statusFilter == 'all',
-                              onTap: () =>
-                                  setState(() => _statusFilter = 'all'),
-                            ),
-                            const SizedBox(width: 8),
-                            _FilterChip(
-                              label: 'Upcoming',
-                              selected: _statusFilter == 'upcoming',
-                              onTap: () =>
-                                  setState(() => _statusFilter = 'upcoming'),
-                              color: const Color(0xFF2563EB),
-                            ),
-                            const SizedBox(width: 8),
-                            _FilterChip(
-                              label: 'Active',
-                              selected: _statusFilter == 'active',
-                              onTap: () =>
-                                  setState(() => _statusFilter = 'active'),
-                              color: const Color(0xFF059669),
-                            ),
-                            const SizedBox(width: 8),
-                            _FilterChip(
-                              label: 'Past',
-                              selected: _statusFilter == 'past',
-                              onTap: () =>
-                                  setState(() => _statusFilter = 'past'),
-                              color: const Color(0xFF6B7280),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                    const SizedBox(height: 8),
 
-                // ── Stats summary ──
-                Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: isWide ? 32 : 16),
-                  child: _StatsSummary(
-                    total: _services.length,
-                    upcoming: _services.where((s) {
-                      final start = DateTime.tryParse(s['startAt'] ?? '');
-                      return start != null && start.isAfter(DateTime.now());
-                    }).length,
-                    totalEnrolled: _services.fold<int>(0, (sum, s) {
-                      final count = s['_count']?['userServices'] ?? 0;
-                      return sum + (count as int);
-                    }),
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // ── Service list ──
-                Expanded(
-                  child: _loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : filtered.isEmpty
+                    // ── Service cards ──
+                    Expanded(
+                      child: filtered.isEmpty
                           ? Center(
                               child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.inbox,
-                                      size: 64, color: Colors.grey.shade300),
-                                  const SizedBox(height: 12),
-                                  Text('No services found',
-                                      style: tt.bodyLarge?.copyWith(
-                                          color: Colors.grey.shade500)),
-                                ],
-                              ),
-                            )
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.inbox,
+                                        size: 64,
+                                        color: Colors.grey.shade300),
+                                    const SizedBox(height: 12),
+                                    Text('No services found',
+                                        style: tt.bodyLarge?.copyWith(
+                                            color: Colors.grey.shade500)),
+                                  ]))
                           : RefreshIndicator(
                               onRefresh: _load,
                               child: isWide
                                   ? _buildGrid(filtered)
                                   : _buildList(filtered),
                             ),
-                ),
-              ],
-            );
-          },
-        ),
+                    ),
+                  ],
+                );
+              }),
       ),
     );
   }
@@ -314,16 +398,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
       itemCount: services.length,
-      itemBuilder: (ctx, i) => _ServiceCard(
-        service: services[i],
-        formatDate: _formatDate,
-        statusLabel: _serviceStatusLabel,
-        statusColor: _serviceStatusColor,
-        onTap: () => _openDetail(services[i]),
-        onEdit: () => _editService(services[i]),
-        onDelete: () => _deleteService(
-            services[i]['id'] as int, services[i]['name'] ?? ''),
-      ),
+      itemBuilder: (ctx, i) => _buildCard(services[i]),
     );
   }
 
@@ -334,192 +409,33 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
         crossAxisCount: 2,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 2.2,
+        childAspectRatio: 1.6,
       ),
       itemCount: services.length,
-      itemBuilder: (ctx, i) => _ServiceCard(
-        service: services[i],
-        formatDate: _formatDate,
-        statusLabel: _serviceStatusLabel,
-        statusColor: _serviceStatusColor,
-        onTap: () => _openDetail(services[i]),
-        onEdit: () => _editService(services[i]),
-        onDelete: () => _deleteService(
-            services[i]['id'] as int, services[i]['name'] ?? ''),
-      ),
+      itemBuilder: (ctx, i) => _buildCard(services[i]),
     );
   }
 
-  void _openDetail(Map<String, dynamic> service) {
-    context.push('/admin/services/${service['id']}');
-  }
-
-  void _editService(Map<String, dynamic> service) async {
-    final id = service['id'] as int;
-    await context.push(
-        '/admin/services/$id/edit?departmentId=${widget.departmentId}&departmentName=${Uri.encodeComponent(widget.departmentName)}');
-    if (mounted) _load();
-  }
-}
-
-// ─── Stats summary bar ─────────────────────────────────────
-
-class _StatsSummary extends StatelessWidget {
-  final int total;
-  final int upcoming;
-  final int totalEnrolled;
-
-  const _StatsSummary({
-    required this.total,
-    required this.upcoming,
-    required this.totalEnrolled,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildCard(Map<String, dynamic> svc) {
     final tt = Theme.of(context).textTheme;
-    return Row(
-      children: [
-        _MiniStat(
-            icon: Icons.list_alt,
-            value: '$total',
-            label: 'Total',
-            color: const Color(0xFF2563EB)),
-        const SizedBox(width: 8),
-        _MiniStat(
-            icon: Icons.schedule,
-            value: '$upcoming',
-            label: 'Upcoming',
-            color: const Color(0xFF7C3AED)),
-        const SizedBox(width: 8),
-        _MiniStat(
-            icon: Icons.people,
-            value: '$totalEnrolled',
-            label: 'Enrolled',
-            color: const Color(0xFF059669)),
-      ],
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-  final Color color;
-
-  const _MiniStat({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: color.withAlpha(15),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withAlpha(40)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value,
-                    style: tt.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w700, color: color)),
-                Text(label,
-                    style: tt.bodySmall
-                        ?.copyWith(color: const Color(0xFF6B7280), fontSize: 11)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Filter chip ──────────────────────────────────────────
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final Color? color;
-
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = color ?? Theme.of(context).colorScheme.primary;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? c.withAlpha(20) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? c : Colors.grey.shade300),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? c : const Color(0xFF6B7280),
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            fontSize: 13,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Service card ─────────────────────────────────────────
-
-class _ServiceCard extends StatelessWidget {
-  final Map<String, dynamic> service;
-  final String Function(String?) formatDate;
-  final String Function(Map<String, dynamic>) statusLabel;
-  final Color Function(String) statusColor;
-  final VoidCallback onTap;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  const _ServiceCard({
-    required this.service,
-    required this.formatDate,
-    required this.statusLabel,
-    required this.statusColor,
-    required this.onTap,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final name = service['name'] ?? '';
-    final location = service['location'] ?? '';
-    final carrier = service['carrier'] ?? '';
-    final status = statusLabel(service);
-    final sColor = statusColor(status);
-    final enrolledCount = service['_count']?['userServices'] ?? 0;
-    final visSpecs = service['visibility'] as List<dynamic>? ?? [];
+    final id = svc['id'] as int;
+    final name = svc['name'] ?? '';
+    final location = svc['location'] ?? '';
+    final carrier = svc['carrier'] ?? '';
+    final status = _statusLabel(svc);
+    final sColor = _statusColor(status);
+    final enrolledCount = (svc['_count']?['userServices'] ?? 0) as int;
+    final visSpecs = svc['visibility'] as List<dynamic>? ?? [];
+    final userServices = svc['userServices'] as List<dynamic>? ?? [];
+    final isExpanded = _expandedCards.contains(id);
+    final requestedCount =
+        userServices.where((us) => us['status'] == 'requested').length;
+    final acceptedCount =
+        userServices.where((us) => us['status'] == 'accepted').length;
+    final responsibleUser = svc['responsibleUser'] as Map<String, dynamic>?;
+    final responsibleName = responsibleUser != null
+        ? '${responsibleUser['forename'] ?? ''} ${responsibleUser['surname'] ?? ''}'.trim()
+        : null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -528,113 +444,488 @@ class _ServiceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(color: Colors.grey.shade200),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top row: name + status badge
-              Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── Main card content ──
+          InkWell(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            onTap: () => _openDetail(svc),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(name,
-                        style: tt.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: sColor.withAlpha(20),
-                      borderRadius: BorderRadius.circular(12),
+                  // Top row: name + status badge
+                  Row(children: [
+                    Expanded(
+                      child: Text(name,
+                          style: tt.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
                     ),
-                    child: Text(status,
-                        style: TextStyle(
-                            color: sColor,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Info chips
-              Wrap(
-                spacing: 12,
-                runSpacing: 4,
-                children: [
-                  if (location.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: sColor.withAlpha(20),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(status,
+                          style: TextStyle(
+                              color: sColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ]),
+                  const SizedBox(height: 8),
+
+                  // Info chips
+                  Wrap(spacing: 12, runSpacing: 4, children: [
+                    if (location.isNotEmpty)
+                      _InfoChip(Icons.location_on, location),
+                    if (carrier.isNotEmpty) _InfoChip(Icons.groups, carrier),
                     _InfoChip(
-                        icon: Icons.location_on, text: location, size: 12),
-                  if (carrier.isNotEmpty)
-                    _InfoChip(icon: Icons.groups, text: carrier, size: 12),
-                  _InfoChip(
-                      icon: Icons.people,
-                      text: '$enrolledCount enrolled',
-                      size: 12),
-                  _InfoChip(
-                    icon: Icons.calendar_today,
-                    text: formatDate(service['startAt']),
-                    size: 12,
-                  ),
+                        Icons.calendar_today, _fmtDate(svc['startAt'])),
+                    if (responsibleName != null)
+                      _InfoChip(Icons.admin_panel_settings, responsibleName),
+                  ]),
+
+                  if (visSpecs.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: visSpecs
+                          .map((v) => Chip(
+                                label: Text(
+                                    v['specialization']?['name'] ?? '',
+                                    style: const TextStyle(fontSize: 10)),
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                                labelPadding:
+                                    const EdgeInsets.symmetric(horizontal: 6),
+                              ))
+                          .toList(),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+
+                  // Action row
+                  Row(children: [
+                    // Enrollment summary + expand toggle
+                    InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: enrolledCount > 0
+                          ? () => setState(() {
+                                isExpanded
+                                    ? _expandedCards.remove(id)
+                                    : _expandedCards.add(id);
+                              })
+                          : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.people,
+                                  size: 14,
+                                  color: Colors.grey.shade600),
+                              const SizedBox(width: 4),
+                              Text('$enrolledCount',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey.shade700)),
+                              if (requestedCount > 0) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 5, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF59E0B),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text('$requestedCount pending',
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600)),
+                                ),
+                              ],
+                              if (enrolledCount > 0) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                  isExpanded
+                                      ? Icons.expand_less
+                                      : Icons.expand_more,
+                                  size: 16,
+                                  color: const Color(0xFF2563EB),
+                                ),
+                              ],
+                            ]),
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () => _openDetail(svc),
+                      icon: const Icon(Icons.visibility, size: 16),
+                      label:
+                          const Text('View', style: TextStyle(fontSize: 12)),
+                      style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact),
+                    ),
+                    const SizedBox(width: 4),
+                    TextButton.icon(
+                      onPressed: () => _editService(svc),
+                      icon: const Icon(Icons.edit, size: 16),
+                      label:
+                          const Text('Edit', style: TextStyle(fontSize: 12)),
+                      style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact),
+                    ),
+                    const SizedBox(width: 4),
+                    TextButton.icon(
+                      onPressed: () => _deleteService(id, name),
+                      icon: Icon(Icons.delete,
+                          size: 16, color: Colors.red.shade400),
+                      label: Text('Delete',
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.red.shade400)),
+                      style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact),
+                    ),
+                  ]),
                 ],
               ),
-              if (visSpecs.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: visSpecs
-                      .map((v) => Chip(
-                            label: Text(
-                                v['specialization']?['name'] ?? '',
-                                style: const TextStyle(fontSize: 10)),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            labelPadding:
-                                const EdgeInsets.symmetric(horizontal: 6),
-                          ))
-                      .toList(),
-                ),
-              ],
-              const SizedBox(height: 8),
-              // Action row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+            ),
+          ),
+
+          // ── Enrollment panel (inside card) ──
+          if (isExpanded && userServices.isNotEmpty)
+            _buildEnrollmentPanel(svc, userServices, tt),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnrollmentPanel(
+      Map<String, dynamic> svc, List<dynamic> userServices, TextTheme tt) {
+    // Sort: requested first, then accepted, then rejected
+    final sorted = List<dynamic>.from(userServices);
+    const order = {'requested': 0, 'accepted': 1, 'rejected': 2};
+    sorted.sort(
+        (a, b) => (order[a['status']] ?? 3).compareTo(order[b['status']] ?? 3));
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        borderRadius:
+            const BorderRadius.vertical(bottom: Radius.circular(14)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(children: [
+            Icon(Icons.people, size: 14, color: Colors.grey.shade600),
+            const SizedBox(width: 6),
+            Text('Enrollments (${userServices.length})',
+                style: tt.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF374151))),
+            const Spacer(),
+            // Quick counts
+            _EnrollBadge(
+                'Accepted',
+                userServices
+                    .where((u) => u['status'] == 'accepted')
+                    .length,
+                const Color(0xFF059669)),
+            const SizedBox(width: 6),
+            _EnrollBadge(
+                'Pending',
+                userServices
+                    .where((u) => u['status'] == 'requested')
+                    .length,
+                const Color(0xFFF59E0B)),
+            const SizedBox(width: 6),
+            _EnrollBadge(
+                'Rejected',
+                userServices
+                    .where((u) => u['status'] == 'rejected')
+                    .length,
+                const Color(0xFFDC2626)),
+          ]),
+          const SizedBox(height: 8),
+
+          // User rows
+          ...sorted.map((us) {
+            final user = us['user'] as Map<String, dynamic>?;
+            final userId = us['userId'] as int? ?? user?['id'] as int? ?? 0;
+            final uName = user != null
+                ? '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim()
+                : 'Unknown';
+            final ename = user?['ename'] ?? '';
+            final st = (us['status'] ?? 'requested') as String;
+            final stColor = _enrollColor(st);
+            final serviceId = svc['id'] as int;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: st == 'requested'
+                    ? const Color(0xFFFFFBEB)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                    color: st == 'requested'
+                        ? const Color(0xFFFDE68A)
+                        : Colors.grey.shade200,
+                    width: st == 'requested' ? 1.5 : 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextButton.icon(
-                    onPressed: onTap,
-                    icon: const Icon(Icons.visibility, size: 16),
-                    label: const Text('View', style: TextStyle(fontSize: 12)),
-                    style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact),
-                  ),
-                  const SizedBox(width: 4),
-                  TextButton.icon(
-                    onPressed: onEdit,
-                    icon: const Icon(Icons.edit, size: 16),
-                    label: const Text('Edit', style: TextStyle(fontSize: 12)),
-                    style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact),
-                  ),
-                  const SizedBox(width: 4),
-                  TextButton.icon(
-                    onPressed: onDelete,
-                    icon: Icon(Icons.delete, size: 16, color: Colors.red.shade400),
-                    label: Text('Delete',
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.red.shade400)),
-                    style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact),
-                  ),
+                  // ── Top: user info + status ──
+                  Row(children: [
+                    // Avatar
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: stColor.withAlpha(30),
+                      child: Text(
+                        uName.isNotEmpty ? uName[0].toUpperCase() : '?',
+                        style: TextStyle(
+                            color: stColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(uName,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                          if (ename.isNotEmpty)
+                            Text('@$ename',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade500)),
+                        ],
+                      ),
+                    ),
+                    // Status badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: stColor.withAlpha(20),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: stColor.withAlpha(60)),
+                      ),
+                      child: Text(
+                        st.substring(0, 1).toUpperCase() + st.substring(1),
+                        style: TextStyle(
+                            color: stColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 10),
+                  // ── Bottom: action buttons ──
+                  Row(children: [
+                    if (st != 'accepted')
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icons.check_circle_outline,
+                          label: 'Accept',
+                          color: const Color(0xFF059669),
+                          filled: true,
+                          onTap: () => _updateEnrollmentStatus(
+                              serviceId, userId, 'accepted'),
+                        ),
+                      ),
+                    if (st != 'accepted') const SizedBox(width: 8),
+                    if (st != 'rejected')
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icons.cancel_outlined,
+                          label: 'Reject',
+                          color: const Color(0xFFDC2626),
+                          filled: false,
+                          onTap: () => _updateEnrollmentStatus(
+                              serviceId, userId, 'rejected'),
+                        ),
+                      ),
+                    if (st != 'rejected') const SizedBox(width: 8),
+                    Expanded(
+                      child: _ActionButton(
+                        icon: Icons.schedule,
+                        label: 'Hours',
+                        color: const Color(0xFF2563EB),
+                        filled: false,
+                        onTap: () => _updateEnrollmentHours(
+                            serviceId, userId, us),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 40,
+                      child: _ActionButton(
+                        icon: Icons.person_remove_outlined,
+                        label: '',
+                        color: Colors.grey.shade400,
+                        filled: false,
+                        compact: true,
+                        onTap: () => _removeEnrollment(
+                            serviceId, userId, uName),
+                      ),
+                    ),
+                  ]),
                 ],
               ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Reusable widgets ─────────────────────────────────────
+
+
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _InfoChip(this.icon, this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 12, color: const Color(0xFF6B7280)),
+      const SizedBox(width: 4),
+      Text(text,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+    ]);
+  }
+}
+
+class _EnrollBadge extends StatelessWidget {
+  final String label;
+  final int count;
+  final Color color;
+
+  const _EnrollBadge(this.label, this.count, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    if (count == 0) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withAlpha(15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withAlpha(50)),
+      ),
+      child: Text('$count $label',
+          style: TextStyle(
+              fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
+class _HourLabel extends StatelessWidget {
+  final String label;
+  final dynamic value;
+
+  const _HourLabel(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    final v = value is int ? value : 0;
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: Column(children: [
+        Text('$v',
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: v > 0 ? const Color(0xFF374151) : Colors.grey.shade400)),
+        Text(label,
+            style: const TextStyle(fontSize: 9, color: Color(0xFF9CA3AF))),
+      ]),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool filled;
+  final bool compact;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.filled = false,
+    this.compact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: filled ? color : Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+              horizontal: compact ? 6 : 10, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: filled ? null : Border.all(color: color.withAlpha(80)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon,
+                  size: 16, color: filled ? Colors.white : color),
+              if (label.isNotEmpty) ...[
+                const SizedBox(width: 4),
+                Text(label,
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: filled ? Colors.white : color)),
+              ],
             ],
           ),
         ),
@@ -643,25 +934,24 @@ class _ServiceCard extends StatelessWidget {
   }
 }
 
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final double size;
+class _HoursField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
 
-  const _InfoChip(
-      {required this.icon, required this.text, this.size = 14});
+  const _HoursField({required this.controller, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: size, color: const Color(0xFF6B7280)),
-        const SizedBox(width: 4),
-        Text(text,
-            style: TextStyle(
-                fontSize: size, color: const Color(0xFF6B7280))),
-      ],
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        isDense: true,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      ),
     );
   }
 }

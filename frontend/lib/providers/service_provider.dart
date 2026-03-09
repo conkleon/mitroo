@@ -129,4 +129,17 @@ class ServiceProvider extends ChangeNotifier {
       return 'Failed';
     } catch (e) { return 'Error: $e'; }
   }
+
+  /// Set or clear the responsible user for a service.
+  /// Pass null for userId to clear the assignment.
+  Future<String?> setResponsibleUser(int serviceId, int? userId) async {
+    try {
+      final res = await _api.patch(
+        '/services/$serviceId/responsible',
+        body: {'responsibleUserId': userId},
+      );
+      if (res.statusCode == 200) return null;
+      return jsonDecode(res.body)['error'] ?? 'Failed';
+    } catch (e) { return 'Error: $e'; }
+  }
 }

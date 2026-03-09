@@ -6,6 +6,7 @@ import '../screens/login_screen.dart';
 import '../screens/admin_panel_screen.dart';
 import '../screens/create_service_screen.dart';
 import '../screens/manage_services_screen.dart';
+import '../screens/past_services_screen.dart';
 import '../screens/service_detail_screen.dart';
 import '../screens/manage_users_screen.dart';
 import '../screens/user_detail_screen.dart';
@@ -15,6 +16,7 @@ import '../screens/manage_specializations_screen.dart';
 import '../screens/specialization_detail_screen.dart';
 import '../screens/services_screen.dart';
 import '../screens/items_screen.dart';
+import '../screens/item_detail_screen.dart';
 import '../screens/vehicles_screen.dart';
 import '../screens/chat_screen.dart';
 import '../screens/profile_screen.dart';
@@ -50,8 +52,22 @@ GoRouter appRouter(AuthProvider auth) {
             builder: (context, state) => const ServicesScreen(),
           ),
           GoRoute(
+            path: '/services/:id',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+              return ServiceDetailScreen(serviceId: id);
+            },
+          ),
+          GoRoute(
             path: '/items',
             builder: (context, state) => const ItemsScreen(),
+          ),
+          GoRoute(
+            path: '/items/:id',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+              return ItemDetailScreen(itemId: id);
+            },
           ),
           GoRoute(
             path: '/vehicles',
@@ -81,6 +97,18 @@ GoRouter appRouter(AuthProvider auth) {
               return CreateServiceScreen(
                 initialDepartmentId: deptId,
                 initialDepartmentName: deptName,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/admin/services/past',
+            builder: (context, state) {
+              final deptId = int.tryParse(state.uri.queryParameters['departmentId'] ?? '');
+              final deptName = state.uri.queryParameters['departmentName'] ?? 'Department';
+              return PastServicesScreen(
+                key: ValueKey('past-services-${deptId ?? 0}'),
+                departmentId: deptId ?? 0,
+                departmentName: deptName,
               );
             },
           ),

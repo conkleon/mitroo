@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
 import '../services/api_client.dart';
 
@@ -206,6 +207,143 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     hoursTrainersCtrl.dispose();
   }
 
+  // ── Responsible user management ──
+
+  Future<void> _pickResponsibleUser() async {
+    // Build list from users already enrolled in this service
+    final userServices = _service?['userServices'] as List<dynamic>? ?? [];
+    final users = userServices
+        .map((us) => us['user'] as Map<String, dynamic>?)
+        .where((u) => u != null)
+        .cast<Map<String, dynamic>>()
+        .toList();
+
+    if (!mounted || users.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No enrolled users to select from')),
+        );
+      }
+      return;
+    }
+
+    final currentResponsible = _service?['responsibleUser'];
+    final currentId = currentResponsible?['id'];
+    String search = '';
+
+    final selected = await showDialog<int?>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setDialogState) {
+          final filtered = users.where((u) {
+            if (search.isEmpty) return true;
+            final q = search.toLowerCase();
+            final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
+            final ename = (u['ename'] ?? '').toString().toLowerCase();
+            return name.contains(q) || ename.contains(q);
+          }).toList();
+
+          return AlertDialog(
+            title: const Text('Select Responsible User'),
+            content: SizedBox(
+              width: 400,
+              height: 450,
+              child: Column(
+                children: [
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search users...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                    ),
+                    onChanged: (v) => setDialogState(() => search = v),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: filtered.length,
+                      itemBuilder: (ctx, i) {
+                        final u = filtered[i];
+                        final uid = u['id'] as int;
+                        final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim();
+                        final ename = u['ename'] ?? '';
+                        final isSelected = uid == currentId;
+
+                        return ListTile(
+                          dense: true,
+                          selected: isSelected,
+                          selectedTileColor: const Color(0xFFEDE9FE),
+                          leading: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: isSelected
+                                ? const Color(0xFF7C3AED)
+                                : const Color(0xFF6B7280),
+                            child: Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : '?',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14),
+                            ),
+                          ),
+                          title: Text(name,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 14)),
+                          subtitle: Text('@$ename',
+                              style: const TextStyle(
+                                  fontSize: 12, color: Color(0xFF6B7280))),
+                          trailing: isSelected
+                              ? const Icon(Icons.check_circle,
+                                  color: Color(0xFF7C3AED), size: 20)
+                              : null,
+                          onTap: () => Navigator.pop(ctx, uid),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              if (currentId != null)
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, -1), // sentinel for "clear"
+                  child: const Text('Clear', style: TextStyle(color: Colors.red)),
+                ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, null),
+                child: const Text('Cancel'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+
+    if (selected == null || !mounted) return;
+
+    final userId = selected == -1 ? null : selected;
+    final err = await context
+        .read<ServiceProvider>()
+        .setResponsibleUser(widget.serviceId, userId);
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err)));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(userId == null
+            ? 'Responsible user cleared'
+            : 'Responsible user assigned'),
+      ));
+      _load();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
@@ -229,10 +367,19 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     final status = _statusLabel();
     final sColor = _statusColor(status);
     final userServices = svc['userServices'] as List<dynamic>? ?? [];
-    final itemServices = svc['itemServices'] as List<dynamic>? ?? [];
     final vehicleLogs = svc['vehicleLogs'] as List<dynamic>? ?? [];
     final visibility = svc['visibility'] as List<dynamic>? ?? [];
     final dept = svc['department'] as Map<String, dynamic>? ?? {};
+    final responsibleUser = svc['responsibleUser'] as Map<String, dynamic>?;
+    final auth = context.read<AuthProvider>();
+    final canManage = auth.isAdmin || auth.isMissionAdmin;
+    final currentUserId = auth.user?['id'] as int?;
+
+    // Check if current user is an accepted member of this service
+    final isAcceptedMember = userServices.any((us) =>
+        us['user']?['id'] == currentUserId && us['status'] == 'accepted');
+    final isMember = userServices.any((us) =>
+        us['user']?['id'] == currentUserId);
 
     final requested =
         userServices.where((u) => u['status'] == 'requested').toList();
@@ -256,17 +403,18 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                   backgroundColor: cs.primary,
                   foregroundColor: Colors.white,
                   actions: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () async {
-                        final deptId = dept['id'];
-                        final deptName = dept['name'] ?? '';
-                        await context.push(
-                            '/admin/services/${svc['id']}/edit?departmentId=$deptId&departmentName=${Uri.encodeComponent(deptName)}');
-                        if (mounted) _load();
-                      },
-                      tooltip: 'Edit service',
-                    ),
+                    if (canManage)
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () async {
+                          final deptId = dept['id'];
+                          final deptName = dept['name'] ?? '';
+                          await context.push(
+                              '/admin/services/${svc['id']}/edit?departmentId=$deptId&departmentName=${Uri.encodeComponent(deptName)}');
+                          if (mounted) _load();
+                        },
+                        tooltip: 'Edit service',
+                      ),
                     IconButton(
                       icon: const Icon(Icons.refresh),
                       onPressed: _load,
@@ -335,9 +483,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               ],
               body: isWide
                   ? _buildWideLayout(svc, requested, accepted, rejected,
-                      itemServices, vehicleLogs, visibility)
+                      vehicleLogs, visibility, responsibleUser, canManage, isAcceptedMember, isMember, userServices)
                   : _buildCompactLayout(svc, requested, accepted, rejected,
-                      itemServices, vehicleLogs, visibility),
+                      vehicleLogs, visibility, responsibleUser, canManage, isAcceptedMember, isMember, userServices),
             );
           },
         ),
@@ -350,9 +498,13 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     List<dynamic> requested,
     List<dynamic> accepted,
     List<dynamic> rejected,
-    List<dynamic> itemServices,
     List<dynamic> vehicleLogs,
     List<dynamic> visibility,
+    Map<String, dynamic>? responsibleUser,
+    bool canManage,
+    bool isAcceptedMember,
+    bool isMember,
+    List<dynamic> userServices,
   ) {
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -368,12 +520,21 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                 children: [
                   _ServiceInfoCard(svc: svc, formatDate: _formatDate),
                   const SizedBox(height: 16),
+                  _ResponsibleUserCard(
+                    responsibleUser: responsibleUser,
+                    canManage: canManage,
+                    onPick: _pickResponsibleUser,
+                  ),
+                  const SizedBox(height: 16),
                   if (visibility.isNotEmpty)
                     _VisibilityCard(visibility: visibility),
                   if (visibility.isNotEmpty) const SizedBox(height: 16),
                   _HoursDefaultCard(svc: svc),
                   const SizedBox(height: 16),
-                  _AssignedItemsCard(itemServices: itemServices),
+                  _MemberEquipmentCard(
+                    userServices: userServices,
+                    visible: isMember || canManage,
+                  ),
                   const SizedBox(height: 16),
                   _VehicleLogsCard(
                       vehicleLogs: vehicleLogs, formatDate: _formatDate),
@@ -390,6 +551,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                 requested: requested,
                 accepted: accepted,
                 rejected: rejected,
+                responsibleUserId: responsibleUser?['id'] as int?,
+                canManage: canManage,
                 onAccept: (uid) => _updateUserStatus(uid, 'accepted'),
                 onReject: (uid) => _updateUserStatus(uid, 'rejected'),
                 onRemove: _removeUser,
@@ -407,14 +570,24 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     List<dynamic> requested,
     List<dynamic> accepted,
     List<dynamic> rejected,
-    List<dynamic> itemServices,
     List<dynamic> vehicleLogs,
     List<dynamic> visibility,
+    Map<String, dynamic>? responsibleUser,
+    bool canManage,
+    bool isAcceptedMember,
+    bool isMember,
+    List<dynamic> userServices,
   ) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         _ServiceInfoCard(svc: svc, formatDate: _formatDate),
+        const SizedBox(height: 16),
+        _ResponsibleUserCard(
+          responsibleUser: responsibleUser,
+          canManage: canManage,
+          onPick: _pickResponsibleUser,
+        ),
         const SizedBox(height: 16),
         if (visibility.isNotEmpty) _VisibilityCard(visibility: visibility),
         if (visibility.isNotEmpty) const SizedBox(height: 16),
@@ -424,16 +597,143 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
           requested: requested,
           accepted: accepted,
           rejected: rejected,
+          responsibleUserId: responsibleUser?['id'] as int?,
+          canManage: canManage,
           onAccept: (uid) => _updateUserStatus(uid, 'accepted'),
           onReject: (uid) => _updateUserStatus(uid, 'rejected'),
           onRemove: _removeUser,
           onEditHours: _editUserHours,
         ),
         const SizedBox(height: 16),
-        _AssignedItemsCard(itemServices: itemServices),
+        _MemberEquipmentCard(
+          userServices: userServices,
+          visible: isMember || canManage,
+        ),
         const SizedBox(height: 16),
         _VehicleLogsCard(vehicleLogs: vehicleLogs, formatDate: _formatDate),
       ],
+    );
+  }
+}
+
+// ─── Responsible User Card ────────────────────────────────
+
+class _ResponsibleUserCard extends StatelessWidget {
+  final Map<String, dynamic>? responsibleUser;
+  final bool canManage;
+  final VoidCallback onPick;
+
+  const _ResponsibleUserCard({
+    required this.responsibleUser,
+    required this.canManage,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final hasUser = responsibleUser != null;
+    final name = hasUser
+        ? '${responsibleUser!['forename'] ?? ''} ${responsibleUser!['surname'] ?? ''}'.trim()
+        : '';
+    final ename = hasUser ? (responsibleUser!['ename'] ?? '') : '';
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.admin_panel_settings,
+                    size: 20, color: Color(0xFF7C3AED)),
+                const SizedBox(width: 8),
+                Text('Responsible User',
+                    style: tt.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+                const Spacer(),
+                if (canManage)
+                  FilledButton.tonalIcon(
+                    onPressed: onPick,
+                    icon: Icon(
+                      hasUser ? Icons.swap_horiz : Icons.person_add,
+                      size: 16,
+                    ),
+                    label: Text(
+                      hasUser ? 'Change' : 'Assign',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (hasUser)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F3FF),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFDDD6FE)),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: const Color(0xFF7C3AED),
+                      child: Text(
+                        name.isNotEmpty ? name[0].toUpperCase() : '?',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(name,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 15)),
+                          Text('@$ename',
+                              style: const TextStyle(
+                                  fontSize: 12, color: Color(0xFF6B7280))),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                width: double.infinity,
+                child: Column(
+                  children: [
+                    Icon(Icons.person_off,
+                        size: 32, color: Colors.grey.shade300),
+                    const SizedBox(height: 6),
+                    Text('No responsible user assigned',
+                        style: tt.bodySmall
+                            ?.copyWith(color: Colors.grey.shade500)),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -673,6 +973,8 @@ class _PeopleSection extends StatelessWidget {
   final List<dynamic> requested;
   final List<dynamic> accepted;
   final List<dynamic> rejected;
+  final int? responsibleUserId;
+  final bool canManage;
   final void Function(int userId) onAccept;
   final void Function(int userId) onReject;
   final void Function(int userId, String userName) onRemove;
@@ -682,6 +984,8 @@ class _PeopleSection extends StatelessWidget {
     required this.requested,
     required this.accepted,
     required this.rejected,
+    this.responsibleUserId,
+    this.canManage = true,
     required this.onAccept,
     required this.onReject,
     required this.onRemove,
@@ -691,7 +995,9 @@ class _PeopleSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final totalPeople = requested.length + accepted.length + rejected.length;
+    final totalPeople = canManage
+        ? requested.length + accepted.length + rejected.length
+        : accepted.length;
 
     return Card(
       elevation: 0,
@@ -729,8 +1035,8 @@ class _PeopleSection extends StatelessWidget {
             ),
             const Divider(height: 20),
 
-            // ── Pending requests (highlighted) ──
-            if (requested.isNotEmpty) ...[
+            // ── Pending requests (highlighted, admin only) ──
+            if (requested.isNotEmpty && canManage) ...[
               _PeopleGroupHeader(
                 label: 'Pending Requests',
                 count: requested.length,
@@ -738,21 +1044,19 @@ class _PeopleSection extends StatelessWidget {
                 icon: Icons.hourglass_top,
               ),
               const SizedBox(height: 8),
-              ...requested.map((us) => _PendingUserTile(
+              ...requested.map((us) {
+                    final user = us['user'] as Map<String, dynamic>? ?? {};
+                    return _PendingUserTile(
                     userService: us,
-                    onAccept: () {
-                      final user = us['user'] as Map<String, dynamic>? ?? {};
-                      onAccept(user['id'] as int);
-                    },
-                    onReject: () {
-                      final user = us['user'] as Map<String, dynamic>? ?? {};
-                      onReject(user['id'] as int);
-                    },
-                  )),
+                    isResponsible: (user['id'] as int?) == responsibleUserId,
+                    onAccept: () => onAccept(user['id'] as int),
+                    onReject: () => onReject(user['id'] as int),
+                  );
+                  }),
               const SizedBox(height: 16),
             ],
 
-            // ── Accepted ──
+            // ── Accepted (visible to all) ──
             if (accepted.isNotEmpty) ...[
               _PeopleGroupHeader(
                 label: 'Accepted',
@@ -761,22 +1065,24 @@ class _PeopleSection extends StatelessWidget {
                 icon: Icons.check_circle,
               ),
               const SizedBox(height: 8),
-              ...accepted.map((us) => _AcceptedUserTile(
+              ...accepted.map((us) {
+                    final user = us['user'] as Map<String, dynamic>? ?? {};
+                    final name =
+                        '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
+                            .trim();
+                    return _AcceptedUserTile(
                     userService: us,
-                    onRemove: () {
-                      final user = us['user'] as Map<String, dynamic>? ?? {};
-                      final name =
-                          '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
-                              .trim();
-                      onRemove(user['id'] as int, name);
-                    },
+                    isResponsible: (user['id'] as int?) == responsibleUserId,
+                    showActions: canManage,
+                    onRemove: () => onRemove(user['id'] as int, name),
                     onEditHours: () => onEditHours(us),
-                  )),
+                  );
+                  }),
               const SizedBox(height: 16),
             ],
 
-            // ── Rejected ──
-            if (rejected.isNotEmpty) ...[
+            // ── Rejected (admin only) ──
+            if (rejected.isNotEmpty && canManage) ...[
               _PeopleGroupHeader(
                 label: 'Rejected',
                 count: rejected.length,
@@ -784,20 +1090,18 @@ class _PeopleSection extends StatelessWidget {
                 icon: Icons.cancel,
               ),
               const SizedBox(height: 8),
-              ...rejected.map((us) => _RejectedUserTile(
+              ...rejected.map((us) {
+                    final user = us['user'] as Map<String, dynamic>? ?? {};
+                    final name =
+                        '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
+                            .trim();
+                    return _RejectedUserTile(
                     userService: us,
-                    onAccept: () {
-                      final user = us['user'] as Map<String, dynamic>? ?? {};
-                      onAccept(user['id'] as int);
-                    },
-                    onRemove: () {
-                      final user = us['user'] as Map<String, dynamic>? ?? {};
-                      final name =
-                          '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
-                              .trim();
-                      onRemove(user['id'] as int, name);
-                    },
-                  )),
+                    isResponsible: (user['id'] as int?) == responsibleUserId,
+                    onAccept: () => onAccept(user['id'] as int),
+                    onRemove: () => onRemove(user['id'] as int, name),
+                  );
+                  }),
             ],
 
             if (totalPeople == 0)
@@ -866,11 +1170,13 @@ class _PeopleGroupHeader extends StatelessWidget {
 
 class _PendingUserTile extends StatelessWidget {
   final Map<String, dynamic> userService;
+  final bool isResponsible;
   final VoidCallback onAccept;
   final VoidCallback onReject;
 
   const _PendingUserTile({
     required this.userService,
+    this.isResponsible = false,
     required this.onAccept,
     required this.onReject,
   });
@@ -899,8 +1205,19 @@ class _PendingUserTile extends StatelessWidget {
               style: const TextStyle(
                   color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
         ),
-        title: Text(name,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        title: Row(
+          children: [
+            Flexible(
+              child: Text(name,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  overflow: TextOverflow.ellipsis),
+            ),
+            if (isResponsible) ...[
+              const SizedBox(width: 6),
+              const _ResponsibleBadge(),
+            ],
+          ],
+        ),
         subtitle: Text(ename,
             style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
         trailing: Row(
@@ -929,11 +1246,15 @@ class _PendingUserTile extends StatelessWidget {
 
 class _AcceptedUserTile extends StatelessWidget {
   final Map<String, dynamic> userService;
+  final bool isResponsible;
+  final bool showActions;
   final VoidCallback onRemove;
   final VoidCallback onEditHours;
 
   const _AcceptedUserTile({
     required this.userService,
+    this.isResponsible = false,
+    this.showActions = true,
     required this.onRemove,
     required this.onEditHours,
   });
@@ -963,29 +1284,42 @@ class _AcceptedUserTile extends StatelessWidget {
               style: const TextStyle(
                   color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
         ),
-        title: Text(name,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        subtitle: Text('$ename · ${hours}h',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
+        title: Row(
           children: [
-            IconButton(
-              onPressed: onEditHours,
-              icon: const Icon(Icons.timer, color: Color(0xFF2563EB)),
-              iconSize: 20,
-              tooltip: 'Edit hours',
-              visualDensity: VisualDensity.compact,
+            Flexible(
+              child: Text(name,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  overflow: TextOverflow.ellipsis),
             ),
-            IconButton(
-              onPressed: onRemove,
-              icon: Icon(Icons.person_remove,
-                  color: Colors.red.shade400, size: 20),
-              tooltip: 'Remove',
-              visualDensity: VisualDensity.compact,
-            ),
+            if (isResponsible) ...[
+              const SizedBox(width: 6),
+              const _ResponsibleBadge(),
+            ],
           ],
         ),
+        subtitle: Text('$ename · ${hours}h',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+        trailing: showActions
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: onEditHours,
+                    icon: const Icon(Icons.timer, color: Color(0xFF2563EB)),
+                    iconSize: 20,
+                    tooltip: 'Edit hours',
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  IconButton(
+                    onPressed: onRemove,
+                    icon: Icon(Icons.person_remove,
+                        color: Colors.red.shade400, size: 20),
+                    tooltip: 'Remove',
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              )
+            : null,
       ),
     );
   }
@@ -993,11 +1327,13 @@ class _AcceptedUserTile extends StatelessWidget {
 
 class _RejectedUserTile extends StatelessWidget {
   final Map<String, dynamic> userService;
+  final bool isResponsible;
   final VoidCallback onAccept;
   final VoidCallback onRemove;
 
   const _RejectedUserTile({
     required this.userService,
+    this.isResponsible = false,
     required this.onAccept,
     required this.onRemove,
   });
@@ -1026,8 +1362,19 @@ class _RejectedUserTile extends StatelessWidget {
               style: const TextStyle(
                   color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
         ),
-        title: Text(name,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        title: Row(
+          children: [
+            Flexible(
+              child: Text(name,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  overflow: TextOverflow.ellipsis),
+            ),
+            if (isResponsible) ...[
+              const SizedBox(width: 6),
+              const _ResponsibleBadge(),
+            ],
+          ],
+        ),
         subtitle: Text(ename,
             style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
         trailing: Row(
@@ -1053,15 +1400,37 @@ class _RejectedUserTile extends StatelessWidget {
   }
 }
 
-// ─── Assigned Items Card ──────────────────────────────────
+// ─── Member Equipment Card ────────────────────────────────
 
-class _AssignedItemsCard extends StatelessWidget {
-  final List<dynamic> itemServices;
-  const _AssignedItemsCard({required this.itemServices});
+class _MemberEquipmentCard extends StatelessWidget {
+  final List<dynamic> userServices;
+  final bool visible;
+
+  const _MemberEquipmentCard({
+    required this.userServices,
+    required this.visible,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (!visible) return const SizedBox.shrink();
+
     final tt = Theme.of(context).textTheme;
+
+    // Collect items from accepted members
+    final List<Map<String, dynamic>> memberItems = [];
+    for (final us in userServices) {
+      if (us['status'] != 'accepted') continue;
+      final user = us['user'] as Map<String, dynamic>? ?? {};
+      final items = user['assignedItems'] as List<dynamic>? ?? [];
+      for (final item in items) {
+        memberItems.add({
+          'user': user,
+          'item': item as Map<String, dynamic>,
+        });
+      }
+    }
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -1078,41 +1447,76 @@ class _AssignedItemsCard extends StatelessWidget {
                 const Icon(Icons.inventory_2,
                     size: 18, color: Color(0xFF7C3AED)),
                 const SizedBox(width: 8),
-                Text('Assigned Items',
+                Text('Εξοπλισμός μελών',
                     style: tt.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w600)),
                 const Spacer(),
-                Text('${itemServices.length}',
+                Text('${memberItems.length}',
                     style: tt.bodySmall?.copyWith(
                         color: const Color(0xFF6B7280))),
               ],
             ),
-            if (itemServices.isEmpty)
+            if (memberItems.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Center(
-                  child: Text('No items assigned',
-                      style: tt.bodySmall
-                          ?.copyWith(color: Colors.grey.shade400)),
+                  child: Column(
+                    children: [
+                      Icon(Icons.inventory_2_outlined,
+                          size: 40, color: Colors.grey.shade300),
+                      const SizedBox(height: 8),
+                      Text('Κανένα αντικείμενο',
+                          style: tt.bodySmall
+                              ?.copyWith(color: Colors.grey.shade400)),
+                      const SizedBox(height: 4),
+                      Text(
+                          'Τα μέλη μπορούν να πάρουν εξοπλισμό από τα Αντικείμενα',
+                          style: tt.bodySmall?.copyWith(
+                              color: Colors.grey.shade400, fontSize: 11)),
+                    ],
+                  ),
                 ),
               )
             else ...[
               const Divider(height: 20),
-              ...itemServices.map((is_) {
-                final item = is_['item'] as Map<String, dynamic>? ?? {};
-                final user = is_['user'] as Map<String, dynamic>? ?? {};
+              ...memberItems.map((entry) {
+                final user = entry['user'] as Map<String, dynamic>;
+                final item = entry['item'] as Map<String, dynamic>;
+                final isContainer = item['isContainer'] == true;
+                final userName =
+                    '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
+                        .trim();
+
                 return ListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.inventory,
-                      size: 20, color: Colors.grey.shade600),
+                  leading: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: (isContainer
+                            ? const Color(0xFF7C3AED)
+                            : const Color(0xFF2563EB))
+                        .withAlpha(25),
+                    child: Icon(
+                      isContainer ? Icons.inventory : Icons.build_outlined,
+                      color: isContainer
+                          ? const Color(0xFF7C3AED)
+                          : const Color(0xFF2563EB),
+                      size: 18,
+                    ),
+                  ),
                   title: Text(item['name'] ?? '',
-                      style: const TextStyle(fontSize: 14)),
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600)),
                   subtitle: Text(
-                    'Assigned by ${user['forename'] ?? ''} ${user['surname'] ?? ''}'
-                        .trim(),
+                    [
+                      userName,
+                      if (item['barCode'] != null) 'BC: ${item['barCode']}',
+                      if (item['location'] != null) item['location'],
+                    ].join(' · '),
                     style: const TextStyle(
                         fontSize: 11, color: Color(0xFF6B7280)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 );
               }),
@@ -1203,6 +1607,37 @@ class _VehicleLogsCard extends StatelessWidget {
 }
 
 // ── Helpers ──
+
+class _ResponsibleBadge extends StatelessWidget {
+  const _ResponsibleBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFF7C3AED).withAlpha(20),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFF7C3AED).withAlpha(60)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.star_rounded, size: 12, color: Color(0xFF7C3AED)),
+          SizedBox(width: 2),
+          Text(
+            'Υπεύθυνος',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF7C3AED),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _HoursField extends StatelessWidget {
   final TextEditingController controller;
