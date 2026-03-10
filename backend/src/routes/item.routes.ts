@@ -39,6 +39,10 @@ const ITEM_DETAIL_INCLUDE = {
     },
     orderBy: { assignedAt: "desc" as const },
   },
+  comments: {
+    include: { user: { select: { id: true, forename: true, surname: true, ename: true } } },
+    orderBy: { createdAt: "desc" as const },
+  },
 };
 
 // ── Schemas ─────────────────────────────────────
@@ -64,7 +68,86 @@ const assignServiceSchema = z.object({
 const assignUserSchema = z.object({
   userId: z.number().int(),
 });
+// ── CSV Export / Import (MUST be before /:id routes) ──────────
 
+// GET /api/items/export/csv
+router.get("/export/csv", async (req: Request, res: Response) => {
+  if (!(await isItemManager(req))) {
+    res.status(403).json({ error: "Item admin access required" });
+    return;
+  }
+  const items = await prisma.item.findMany({
+    include: {
+      containedBy: { select: { id: true, name: true } },
+      assignedTo: { select: { id: true, forename: true, surname: true } },
+    },
+    orderBy: { id: "asc" },
+  });
+
+  const header = "id,name,description,barCode,location,isContainer,availableForAssignment,containedById,containedByName,assignedToId,assignedToName,expirationDate";
+  const rows = items.map((i) => {
+    const assignedName = i.assignedTo ? `${i.assignedTo.forename} ${i.assignedTo.surname}` : "";
+    return [
+      i.id,
+      `"${(i.name || "").replace(/"/g, '""')}"`,
+      `"${(i.description || "").replace(/"/g, '""')}"`,
+      `"${i.barCode || ""}"`,
+      `"${(i.location || "").replace(/"/g, '""')}"`,
+      i.isContainer,
+      i.availableForAssignment,
+      i.containedById || "",
+      `"${i.containedBy?.name || ""}"`,
+      i.assignedToId || "",
+      `"${assignedName}"`,
+      i.expirationDate ? i.expirationDate.toISOString() : "",
+    ].join(",");
+  });
+
+  const csv = [header, ...rows].join("\n");
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", "attachment; filename=items.csv");
+  res.send(csv);
+});
+
+// POST /api/items/import/csv
+router.post("/import/csv", async (req: Request, res: Response) => {
+  if (!(await isItemManager(req))) {
+    res.status(403).json({ error: "Item admin access required" });
+    return;
+  }
+  const { rows } = req.body;
+  if (!Array.isArray(rows) || rows.length === 0) {
+    res.status(400).json({ error: "No rows provided" });
+    return;
+  }
+
+  let created = 0;
+  let errors: string[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r.name || typeof r.name !== "string" || r.name.trim().length === 0) {
+      errors.push(`Row ${i + 1}: name is required`);
+      continue;
+    }
+    try {
+      await prisma.item.create({
+        data: {
+          name: r.name.trim(),
+          description: r.description?.trim() || null,
+          barCode: r.barCode?.trim() || null,
+          location: r.location?.trim() || null,
+          isContainer: r.isContainer === true || r.isContainer === "true",
+          availableForAssignment: r.availableForAssignment === true || r.availableForAssignment === "true",
+          expirationDate: r.expirationDate ? new Date(r.expirationDate) : null,
+        },
+      });
+      created++;
+    } catch (e: any) {
+      errors.push(`Row ${i + 1}: ${e.message}`);
+    }
+  }
+  res.json({ created, errors });
+});
 // ── GET /api/items ──────────────────────────────
 router.get("/", async (req: Request, res: Response) => {
   const { containerId, search, barCode, available } = req.query;
@@ -311,13 +394,78 @@ router.post("/assign", async (req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/items/assign/:id
+// ── DELETE /api/items/assign/:id
 router.delete("/assign/:id", async (req: Request, res: Response) => {
   if (!(await isItemManager(req))) {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }
   await prisma.itemService.delete({ where: { id: Number(req.params.id) } });
+  res.status(204).end();
+});
+
+// ── PATCH /api/items/:id/toggle-availability ──────────
+router.patch("/:id/toggle-availability", async (req: Request, res: Response) => {
+  if (!(await isItemManager(req))) {
+    res.status(403).json({ error: "Item admin access required" });
+    return;
+  }
+  const item = await prisma.item.findUnique({ where: { id: Number(req.params.id) } });
+  if (!item) { res.status(404).json({ error: "Item not found" }); return; }
+  const updated = await prisma.item.update({
+    where: { id: item.id },
+    data: { availableForAssignment: !item.availableForAssignment },
+    include: ITEM_DETAIL_INCLUDE,
+  });
+  res.json(updated);
+});
+
+// ── Item Comments ───────────────────────────────
+
+// GET /api/items/:id/comments
+router.get("/:id/comments", async (req: Request, res: Response) => {
+  const comments = await prisma.itemComment.findMany({
+    where: { itemId: Number(req.params.id) },
+    include: { user: { select: { id: true, forename: true, surname: true, ename: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+  res.json(comments);
+});
+
+// POST /api/items/:id/comments
+router.post("/:id/comments", async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const itemId = Number(req.params.id);
+  const { text } = req.body;
+  if (!text || typeof text !== "string" || text.trim().length === 0) {
+    res.status(400).json({ error: "Text is required" });
+    return;
+  }
+
+  // Allow: admin, itemAdmin, or user who has this item assigned
+  const isManager = await isItemManager(req);
+  if (!isManager) {
+    const item = await prisma.item.findUnique({ where: { id: itemId } });
+    if (!item || item.assignedToId !== userId) {
+      res.status(403).json({ error: "Only assigned user or item admin can comment" });
+      return;
+    }
+  }
+
+  const comment = await prisma.itemComment.create({
+    data: { itemId, userId, text: text.trim() },
+    include: { user: { select: { id: true, forename: true, surname: true, ename: true } } },
+  });
+  res.status(201).json(comment);
+});
+
+// DELETE /api/items/:id/comments/:commentId
+router.delete("/:id/comments/:commentId", async (req: Request, res: Response) => {
+  if (!(await isItemManager(req))) {
+    res.status(403).json({ error: "Item admin access required" });
+    return;
+  }
+  await prisma.itemComment.delete({ where: { id: Number(req.params.commentId) } });
   res.status(204).end();
 });
 

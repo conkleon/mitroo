@@ -17,6 +17,7 @@ const createSchema = z.object({
   defaultHoursVol: z.number().int().min(0).optional(),
   defaultHoursTraining: z.number().int().min(0).optional(),
   defaultHoursTrainers: z.number().int().min(0).optional(),
+  defaultHoursTEP: z.number().int().min(0).optional(),
   startAt: z.string().datetime().optional(),
   endAt: z.string().datetime().optional(),
 });
@@ -32,7 +33,7 @@ const statusSchema = z.object({
 
 // ── GET /api/services ───────────────────────────
 router.get("/", async (req: Request, res: Response) => {
-  const { departmentId, includeEnrollments, fromDate, toDate, specializationId, pastOnly } = req.query;
+  const { departmentId, includeEnrollments, fromDate, toDate, specializationId, pastOnly, includeExpired } = req.query;
   const where: any = {};
   if (departmentId) where.departmentId = Number(departmentId);
 
@@ -46,6 +47,14 @@ router.get("/", async (req: Request, res: Response) => {
   // Only past services (endAt < now)
   if (pastOnly === "true") {
     where.endAt = { lt: new Date() };
+  } else if (includeExpired !== "true" && !fromDate && !toDate) {
+    // By default, exclude services that have already ended
+    const now = new Date();
+    where.OR = [
+      { endAt: { gte: now } },
+      { endAt: null, startAt: { gte: now } },
+      { endAt: null, startAt: null },
+    ];
   }
 
   // Filter by specialization visibility
@@ -234,6 +243,7 @@ router.post("/:id/enroll", async (req: Request, res: Response) => {
         hoursVol: service.defaultHoursVol,
         hoursTraining: service.defaultHoursTraining,
         hoursTrainers: service.defaultHoursTrainers,
+        hoursTEP: service.defaultHoursTEP,
       },
       include: { user: { select: { id: true, ename: true, forename: true, surname: true } } },
     });
@@ -279,7 +289,7 @@ router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
 
 // ── PATCH /api/services/:sid/users/:uid/hours ───
 router.patch("/:sid/users/:uid/hours", async (req: Request, res: Response) => {
-  const { hours, hoursVol, hoursTraining, hoursTrainers } = req.body;
+  const { hours, hoursVol, hoursTraining, hoursTrainers, hoursTEP } = req.body;
   const record = await prisma.userService.update({
     where: { userId_serviceId: { userId: Number(req.params.uid), serviceId: Number(req.params.sid) } },
     data: {
@@ -287,6 +297,7 @@ router.patch("/:sid/users/:uid/hours", async (req: Request, res: Response) => {
       ...(typeof hoursVol === "number" && { hoursVol }),
       ...(typeof hoursTraining === "number" && { hoursTraining }),
       ...(typeof hoursTrainers === "number" && { hoursTrainers }),
+      ...(typeof hoursTEP === "number" && { hoursTEP }),
     },
   });
   res.json(record);

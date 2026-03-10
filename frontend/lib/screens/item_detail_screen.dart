@@ -21,6 +21,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   Map<String, dynamic>? _item;
   List<dynamic> _allUsers = [];
   List<dynamic> _allContainers = [];
+  List<dynamic> _comments = [];
+  final _commentCtrl = TextEditingController();
   bool _loading = true;
 
   @override
@@ -36,6 +38,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         _api.get('/items/${widget.itemId}'),
         _api.get('/users'),
         _api.get('/items?'), // all items for container picker
+        _api.get('/items/${widget.itemId}/comments'),
       ]);
       if (results[0].statusCode == 200 && mounted) {
         _item = jsonDecode(results[0].body);
@@ -46,6 +49,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       if (results[2].statusCode == 200) {
         final all = jsonDecode(results[2].body) as List;
         _allContainers = all.where((i) => i['isContainer'] == true && i['id'] != widget.itemId).toList();
+      }
+      if (results[3].statusCode == 200) {
+        _comments = jsonDecode(results[3].body) as List;
       }
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
@@ -498,138 +504,254 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: Text(_item?['name'] ?? 'Αντικείμενο'),
-        actions: [
-          if (canManage) ...[
-            IconButton(icon: const Icon(Icons.edit), onPressed: _item != null ? _editItem : null, tooltip: 'Επεξεργασία'),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: _item != null ? _deleteItem : null,
-              tooltip: 'Διαγραφή',
-              color: Colors.red,
-            ),
-          ],
-        ],
-      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _item == null
-              ? const Center(child: Text('Αντικείμενο δεν βρέθηκε'))
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
+                      const SizedBox(height: 12),
+                      const Text('Αντικείμενο δεν βρέθηκε'),
+                    ],
+                  ),
+                )
               : RefreshIndicator(
                   onRefresh: _load,
-                  child: ListView(
-                    padding: const EdgeInsets.all(20),
-                    children: [
-                      _buildInfoCard(tt, cs),
-                      const SizedBox(height: 16),
-                      _buildAssignedUserCard(tt, cs, canManage),
-                      const SizedBox(height: 16),
-                      if (_item!['isContainer'] == true) ...[
-                        _buildContentsCard(tt, cs),
-                        const SizedBox(height: 16),
-                      ],
-                      _buildContainerCard(tt, cs, canManage),
-                      const SizedBox(height: 80),
+                  child: CustomScrollView(
+                    slivers: [
+                      _buildSliverAppBar(tt, cs, canManage),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            const SizedBox(height: 16),
+                            _buildQuickInfoRow(tt, cs),
+                            const SizedBox(height: 16),
+                            _buildDetailsCard(tt, cs),
+                            const SizedBox(height: 12),
+                            _buildAssignedUserCard(tt, cs, canManage),
+                            const SizedBox(height: 12),
+                            if (_item!['isContainer'] == true) ...[
+                              _buildContentsCard(tt, cs),
+                              const SizedBox(height: 12),
+                            ],
+                            _buildContainerCard(tt, cs, canManage),
+                            const SizedBox(height: 12),
+                            _buildCommentsCard(tt, cs, canManage),
+                          ]),
+                        ),
+                      ),
                     ],
                   ),
                 ),
     );
   }
 
-  // ── Info card ──
+  // ── Sliver App Bar with hero header ──
 
-  Widget _buildInfoCard(TextTheme tt, ColorScheme cs) {
+  Widget _buildSliverAppBar(TextTheme tt, ColorScheme cs, bool canManage) {
     final isContainer = _item!['isContainer'] == true;
-    final expDate = _item!['expirationDate'];
-    final isExpired = expDate != null && DateTime.tryParse(expDate)?.isBefore(DateTime.now()) == true;
+    final isAvailable = _item!['availableForAssignment'] == true;
+    final assigned = _item!['assignedTo'];
+    final accentColor = isContainer ? const Color(0xFF7C3AED) : const Color(0xFF2563EB);
 
-    return Card(
-      elevation: 2,
-      shadowColor: Colors.black.withAlpha(20),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: (isContainer ? const Color(0xFF7C3AED) : const Color(0xFF2563EB)).withAlpha(20),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    isContainer ? Icons.inventory : Icons.build_outlined,
-                    color: isContainer ? const Color(0xFF7C3AED) : const Color(0xFF2563EB),
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return SliverAppBar(
+      expandedHeight: 200,
+      pinned: true,
+      backgroundColor: accentColor,
+      foregroundColor: Colors.white,
+      actions: [
+        if (canManage) ...[
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: _item != null ? _editItem : null,
+            tooltip: 'Επεξεργασία',
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: _item != null ? _deleteItem : null,
+            tooltip: 'Διαγραφή',
+          ),
+        ],
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [accentColor, accentColor.withAlpha(180)],
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 56, 20, 16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(_item!['name'] ?? '', style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-                      if (isContainer)
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF7C3AED).withAlpha(20),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text('Κουτί', style: TextStyle(fontSize: 11, color: Color(0xFF7C3AED), fontWeight: FontWeight.w600)),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(30),
+                          borderRadius: BorderRadius.circular(16),
                         ),
+                        child: Icon(
+                          isContainer ? Icons.inventory_2 : Icons.build_outlined,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _item!['name'] ?? '',
+                              style: tt.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                if (isContainer)
+                                  _heroBadge('Κουτί', Icons.inventory_2, Colors.white.withAlpha(30)),
+                                if (isAvailable)
+                                  _heroBadge('Διαθέσιμο', Icons.check_circle_outline, const Color(0xFF34D399).withAlpha(60)),
+                                if (assigned != null)
+                                  _heroBadge(
+                                    '${assigned['forename'] ?? ''} ${assigned['surname'] ?? ''}'.trim(),
+                                    Icons.person,
+                                    Colors.white.withAlpha(30),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 12),
-            _infoRow(Icons.qr_code, 'ID (QR)', '#${_item!['id']}'),
-            if (_item!['barCode'] != null) _infoRow(Icons.barcode_reader, 'Barcode', _item!['barCode']),
-            if (_item!['location'] != null) _infoRow(Icons.location_on_outlined, 'Τοποθεσία', _item!['location']),
-            if (_item!['description'] != null && (_item!['description'] as String).isNotEmpty)
-              _infoRow(Icons.description_outlined, 'Περιγραφή', _item!['description']),
-            _infoRow(Icons.calendar_today, 'Δημιουργία', _formatDate(_item!['createdAt'])),
-            if (expDate != null)
-              _infoRow(
-                isExpired ? Icons.warning_amber : Icons.event,
-                'Λήξη',
-                _formatDate(expDate),
-                valueColor: isExpired ? Colors.red : null,
+                ],
               ),
-            if (_item!['availableForAssignment'] == true)
-              _infoRow(Icons.assignment_turned_in, 'Διαθέσιμο', 'Ναι', valueColor: const Color(0xFF059669)),
-          ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+  Widget _heroBadge(String text, IconData icon, Color bg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF6B7280)),
-          const SizedBox(width: 10),
-          SizedBox(width: 110, child: Text(label, style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13))),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13, color: valueColor),
-            ),
+          Icon(icon, size: 12, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
+      ),
+    );
+  }
+
+  // ── Quick info chips row (below app bar) ──
+
+  Widget _buildQuickInfoRow(TextTheme tt, ColorScheme cs) {
+    final expDate = _item!['expirationDate'];
+    final isExpired = expDate != null && DateTime.tryParse(expDate)?.isBefore(DateTime.now()) == true;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _infoChip(Icons.tag, 'ID: #${_item!['id']}', const Color(0xFF6366F1)),
+          if (_item!['barCode'] != null)
+            _infoChip(Icons.qr_code, _item!['barCode'], const Color(0xFF2563EB)),
+          if (_item!['location'] != null)
+            _infoChip(Icons.location_on_outlined, _item!['location'], const Color(0xFF0891B2)),
+          if (expDate != null)
+            _infoChip(
+              isExpired ? Icons.warning_amber_rounded : Icons.event,
+              _formatDate(expDate),
+              isExpired ? Colors.red : const Color(0xFFF59E0B),
+            ),
+          _infoChip(Icons.calendar_today, _formatDate(_item!['createdAt']), const Color(0xFF6B7280)),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoChip(IconData icon, String label, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withAlpha(15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withAlpha(40)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+        ],
+      ),
+    );
+  }
+
+  // ── Details card ──
+
+  Widget _buildDetailsCard(TextTheme tt, ColorScheme cs) {
+    final desc = _item!['description'];
+    final hasDesc = desc != null && (desc as String).isNotEmpty;
+
+    if (!hasDesc) return const SizedBox.shrink();
+
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.description_outlined, size: 18, color: cs.primary),
+                const SizedBox(width: 8),
+                Text('Περιγραφή', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(desc, style: tt.bodyMedium?.copyWith(color: const Color(0xFF374151), height: 1.5)),
+          ],
+        ),
       ),
     );
   }
@@ -645,48 +767,62 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         assigned == null;
 
     return Card(
-      elevation: 2,
-      shadowColor: Colors.black.withAlpha(20),
+      elevation: 0,
+      color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.person_pin, size: 20, color: cs.primary),
-                const SizedBox(width: 8),
-                Text('Ανατεθειμένος Χρήστης', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: (assigned != null ? const Color(0xFF059669) : const Color(0xFF6B7280)).withAlpha(15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    assigned != null ? Icons.person : Icons.person_off_outlined,
+                    size: 18,
+                    color: assigned != null ? const Color(0xFF059669) : const Color(0xFF6B7280),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('Ανατεθειμένος Χρήστης', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                ),
                 if (canManage)
-                  TextButton.icon(
-                    icon: Icon(assigned != null ? Icons.swap_horiz : Icons.person_add_alt_1, size: 18),
-                    label: Text(assigned != null ? 'Αλλαγή' : 'Ανάθεση'),
-                    onPressed: _showAssignUserDialog,
+                  _actionChip(
+                    label: assigned != null ? 'Αλλαγή' : 'Ανάθεση',
+                    icon: assigned != null ? Icons.swap_horiz : Icons.person_add_alt_1,
+                    onTap: _showAssignUserDialog,
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             if (assigned != null)
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF059669).withAlpha(15),
+                  gradient: LinearGradient(
+                    colors: [const Color(0xFF059669).withAlpha(10), const Color(0xFF059669).withAlpha(5)],
+                  ),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF059669).withAlpha(40)),
+                  border: Border.all(color: const Color(0xFF059669).withAlpha(30)),
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
-                      radius: 20,
+                      radius: 22,
                       backgroundColor: const Color(0xFF059669),
                       child: Text(
                         (assigned['forename'] ?? 'U')[0].toUpperCase(),
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -720,23 +856,24 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               )
             else
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200, style: BorderStyle.solid),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.person_off_outlined, color: Colors.grey.shade400, size: 20),
-                    const SizedBox(width: 8),
-                    Text('Κανένας χρήστης', style: TextStyle(color: Colors.grey.shade500)),
-                  ],
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.person_off_outlined, color: Colors.grey.shade400, size: 28),
+                      const SizedBox(height: 6),
+                      Text('Κανένας χρήστης', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                    ],
+                  ),
                 ),
               ),
-            // Take / Return buttons for regular users
             if (canTake) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
@@ -756,83 +893,354 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
   }
 
+  Widget _actionChip({required String label, required IconData icon, required VoidCallback onTap}) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2563EB).withAlpha(10),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFF2563EB).withAlpha(30)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: const Color(0xFF2563EB)),
+              const SizedBox(width: 4),
+              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── Container contents card (only if isContainer) ──
 
   Widget _buildContentsCard(TextTheme tt, ColorScheme cs) {
     final contents = (_item!['contents'] as List<dynamic>?) ?? [];
 
     return Card(
-      elevation: 2,
-      shadowColor: Colors.black.withAlpha(20),
+      elevation: 0,
+      color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.inbox, size: 20, color: Color(0xFF7C3AED)),
-                const SizedBox(width: 8),
-                Text('Περιεχόμενα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7C3AED).withAlpha(15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.inbox, size: 18, color: Color(0xFF7C3AED)),
+                ),
+                const SizedBox(width: 10),
+                Text('Περιεχόμενα', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED).withAlpha(20),
+                    color: const Color(0xFF7C3AED).withAlpha(15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text('${contents.length} αντικ.', style: const TextStyle(fontSize: 12, color: Color(0xFF7C3AED), fontWeight: FontWeight.w500)),
+                  child: Text(
+                    '${contents.length}',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF7C3AED), fontWeight: FontWeight.w700),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             if (contents.isEmpty)
               Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.inbox_outlined, color: Colors.grey.shade400, size: 20),
-                    const SizedBox(width: 8),
-                    Text('Άδειο κουτί', style: TextStyle(color: Colors.grey.shade500)),
-                  ],
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.inbox_outlined, color: Colors.grey.shade400, size: 28),
+                      const SizedBox(height: 6),
+                      Text('Άδειο κουτί', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                    ],
+                  ),
                 ),
               )
             else
-              ...contents.map((child) {
+              ...contents.asMap().entries.map((entry) {
+                final child = entry.value;
                 final childIsContainer = child['isContainer'] == true;
                 final childAssigned = child['assignedTo'];
+                final childColor = childIsContainer ? const Color(0xFF7C3AED) : const Color(0xFF2563EB);
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: Icon(
-                      childIsContainer ? Icons.inventory : Icons.build_outlined,
-                      color: childIsContainer ? const Color(0xFF7C3AED) : const Color(0xFF2563EB),
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => context.push('/items/${child['id']}'),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: childColor.withAlpha(6),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: childColor.withAlpha(25)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: childColor.withAlpha(15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                childIsContainer ? Icons.inventory : Icons.build_outlined,
+                                color: childColor,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(child['name'] ?? '', style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                                  if (child['barCode'] != null || childAssigned != null)
+                                    const SizedBox(height: 2),
+                                  if (child['barCode'] != null)
+                                    Text('${child['barCode']}', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                                  if (childAssigned != null)
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.person, size: 12, color: Color(0xFF059669)),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          '${childAssigned['forename']} ${childAssigned['surname']}',
+                                          style: tt.bodySmall?.copyWith(color: const Color(0xFF059669), fontSize: 11),
+                                        ),
+                                      ],
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right, size: 18, color: Colors.grey.shade400),
+                          ],
+                        ),
+                      ),
                     ),
-                    title: Text(child['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w500)),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (child['barCode'] != null) Text('Barcode: ${child['barCode']}', style: tt.bodySmall),
-                        if (childAssigned != null)
-                          Text(
-                            'Ανατεθ.: ${childAssigned['forename']} ${childAssigned['surname']}',
-                            style: tt.bodySmall?.copyWith(color: const Color(0xFF059669)),
-                          ),
-                      ],
-                    ),
-                    trailing: const Icon(Icons.chevron_right, size: 20),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    tileColor: Colors.grey.shade50,
-                    onTap: () => context.push('/items/${child['id']}'),
                   ),
                 );
               }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Comments card ──
+
+  bool get _canComment {
+    final auth = context.read<AuthProvider>();
+    if (auth.isAdmin || auth.isItemAdmin) return true;
+    final assignedToId = _item?['assignedToId'];
+    return assignedToId != null && assignedToId == auth.user?['id'];
+  }
+
+  Future<void> _addComment() async {
+    final text = _commentCtrl.text.trim();
+    if (text.isEmpty) return;
+    try {
+      final res = await _api.post('/items/${widget.itemId}/comments', body: {'text': text});
+      if (res.statusCode == 201 && mounted) {
+        _commentCtrl.clear();
+        final commentsRes = await _api.get('/items/${widget.itemId}/comments');
+        if (commentsRes.statusCode == 200 && mounted) {
+          setState(() => _comments = jsonDecode(commentsRes.body) as List);
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _deleteComment(int commentId) async {
+    try {
+      final res = await _api.delete('/items/${widget.itemId}/comments/$commentId');
+      if (res.statusCode == 200 && mounted) {
+        setState(() => _comments.removeWhere((c) => c['id'] == commentId));
+      }
+    } catch (_) {}
+  }
+
+  Widget _buildCommentsCard(TextTheme tt, ColorScheme cs, bool canManage) {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withAlpha(15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.chat_bubble_outline, size: 18, color: Color(0xFFF59E0B)),
+                ),
+                const SizedBox(width: 10),
+                Text('Σχόλια', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                const Spacer(),
+                if (_comments.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withAlpha(15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${_comments.length}',
+                      style: const TextStyle(fontSize: 12, color: Color(0xFFF59E0B), fontWeight: FontWeight.w700),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (_comments.isEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.chat_bubble_outline, color: Colors.grey.shade400, size: 28),
+                      const SizedBox(height: 6),
+                      Text('Δεν υπάρχουν σχόλια', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ..._comments.map((comment) {
+                final user = comment['user'];
+                final userName = user != null ? '${user['forename']} ${user['surname']}' : 'Άγνωστος';
+                final dateStr = _formatDate(comment['createdAt']);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor: cs.primary.withAlpha(180),
+                              child: Text(
+                                userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(userName, style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+                                  Text(dateStr, style: tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF), fontSize: 10)),
+                                ],
+                              ),
+                            ),
+                            if (canManage)
+                              InkWell(
+                                onTap: () => _deleteComment(comment['id']),
+                                borderRadius: BorderRadius.circular(6),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(Icons.close, size: 16, color: Colors.grey.shade400),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(comment['text'] ?? '', style: tt.bodyMedium?.copyWith(height: 1.4)),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            if (_canComment) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: _commentCtrl,
+                        decoration: const InputDecoration(
+                          hintText: 'Γράψε σχόλιο...',
+                          hintStyle: TextStyle(fontSize: 13),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        style: const TextStyle(fontSize: 13),
+                        maxLines: null,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _addComment(),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Material(
+                      color: cs.primary,
+                      borderRadius: BorderRadius.circular(10),
+                      child: InkWell(
+                        onTap: _addComment,
+                        borderRadius: BorderRadius.circular(10),
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(Icons.send, size: 18, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -845,52 +1253,88 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final parent = _item!['containedBy'];
 
     return Card(
-      elevation: 2,
-      shadowColor: Colors.black.withAlpha(20),
+      elevation: 0,
+      color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.move_to_inbox, size: 20, color: cs.primary),
-                const SizedBox(width: 8),
-                Text('Κουτί', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7C3AED).withAlpha(15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.move_to_inbox, size: 18, color: Color(0xFF7C3AED)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('Κουτί', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                ),
                 if (canManage)
-                  TextButton.icon(
-                    icon: const Icon(Icons.drive_file_move_outline, size: 18),
-                    label: const Text('Μετακίνηση'),
-                    onPressed: _showMoveToContainerDialog,
+                  _actionChip(
+                    label: 'Μετακίνηση',
+                    icon: Icons.drive_file_move_outline,
+                    onTap: _showMoveToContainerDialog,
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             if (parent != null)
-              ListTile(
-                leading: const Icon(Icons.inventory, color: Color(0xFF7C3AED)),
-                title: Text(parent['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w500)),
-                trailing: const Icon(Icons.chevron_right, size: 20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                tileColor: const Color(0xFF7C3AED).withAlpha(10),
-                onTap: () => context.push('/items/${parent['id']}'),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => context.push('/items/${parent['id']}'),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7C3AED).withAlpha(8),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF7C3AED).withAlpha(25)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7C3AED).withAlpha(15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.inventory, color: Color(0xFF7C3AED), size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(parent['name'] ?? '', style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                        ),
+                        Icon(Icons.chevron_right, size: 18, color: Colors.grey.shade400),
+                      ],
+                    ),
+                  ),
+                ),
               )
             else
               Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.all_inbox_outlined, color: Colors.grey.shade400, size: 20),
-                    const SizedBox(width: 8),
-                    Text('Δεν βρίσκεται σε κουτί', style: TextStyle(color: Colors.grey.shade500)),
-                  ],
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.all_inbox_outlined, color: Colors.grey.shade400, size: 28),
+                      const SizedBox(height: 6),
+                      Text('Δεν βρίσκεται σε κουτί', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                    ],
+                  ),
                 ),
               ),
           ],

@@ -182,6 +182,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         TextEditingController(text: '${userService['hoursTraining'] ?? 0}');
     final hoursTrainersCtrl =
         TextEditingController(text: '${userService['hoursTrainers'] ?? 0}');
+    final hoursTEPCtrl =
+        TextEditingController(text: '${userService['hoursTEP'] ?? 0}');
 
     final result = await showDialog<bool>(
       context: context,
@@ -200,6 +202,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               const SizedBox(height: 12),
               _HoursField(
                   controller: hoursTrainersCtrl, label: 'Ώρες Εκπαιδευτών'),
+              const SizedBox(height: 12),
+              _HoursField(
+                  controller: hoursTEPCtrl, label: 'Ώρες ΤΕΠ'),
             ],
           ),
         ),
@@ -225,6 +230,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
           'hoursVol': int.tryParse(hoursVolCtrl.text) ?? 0,
           'hoursTraining': int.tryParse(hoursTrainingCtrl.text) ?? 0,
           'hoursTrainers': int.tryParse(hoursTrainersCtrl.text) ?? 0,
+          'hoursTEP': int.tryParse(hoursTEPCtrl.text) ?? 0,
         },
       );
       if (mounted) {
@@ -243,6 +249,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     hoursVolCtrl.dispose();
     hoursTrainingCtrl.dispose();
     hoursTrainersCtrl.dispose();
+    hoursTEPCtrl.dispose();
   }
 
   // ── Self enroll / unenroll ──
@@ -1029,6 +1036,10 @@ class _HoursDefaultCard extends StatelessWidget {
                 _HoursBadge(
                     label: 'Εκπαιδ.',
                     value: svc['defaultHoursTrainers'] ?? 0, color: const Color(0xFFD97706)),
+                const SizedBox(width: 8),
+                _HoursBadge(
+                    label: 'ΤΕΠ',
+                    value: svc['defaultHoursTEP'] ?? 0, color: const Color(0xFF0891B2)),
               ],
             ),
           ],
@@ -1426,7 +1437,8 @@ class _AcceptedUserTile extends StatelessWidget {
     final hoursVol = userService['hoursVol'] ?? 0;
     final hoursTraining = userService['hoursTraining'] ?? 0;
     final hoursTrainers = userService['hoursTrainers'] ?? 0;
-    final totalHours = (hours as int) + (hoursVol as int) + (hoursTraining as int) + (hoursTrainers as int);
+    final hoursTEP = userService['hoursTEP'] ?? 0;
+    final totalHours = (hours as int) + (hoursVol as int) + (hoursTraining as int) + (hoursTrainers as int) + (hoursTEP as int);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -1504,6 +1516,8 @@ class _AcceptedUserTile extends StatelessWidget {
                     _MiniHoursBadge(label: 'Επαν.', value: hoursTraining, color: const Color(0xFF7C3AED)),
                   if (hoursTrainers > 0)
                     _MiniHoursBadge(label: 'Εκπ.', value: hoursTrainers, color: const Color(0xFFD97706)),
+                  if (hoursTEP > 0)
+                    _MiniHoursBadge(label: 'ΤΕΠ', value: hoursTEP, color: const Color(0xFF0891B2)),
                 ],
               ),
             ],

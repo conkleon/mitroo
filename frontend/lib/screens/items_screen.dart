@@ -527,10 +527,51 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: Row(
                     children: [
-                      Image.asset('assets/logo.png', height: 32),
-                      const SizedBox(width: 10),
-                      Text('Mitroo', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.primary)),
+                      // My assigned items button
+                      Material(
+                        color: cs.primary.withAlpha(15),
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          onTap: _showMyEquipmentSheet,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.inventory_2_outlined, size: 18, color: cs.primary),
+                                const SizedBox(width: 8),
+                                Text('Τα αντικείμενά μου',
+                                    style: tt.labelLarge?.copyWith(
+                                        fontWeight: FontWeight.w700, color: cs.primary)),
+                                if (_myEquipment.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF059669).withAlpha(20),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      '${_myEquipment.length}',
+                                      style: const TextStyle(
+                                          fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF059669)),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                       const Spacer(),
+                      if (canManage)
+                        IconButton(
+                          onPressed: () => context.push('/items/csv'),
+                          icon: Icon(Icons.settings, size: 22, color: cs.primary),
+                          tooltip: 'Εισαγωγή / Εξαγωγή CSV',
+                          visualDensity: VisualDensity.compact,
+                        ),
                       GestureDetector(
                         onTap: () => context.push('/profile'),
                         child: CircleAvatar(
@@ -577,11 +618,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       const SizedBox(width: 8),
                       Text('Αντικείμενα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                       const Spacer(),
-                      _AssignedBadgeButton(
-                        count: _myEquipment.length,
-                        onTap: _showMyEquipmentSheet,
-                      ),
-                      const SizedBox(width: 10),
                       Text('${prov.items.length} σύνολο', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
                     ],
                   ),
@@ -612,6 +648,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         item: prov.items[i],
                         canManage: canManage,
                         onTake: canManage ? null : () => _selfAssignItem(prov.items[i]),
+                        onToggleAvailability: canManage ? () async {
+                          await context.read<ItemProvider>().toggleAvailability(prov.items[i]['id']);
+                        } : null,
                       ),
                       childCount: prov.items.length,
                     ),
@@ -651,7 +690,8 @@ class _ItemCard extends StatelessWidget {
   final dynamic item;
   final bool canManage;
   final VoidCallback? onTake;
-  const _ItemCard({required this.item, this.canManage = true, this.onTake});
+  final VoidCallback? onToggleAvailability;
+  const _ItemCard({required this.item, this.canManage = true, this.onTake, this.onToggleAvailability});
 
   @override
   Widget build(BuildContext context) {
@@ -660,6 +700,7 @@ class _ItemCard extends StatelessWidget {
     final childCount = item['_count']?['contents'] ?? 0;
     final isContainer = item['isContainer'] == true;
     final assignedTo = item['assignedTo'];
+    final isAvailable = item['availableForAssignment'] == true;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -738,6 +779,21 @@ class _ItemCard extends StatelessWidget {
                       style: const TextStyle(fontSize: 11, color: Color(0xFF7C3AED), fontWeight: FontWeight.w500),
                     ),
                   ),
+                // Availability toggle for admin/itemAdmin
+                if (canManage && onToggleAvailability != null) ...[                  const SizedBox(width: 4),
+                  IconButton(
+                    onPressed: onToggleAvailability,
+                    icon: Icon(
+                      isAvailable ? Icons.visibility : Icons.visibility_off_outlined,
+                      size: 20,
+                      color: isAvailable ? const Color(0xFF059669) : const Color(0xFF9CA3AF),
+                    ),
+                    tooltip: isAvailable ? 'Απόκρυψη' : 'Διαθέσιμο',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  ),
+                ],
                 // "Take" button for regular (non-admin) users
                 if (!canManage && onTake != null) ...[
                   const SizedBox(width: 8),
@@ -757,55 +813,6 @@ class _ItemCard extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A compact "See Assigned" button with a badge count.
-class _AssignedBadgeButton extends StatelessWidget {
-  final int count;
-  final VoidCallback onTap;
-  const _AssignedBadgeButton({required this.count, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: cs.primary.withAlpha(20),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: cs.primary.withAlpha(60)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.inventory_2_outlined, size: 14, color: cs.primary),
-            const SizedBox(width: 4),
-            Text(
-              'Ανατεθ.',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.primary),
-            ),
-            if (count > 0) ...[
-              const SizedBox(width: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade600,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$count',
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ],
         ),
       ),
     );

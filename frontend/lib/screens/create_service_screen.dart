@@ -39,6 +39,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
   final _hoursVolCtrl = TextEditingController(text: '0');
   final _hoursTrainingCtrl = TextEditingController(text: '0');
   final _hoursTrainersCtrl = TextEditingController(text: '0');
+  final _hoursTEPCtrl = TextEditingController(text: '0');
 
   DateTime? _startAt;
   DateTime? _endAt;
@@ -102,6 +103,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
           _hoursVolCtrl.text = '${svc['defaultHoursVol'] ?? 0}';
           _hoursTrainingCtrl.text = '${svc['defaultHoursTraining'] ?? 0}';
           _hoursTrainersCtrl.text = '${svc['defaultHoursTrainers'] ?? 0}';
+          _hoursTEPCtrl.text = '${svc['defaultHoursTEP'] ?? 0}';
           if (svc['startAt'] != null) _startAt = DateTime.tryParse(svc['startAt']);
           if (svc['endAt'] != null) _endAt = DateTime.tryParse(svc['endAt']);
           _selectedDeptId = svc['departmentId'] as int?;
@@ -131,6 +133,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
     _hoursVolCtrl.dispose();
     _hoursTrainingCtrl.dispose();
     _hoursTrainersCtrl.dispose();
+    _hoursTEPCtrl.dispose();
     super.dispose();
   }
 
@@ -184,6 +187,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
     data['defaultHoursVol'] = int.tryParse(_hoursVolCtrl.text) ?? 0;
     data['defaultHoursTraining'] = int.tryParse(_hoursTrainingCtrl.text) ?? 0;
     data['defaultHoursTrainers'] = int.tryParse(_hoursTrainersCtrl.text) ?? 0;
+    data['defaultHoursTEP'] = int.tryParse(_hoursTEPCtrl.text) ?? 0;
     if (_startAt != null) data['startAt'] = _startAt!.toUtc().toIso8601String();
     if (_endAt != null) data['endAt'] = _endAt!.toUtc().toIso8601String();
 
@@ -485,6 +489,18 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: 'Εκπαιδευτές',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _hoursTEPCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'ΤΕΠ',
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),

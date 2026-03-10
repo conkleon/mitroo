@@ -165,4 +165,68 @@ class ItemProvider extends ChangeNotifier {
       return jsonDecode(res.body)['error'] ?? 'Failed';
     } catch (e) { return 'Error: $e'; }
   }
+
+  // ── Toggle availableForAssignment ──
+
+  Future<String?> toggleAvailability(int itemId) async {
+    try {
+      final res = await _api.patch('/items/$itemId/toggle-availability', body: {});
+      if (res.statusCode == 200) {
+        _selected = jsonDecode(res.body);
+        notifyListeners();
+        await fetchItems();
+        return null;
+      }
+      return jsonDecode(res.body)['error'] ?? 'Failed';
+    } catch (e) { return 'Error: $e'; }
+  }
+
+  // ── Item comments ──
+
+  Future<List<dynamic>> fetchComments(int itemId) async {
+    try {
+      final res = await _api.get('/items/$itemId/comments');
+      if (res.statusCode == 200) return jsonDecode(res.body);
+    } catch (_) {}
+    return [];
+  }
+
+  Future<String?> addComment(int itemId, String text) async {
+    try {
+      final res = await _api.post('/items/$itemId/comments', body: {'text': text});
+      if (res.statusCode == 201) return null;
+      return jsonDecode(res.body)['error'] ?? 'Failed';
+    } catch (e) { return 'Error: $e'; }
+  }
+
+  Future<String?> deleteComment(int itemId, int commentId) async {
+    try {
+      final res = await _api.delete('/items/$itemId/comments/$commentId');
+      if (res.statusCode == 204) return null;
+      return 'Failed';
+    } catch (e) { return 'Error: $e'; }
+  }
+
+  // ── CSV export ──
+
+  Future<String?> exportCsv() async {
+    try {
+      final res = await _api.get('/items/export/csv');
+      if (res.statusCode == 200) return res.body;
+      return null;
+    } catch (_) { return null; }
+  }
+
+  // ── CSV import ──
+
+  Future<Map<String, dynamic>?> importCsv(List<Map<String, dynamic>> rows) async {
+    try {
+      final res = await _api.post('/items/import/csv', body: {'rows': rows});
+      if (res.statusCode == 200) {
+        await fetchItems();
+        return jsonDecode(res.body);
+      }
+      return {'error': jsonDecode(res.body)['error'] ?? 'Failed'};
+    } catch (e) { return {'error': 'Error: $e'}; }
+  }
 }

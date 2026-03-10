@@ -175,6 +175,7 @@ async function main() {
         location: "ΑΙΘΟΥΣΑ Β",
         defaultHours: 3,
         defaultHoursTrainers: 3,
+        defaultHoursTEP: 0,
         startAt: new Date(`2026-03-${String(day).padStart(2, '0')}T18:00:00`),
         endAt: new Date(`2026-03-${String(day).padStart(2, '0')}T21:00:00`),
       },

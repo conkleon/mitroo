@@ -16,6 +16,7 @@ import '../screens/manage_specializations_screen.dart';
 import '../screens/specialization_detail_screen.dart';
 import '../screens/services_screen.dart';
 import '../screens/items_screen.dart';
+import '../screens/items_csv_screen.dart';
 import '../screens/item_detail_screen.dart';
 import '../screens/vehicles_screen.dart';
 import '../screens/chat_screen.dart';
@@ -61,6 +62,10 @@ GoRouter appRouter(AuthProvider auth) {
           GoRoute(
             path: '/items',
             builder: (context, state) => const ItemsScreen(),
+          ),
+          GoRoute(
+            path: '/items/csv',
+            builder: (context, state) => const ItemsCsvScreen(),
           ),
           GoRoute(
             path: '/items/:id',

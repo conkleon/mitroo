@@ -64,6 +64,8 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     list = list.where((s) {
       final end = DateTime.tryParse(s['endAt'] ?? '');
       if (end != null && end.isBefore(now)) return false;
+      final start = DateTime.tryParse(s['startAt'] ?? '');
+      if (end == null && start != null && start.isBefore(now)) return false;
       return true;
     }).toList();
 
