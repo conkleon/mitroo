@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
+import '../services/api_client.dart';
+import 'my_equipment_sheet.dart';
 
 // ── Greek day-of-week names ──────────────────────────────────
 const _greekDays = <int, String>{
@@ -55,6 +58,9 @@ class ServicesScreen extends StatefulWidget {
 class _ServicesScreenState extends State<ServicesScreen> {
   int? _selectedSpecId; // null = show all, otherwise filter by specialization id
   final Set<int> _expandedIds = {};
+  final _api = ApiClient();
+  List<Map<String, dynamic>> _myEquipment = [];
+  bool _equipmentLoading = false;
 
   @override
   void initState() {
@@ -62,6 +68,41 @@ class _ServicesScreenState extends State<ServicesScreen> {
     Future.microtask(() {
       context.read<ServiceProvider>().fetchMyServices();
     });
+    _loadMyEquipment();
+  }
+
+  Future<void> _loadMyEquipment() async {
+    setState(() => _equipmentLoading = true);
+    try {
+      final res = await _api.get('/auth/me/profile');
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        setState(() {
+          _myEquipment = (data['equipment'] as List<dynamic>?)
+                  ?.map((e) => Map<String, dynamic>.from(e as Map))
+                  .toList() ??
+              [];
+        });
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _equipmentLoading = false);
+  }
+
+  void _showMyEquipmentSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => MyEquipmentSheet(
+        equipment: _myEquipment,
+        api: _api,
+        onChanged: () {
+          _loadMyEquipment();
+        },
+      ),
+    );
   }
 
   // ── Filter: by specialization visibility ────────
@@ -188,7 +229,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
     final cs = Theme.of(context).colorScheme;
     final name = auth.displayName.isNotEmpty
         ? auth.displayName
-        : (auth.user?['ename'] ?? 'User');
+        : (auth.user?['ename'] ?? 'Χρήστης');
 
     final userSpecs = auth.specializations; // [{id, name, description}, ...]
 
@@ -229,6 +270,38 @@ class _ServicesScreenState extends State<ServicesScreen> {
                           style: tt.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700, color: cs.primary)),
                       const Spacer(),
+                      // My Equipment button with badge
+                      Stack(
+                        children: [
+                          IconButton(
+                            onPressed: _showMyEquipmentSheet,
+                            icon: const Icon(Icons.inventory_2_outlined),
+                            tooltip: 'Ο Εξοπλισμός Μου',
+                            style: IconButton.styleFrom(
+                              backgroundColor: cs.primary.withAlpha(20),
+                            ),
+                          ),
+                          if (_myEquipment.isNotEmpty)
+                            Positioned(
+                              right: 2,
+                              top: 2,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade600,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                                child: Text(
+                                  '${_myEquipment.length}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 6),
                       GestureDetector(
                         onTap: () => context.push('/profile'),
                         child: CircleAvatar(

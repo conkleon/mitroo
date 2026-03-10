@@ -71,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 12),
                   Text('Mitroo', style: tt.headlineMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.primary)),
                   const SizedBox(height: 4),
-                  Text('Organization Management', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                  Text('Διαχείριση Οργανισμού', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
                   const SizedBox(height: 36),
                   if (_error != null)
                     Container(
@@ -88,20 +88,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (_isRegister) ...[
                     TextFormField(
                       controller: _forenameCtrl,
-                      decoration: const InputDecoration(labelText: 'First Name', prefixIcon: Icon(Icons.person_outline)),
-                      validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+                      decoration: const InputDecoration(labelText: 'Όνομα', prefixIcon: Icon(Icons.person_outline)),
+                      validator: (v) => (v == null || v.isEmpty) ? 'Υποχρεωτικό' : null,
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: _surnameCtrl,
-                      decoration: const InputDecoration(labelText: 'Last Name', prefixIcon: Icon(Icons.person_outline)),
-                      validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+                      decoration: const InputDecoration(labelText: 'Επώνυμο', prefixIcon: Icon(Icons.person_outline)),
+                      validator: (v) => (v == null || v.isEmpty) ? 'Υποχρεωτικό' : null,
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: _enameCtrl,
-                      decoration: const InputDecoration(labelText: 'Identity Code', prefixIcon: Icon(Icons.badge_outlined)),
-                      validator: (v) => (v == null || v.length < 2) ? 'Min 2 characters' : null,
+                      decoration: const InputDecoration(labelText: 'Κωδικός Μέλους', prefixIcon: Icon(Icons.badge_outlined)),
+                      validator: (v) => (v == null || v.length < 2) ? 'Τουλάχιστον 2 χαρακτήρες' : null,
                     ),
                     const SizedBox(height: 14),
                   ],
@@ -109,14 +109,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _emailCtrl,
                     decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
                     keyboardType: TextInputType.emailAddress,
-                    validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+                    validator: (v) => (v == null || !v.contains('@')) ? 'Εισάγετε έγκυρο email' : null,
                   ),
                   const SizedBox(height: 14),
                   TextFormField(
                     controller: _passwordCtrl,
-                    decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
+                    decoration: const InputDecoration(labelText: 'Κωδικός', prefixIcon: Icon(Icons.lock_outline)),
                     obscureText: true,
-                    validator: (v) => (v == null || v.length < 4) ? 'Min 4 characters' : null,
+                    validator: (v) => (v == null || v.length < 4) ? 'Τουλάχιστον 4 χαρακτήρες' : null,
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -126,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: auth.loading ? null : _submit,
                       child: auth.loading
                           ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : Text(_isRegister ? 'Register' : 'Sign In', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                          : Text(_isRegister ? 'Εγγραφή' : 'Σύνδεση', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -135,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       _isRegister = !_isRegister;
                       _error = null;
                     }),
-                    child: Text(_isRegister ? 'Already have an account? Sign In' : 'No account? Register'),
+                    child: Text(_isRegister ? 'Έχετε ήδη λογαριασμό; Σύνδεση' : 'Δεν έχετε λογαριασμό; Εγγραφή'),
                   ),
                 ],
               ),

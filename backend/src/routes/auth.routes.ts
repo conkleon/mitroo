@@ -119,4 +119,102 @@ router.get("/me", authenticate, async (req: Request, res: Response) => {
   res.json(user);
 });
 
+// ── GET /api/auth/me/profile ────────────────────
+// Returns the current user's aggregated hours (all-time & last year by type)
+// plus their assigned equipment (items).
+router.get("/me/profile", authenticate, async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const now = new Date();
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+
+  // Fetch accepted service enrolments with service dates
+  const enrolments = await prisma.userService.findMany({
+    where: { userId, status: "accepted" },
+    select: {
+      hours: true,
+      hoursVol: true,
+      hoursTraining: true,
+      hoursTrainers: true,
+      service: { select: { startAt: true } },
+    },
+  });
+
+  let totalHours = 0;
+  let yearHours = 0;
+  let yearServiceHours = 0;
+  let yearVolHours = 0;
+  let yearTrainingHours = 0;
+  let yearTrainerHours = 0;
+
+  for (const e of enrolments) {
+    const h = e.hours ?? 0;
+    const hv = e.hoursVol ?? 0;
+    const ht = e.hoursTraining ?? 0;
+    const htr = e.hoursTrainers ?? 0;
+    const sum = h + hv + ht + htr;
+    totalHours += sum;
+
+    if (e.service?.startAt && e.service.startAt >= yearStart) {
+      yearHours += sum;
+      yearServiceHours += h;
+      yearVolHours += hv;
+      yearTrainingHours += ht;
+      yearTrainerHours += htr;
+    }
+  }
+
+  // Fetch items assigned to this user (equipment list)
+  const equipment = await prisma.item.findMany({
+    where: { assignedToId: userId },
+    select: {
+      id: true,
+      name: true,
+      barCode: true,
+      imagePath: true,
+      isContainer: true,
+      location: true,
+      expirationDate: true,
+    },
+    orderBy: { name: "asc" },
+  });
+
+  res.json({
+    totalHours,
+    yearHours,
+    yearServiceHours,
+    yearVolHours,
+    yearTrainingHours,
+    yearTrainerHours,
+    equipment,
+  });
+});
+
+// ── POST /api/auth/change-password ──────────────
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8),
+});
+
+router.post("/change-password", authenticate, async (req: Request, res: Response) => {
+  try {
+    const data = changePasswordSchema.parse(req.body);
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+    const valid = await bcrypt.compare(data.currentPassword, user.password);
+    if (!valid) { res.status(401).json({ error: "Current password is incorrect" }); return; }
+
+    const hashed = await bcrypt.hash(data.newPassword, 12);
+    await prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
+
+    res.json({ message: "Password changed successfully" });
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Validation failed", details: err.errors });
+      return;
+    }
+    throw err;
+  }
+});
+
 export default router;

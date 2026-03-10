@@ -170,28 +170,28 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('New User'),
+        title: const Text('Νέος Χρήστης'),
         content: SizedBox(
           width: 400,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: enameCtrl, decoration: const InputDecoration(labelText: 'Username (ename) *', border: OutlineInputBorder())),
+                TextField(controller: enameCtrl, decoration: const InputDecoration(labelText: 'Κωδ. Μέλους *', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
-                TextField(controller: forenameCtrl, decoration: const InputDecoration(labelText: 'First Name *', border: OutlineInputBorder())),
+                TextField(controller: forenameCtrl, decoration: const InputDecoration(labelText: 'Όνομα *', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
-                TextField(controller: surnameCtrl, decoration: const InputDecoration(labelText: 'Last Name *', border: OutlineInputBorder())),
+                TextField(controller: surnameCtrl, decoration: const InputDecoration(labelText: 'Επώνυμο *', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email *', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
-                TextField(controller: passwordCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'Password (min 8) *', border: OutlineInputBorder())),
+                TextField(controller: passwordCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'Κωδικός (ελάχ. 8) *', border: OutlineInputBorder())),
               ],
             ),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () async {
               final body = {
@@ -207,15 +207,15 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                 if (res.statusCode == 201) {
                   _fetch();
                 } else {
-                  final err = jsonDecode(res.body)['error'] ?? 'Failed';
+                  final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
                   if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
                 }
               } catch (e) {
                 if (ctx.mounted) Navigator.pop(ctx);
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
               }
             },
-            child: const Text('Create'),
+            child: const Text('Δημιουργία'),
           ),
         ],
       ),
@@ -234,18 +234,18 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text('Manage Users', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+        title: Text('Διαχείριση Χρηστών', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _fetch, tooltip: 'Refresh'),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _fetch, tooltip: 'Ανανέωση'),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreateDialog,
         icon: const Icon(Icons.person_add),
-        label: const Text('New User'),
+        label: const Text('Νέος Χρήστης'),
       ),
       body: SafeArea(
         child: Column(
@@ -260,7 +260,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   Expanded(
                     child: TextField(
                       decoration: InputDecoration(
-                        hintText: 'Search...',
+                        hintText: 'Αναζήτηση...',
                         prefixIcon: const Icon(Icons.search, size: 20),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         filled: true,
@@ -299,7 +299,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                           child: Column(mainAxisSize: MainAxisSize.min, children: [
                             Icon(Icons.person_off, size: 64, color: Colors.grey.shade300),
                             const SizedBox(height: 12),
-                            Text('No users found', style: tt.bodyLarge?.copyWith(color: Colors.grey.shade500)),
+                            Text('Δεν βρέθηκαν χρήστες', style: tt.bodyLarge?.copyWith(color: Colors.grey.shade500)),
                           ]),
                         )
                       : Column(children: [
@@ -310,7 +310,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                               Text('${processed.length} users',
                                   style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
                               const Spacer(),
-                              const Text('Rows: ', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                              const Text('Γραμμές: ', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
                               _pageDropdown(),
                               const SizedBox(width: 12),
                               IconButton(
@@ -545,15 +545,15 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           isExpanded: true,
           isDense: true,
           icon: const Icon(Icons.filter_list, size: 18),
-          hint: const Text('All Departments', style: TextStyle(fontSize: 13)),
+          hint: const Text('Όλα τα Τμήματα', style: TextStyle(fontSize: 13)),
           style: const TextStyle(fontSize: 13, color: Color(0xFF374151)),
           items: [
             if (showAll)
               const DropdownMenuItem<int?>(
-                  value: null, child: Text('All Departments')),
+                  value: null, child: Text('Όλα τα Τμήματα')),
             ...depts.map((d) => DropdownMenuItem<int?>(
                   value: d['id'] as int?,
-                  child: Text(d['name'] ?? 'Department'),
+                  child: Text(d['name'] ?? 'Τμήμα'),
                 )),
           ],
           onChanged: (v) => setState(() { _deptFilter = v; _page = 0; }),

@@ -61,7 +61,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Edit Department'),
+        title: const Text('Επεξεργασία Τμήματος'),
         content: SizedBox(
           width: 400,
           child: SingleChildScrollView(
@@ -71,19 +71,19 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                 TextField(
                     controller: nameCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'Name', border: OutlineInputBorder())),
+                        labelText: 'Όνομα', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 TextField(
                     controller: descCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'Description',
+                        labelText: 'Περιγραφή',
                         border: OutlineInputBorder()),
                     maxLines: 2),
                 const SizedBox(height: 12),
                 TextField(
                     controller: locCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'Location',
+                        labelText: 'Τοποθεσία',
                         border: OutlineInputBorder())),
               ],
             ),
@@ -92,7 +92,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+              child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () async {
               final body = <String, dynamic>{
@@ -109,7 +109,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
               if (ctx.mounted) Navigator.pop(ctx);
               _load();
             },
-            child: const Text('Save'),
+            child: const Text('Αποθήκευση'),
           ),
         ],
       ),
@@ -121,13 +121,13 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Department'),
+        title: const Text('Διαγραφή Τμήματος'),
         content:
-            const Text('Are you sure? All associations will be removed.'),
+            const Text('Είστε σίγουροι; Όλες οι συσχετίσεις θα αφαιρεθούν.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+              child: const Text('Άκυρο')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
@@ -135,7 +135,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
               if (ctx.mounted) Navigator.pop(ctx);
               if (mounted) context.pop();
             },
-            child: const Text('Delete'),
+            child: const Text('Διαγραφή'),
           ),
         ],
       ),
@@ -160,7 +160,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
         return AlertDialog(
-          title: const Text('Add Member'),
+          title: const Text('Προσθήκη Μέλους'),
           content: SizedBox(
             width: 400,
             child: Column(
@@ -201,8 +201,8 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                       controller: controller,
                       focusNode: focusNode,
                       decoration: InputDecoration(
-                        labelText: 'User',
-                        hintText: 'Type to search...',
+                        labelText: 'Χρήστης',
+                        hintText: 'Πληκτρολογήστε...',
                         border: const OutlineInputBorder(),
                         prefixIcon:
                             const Icon(Icons.search, size: 20),
@@ -276,15 +276,15 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                 DropdownButtonFormField<String>(
                   value: selectedRole,
                   decoration: const InputDecoration(
-                      labelText: 'Role', border: OutlineInputBorder()),
+                      labelText: 'Ρόλος', border: OutlineInputBorder()),
                   items: const [
                     DropdownMenuItem(
-                        value: 'volunteer', child: Text('Volunteer')),
+                        value: 'volunteer', child: Text('Εθελοντής')),
                     DropdownMenuItem(
                         value: 'missionAdmin',
-                        child: Text('Mission Admin')),
+                        child: Text('Διαχ. Αποστολών')),
                     DropdownMenuItem(
-                        value: 'itemAdmin', child: Text('Item Admin')),
+                        value: 'itemAdmin', child: Text('Διαχ. Υλικού')),
                   ],
                   onChanged: (v) => setS(() => selectedRole = v ?? selectedRole),
                 ),
@@ -294,7 +294,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel')),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: selectedUser == null
                   ? null
@@ -308,7 +308,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                       if (ctx.mounted) Navigator.pop(ctx);
                       _load();
                     },
-              child: const Text('Add'),
+              child: const Text('Προσθήκη'),
             ),
           ],
         );
@@ -339,7 +339,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text(_dept?['name'] ?? 'Department',
+        title: Text(_dept?['name'] ?? 'Τμήμα',
             style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -348,17 +348,17 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
           IconButton(
               icon: const Icon(Icons.edit),
               onPressed: _editDepartment,
-              tooltip: 'Edit'),
+              tooltip: 'Επεξεργασία'),
           IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: _deleteDepartment,
-              tooltip: 'Delete'),
+              tooltip: 'Διαγραφή'),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _dept == null
-              ? const Center(child: Text('Department not found'))
+              ? const Center(child: Text('Το τμήμα δεν βρέθηκε'))
               : RefreshIndicator(
                   onRefresh: _load,
                   child: LayoutBuilder(builder: (context, constraints) {
@@ -435,13 +435,13 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                       ?.copyWith(color: const Color(0xFF6B7280))),
             ],
             const Divider(height: 24),
-            _infoRow(Icons.location_on, 'Location',
+            _infoRow(Icons.location_on, 'Τοποθεσία',
                 _dept!['location'] ?? '—'),
             _infoRow(
-                Icons.people, 'Members', '${_members.length}'),
-            _infoRow(Icons.miscellaneous_services, 'Services',
+                Icons.people, 'Μέλη', '${_members.length}'),
+            _infoRow(Icons.miscellaneous_services, 'Υπηρεσίες',
                 '${_services.length}'),
-            _infoRow(Icons.directions_car, 'Vehicles',
+            _infoRow(Icons.directions_car, 'Οχήματα',
                 '${_vehicles.length}'),
           ],
         ),
@@ -481,12 +481,12 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
             Row(children: [
               const Icon(Icons.people, color: Color(0xFF2563EB)),
               const SizedBox(width: 8),
-              Text('Members (${_members.length})',
+              Text('Μέλη (${_members.length})',
                   style:
                       tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
               const Spacer(),
               ActionChip(
-                label: const Text('Add'),
+                label: const Text('Προσθήκη'),
                 avatar: const Icon(Icons.add, size: 16),
                 onPressed: _addMember,
               ),
@@ -496,7 +496,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: Center(
-                    child: Text('No members yet',
+                    child: Text('Κανένα μέλος',
                         style: TextStyle(color: Color(0xFF9CA3AF)))),
               )
             else
@@ -541,7 +541,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                       ),
                       PopupMenuButton<String>(
                         initialValue: role,
-                        tooltip: 'Change role',
+                        tooltip: 'Αλλαγή ρόλου',
                         onSelected: (r) {
                           if (r == '__remove__') {
                             _removeMember(uid);
@@ -552,17 +552,17 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                         itemBuilder: (_) => [
                           const PopupMenuItem(
                               value: 'volunteer',
-                              child: Text('Volunteer')),
+                              child: Text('Εθελοντής')),
                           const PopupMenuItem(
                               value: 'missionAdmin',
-                              child: Text('Mission Admin')),
+                              child: Text('Διαχ. Αποστολών')),
                           const PopupMenuItem(
                               value: 'itemAdmin',
-                              child: Text('Item Admin')),
+                              child: Text('Διαχ. Υλικού')),
                           const PopupMenuDivider(),
                           const PopupMenuItem(
                             value: '__remove__',
-                            child: Text('Remove',
+                            child: Text('Αφαίρεση',
                                 style: TextStyle(color: Colors.red)),
                           ),
                         ],
@@ -600,11 +600,11 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
   String _roleLabel(String role) {
     switch (role) {
       case 'missionAdmin':
-        return 'Mission Admin';
+        return 'Διαχ. Αποστ.';
       case 'itemAdmin':
-        return 'Item Admin';
+        return 'Διαχ. Υλικού';
       default:
-        return 'Volunteer';
+        return 'Εθελοντής';
     }
   }
 
@@ -642,7 +642,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
             const Icon(Icons.miscellaneous_services,
                 color: Color(0xFF059669)),
             const SizedBox(width: 8),
-            Text('Recent Services (${_services.length})',
+            Text('Πρόσφατες Υπηρεσίες (${_services.length})',
                 style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
           ]),
           const SizedBox(height: 12),
@@ -650,7 +650,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Center(
-                  child: Text('No services',
+                  child: Text('Καμία υπηρεσία',
                       style: TextStyle(color: Color(0xFF9CA3AF)))),
             )
           else
@@ -726,7 +726,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
           Row(children: [
             const Icon(Icons.directions_car, color: Color(0xFFD97706)),
             const SizedBox(width: 8),
-            Text('Vehicles (${_vehicles.length})',
+            Text('Οχήματα (${_vehicles.length})',
                 style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
           ]),
           const SizedBox(height: 12),
@@ -734,7 +734,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Center(
-                  child: Text('No vehicles',
+                  child: Text('Κανένα όχημα',
                       style: TextStyle(color: Color(0xFF9CA3AF)))),
             )
           else

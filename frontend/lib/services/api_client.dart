@@ -39,10 +39,10 @@ class ApiClient {
       http.get(_uri(path), headers: _headers);
 
   Future<http.Response> post(String path, {Object? body}) =>
-      http.post(_uri(path), headers: _headers, body: jsonEncode(body));
+      http.post(_uri(path), headers: _headers, body: body != null ? jsonEncode(body) : null);
 
   Future<http.Response> patch(String path, {Object? body}) =>
-      http.patch(_uri(path), headers: _headers, body: jsonEncode(body));
+      http.patch(_uri(path), headers: _headers, body: body != null ? jsonEncode(body) : null);
 
   Future<http.Response> delete(String path) =>
       http.delete(_uri(path), headers: _headers);

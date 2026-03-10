@@ -113,7 +113,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
       initialDate: initial ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      helpText: isFrom ? 'Select start date' : 'Select end date',
+      helpText: isFrom ? 'Επιλέξτε ημ/νία έναρξης' : 'Επιλέξτε ημ/νία λήξης',
     );
     if (picked == null || !mounted) return;
     setState(() {
@@ -134,7 +134,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text('Past Services — ${widget.departmentName}',
+        title: Text('Παλαιότερες Υπηρεσίες — ${widget.departmentName}',
             style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -156,7 +156,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                 padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 8),
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search past services...',
+                    hintText: 'Αναζήτηση παλαιοτέρων...',
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -183,8 +183,8 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                     // From date
                     _buildDateChip(
                       label: _fromDate != null
-                          ? 'From: ${_fmtDay(_fromDate!)}'
-                          : 'From date',
+                          ? 'Από: ${_fmtDay(_fromDate!)}'
+                          : 'Από ημ/νία',
                       isSet: _fromDate != null,
                       onTap: () => _pickDate(isFrom: true),
                       onClear: _fromDate != null
@@ -198,8 +198,8 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                     // To date
                     _buildDateChip(
                       label: _toDate != null
-                          ? 'To: ${_fmtDay(_toDate!)}'
-                          : 'To date',
+                          ? 'Έως: ${_fmtDay(_toDate!)}'
+                          : 'Έως ημ/νία',
                       isSet: _toDate != null,
                       onTap: () => _pickDate(isFrom: false),
                       onClear: _toDate != null
@@ -222,7 +222,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                           _load();
                         },
                         icon: const Icon(Icons.clear_all, size: 18),
-                        label: const Text('Clear filters'),
+                        label: const Text('Καθαρισμός φίλτρων'),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.grey.shade600,
                         ),
@@ -238,8 +238,8 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                 child: Row(children: [
                   Text(
                     _loading
-                        ? 'Loading...'
-                        : '${filtered.length} past service${filtered.length == 1 ? '' : 's'} found',
+                        ? 'Φόρτωση...'
+                        : 'Βρέθηκαν ${filtered.length} υπηρεσίες',
                     style: tt.bodySmall?.copyWith(color: Colors.grey.shade600),
                   ),
                 ]),
@@ -259,11 +259,11 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                                       size: 64,
                                       color: Colors.grey.shade300),
                                   const SizedBox(height: 12),
-                                  Text('No past services found',
+                                  Text('Δεν βρέθηκαν παλαιότερες',
                                       style: tt.bodyLarge?.copyWith(
                                           color: Colors.grey.shade500)),
                                   const SizedBox(height: 4),
-                                  Text('Try adjusting your filters',
+                                  Text('Δοκιμάστε διαφορετικά φίλτρα',
                                       style: tt.bodySmall?.copyWith(
                                           color: Colors.grey.shade400)),
                                 ]))
@@ -303,7 +303,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
             children: [
               Icon(Icons.school, size: 16, color: Colors.grey.shade500),
               const SizedBox(width: 6),
-              const Text('Specialization',
+              const Text('Ειδίκευση',
                   style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
             ],
           ),
@@ -312,7 +312,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
           items: [
             const DropdownMenuItem<int?>(
               value: null,
-              child: Text('All specializations',
+              child: Text('Όλες οι ειδικεύσεις',
                   style: TextStyle(fontSize: 13)),
             ),
             if (!_specsLoading)
@@ -447,7 +447,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                     color: const Color(0xFF6B7280).withAlpha(20),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text('Completed',
+                  child: const Text('Ολοκληρωμένη',
                       style: TextStyle(
                           color: Color(0xFF6B7280),
                           fontSize: 11,
@@ -492,7 +492,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
               Row(children: [
                 Icon(Icons.people, size: 14, color: Colors.grey.shade600),
                 const SizedBox(width: 4),
-                Text('$enrolledCount enrolled',
+                Text('$enrolledCount εγγεγραμμένοι',
                     style: TextStyle(
                         fontSize: 12, color: Colors.grey.shade600)),
                 if (acceptedCount > 0) ...[
@@ -506,7 +506,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                       border: Border.all(
                           color: const Color(0xFF059669).withAlpha(50)),
                     ),
-                    child: Text('$acceptedCount accepted',
+                    child: Text('$acceptedCount εγκεκριμένοι',
                         style: const TextStyle(
                             fontSize: 10,
                             color: Color(0xFF059669),

@@ -65,11 +65,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
 
     String subtitle;
     if (isSysAdmin) {
-      subtitle = 'System Administrator';
+      subtitle = 'Διαχειριστής Συστήματος';
     } else {
       final roles = <String>[];
-      if (isMissionAdmin) roles.add('Mission Admin');
-      if (isItemAdmin) roles.add('Item Admin');
+      if (isMissionAdmin) roles.add('Διαχ. Αποστολών');
+      if (isItemAdmin) roles.add('Διαχ. Υλικού');
       subtitle = roles.join(' · ');
     }
 
@@ -149,7 +149,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                               label: 'Διαχείρηση Υπηρεσιών'),
                           const SizedBox(height: 12),
                           if (missionDepts.isEmpty)
-                            const _EmptyCard(message: 'No departments assigned')
+                            const _EmptyCard(message: 'Κανένα τμήμα ανατεθειμένο')
                           else
                             _ResponsiveTileGrid(
                               isWide: isWide,
@@ -162,7 +162,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                                   iconColor: const Color(0xFF059669),
                                   bgColor: const Color(0xFFD1FAE5),
                                   title: deptName,
-                                  subtitle: 'View, create & manage services',
+                                  subtitle: 'Προβολή, δημιουργία & διαχείριση υπηρεσιών',
                                   onTap: () => context.push(
                                       '/admin/services?departmentId=$deptId&departmentName=${Uri.encodeComponent(deptName)}'),
                                 );
@@ -178,7 +178,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                               label: 'Διαχείρηση Υλικού & Οχημάτων'),
                           const SizedBox(height: 12),
                           if (itemDepts.isEmpty)
-                            const _EmptyCard(message: 'No departments assigned')
+                            const _EmptyCard(message: 'Κανένα τμήμα ανατεθειμένο')
                           else
                             _ResponsiveTileGrid(
                               isWide: isWide,
@@ -190,16 +190,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                                     icon: Icons.inventory_2,
                                     iconColor: const Color(0xFF7C3AED),
                                     bgColor: const Color(0xFFEDE9FE),
-                                    title: '$deptName – Items',
-                                    subtitle: 'Manage equipment & containers',
+                                    title: '$deptName – Αντικείμενα',
+                                    subtitle: 'Διαχείριση εξοπλισμού & κουτιών',
                                     onTap: () => context.go('/items'),
                                   ),
                                   _AdminTileData(
                                     icon: Icons.directions_car,
                                     iconColor: const Color(0xFFD97706),
                                     bgColor: const Color(0xFFFEF3C7),
-                                    title: '$deptName – Vehicles',
-                                    subtitle: 'Manage fleet & mileage logs',
+                                    title: '$deptName – Οχήματα',
+                                    subtitle: 'Διαχείριση στόλου & χιλιομέτρων',
                                     onTap: () => context.go('/vehicles'),
                                   ),
                                 ];
@@ -290,7 +290,7 @@ class _HeaderBar extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Admin Panel',
+              Text('Πίνακας Διαχείρισης',
                   style: (isCompact ? tt.titleLarge : tt.headlineSmall)
                       ?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 2),

@@ -32,7 +32,7 @@ class ChatScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Team messaging is coming soon.\nStay tuned!',
+                  'Τα μηνύματα ομάδας έρχονται σύντομα.\nΜείνετε συντονισμένοι!',
                   textAlign: TextAlign.center,
                   style: tt.bodyMedium?.copyWith(color: const Color(0xFF6B7280), height: 1.5),
                 ),
@@ -40,7 +40,7 @@ class ChatScreen extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: null,
                   icon: const Icon(Icons.notifications_outlined, size: 18),
-                  label: const Text('Notify me when ready'),
+                  label: const Text('Ειδοποίηση όταν είναι έτοιμο'),
                 ),
               ],
             ),

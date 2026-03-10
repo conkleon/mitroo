@@ -68,28 +68,28 @@ class ShellScreen extends StatelessWidget {
                   const NavigationDestination(
                     icon: Icon(Icons.miscellaneous_services_outlined),
                     selectedIcon: Icon(Icons.miscellaneous_services),
-                    label: 'Services',
+                    label: 'Υπηρεσίες',
                   ),
                   const NavigationDestination(
                     icon: Icon(Icons.inventory_2_outlined),
                     selectedIcon: Icon(Icons.inventory_2),
-                    label: 'Items',
+                    label: 'Αντικείμενα',
                   ),
                   const NavigationDestination(
                     icon: Icon(Icons.directions_car_outlined),
                     selectedIcon: Icon(Icons.directions_car),
-                    label: 'Vehicles',
+                    label: 'Οχήματα',
                   ),
                   if (showAdmin)
                     const NavigationDestination(
                       icon: Icon(Icons.admin_panel_settings_outlined),
                       selectedIcon: Icon(Icons.admin_panel_settings),
-                      label: 'Admin',
+                      label: 'Διαχείριση',
                     ),
                   const NavigationDestination(
                     icon: Icon(Icons.chat_bubble_outline),
                     selectedIcon: Icon(Icons.chat_bubble),
-                    label: 'Chat',
+                    label: 'Συνομιλία',
                   ),
                 ],
               ),
@@ -163,33 +163,33 @@ class _DesktopSidebar extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               children: [
-                const _SidebarSectionLabel('Main'),
+                const _SidebarSectionLabel('Κύριο Μενού'),
 
                 _SidebarItem(
                   icon: Icons.miscellaneous_services_outlined,
                   selectedIcon: Icons.miscellaneous_services,
-                  label: 'Services',
+                  label: 'Υπηρεσίες',
                   selected: selectedIndex == 0,
                   onTap: () => context.go('/services'),
                 ),
                 _SidebarItem(
                   icon: Icons.inventory_2_outlined,
                   selectedIcon: Icons.inventory_2,
-                  label: 'Items',
+                  label: 'Αντικείμενα',
                   selected: selectedIndex == 1,
                   onTap: () => context.go('/items'),
                 ),
                 _SidebarItem(
                   icon: Icons.directions_car_outlined,
                   selectedIcon: Icons.directions_car,
-                  label: 'Vehicles',
+                  label: 'Οχήματα',
                   selected: selectedIndex == 2,
                   onTap: () => context.go('/vehicles'),
                 ),
                 _SidebarItem(
                   icon: Icons.chat_bubble_outline,
                   selectedIcon: Icons.chat_bubble,
-                  label: 'Chat',
+                  label: 'Συνομιλία',
                   selected: currentPath.startsWith('/chat'),
                   onTap: () => context.go('/chat'),
                 ),
@@ -197,13 +197,13 @@ class _DesktopSidebar extends StatelessWidget {
                 if (showAdmin) ...[
                   const Padding(
                     padding: EdgeInsets.only(top: 16),
-                    child: _SidebarSectionLabel('Administration'),
+                    child: _SidebarSectionLabel('Διαχείριση'),
                   ),
 
                   _SidebarItem(
                     icon: Icons.admin_panel_settings_outlined,
                     selectedIcon: Icons.admin_panel_settings,
-                    label: 'Dashboard',
+                    label: 'Πίνακας Ελέγχου',
                     selected: currentPath == '/admin',
                     onTap: () => context.go('/admin'),
                   ),
@@ -212,7 +212,7 @@ class _DesktopSidebar extends StatelessWidget {
                     _SidebarItem(
                       icon: Icons.people_outline,
                       selectedIcon: Icons.people,
-                      label: 'Users',
+                      label: 'Χρήστες',
                       selected: currentPath.startsWith('/admin/users'),
                       onTap: () => context.push('/admin/users'),
                       indent: true,
@@ -220,7 +220,7 @@ class _DesktopSidebar extends StatelessWidget {
                     _SidebarItem(
                       icon: Icons.business_outlined,
                       selectedIcon: Icons.business,
-                      label: 'Departments',
+                      label: 'Τμήματα',
                       selected: currentPath.startsWith('/admin/departments'),
                       onTap: () => context.push('/admin/departments'),
                       indent: true,
@@ -228,7 +228,7 @@ class _DesktopSidebar extends StatelessWidget {
                     _SidebarItem(
                       icon: Icons.school_outlined,
                       selectedIcon: Icons.school,
-                      label: 'Specializations',
+                      label: 'Ειδικότητες',
                       selected: currentPath.startsWith('/admin/specializations'),
                       onTap: () => context.push('/admin/specializations'),
                       indent: true,
@@ -238,7 +238,7 @@ class _DesktopSidebar extends StatelessWidget {
                   if (auth.isMissionAdmin || isSysAdmin) ...[
                     const Padding(
                       padding: EdgeInsets.only(top: 8),
-                      child: _SidebarSectionLabel('Service Management'),
+                      child: _SidebarSectionLabel('Διαχείριση Υπηρεσιών'),
                     ),
                     ..._buildDeptServiceItems(context, isSysAdmin),
                   ],
@@ -274,13 +274,13 @@ class _DesktopSidebar extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          auth.displayName.isNotEmpty ? auth.displayName : 'User',
+                          auth.displayName.isNotEmpty ? auth.displayName : 'Χρήστης',
                           style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          auth.isAdmin ? 'Admin' : 'Member',
+                          auth.isAdmin ? 'Διαχειριστής' : 'Μέλος',
                           style: tt.labelSmall?.copyWith(color: const Color(0xFF9CA3AF)),
                         ),
                       ],
@@ -313,13 +313,13 @@ class _DesktopSidebar extends StatelessWidget {
       return [
         const Padding(
           padding: EdgeInsets.only(left: 24, top: 4, bottom: 4),
-          child: Text('No departments', style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
+          child: Text('Κανένα τμήμα', style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
         ),
       ];
     }
 
     return depts.map((dept) {
-      final deptName = dept['name'] ?? 'Department';
+      final deptName = dept['name'] ?? 'Τμήμα';
       final deptId = dept['id'] as int;
       final path = '/admin/services?departmentId=$deptId&departmentName=${Uri.encodeComponent(deptName)}';
       // Check if this department's services page is currently active

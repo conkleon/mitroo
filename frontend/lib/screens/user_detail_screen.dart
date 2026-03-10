@@ -68,25 +68,25 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlgState) => AlertDialog(
-          title: const Text('Edit Profile'),
+          title: const Text('Επεξεργασία Προφίλ'),
           content: SizedBox(
             width: 420,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(controller: forenameCtrl, decoration: const InputDecoration(labelText: 'First Name', border: OutlineInputBorder())),
+                  TextField(controller: forenameCtrl, decoration: const InputDecoration(labelText: 'Όνομα', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  TextField(controller: surnameCtrl, decoration: const InputDecoration(labelText: 'Last Name', border: OutlineInputBorder())),
+                  TextField(controller: surnameCtrl, decoration: const InputDecoration(labelText: 'Επώνυμο', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
                   TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder())),
+                  TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Τηλέφωνο', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'Address', border: OutlineInputBorder()), maxLines: 2),
+                  TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'Διεύθυνση', border: OutlineInputBorder()), maxLines: 2),
                   const SizedBox(height: 8),
                   SwitchListTile(
-                    title: const Text('System Admin'),
+                    title: const Text('Διαχειριστής Συστήματος'),
                     value: isAdmin,
                     onChanged: (v) => setDlgState(() => isAdmin = v),
                     contentPadding: EdgeInsets.zero,
@@ -96,7 +96,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
             FilledButton(
               onPressed: () async {
                 final body = <String, dynamic>{
@@ -113,15 +113,15 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                   if (res.statusCode == 200) {
                     _load();
                   } else {
-                    final err = jsonDecode(res.body)['error'] ?? 'Failed';
+                    final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
                     if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
                   }
                 } catch (e) {
                   if (ctx.mounted) Navigator.pop(ctx);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
                 }
               },
-              child: const Text('Save'),
+              child: const Text('Αποθήκευση'),
             ),
           ],
         ),
@@ -134,14 +134,14 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete User'),
-        content: Text('Permanently delete "${_user?['forename']} ${_user?['surname']}"?\nThis cannot be undone.'),
+        title: const Text('Διαγραφή Χρήστη'),
+        content: Text('Οριστική διαγραφή "${_user?['forename']} ${_user?['surname']}";\nΔεν μπορεί να αναιρεθεί.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: const Text('Διαγραφή'),
           ),
         ],
       ),
@@ -154,10 +154,10 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
       if (res.statusCode == 204) {
         context.pop();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to delete user')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Αποτυχία διαγραφής χρήστη')));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
     }
   }
 
@@ -169,7 +169,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     final available = _allDepts.where((d) => !userDepts.contains(d['id'])).toList();
 
     if (available.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User is already in all departments')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ο χρήστης είναι ήδη σε όλα τα τμήματα')));
       return;
     }
 
@@ -181,7 +181,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDlgState) => AlertDialog(
-          title: const Text('Add to Department'),
+          title: const Text('Προσθήκη σε Τμήμα'),
           content: SizedBox(
             width: 380,
             child: Column(
@@ -210,8 +210,8 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                       controller: controller,
                       focusNode: focusNode,
                       decoration: InputDecoration(
-                        labelText: 'Department',
-                        hintText: 'Type to search...',
+                        labelText: 'Τμήμα',
+                        hintText: 'Πληκτρολογήστε...',
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.search, size: 20),
                         suffixIcon: controller.text.isNotEmpty
@@ -264,12 +264,12 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Ρόλος', border: OutlineInputBorder()),
                   value: selectedRole,
                   items: const [
-                    DropdownMenuItem(value: 'volunteer', child: Text('Volunteer')),
-                    DropdownMenuItem(value: 'missionAdmin', child: Text('Mission Admin')),
-                    DropdownMenuItem(value: 'itemAdmin', child: Text('Item Admin')),
+                    DropdownMenuItem(value: 'volunteer', child: Text('Εθελοντής')),
+                    DropdownMenuItem(value: 'missionAdmin', child: Text('Διαχ. Αποστολών')),
+                    DropdownMenuItem(value: 'itemAdmin', child: Text('Διαχ. Υλικού')),
                   ],
                   onChanged: (v) => setDlgState(() => selectedRole = v ?? 'volunteer'),
                 ),
@@ -277,7 +277,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
             FilledButton(
               onPressed: selectedDeptId == null
                   ? null
@@ -291,15 +291,15 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                         if (res.statusCode == 201) {
                           _load();
                         } else {
-                          final err = jsonDecode(res.body)['error'] ?? 'Failed';
+                          final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
                           if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
                         }
                       } catch (e) {
                         if (ctx.mounted) Navigator.pop(ctx);
-                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
                       }
                     },
-              child: const Text('Add'),
+              child: const Text('Προσθήκη'),
             ),
           ],
         ),
@@ -329,20 +329,20 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     final available = _allSpecs.where((s) => !userSpecIds.contains(s['id'])).toList();
 
     if (available.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('All specializations already assigned')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Όλες οι ειδικεύσεις έχουν ανατεθεί')));
       return;
     }
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add Specialization'),
+        title: const Text('Προσθήκη Ειδίκευσης'),
         content: SizedBox(
           width: 360,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Tap a specialization to add it:', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+              const Text('Πατήστε μια ειδίκευση:', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
@@ -359,7 +359,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                           _load();
                         }
                       } catch (e) {
-                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
                       }
                     },
                   );
@@ -369,7 +369,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Κλείσιμο')),
         ],
       ),
     );
@@ -389,14 +389,14 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
 
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('User Detail'), backgroundColor: Colors.transparent, elevation: 0),
+        appBar: AppBar(title: const Text('Λεπτομέρειες Χρήστη'), backgroundColor: Colors.transparent, elevation: 0),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (_user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('User Detail'), backgroundColor: Colors.transparent, elevation: 0),
-        body: const Center(child: Text('User not found')),
+        appBar: AppBar(title: const Text('Λεπτομέρειες Χρήστη'), backgroundColor: Colors.transparent, elevation: 0),
+        body: const Center(child: Text('Χρήστης δεν βρέθηκε')),
       );
     }
 
@@ -415,8 +415,8 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.edit), onPressed: _editProfile, tooltip: 'Edit'),
-          IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: _deleteUser, tooltip: 'Delete'),
+          IconButton(icon: const Icon(Icons.edit), onPressed: _editProfile, tooltip: 'Επεξεργασία'),
+          IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: _deleteUser, tooltip: 'Διαγραφή'),
         ],
       ),
       body: RefreshIndicator(
@@ -500,18 +500,18 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(color: Colors.amber.withAlpha(25), borderRadius: BorderRadius.circular(8)),
-                child: Text('System Admin', style: tt.labelMedium?.copyWith(color: Colors.amber.shade800, fontWeight: FontWeight.w600)),
+                child: Text('Διαχειριστής Συστήματος', style: tt.labelMedium?.copyWith(color: Colors.amber.shade800, fontWeight: FontWeight.w600)),
               ),
             ],
             const SizedBox(height: 20),
             const Divider(),
             const SizedBox(height: 12),
             _InfoRow(icon: Icons.email, label: 'Email', value: u['email'] ?? '—'),
-            _InfoRow(icon: Icons.phone, label: 'Phone', value: u['phonePrimary'] ?? '—'),
-            _InfoRow(icon: Icons.location_on, label: 'Address', value: u['address'] ?? '—'),
-            _InfoRow(icon: Icons.calendar_today, label: 'Birth Date', value: _formatDate(u['birthDate'])),
+            _InfoRow(icon: Icons.phone, label: 'Τηλέφωνο', value: u['phonePrimary'] ?? '—'),
+            _InfoRow(icon: Icons.location_on, label: 'Διεύθυνση', value: u['address'] ?? '—'),
+            _InfoRow(icon: Icons.calendar_today, label: 'Ημ. Γέννησης', value: _formatDate(u['birthDate'])),
             if ((u['extraInfo'] ?? '').toString().isNotEmpty)
-              _InfoRow(icon: Icons.info_outline, label: 'Extra Info', value: u['extraInfo']),
+              _InfoRow(icon: Icons.info_outline, label: 'Επιπλέον Πληρ.', value: u['extraInfo']),
           ],
         ),
       ),
@@ -539,12 +539,12 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
               children: [
                 Icon(Icons.business, color: cs.primary, size: 22),
                 const SizedBox(width: 10),
-                Text('Departments', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Text('Τμήματα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: _addToDepartment,
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add'),
+                  label: const Text('Προσθήκη'),
                 ),
               ],
             ),
@@ -552,7 +552,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
             if (departments.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: Text('No department memberships', style: TextStyle(color: Color(0xFF9CA3AF)))),
+                child: Center(child: Text('Χωρίς τμήματα', style: TextStyle(color: Color(0xFF9CA3AF)))),
               )
             else
               ...departments.map((ud) {
@@ -581,13 +581,13 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                     },
                     itemBuilder: (_) => [
                       if (role != 'volunteer')
-                        const PopupMenuItem(value: 'volunteer', child: Text('Set Volunteer')),
+                        const PopupMenuItem(value: 'volunteer', child: Text('Ορισμός Εθελοντή')),
                       if (role != 'missionAdmin')
-                        const PopupMenuItem(value: 'missionAdmin', child: Text('Set Mission Admin')),
+                        const PopupMenuItem(value: 'missionAdmin', child: Text('Ορισμός Διαχ. Αποστολών')),
                       if (role != 'itemAdmin')
-                        const PopupMenuItem(value: 'itemAdmin', child: Text('Set Item Admin')),
+                        const PopupMenuItem(value: 'itemAdmin', child: Text('Ορισμός Διαχ. Υλικού')),
                       const PopupMenuDivider(),
-                      const PopupMenuItem(value: 'remove', child: Text('Remove', style: TextStyle(color: Colors.red))),
+                      const PopupMenuItem(value: 'remove', child: Text('Αφαίρεση', style: TextStyle(color: Colors.red))),
                     ],
                   ),
                 );
@@ -612,12 +612,12 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
               children: [
                 const Icon(Icons.school, color: Color(0xFFD97706), size: 22),
                 const SizedBox(width: 10),
-                Text('Specializations', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Text('Ειδικεύσεις', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                 const Spacer(),
                 TextButton.icon(
                   onPressed: _addSpecialization,
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add'),
+                  label: const Text('Προσθήκη'),
                 ),
               ],
             ),
@@ -625,7 +625,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
             if (specializations.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: Text('No specializations assigned', style: TextStyle(color: Color(0xFF9CA3AF)))),
+                child: Center(child: Text('Χωρίς ειδικεύσεις', style: TextStyle(color: Color(0xFF9CA3AF)))),
               )
             else
               Wrap(
@@ -749,7 +749,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
             Row(children: [
               Icon(Icons.work_history, color: cs.primary, size: 22),
               const SizedBox(width: 10),
-              Text('Services / Missions', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              Text('Υπηρεσίες / Αποστολές', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
               const Spacer(),
               Text('${_services.length} total',
                   style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
@@ -782,10 +782,10 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                     isDense: true,
                     style: const TextStyle(fontSize: 12, color: Color(0xFF374151)),
                     items: const [
-                      DropdownMenuItem(value: 'all', child: Text('All statuses')),
-                      DropdownMenuItem(value: 'accepted', child: Text('Accepted')),
-                      DropdownMenuItem(value: 'requested', child: Text('Requested')),
-                      DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
+                      DropdownMenuItem(value: 'all', child: Text('Όλες οι καταστάσεις')),
+                      DropdownMenuItem(value: 'accepted', child: Text('Εγκεκριμένη')),
+                      DropdownMenuItem(value: 'requested', child: Text('Εκκρεμής')),
+                      DropdownMenuItem(value: 'rejected', child: Text('Απορριφθείσα')),
                     ],
                     onChanged: (v) => setState(() { _svcStatusFilter = v ?? 'all'; _svcPage = 0; }),
                   ),
@@ -795,7 +795,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
               Expanded(
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search services...',
+                    hintText: 'Αναζήτηση υπηρεσιών...',
                     prefixIcon: const Icon(Icons.search, size: 18),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     filled: true,
@@ -815,7 +815,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
               Text('${processed.length} shown',
                   style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
               const Spacer(),
-              const Text('Rows: ', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+              const Text('Γραμμές: ', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
@@ -878,7 +878,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
             if (pageItems.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: Text('No services found', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13))),
+                child: Center(child: Text('Δεν βρέθηκαν υπηρεσίες', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13))),
               )
             else
               ...pageItems.asMap().entries.map((e) => _buildSvcRow(e.value, e.key.isEven)),
@@ -1013,9 +1013,9 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
 
   static String _roleLabelFull(String role) {
     switch (role) {
-      case 'missionAdmin': return 'Mission Admin';
-      case 'itemAdmin': return 'Item Admin';
-      case 'volunteer': return 'Volunteer';
+      case 'missionAdmin': return 'Διαχ. Αποστολών';
+      case 'itemAdmin': return 'Διαχ. Υλικού';
+      case 'volunteer': return 'Εθελοντής';
       default: return role;
     }
   }

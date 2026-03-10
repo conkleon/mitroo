@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/item_provider.dart';
+import '../services/api_client.dart';
 import 'scanner_screen.dart';
+import 'my_equipment_sheet.dart';
 
 class ItemsScreen extends StatefulWidget {
   const ItemsScreen({super.key});
@@ -15,6 +18,8 @@ class ItemsScreen extends StatefulWidget {
 
 class _ItemsScreenState extends State<ItemsScreen> {
   final _searchCtrl = TextEditingController();
+  final _api = ApiClient();
+  List<Map<String, dynamic>> _myEquipment = [];
 
   @override
   void initState() {
@@ -25,6 +30,45 @@ class _ItemsScreenState extends State<ItemsScreen> {
       // Regular users only see available (unassigned) items
       context.read<ItemProvider>().fetchItems(available: canManage ? null : true);
     });
+    _loadMyEquipment();
+  }
+
+  Future<void> _loadMyEquipment() async {
+    try {
+      final res = await _api.get('/auth/me/profile');
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        if (mounted) {
+          setState(() {
+            _myEquipment = (data['equipment'] as List<dynamic>?)
+                    ?.map((e) => Map<String, dynamic>.from(e as Map))
+                    .toList() ??
+                [];
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  void _showMyEquipmentSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => MyEquipmentSheet(
+        equipment: _myEquipment,
+        api: _api,
+        onChanged: () {
+          _loadMyEquipment();
+          // Also refresh the items list
+          final auth = context.read<AuthProvider>();
+          final canManage = auth.isAdmin || auth.isItemAdmin;
+          context.read<ItemProvider>().fetchItems(available: canManage ? null : true);
+        },
+      ),
+    );
   }
 
   @override
@@ -64,12 +108,12 @@ class _ItemsScreenState extends State<ItemsScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSt) => AlertDialog(
-          title: const Text('New Item'),
+          title: const Text('Νέο Αντικείμενο'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
+                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Όνομα')),
                 const SizedBox(height: 12),
                 TextField(
                   controller: barcodeCtrl,
@@ -86,7 +130,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         if (!kIsWeb)
                           IconButton(
                             icon: const Icon(Icons.qr_code_scanner),
-                            tooltip: 'Scan barcode',
+                            tooltip: 'Σάρωση barcode',
                             onPressed: () => scanBarcode(setSt),
                           ),
                       ],
@@ -95,12 +139,12 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   onSubmitted: (_) => onBarcodeSubmitted(setSt),
                 ),
                 const SizedBox(height: 12),
-                TextField(controller: locationCtrl, decoration: const InputDecoration(labelText: 'Location')),
+                TextField(controller: locationCtrl, decoration: const InputDecoration(labelText: 'Τοποθεσία')),
                 const SizedBox(height: 12),
-                TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description'), maxLines: 2),
+                TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Περιγραφή'), maxLines: 2),
                 const SizedBox(height: 8),
                 SwitchListTile(
-                  title: const Text('Is Container'),
+                  title: const Text('Κουτί'),
                   value: isContainer,
                   onChanged: (v) => setSt(() => isContainer = v),
                 ),
@@ -108,7 +152,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   contentPadding: EdgeInsets.zero,
                   title: Text(expirationDate != null
                       ? 'Expires: ${expirationDate!.day}/${expirationDate!.month}/${expirationDate!.year}'
-                      : 'No expiration date'),
+                      : 'Χωρίς ημερομηνία λήξης'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -136,7 +180,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
             FilledButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
@@ -151,7 +195,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
                 }
               },
-              child: const Text('Create'),
+              child: const Text('Δημιουργία'),
             ),
           ],
         ),
@@ -194,7 +238,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Auto-filled from existing item "${item['name']}" (${results.length} match${results.length > 1 ? 'es' : ''})'),
+          content: Text('Συμπληρώθηκε από "${item['name']}" (${results.length} αποτέλεσμα${results.length > 1 ? 'τα' : ''})'),
           duration: const Duration(seconds: 3),
         ),
       );
@@ -226,7 +270,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
         context.push('/items/$id');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid QR code (expected item ID)')),
+          const SnackBar(content: Text('Μη έγκυρος κωδικός QR')),
         );
       }
     } else {
@@ -235,7 +279,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
       if (!mounted) return;
       if (results.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No items found for barcode "$value"')),
+          SnackBar(content: Text('Δεν βρέθηκαν αντικείμενα για barcode "$value"')),
         );
       } else {
         _showBarcodeResults(results, value);
@@ -273,7 +317,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
           }
 
           return AlertDialog(
-            title: const Text('Enter Code'),
+            title: const Text('Εισαγωγή Κωδικού'),
             content: SizedBox(
               width: 350,
               child: Column(
@@ -306,10 +350,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         controller: controller,
                         focusNode: focusNode,
                         decoration: InputDecoration(
-                          labelText: isQr ? 'Item ID' : 'Barcode value',
-                          hintText: isQr ? 'Enter item ID number' : 'Enter barcode string',
+                          labelText: isQr ? 'ID Αντικειμένου' : 'Τιμή Barcode',
+                          hintText: isQr ? 'Εισάγετε αριθμό ID' : 'Εισάγετε barcode',
                           prefixIcon: Icon(isQr ? Icons.tag : Icons.barcode_reader),
-                          helperText: 'Type 3+ characters for suggestions',
+                          helperText: 'Πληκτρολογήστε 3+ χαρακτήρες',
                           helperStyle: const TextStyle(fontSize: 11),
                         ),
                         keyboardType: isQr ? TextInputType.number : TextInputType.text,
@@ -321,10 +365,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
               FilledButton.icon(
                 icon: const Icon(Icons.search, size: 18),
-                label: const Text('Look up'),
+                label: const Text('Αναζήτηση'),
                 onPressed: () async {
                   final value = selectedValue.trim();
                   if (value.isEmpty) return;
@@ -361,7 +405,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${results.length} item${results.length == 1 ? '' : 's'} found',
+                  '${results.length} αντικείμενο${results.length == 1 ? '' : 'α'} βρέθηκαν',
                   style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
                 ),
                 const SizedBox(height: 8),
@@ -417,7 +461,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Close')),
+                child: const Text('Κλείσιμο')),
           ],
         );
       },
@@ -432,13 +476,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Take Equipment'),
-        content: Text('Assign "$itemName" to yourself?'),
+        title: const Text('Λήψη Εξοπλισμού'),
+        content: Text('Ανάθεση του "$itemName" σε εσάς;'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
           FilledButton.icon(
             icon: const Icon(Icons.check, size: 18),
-            label: const Text('Take'),
+            label: const Text('Λήψη'),
             onPressed: () => Navigator.pop(ctx, true),
           ),
         ],
@@ -452,7 +496,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('"$itemName" assigned to you')),
+        SnackBar(content: Text('Το "$itemName" ανατέθηκε σε εσάς')),
       );
       // Refresh the list (item should disappear from available)
       final auth = context.read<AuthProvider>();
@@ -509,7 +553,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   child: TextField(
                     controller: _searchCtrl,
                     decoration: InputDecoration(
-                      hintText: canManage ? 'Search items...' : 'Search available equipment...',
+                      hintText: canManage ? 'Αναζήτηση αντικειμένων...' : 'Αναζήτηση διαθέσιμου εξοπλισμού...',
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.clear, size: 18),
@@ -523,7 +567,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   ),
                 ),
               ),
-              // ── Section header ──
+              // ── Section header with See Assigned button ──
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
@@ -531,9 +575,14 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     children: [
                       Icon(Icons.inventory_2, size: 20, color: cs.primary),
                       const SizedBox(width: 8),
-                      Text('Items', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      Text('Αντικείμενα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                       const Spacer(),
-                      Text('${prov.items.length} total', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                      _AssignedBadgeButton(
+                        count: _myEquipment.length,
+                        onTap: _showMyEquipmentSheet,
+                      ),
+                      const SizedBox(width: 10),
+                      Text('${prov.items.length} σύνολο', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
                     ],
                   ),
                 ),
@@ -549,7 +598,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       children: [
                         Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey.shade300),
                         const SizedBox(height: 12),
-                        Text('No items found', style: tt.bodyLarge?.copyWith(color: Colors.grey)),
+                        Text('Δεν βρέθηκαν αντικείμενα', style: tt.bodyLarge?.copyWith(color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -615,6 +664,12 @@ class _ItemCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
+        elevation: 2,
+        shadowColor: Colors.black.withAlpha(20),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.grey.shade100),
+        ),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () => context.push('/items/${item['id']}'),
@@ -679,7 +734,7 @@ class _ItemCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '$childCount inside',
+                      '$childCount μέσα',
                       style: const TextStyle(fontSize: 11, color: Color(0xFF7C3AED), fontWeight: FontWeight.w500),
                     ),
                   ),
@@ -689,7 +744,7 @@ class _ItemCard extends StatelessWidget {
                   FilledButton.tonalIcon(
                     onPressed: onTake,
                     icon: const Icon(Icons.add_circle_outline, size: 16),
-                    label: const Text('Take', style: TextStyle(fontSize: 12)),
+                    label: const Text('Λήψη', style: TextStyle(fontSize: 12)),
                     style: FilledButton.styleFrom(
                       visualDensity: VisualDensity.compact,
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -702,6 +757,55 @@ class _ItemCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A compact "See Assigned" button with a badge count.
+class _AssignedBadgeButton extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
+  const _AssignedBadgeButton({required this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: cs.primary.withAlpha(20),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: cs.primary.withAlpha(60)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.inventory_2_outlined, size: 14, color: cs.primary),
+            const SizedBox(width: 4),
+            Text(
+              'Ανατεθ.',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.primary),
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade600,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

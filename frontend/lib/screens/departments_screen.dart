@@ -23,19 +23,19 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('New Department'),
+        title: const Text('Νέο Τμήμα'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder())),
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Όνομα', border: OutlineInputBorder())),
             const SizedBox(height: 12),
-            TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 2),
+            TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Περιγραφή', border: OutlineInputBorder()), maxLines: 2),
             const SizedBox(height: 12),
-            TextField(controller: locationCtrl, decoration: const InputDecoration(labelText: 'Location', border: OutlineInputBorder())),
+            TextField(controller: locationCtrl, decoration: const InputDecoration(labelText: 'Τοποθεσία', border: OutlineInputBorder())),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () async {
               final data = <String, dynamic>{'name': nameCtrl.text.trim()};
@@ -47,7 +47,7 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
               }
             },
-            child: const Text('Create'),
+            child: const Text('Δημιουργία'),
           ),
         ],
       ),
@@ -63,7 +63,7 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
       body: prov.loading
           ? const Center(child: CircularProgressIndicator())
           : prov.departments.isEmpty
-              ? const Center(child: Text('No departments yet'))
+              ? const Center(child: Text('Δεν υπάρχουν τμήματα'))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: prov.departments.length,

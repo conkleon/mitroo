@@ -167,7 +167,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDeptId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a department')),
+        const SnackBar(content: Text('Παρακαλώ επιλέξτε τμήμα')),
       );
       return;
     }
@@ -219,7 +219,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Service updated successfully')),
+        const SnackBar(content: Text('Η υπηρεσία ενημερώθηκε')),
       );
       context.pop();
     } else {
@@ -249,7 +249,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
       if (!mounted) return;
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Service created successfully')),
+        const SnackBar(content: Text('Η υπηρεσία δημιουργήθηκε')),
       );
       context.pop();
     }
@@ -261,7 +261,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
     final cs = Theme.of(context).colorScheme;
 
     final isEditing = widget.isEditing;
-    final title = isEditing ? 'Edit Service' : 'New Service';
+    final title = isEditing ? 'Επεξεργασία Υπηρεσίας' : 'Νέα Υπηρεσία';
 
     if (_initialLoading) {
       return Scaffold(
@@ -296,14 +296,14 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
             padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 24),
             children: [
               // ── Department selector ──
-              Text('Department *', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              Text('Τμήμα *', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               DropdownButtonFormField<int>(
                 value: _selectedDeptId,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.business),
-                  hintText: 'Select department',
+                  hintText: 'Επιλογή τμήματος',
                 ),
                 items: _departments.map((d) {
                   return DropdownMenuItem<int>(
@@ -318,7 +318,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                         .firstWhere((d) => d['id'] == v, orElse: () => {})['name'] as String?;
                   });
                 },
-                validator: (v) => v == null ? 'Required' : null,
+                validator: (v) => v == null ? 'Απαιτείται' : null,
               ),
               const SizedBox(height: 20),
 
@@ -326,11 +326,11 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
               TextFormField(
                 controller: _nameCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'Service Name *',
+                  labelText: 'Όνομα Υπηρεσίας *',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.miscellaneous_services),
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Απαιτείται' : null,
               ),
               const SizedBox(height: 16),
 
@@ -338,7 +338,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
               TextFormField(
                 controller: _descCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'Description',
+                  labelText: 'Περιγραφή',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.description),
                 ),
@@ -353,7 +353,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                     child: TextFormField(
                       controller: _locationCtrl,
                       decoration: const InputDecoration(
-                        labelText: 'Location',
+                        labelText: 'Τοποθεσία',
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.location_on),
                       ),
@@ -364,7 +364,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                     child: TextFormField(
                       controller: _carrierCtrl,
                       decoration: const InputDecoration(
-                        labelText: 'Carrier',
+                        labelText: 'Φορέας',
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.groups),
                       ),
@@ -375,13 +375,13 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
               const SizedBox(height: 20),
 
               // ── Specialization requirements ──
-              Text('Required Specializations', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              Text('Απαιτούμενες Ειδικεύσεις', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 4),
-              Text('Only users with these specializations will see this service',
+              Text('Μόνο χρήστες με αυτές τις ειδικεύσεις θα βλέπουν αυτή την υπηρεσία',
                   style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
               const SizedBox(height: 8),
               if (_allSpecs.isEmpty)
-                const Text('Loading specializations...', style: TextStyle(color: Colors.grey))
+                const Text('Φόρτωση ειδικεύσεων...', style: TextStyle(color: Colors.grey))
               else
                 Wrap(
                   spacing: 8,
@@ -409,13 +409,13 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                 ),
               if (_selectedSpecIds.isEmpty) ...[
                 const SizedBox(height: 4),
-                Text('No specializations selected — service visible to all department members',
+                Text('Καμία ειδίκευση — η υπηρεσία είναι ορατή σε όλα τα μέλη',
                     style: tt.bodySmall?.copyWith(color: Colors.orange.shade700, fontStyle: FontStyle.italic)),
               ],
               const SizedBox(height: 20),
 
               // ── Date/Time pickers ──
-              Text('Schedule', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              Text('Πρόγραμμα', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -423,7 +423,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => _pickDateTime(isStart: true),
                       icon: const Icon(Icons.calendar_today, size: 16),
-                      label: Text(_startAt != null ? _formatDt(_startAt!) : 'Start date/time'),
+                      label: Text(_startAt != null ? _formatDt(_startAt!) : 'Έναρξη'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -431,7 +431,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () => _pickDateTime(isStart: false),
                       icon: const Icon(Icons.calendar_today, size: 16),
-                      label: Text(_endAt != null ? _formatDt(_endAt!) : 'End date/time'),
+                      label: Text(_endAt != null ? _formatDt(_endAt!) : 'Λήξη'),
                     ),
                   ),
                 ],
@@ -439,7 +439,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
               const SizedBox(height: 20),
 
               // ── Hours ──
-              Text('Default Hours', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              Text('Προεπιλεγμένες Ώρες', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -448,7 +448,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                       controller: _hoursCtrl,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Hours',
+                        labelText: 'Ώρες',
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),
@@ -460,7 +460,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                       controller: _hoursVolCtrl,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Vol. Hours',
+                        labelText: 'Εθελ.',
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),
@@ -472,7 +472,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                       controller: _hoursTrainingCtrl,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Training',
+                        labelText: 'Εκπαίδ.',
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),
@@ -484,7 +484,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                       controller: _hoursTrainersCtrl,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Trainers',
+                        labelText: 'Εκπαιδευτές',
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),
@@ -503,8 +503,8 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                       ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.check),
                   label: Text(_saving
-                      ? (isEditing ? 'Saving...' : 'Creating...')
-                      : (isEditing ? 'Save Changes' : 'Create Service')),
+                      ? (isEditing ? 'Αποθήκευση...' : 'Δημιουργία...')
+                      : (isEditing ? 'Αποθήκευση' : 'Δημιουργία Υπηρεσίας')),
                 ),
               ),
             ],

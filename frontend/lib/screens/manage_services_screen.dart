@@ -102,19 +102,19 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     final now = DateTime.now();
     final start = DateTime.tryParse(svc['startAt'] ?? '');
     final end = DateTime.tryParse(svc['endAt'] ?? '');
-    if (start == null) return 'No date';
-    if (start.isAfter(now)) return 'Upcoming';
-    if (end != null && end.isBefore(now)) return 'Completed';
-    return 'Active';
+    if (start == null) return 'Χωρίς ημ/νία';
+    if (start.isAfter(now)) return 'Προσεχής';
+    if (end != null && end.isBefore(now)) return 'Ολοκληρωμένη';
+    return 'Ενεργή';
   }
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'Upcoming':
+      case 'Προσεχής':
         return const Color(0xFF2563EB);
-      case 'Active':
+      case 'Ενεργή':
         return const Color(0xFF059669);
-      case 'Completed':
+      case 'Ολοκληρωμένη':
         return const Color(0xFF6B7280);
       default:
         return const Color(0xFF9CA3AF);
@@ -138,17 +138,17 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Service'),
+        title: const Text('Διαγραφή Υπηρεσίας'),
         content: Text(
-            'Are you sure you want to delete "$name"?\nThis cannot be undone.'),
+            'Είστε σίγουροι ότι θέλετε να διαγράψετε "$name";\nΔεν μπορεί να αναιρεθεί.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: const Text('Διαγραφή'),
           ),
         ],
       ),
@@ -162,7 +162,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
           .showSnackBar(SnackBar(content: Text(err)));
     } else {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Service deleted')));
+          .showSnackBar(const SnackBar(content: Text('Η υπηρεσία διαγράφηκε')));
       _load();
     }
   }
@@ -178,13 +178,13 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to update status')));
+              SnackBar(content: Text('Αποτυχία ενημέρωσης κατάστασης')));
         }
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error updating status')));
+            const SnackBar(content: Text('Σφάλμα ενημέρωσης κατάστασης')));
       }
     }
   }
@@ -208,29 +208,29 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Edit Hours — $uName'),
+        title: Text('Ώρες — $uName'),
         content: SizedBox(
           width: 300,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _HoursField(controller: hrsCtrl, label: 'Hours'),
+              _HoursField(controller: hrsCtrl, label: 'Ώρες'),
               const SizedBox(height: 8),
-              _HoursField(controller: volCtrl, label: 'Volunteer Hours'),
+              _HoursField(controller: volCtrl, label: 'Εθελοντικές'),
               const SizedBox(height: 8),
-              _HoursField(controller: trnCtrl, label: 'Training Hours'),
+              _HoursField(controller: trnCtrl, label: 'Επανεκπαίδευση'),
               const SizedBox(height: 8),
-              _HoursField(controller: trnrCtrl, label: 'Trainer Hours'),
+              _HoursField(controller: trnrCtrl, label: 'Εκπαιδευτές'),
             ],
           ),
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: const Text('Άκυρο')),
           FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Save')),
+              child: const Text('Αποθήκευση')),
         ],
       ),
     );
@@ -249,12 +249,12 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
         _load();
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to update hours')));
+            const SnackBar(content: Text('Αποτυχία ενημέρωσης ωρών')));
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error updating hours')));
+            const SnackBar(content: Text('Σφάλμα ενημέρωσης ωρών')));
       }
     }
   }
@@ -263,16 +263,16 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove Enrollment'),
-        content: Text('Remove "$name" from this service?'),
+        title: const Text('Αφαίρεση Εγγραφής'),
+        content: Text('Αφαίρεση "$name" από την υπηρεσία;'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Remove'),
+            child: const Text('Αφαίρεση'),
           ),
         ],
       ),
@@ -284,7 +284,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error removing enrollment')));
+            const SnackBar(content: Text('Σφάλμα αφαίρεσης εγγραφής')));
       }
     }
   }
@@ -319,12 +319,12 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                   '/admin/services/past?departmentId=${widget.departmentId}&departmentName=${Uri.encodeComponent(widget.departmentName)}');
             },
             icon: const Icon(Icons.history, size: 18),
-            label: const Text('Past Services'),
+            label: const Text('Προηγούμενες'),
           ),
           IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _load,
-              tooltip: 'Refresh'),
+              tooltip: 'Ανανέωση'),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -334,7 +334,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
           if (mounted) _load();
         },
         icon: const Icon(Icons.add),
-        label: const Text('New Service'),
+        label: const Text('Νέα Υπηρεσία'),
       ),
       body: SafeArea(
         child: _loading
@@ -351,7 +351,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                           EdgeInsets.symmetric(horizontal: hPad, vertical: 4),
                       child: TextField(
                         decoration: InputDecoration(
-                          hintText: 'Search services...',
+                          hintText: 'Αναζήτηση υπηρεσιών...',
                           prefixIcon: const Icon(Icons.search),
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12)),
@@ -376,7 +376,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                         size: 64,
                                         color: Colors.grey.shade300),
                                     const SizedBox(height: 12),
-                                    Text('No services found',
+                                    Text('Δεν βρέθηκαν υπηρεσίες',
                                         style: tt.bodyLarge?.copyWith(
                                             color: Colors.grey.shade500)),
                                   ]))
@@ -407,9 +407,9 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       padding: const EdgeInsets.fromLTRB(32, 4, 32, 80),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 1.6,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
+        childAspectRatio: 1.45,
       ),
       itemCount: services.length,
       itemBuilder: (ctx, i) => _buildCard(services[i]),
@@ -438,30 +438,44 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
         : null;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shadowColor: Colors.black.withAlpha(18),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade100),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // ── Main card content ──
           InkWell(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             onTap: () => _openDetail(svc),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Status accent strip
+                Container(
+                  height: 4,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [sColor, sColor.withAlpha(120)],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                   // Top row: name + status badge
                   Row(children: [
                     Expanded(
                       child: Text(name,
                           style: tt.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w600),
+                              ?.copyWith(fontWeight: FontWeight.w700, fontSize: 15),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis),
                     ),
@@ -471,18 +485,19 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                       decoration: BoxDecoration(
                         color: sColor.withAlpha(20),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: sColor.withAlpha(50)),
                       ),
                       child: Text(status,
                           style: TextStyle(
                               color: sColor,
                               fontSize: 11,
-                              fontWeight: FontWeight.w600)),
+                              fontWeight: FontWeight.w700)),
                     ),
                   ]),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
 
                   // Info chips
-                  Wrap(spacing: 12, runSpacing: 4, children: [
+                  Wrap(spacing: 14, runSpacing: 6, children: [
                     if (location.isNotEmpty)
                       _InfoChip(Icons.location_on, location),
                     if (carrier.isNotEmpty) _InfoChip(Icons.groups, carrier),
@@ -512,13 +527,13 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                           .toList(),
                     ),
                   ],
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
 
                   // Action row
                   Row(children: [
                     // Enrollment summary + expand toggle
                     InkWell(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       onTap: enrolledCount > 0
                           ? () => setState(() {
                                 isExpanded
@@ -528,37 +543,38 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                           : null,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
+                            horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3F4F6),
-                          borderRadius: BorderRadius.circular(8),
+                          color: const Color(0xFFF0F4FF),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFDBEAFE)),
                         ),
                         child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.people,
+                              const Icon(Icons.people,
                                   size: 14,
-                                  color: Colors.grey.shade600),
-                              const SizedBox(width: 4),
-                              Text('$enrolledCount',
-                                  style: TextStyle(
+                                  color: Color(0xFF2563EB)),
+                              const SizedBox(width: 5),
+                              Text('$enrolledCount μέλη',
+                                  style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.grey.shade700)),
+                                      color: Color(0xFF2563EB))),
                               if (requestedCount > 0) ...[
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 5, vertical: 1),
+                                      horizontal: 7, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFF59E0B),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: Text('$requestedCount pending',
+                                  child: Text('$requestedCount',
                                       style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 10,
-                                          fontWeight: FontWeight.w600)),
+                                          fontWeight: FontWeight.w700)),
                                 ),
                               ],
                               if (enrolledCount > 0) ...[
@@ -575,43 +591,42 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                       ),
                     ),
                     const Spacer(),
-                    TextButton.icon(
-                      onPressed: () => _openDetail(svc),
-                      icon: const Icon(Icons.visibility, size: 16),
-                      label:
-                          const Text('View', style: TextStyle(fontSize: 12)),
-                      style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact),
+                    _CardActionButton(
+                      icon: Icons.visibility_outlined,
+                      label: 'Προβολή',
+                      color: const Color(0xFF2563EB),
+                      onTap: () => _openDetail(svc),
                     ),
-                    const SizedBox(width: 4),
-                    TextButton.icon(
-                      onPressed: () => _editService(svc),
-                      icon: const Icon(Icons.edit, size: 16),
-                      label:
-                          const Text('Edit', style: TextStyle(fontSize: 12)),
-                      style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact),
+                    const SizedBox(width: 6),
+                    _CardActionButton(
+                      icon: Icons.edit_outlined,
+                      label: 'Επεξ.',
+                      color: const Color(0xFF059669),
+                      onTap: () => _editService(svc),
                     ),
-                    const SizedBox(width: 4),
-                    TextButton.icon(
-                      onPressed: () => _deleteService(id, name),
-                      icon: Icon(Icons.delete,
-                          size: 16, color: Colors.red.shade400),
-                      label: Text('Delete',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.red.shade400)),
-                      style: TextButton.styleFrom(
-                          visualDensity: VisualDensity.compact),
+                    const SizedBox(width: 6),
+                    _CardActionButton(
+                      icon: Icons.delete_outline,
+                      label: 'Διαγρ.',
+                      color: Colors.red.shade400,
+                      onTap: () => _deleteService(id, name),
                     ),
                   ]),
-                ],
-              ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
 
           // ── Enrollment panel (inside card) ──
-          if (isExpanded && userServices.isNotEmpty)
-            _buildEnrollmentPanel(svc, userServices, tt),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            child: isExpanded && userServices.isNotEmpty
+                ? _buildEnrollmentPanel(svc, userServices, tt)
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
@@ -631,9 +646,9 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
         color: const Color(0xFFF8FAFC),
         border: Border(top: BorderSide(color: Colors.grey.shade200)),
         borderRadius:
-            const BorderRadius.vertical(bottom: Radius.circular(14)),
+            const BorderRadius.vertical(bottom: Radius.circular(16)),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -641,28 +656,28 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
           Row(children: [
             Icon(Icons.people, size: 14, color: Colors.grey.shade600),
             const SizedBox(width: 6),
-            Text('Enrollments (${userServices.length})',
+            Text('Εγγραφές (${userServices.length})',
                 style: tt.labelSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF374151))),
             const Spacer(),
             // Quick counts
             _EnrollBadge(
-                'Accepted',
+                'Εγκρ.',
                 userServices
                     .where((u) => u['status'] == 'accepted')
                     .length,
                 const Color(0xFF059669)),
             const SizedBox(width: 6),
             _EnrollBadge(
-                'Pending',
+                'Εκκρ.',
                 userServices
                     .where((u) => u['status'] == 'requested')
                     .length,
                 const Color(0xFFF59E0B)),
             const SizedBox(width: 6),
             _EnrollBadge(
-                'Rejected',
+                'Απορ.',
                 userServices
                     .where((u) => u['status'] == 'rejected')
                     .length,
@@ -757,7 +772,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                       Expanded(
                         child: _ActionButton(
                           icon: Icons.check_circle_outline,
-                          label: 'Accept',
+                          label: 'Αποδοχή',
                           color: const Color(0xFF059669),
                           filled: true,
                           onTap: () => _updateEnrollmentStatus(
@@ -769,7 +784,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                       Expanded(
                         child: _ActionButton(
                           icon: Icons.cancel_outlined,
-                          label: 'Reject',
+                          label: 'Απόρριψη',
                           color: const Color(0xFFDC2626),
                           filled: false,
                           onTap: () => _updateEnrollmentStatus(
@@ -780,7 +795,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                     Expanded(
                       child: _ActionButton(
                         icon: Icons.schedule,
-                        label: 'Hours',
+                        label: 'Ώρες',
                         color: const Color(0xFF2563EB),
                         filled: false,
                         onTap: () => _updateEnrollmentHours(
@@ -823,12 +838,65 @@ class _InfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 12, color: const Color(0xFF6B7280)),
-      const SizedBox(width: 4),
-      Text(text,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-    ]);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 12, color: const Color(0xFF6B7280)),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(text,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF4B5563), fontWeight: FontWeight.w500),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+        ),
+      ]),
+    );
+  }
+}
+
+class _CardActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _CardActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withAlpha(60)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: color)),
+          ],
+        ),
+      ),
+    );
   }
 }
 

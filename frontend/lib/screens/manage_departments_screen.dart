@@ -43,7 +43,7 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('New Department'),
+        title: const Text('Νέο Τμήμα'),
         content: SizedBox(
           width: 400,
           child: SingleChildScrollView(
@@ -53,20 +53,20 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
                 TextField(
                     controller: nameCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'Name *',
+                        labelText: 'Όνομα *',
                         border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 TextField(
                     controller: descCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'Description',
+                        labelText: 'Περιγραφή',
                         border: OutlineInputBorder()),
                     maxLines: 2),
                 const SizedBox(height: 12),
                 TextField(
                     controller: locationCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'Location',
+                        labelText: 'Τοποθεσία',
                         border: OutlineInputBorder())),
               ],
             ),
@@ -75,7 +75,7 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+              child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () async {
               final data = <String, dynamic>{'name': nameCtrl.text.trim()};
@@ -93,7 +93,7 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
                     .showSnackBar(SnackBar(content: Text(err)));
               }
             },
-            child: const Text('Create'),
+            child: const Text('Δημιουργία'),
           ),
         ],
       ),
@@ -113,7 +113,7 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text('Manage Departments',
+        title: Text('Διαχείριση Τμημάτων',
             style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -122,14 +122,14 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => prov.fetchDepartments(),
-            tooltip: 'Refresh',
+            tooltip: 'Ανανέωση',
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreateDialog,
         icon: const Icon(Icons.add),
-        label: const Text('New Department'),
+        label: const Text('Νέο Τμήμα'),
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -145,7 +145,7 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
                       horizontal: hPad, vertical: 12),
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: 'Search departments...',
+                    hintText: 'Αναζήτηση τμημάτων...',
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12)),
@@ -164,19 +164,19 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
                   child: Row(
                     children: [
                       _MiniStat(
-                          label: 'Departments',
+                          label: 'Τμήματα',
                           value: '${prov.departments.length}',
                           icon: Icons.business,
                           color: const Color(0xFF7C3AED)),
                       const SizedBox(width: 12),
                       _MiniStat(
-                          label: 'Members',
+                          label: 'Μέλη',
                           value: '$totalMembers',
                           icon: Icons.people,
                           color: const Color(0xFF2563EB)),
                       const SizedBox(width: 12),
                       _MiniStat(
-                          label: 'Shown',
+                          label: 'Εμφαν.',
                           value: '${filtered.length}',
                           icon: Icons.filter_list,
                           color: const Color(0xFF6B7280)),
@@ -198,7 +198,7 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
                                       size: 64,
                                       color: Colors.grey.shade300),
                                   const SizedBox(height: 12),
-                                  Text('No departments found',
+                                  Text('Δεν βρέθηκαν τμήματα',
                                       style: tt.bodyLarge?.copyWith(
                                           color: Colors.grey.shade500)),
                                 ],

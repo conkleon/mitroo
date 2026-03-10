@@ -74,7 +74,7 @@ class _SpecializationDetailScreenState
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
         return AlertDialog(
-          title: const Text('Edit Specialization'),
+          title: const Text('Επεξεργασία Ειδίκευσης'),
           content: SizedBox(
             width: 400,
             child: SingleChildScrollView(
@@ -84,30 +84,30 @@ class _SpecializationDetailScreenState
                   TextField(
                       controller: nameCtrl,
                       decoration: const InputDecoration(
-                          labelText: 'Name', border: OutlineInputBorder())),
+                          labelText: 'Όνομα', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
                   TextField(
                       controller: descCtrl,
                       decoration: const InputDecoration(
-                          labelText: 'Description',
+                          labelText: 'Περιγραφή',
                           border: OutlineInputBorder()),
                       maxLines: 2),
                   const SizedBox(height: 12),
                   TextField(
                       controller: hoursCtrl,
                       decoration: const InputDecoration(
-                          labelText: 'Training Hours',
+                          labelText: 'Ώρες Εκπαίδευσης',
                           border: OutlineInputBorder()),
                       keyboardType: TextInputType.number),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int?>(
                     value: selectedRoot,
                     decoration: const InputDecoration(
-                        labelText: 'Parent',
+                        labelText: 'Γονικό',
                         border: OutlineInputBorder()),
                     items: [
                       const DropdownMenuItem<int?>(
-                          value: null, child: Text('— None (root) —')),
+                          value: null, child: Text('— Κανένα (ρίζα) —')),
                       ...roots.map((r) => DropdownMenuItem<int?>(
                             value: r['id'],
                             child: Text(r['name'] ?? ''),
@@ -122,7 +122,7 @@ class _SpecializationDetailScreenState
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel')),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: () async {
                 final body = <String, dynamic>{
@@ -142,7 +142,7 @@ class _SpecializationDetailScreenState
                 if (ctx.mounted) Navigator.pop(ctx);
                 _load();
               },
-              child: const Text('Save'),
+              child: const Text('Αποθήκευση'),
             ),
           ],
         );
@@ -155,13 +155,13 @@ class _SpecializationDetailScreenState
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Specialization'),
+        title: const Text('Διαγραφή Ειδίκευσης'),
         content: const Text(
-            'Are you sure? This will remove the specialization and all user assignments.'),
+            'Είστε σίγουροι; Αυτό θα αφαιρέσει την ειδίκευση και όλες τις αναθέσεις.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel')),
+              child: const Text('Άκυρο')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
@@ -170,7 +170,7 @@ class _SpecializationDetailScreenState
               if (ctx.mounted) Navigator.pop(ctx);
               if (mounted) context.pop();
             },
-            child: const Text('Delete'),
+            child: const Text('Διαγραφή'),
           ),
         ],
       ),
@@ -191,7 +191,7 @@ class _SpecializationDetailScreenState
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
         return AlertDialog(
-          title: const Text('Add User'),
+          title: const Text('Προσθήκη Χρήστη'),
           content: SizedBox(
             width: 400,
             child: Autocomplete<Map<String, dynamic>>(
@@ -229,8 +229,8 @@ class _SpecializationDetailScreenState
                   controller: controller,
                   focusNode: focusNode,
                   decoration: InputDecoration(
-                    labelText: 'User',
-                    hintText: 'Type to search...',
+                    labelText: 'Χρήστης',
+                    hintText: 'Πληκτρολογήστε...',
                     border: const OutlineInputBorder(),
                     prefixIcon: const Icon(Icons.search, size: 20),
                     suffixIcon: controller.text.isNotEmpty
@@ -300,7 +300,7 @@ class _SpecializationDetailScreenState
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel')),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: selectedUser == null
                   ? null
@@ -314,7 +314,7 @@ class _SpecializationDetailScreenState
                       if (ctx.mounted) Navigator.pop(ctx);
                       _load();
                     },
-              child: const Text('Add'),
+              child: const Text('Προσθήκη'),
             ),
           ],
         );
@@ -337,7 +337,7 @@ class _SpecializationDetailScreenState
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text(_spec?['name'] ?? 'Specialization',
+        title: Text(_spec?['name'] ?? 'Ειδίκευση',
             style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -346,17 +346,17 @@ class _SpecializationDetailScreenState
           IconButton(
               icon: const Icon(Icons.edit),
               onPressed: _edit,
-              tooltip: 'Edit'),
+              tooltip: 'Επεξεργασία'),
           IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: _delete,
-              tooltip: 'Delete'),
+              tooltip: 'Διαγραφή'),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _spec == null
-              ? const Center(child: Text('Specialization not found'))
+              ? const Center(child: Text('Ειδίκευση δεν βρέθηκε'))
               : RefreshIndicator(
                   onRefresh: _load,
                   child: LayoutBuilder(builder: (context, constraints) {
@@ -441,7 +441,7 @@ class _SpecializationDetailScreenState
                       color: const Color(0xFFEDE9FE),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text('Root',
+                    child: const Text('Ρίζα',
                         style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -455,11 +455,11 @@ class _SpecializationDetailScreenState
                         ?.copyWith(color: const Color(0xFF6B7280))),
               ],
               const Divider(height: 24),
-              _infoRow(Icons.schedule, 'Training Hours',
+              _infoRow(Icons.schedule, 'Ώρες Εκπαίδευσης',
                   '${_spec!['hoursTraining'] ?? 0}h'),
-              _infoRow(Icons.people, 'Assigned Users',
+              _infoRow(Icons.people, 'Ανατεθ. Χρήστες',
                   '${_users.length}'),
-              _infoRow(Icons.account_tree, 'Sub-specializations',
+              _infoRow(Icons.account_tree, 'Υπο-ειδικεύσεις',
                   '${_children.length}'),
             ]),
       ),
@@ -497,7 +497,7 @@ class _SpecializationDetailScreenState
                 const Icon(Icons.account_tree,
                     color: Color(0xFF7C3AED)),
                 const SizedBox(width: 8),
-                Text('Hierarchy',
+                Text('Ιεραρχία',
                     style: tt.titleSmall
                         ?.copyWith(fontWeight: FontWeight.w700)),
               ]),
@@ -507,7 +507,7 @@ class _SpecializationDetailScreenState
                   dense: true,
                   leading: const Icon(Icons.arrow_upward,
                       color: Color(0xFF6B7280), size: 20),
-                  title: Text('Parent: ${_root!['name'] ?? ''}'),
+                  title: Text('Γονικό: ${_root!['name'] ?? ''}'),
                   trailing: const Icon(Icons.chevron_right, size: 18),
                   onTap: () async {
                     await context
@@ -519,7 +519,7 @@ class _SpecializationDetailScreenState
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Center(
-                      child: Text('No parent or sub-specializations',
+                      child: Text('Χωρίς γονικές ή υπο-ειδικεύσεις',
                           style:
                               TextStyle(color: Color(0xFF9CA3AF)))),
                 ),
@@ -555,12 +555,12 @@ class _SpecializationDetailScreenState
               Row(children: [
                 const Icon(Icons.people, color: Color(0xFF2563EB)),
                 const SizedBox(width: 8),
-                Text('Assigned Users (${_users.length})',
+                Text('Ανατεθ. Χρήστες (${_users.length})',
                     style: tt.titleSmall
                         ?.copyWith(fontWeight: FontWeight.w700)),
                 const Spacer(),
                 ActionChip(
-                  label: const Text('Add'),
+                  label: const Text('Προσθήκη'),
                   avatar: const Icon(Icons.add, size: 16),
                   onPressed: _addUser,
                 ),
@@ -570,7 +570,7 @@ class _SpecializationDetailScreenState
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Center(
-                      child: Text('No users assigned',
+                      child: Text('Κανένας χρήστης',
                           style:
                               TextStyle(color: Color(0xFF9CA3AF)))),
                 )
@@ -619,7 +619,7 @@ class _SpecializationDetailScreenState
                         icon: const Icon(Icons.remove_circle_outline,
                             color: Colors.red, size: 20),
                         onPressed: () => _removeUser(uid),
-                        tooltip: 'Remove',
+                        tooltip: 'Αφαίρεση',
                       ),
                     ]),
                   );

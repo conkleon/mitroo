@@ -27,20 +27,20 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSt) => AlertDialog(
-          title: const Text('New Vehicle'),
+          title: const Text('Νέο Όχημα'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Όνομα')),
               const SizedBox(height: 12),
-              TextField(controller: typeCtrl, decoration: const InputDecoration(labelText: 'Type (car, boat, etc.)')),
+              TextField(controller: typeCtrl, decoration: const InputDecoration(labelText: 'Τύπος (αυτοκίνητο, σκάφος, κλπ)')),
               const SizedBox(height: 12),
-              TextField(controller: regCtrl, decoration: const InputDecoration(labelText: 'Registration #')),
+              TextField(controller: regCtrl, decoration: const InputDecoration(labelText: 'Αρ. Κυκλοφορίας')),
               const SizedBox(height: 12),
               SegmentedButton<String>(
                 segments: const [
-                  ButtonSegment(value: 'km', label: Text('Kilometers')),
-                  ButtonSegment(value: 'hours', label: Text('Hours')),
+                  ButtonSegment(value: 'km', label: Text('Χιλιόμετρα')),
+                  ButtonSegment(value: 'hours', label: Text('Ώρες')),
                 ],
                 selected: {meterType},
                 onSelectionChanged: (v) => setSt(() => meterType = v.first),
@@ -48,7 +48,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
             FilledButton(
               onPressed: () async {
                 final data = <String, dynamic>{
@@ -63,7 +63,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
                 }
               },
-              child: const Text('Create'),
+              child: const Text('Δημιουργία'),
             ),
           ],
         ),
@@ -136,9 +136,9 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                     children: [
                       Icon(Icons.directions_car, size: 20, color: cs.primary),
                       const SizedBox(width: 8),
-                      Text('Vehicles', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      Text('Οχήματα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                       const Spacer(),
-                      Text('${prov.vehicles.length} total', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                      Text('${prov.vehicles.length} σύνολο', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
                     ],
                   ),
                 ),
@@ -154,7 +154,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                       children: [
                         Icon(Icons.directions_car_outlined, size: 64, color: Colors.grey.shade300),
                         const SizedBox(height: 12),
-                        Text('No vehicles yet', style: tt.bodyLarge?.copyWith(color: Colors.grey)),
+                        Text('Δεν υπάρχουν οχήματα', style: tt.bodyLarge?.copyWith(color: Colors.grey)),
                       ],
                     ),
                   ),

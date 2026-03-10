@@ -85,7 +85,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSt) => AlertDialog(
-          title: const Text('Edit Item'),
+          title: const Text('Επεξεργασία'),
           content: SizedBox(
             width: 400,
             child: SingleChildScrollView(
@@ -94,7 +94,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 children: [
                   TextField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(labelText: 'Όνομα', border: OutlineInputBorder()),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -104,23 +104,23 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: locationCtrl,
-                    decoration: const InputDecoration(labelText: 'Location', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(labelText: 'Τοποθεσία', border: OutlineInputBorder()),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: descCtrl,
-                    decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(labelText: 'Περιγραφή', border: OutlineInputBorder()),
                     maxLines: 3,
                   ),
                   const SizedBox(height: 8),
                   SwitchListTile(
-                    title: const Text('Is Container'),
-                    subtitle: const Text('Can hold other items'),
+                    title: const Text('Κουτί'),
+                    subtitle: const Text('Μπορεί να περιέχει αντικείμενα'),
                     value: isContainer,
                     onChanged: (v) => setSt(() => isContainer = v),
                   ),
                   SwitchListTile(
-                    title: const Text('Available for Assignment'),
+                    title: const Text('Διαθέσιμο για ανάθεση'),
                     value: availableForAssignment,
                     onChanged: (v) => setSt(() => availableForAssignment = v),
                   ),
@@ -128,7 +128,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(expirationDate != null
                         ? 'Expires: ${expirationDate!.day}/${expirationDate!.month}/${expirationDate!.year}'
-                        : 'No expiration date'),
+                        : 'Χωρίς ημερομηνία λήξης'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -157,7 +157,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
             FilledButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
@@ -178,7 +178,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   _load();
                 }
               },
-              child: const Text('Save'),
+              child: const Text('Αποθήκευση'),
             ),
           ],
         ),
@@ -192,10 +192,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Item'),
-        content: const Text('Are you sure? This cannot be undone.'),
+        title: const Text('Διαγραφή Αντικειμένου'),
+        content: const Text('Είστε σίγουροι; Δεν μπορεί να αναιρεθεί.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
@@ -207,7 +207,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 context.pop();
               }
             },
-            child: const Text('Delete'),
+            child: const Text('Διαγραφή'),
           ),
         ],
       ),
@@ -225,7 +225,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSt) => AlertDialog(
-          title: const Text('Assign to User'),
+          title: const Text('Ανάθεση σε Χρήστη'),
           content: SizedBox(
             width: 400,
             child: Column(
@@ -239,7 +239,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         const Icon(Icons.person, size: 16, color: Color(0xFF059669)),
                         const SizedBox(width: 6),
                         Text(
-                          'Currently: ${currentAssigned['forename']} ${currentAssigned['surname']}',
+                          'Τρέχων: ${currentAssigned['forename']} ${currentAssigned['surname']}',
                           style: const TextStyle(color: Color(0xFF059669)),
                         ),
                       ],
@@ -269,7 +269,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       controller: controller,
                       focusNode: focusNode,
                       decoration: const InputDecoration(
-                        labelText: 'Search user…',
+                        labelText: 'Αναζήτηση χρήστη…',
                         prefixIcon: Icon(Icons.person_search),
                         border: OutlineInputBorder(),
                       ),
@@ -278,7 +278,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 ),
                 if (selectedUserName != null) ...[
                   const SizedBox(height: 8),
-                  Text('Selected: $selectedUserName', style: const TextStyle(fontWeight: FontWeight.w500)),
+                  Text('Επιλογή: $selectedUserName', style: const TextStyle(fontWeight: FontWeight.w500)),
                 ],
               ],
             ),
@@ -293,14 +293,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     if (err != null) {
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User unassigned')));
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ο χρήστης αφαιρέθηκε')));
                       _load();
                     }
                   }
                 },
-                child: const Text('Unassign', style: TextStyle(color: Colors.red)),
+                child: const Text('Αφαίρεση', style: TextStyle(color: Colors.red)),
               ),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
             FilledButton(
               onPressed: selectedUserId == null
                   ? null
@@ -311,12 +311,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         if (err != null) {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('User assigned')));
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ανάθεση επιτυχής')));
                           _load();
                         }
                       }
                     },
-              child: const Text('Assign'),
+              child: const Text('Ανάθεση'),
             ),
           ],
         ),
@@ -334,7 +334,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSt) => AlertDialog(
-          title: const Text('Move to Container'),
+          title: const Text('Μετακίνηση σε Κουτί'),
           content: SizedBox(
             width: 400,
             child: Column(
@@ -347,7 +347,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       children: [
                         const Icon(Icons.inventory, size: 16, color: Color(0xFF7C3AED)),
                         const SizedBox(width: 6),
-                        Text('Currently in: ${_item!['containedBy']['name']}',
+                        Text('Τρέχον: ${_item!['containedBy']['name']}',
                             style: const TextStyle(color: Color(0xFF7C3AED))),
                       ],
                     ),
@@ -371,7 +371,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       controller: controller,
                       focusNode: focusNode,
                       decoration: const InputDecoration(
-                        labelText: 'Search container…',
+                        labelText: 'Αναζήτηση κουτιού…',
                         prefixIcon: Icon(Icons.search),
                         border: OutlineInputBorder(),
                       ),
@@ -380,7 +380,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 ),
                 if (selectedContainerName != null) ...[
                   const SizedBox(height: 8),
-                  Text('Target: $selectedContainerName', style: const TextStyle(fontWeight: FontWeight.w500)),
+                  Text('Προορισμός: $selectedContainerName', style: const TextStyle(fontWeight: FontWeight.w500)),
                 ],
               ],
             ),
@@ -395,14 +395,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     if (err != null) {
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Removed from container')));
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Αφαιρέθηκε από κουτί')));
                       _load();
                     }
                   }
                 },
-                child: const Text('Remove from container', style: TextStyle(color: Colors.red)),
+                child: const Text('Αφαίρεση από κουτί', style: TextStyle(color: Colors.red)),
               ),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
             FilledButton(
               onPressed: selectedContainerId == null
                   ? null
@@ -413,17 +413,79 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         if (err != null) {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Moved to container')));
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Μετακινήθηκε σε κουτί')));
                           _load();
                         }
                       }
                     },
-              child: const Text('Move'),
+              child: const Text('Μετακίνηση'),
             ),
           ],
         ),
       ),
     );
+  }
+
+  // ── Self-assign / unassign ──
+
+  Future<void> _selfAssign() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Λήψη Εξοπλισμού'),
+        content: Text('Ανάθεση του "${_item?['name']}" σε εσάς;'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+          FilledButton.icon(
+            icon: const Icon(Icons.check, size: 18),
+            label: const Text('Λήψη'),
+            onPressed: () => Navigator.pop(ctx, true),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final err = await context.read<ItemProvider>().selfAssign(widget.itemId);
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Το "${_item?['name']}" ανατέθηκε σε εσάς')),
+      );
+      _load();
+    }
+  }
+
+  Future<void> _selfUnassign() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Επιστροφή'),
+        content: Text('Επιστροφή του "${_item?['name']}";'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+            child: const Text('Επιστροφή'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final err = await context.read<ItemProvider>().selfUnassign(widget.itemId);
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Το "${_item?['name']}" επιστράφηκε')),
+      );
+      _load();
+    }
   }
 
   // ── Build ──
@@ -437,14 +499,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text(_item?['name'] ?? 'Item'),
+        title: Text(_item?['name'] ?? 'Αντικείμενο'),
         actions: [
           if (canManage) ...[
-            IconButton(icon: const Icon(Icons.edit), onPressed: _item != null ? _editItem : null, tooltip: 'Edit'),
+            IconButton(icon: const Icon(Icons.edit), onPressed: _item != null ? _editItem : null, tooltip: 'Επεξεργασία'),
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: _item != null ? _deleteItem : null,
-              tooltip: 'Delete',
+              tooltip: 'Διαγραφή',
               color: Colors.red,
             ),
           ],
@@ -453,7 +515,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _item == null
-              ? const Center(child: Text('Item not found'))
+              ? const Center(child: Text('Αντικείμενο δεν βρέθηκε'))
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(
@@ -483,6 +545,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final isExpired = expDate != null && DateTime.tryParse(expDate)?.isBefore(DateTime.now()) == true;
 
     return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withAlpha(20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade100),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -516,7 +584,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             color: const Color(0xFF7C3AED).withAlpha(20),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text('Container', style: TextStyle(fontSize: 11, color: Color(0xFF7C3AED), fontWeight: FontWeight.w600)),
+                          child: const Text('Κουτί', style: TextStyle(fontSize: 11, color: Color(0xFF7C3AED), fontWeight: FontWeight.w600)),
                         ),
                     ],
                   ),
@@ -528,19 +596,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             const SizedBox(height: 12),
             _infoRow(Icons.qr_code, 'ID (QR)', '#${_item!['id']}'),
             if (_item!['barCode'] != null) _infoRow(Icons.barcode_reader, 'Barcode', _item!['barCode']),
-            if (_item!['location'] != null) _infoRow(Icons.location_on_outlined, 'Location', _item!['location']),
+            if (_item!['location'] != null) _infoRow(Icons.location_on_outlined, 'Τοποθεσία', _item!['location']),
             if (_item!['description'] != null && (_item!['description'] as String).isNotEmpty)
-              _infoRow(Icons.description_outlined, 'Description', _item!['description']),
-            _infoRow(Icons.calendar_today, 'Created', _formatDate(_item!['createdAt'])),
+              _infoRow(Icons.description_outlined, 'Περιγραφή', _item!['description']),
+            _infoRow(Icons.calendar_today, 'Δημιουργία', _formatDate(_item!['createdAt'])),
             if (expDate != null)
               _infoRow(
                 isExpired ? Icons.warning_amber : Icons.event,
-                'Expires',
+                'Λήξη',
                 _formatDate(expDate),
                 valueColor: isExpired ? Colors.red : null,
               ),
             if (_item!['availableForAssignment'] == true)
-              _infoRow(Icons.assignment_turned_in, 'Available for Assignment', 'Yes', valueColor: const Color(0xFF059669)),
+              _infoRow(Icons.assignment_turned_in, 'Διαθέσιμο', 'Ναι', valueColor: const Color(0xFF059669)),
           ],
         ),
       ),
@@ -570,7 +638,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   Widget _buildAssignedUserCard(TextTheme tt, ColorScheme cs, bool canManage) {
     final assigned = _item!['assignedTo'];
+    final auth = context.read<AuthProvider>();
+    final isMe = assigned != null && assigned['id'] == auth.user?['id'];
+    final canTake = !canManage &&
+        _item!['availableForAssignment'] == true &&
+        assigned == null;
+
     return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withAlpha(20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade100),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -580,12 +660,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               children: [
                 Icon(Icons.person_pin, size: 20, color: cs.primary),
                 const SizedBox(width: 8),
-                Text('Assigned User', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Ανατεθειμένος Χρήστης', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                 const Spacer(),
                 if (canManage)
                   TextButton.icon(
                     icon: Icon(assigned != null ? Icons.swap_horiz : Icons.person_add_alt_1, size: 18),
-                    label: Text(assigned != null ? 'Change' : 'Assign'),
+                    label: Text(assigned != null ? 'Αλλαγή' : 'Ανάθεση'),
                     onPressed: _showAssignUserDialog,
                   ),
               ],
@@ -623,6 +703,18 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         ],
                       ),
                     ),
+                    if (isMe)
+                      FilledButton.tonalIcon(
+                        onPressed: _selfUnassign,
+                        icon: const Icon(Icons.assignment_return, size: 16),
+                        label: const Text('Επιστροφή', style: TextStyle(fontSize: 12)),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.red.shade50,
+                          foregroundColor: Colors.red.shade700,
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        ),
+                      ),
                   ],
                 ),
               )
@@ -638,10 +730,26 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   children: [
                     Icon(Icons.person_off_outlined, color: Colors.grey.shade400, size: 20),
                     const SizedBox(width: 8),
-                    Text('No user assigned', style: TextStyle(color: Colors.grey.shade500)),
+                    Text('Κανένας χρήστης', style: TextStyle(color: Colors.grey.shade500)),
                   ],
                 ),
               ),
+            // Take / Return buttons for regular users
+            if (canTake) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _selfAssign,
+                  icon: const Icon(Icons.add_circle_outline, size: 18),
+                  label: const Text('Λήψη'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -654,6 +762,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final contents = (_item!['contents'] as List<dynamic>?) ?? [];
 
     return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withAlpha(20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade100),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -663,7 +777,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               children: [
                 const Icon(Icons.inbox, size: 20, color: Color(0xFF7C3AED)),
                 const SizedBox(width: 8),
-                Text('Contents', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Περιεχόμενα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -671,7 +785,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     color: const Color(0xFF7C3AED).withAlpha(20),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text('${contents.length} items', style: const TextStyle(fontSize: 12, color: Color(0xFF7C3AED), fontWeight: FontWeight.w500)),
+                  child: Text('${contents.length} αντικ.', style: const TextStyle(fontSize: 12, color: Color(0xFF7C3AED), fontWeight: FontWeight.w500)),
                 ),
               ],
             ),
@@ -685,7 +799,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   children: [
                     Icon(Icons.inbox_outlined, color: Colors.grey.shade400, size: 20),
                     const SizedBox(width: 8),
-                    Text('Empty container', style: TextStyle(color: Colors.grey.shade500)),
+                    Text('Άδειο κουτί', style: TextStyle(color: Colors.grey.shade500)),
                   ],
                 ),
               )
@@ -707,7 +821,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         if (child['barCode'] != null) Text('Barcode: ${child['barCode']}', style: tt.bodySmall),
                         if (childAssigned != null)
                           Text(
-                            'Assigned: ${childAssigned['forename']} ${childAssigned['surname']}',
+                            'Ανατεθ.: ${childAssigned['forename']} ${childAssigned['surname']}',
                             style: tt.bodySmall?.copyWith(color: const Color(0xFF059669)),
                           ),
                       ],
@@ -731,6 +845,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final parent = _item!['containedBy'];
 
     return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withAlpha(20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade100),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -740,12 +860,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               children: [
                 Icon(Icons.move_to_inbox, size: 20, color: cs.primary),
                 const SizedBox(width: 8),
-                Text('Container', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Κουτί', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                 const Spacer(),
                 if (canManage)
                   TextButton.icon(
                     icon: const Icon(Icons.drive_file_move_outline, size: 18),
-                    label: const Text('Move'),
+                    label: const Text('Μετακίνηση'),
                     onPressed: _showMoveToContainerDialog,
                   ),
               ],
@@ -769,7 +889,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   children: [
                     Icon(Icons.all_inbox_outlined, color: Colors.grey.shade400, size: 20),
                     const SizedBox(width: 8),
-                    Text('Not inside any container', style: TextStyle(color: Colors.grey.shade500)),
+                    Text('Δεν βρίσκεται σε κουτί', style: TextStyle(color: Colors.grey.shade500)),
                   ],
                 ),
               ),

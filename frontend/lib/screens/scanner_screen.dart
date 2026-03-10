@@ -76,7 +76,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSt) {
           return AlertDialog(
-            title: const Text('Enter Code'),
+            title: const Text('Εισαγωγή Κωδικού'),
             content: SizedBox(
               width: 350,
               child: Column(
@@ -94,8 +94,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   TextField(
                     autofocus: true,
                     decoration: InputDecoration(
-                      labelText: isQr ? 'Item ID' : 'Barcode value',
-                      hintText: isQr ? 'e.g. 42' : 'e.g. ABC-123',
+                      labelText: isQr ? 'ID Αντικειμένου' : 'Τιμή Barcode',
+                      hintText: isQr ? 'π.χ. 42' : 'π.χ. ABC-123',
                       prefixIcon: Icon(isQr ? Icons.tag : Icons.barcode_reader),
                     ),
                     keyboardType: isQr ? TextInputType.number : TextInputType.text,
@@ -105,7 +105,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
               FilledButton(
                 onPressed: () {
                   final value = selectedValue.trim();
@@ -115,7 +115,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   _hasPopped = true;
                   Navigator.of(context).pop(ScanResult(value: value, isQr: isQr));
                 },
-                child: const Text('Look up'),
+                child: const Text('Αναζήτηση'),
               ),
             ],
           );
@@ -146,7 +146,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       const Icon(Icons.videocam_off, color: Colors.white54, size: 64),
                       const SizedBox(height: 16),
                       Text(
-                        'Camera unavailable',
+                        'Κάμερα μη διαθέσιμη',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
@@ -154,14 +154,14 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        error.errorDetails?.message ?? 'Could not access the camera. Please check permissions.',
+                        error.errorDetails?.message ?? 'Δεν ήταν δυνατή η πρόσβαση στην κάμερα. Ελέγξτε τα δικαιώματα.',
                         style: const TextStyle(color: Colors.white70, fontSize: 13),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
                       FilledButton.icon(
                         icon: const Icon(Icons.keyboard_outlined),
-                        label: const Text('Enter code manually'),
+                        label: const Text('Χειροκίνητη εισαγωγή'),
                         onPressed: _showManualEntry,
                       ),
                     ],
@@ -190,7 +190,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     ),
                     const Spacer(),
                     Text(
-                      'Scan QR or Barcode',
+                      'Σάρωση QR ή Barcode',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -216,7 +216,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Point the camera at a QR code or barcode',
+                      'Σκοπεύστε σε κωδικό QR ή barcode',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70),
                       textAlign: TextAlign.center,
                     ),
