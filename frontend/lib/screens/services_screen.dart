@@ -822,7 +822,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                   } else if (totalEnrollments <= 2) {
                     dotColor = const Color(0xFFF59E0B); // amber – few people
                   } else if (totalEnrollments <= 5) {
-                    dotColor = const Color(0xFF3B82F6); // blue – moderate
+                    dotColor = const Color(0xFFEF4444); // red – moderate
                   } else {
                     dotColor = const Color(0xFF10B981); // green – well staffed
                   }
@@ -871,7 +871,7 @@ class _ServicesScreenState extends State<ServicesScreen>
             children: [
               _legendDot(const Color(0xFFEF4444), 'Χωρίς αιτήσεις'),
               _legendDot(const Color(0xFFF59E0B), 'Λίγες (1-2)'),
-              _legendDot(const Color(0xFF3B82F6), 'Μέτριες (3-5)'),
+              _legendDot(const Color(0xFFEF4444), 'Μέτριες (3-5)'),
               _legendDot(const Color(0xFF10B981), 'Πολλές (6+)'),
             ],
           ),
@@ -1819,7 +1819,7 @@ class _CalendarServiceCard extends StatelessWidget {
       needColor = const Color(0xFFF59E0B);
       needLabel = 'Λίγες αιτήσεις';
     } else {
-      needColor = const Color(0xFF3B82F6);
+      needColor = const Color(0xFFEF4444);
       needLabel = '$enrollCount αιτήσεις';
     }
 

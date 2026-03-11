@@ -235,7 +235,7 @@ class _ManageSpecializationsScreenState
                     label: 'Χρήστες',
                     value: '$_totalUsers',
                     icon: Icons.people,
-                    color: const Color(0xFF2563EB)),
+                    color: const Color(0xFFDC2626)),
                 const SizedBox(width: 12),
                 _MiniStat(
                     label: 'Εμφαν.',
@@ -355,14 +355,14 @@ class _SpecCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isRoot
                     ? const Color(0xFFEDE9FE)
-                    : const Color(0xFFDBEAFE),
+                    : const Color(0xFFFEE2E2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                   isRoot ? Icons.school : Icons.subdirectory_arrow_right,
                   color: isRoot
                       ? const Color(0xFF7C3AED)
-                      : const Color(0xFF2563EB),
+                      : const Color(0xFFDC2626),
                   size: 24),
             ),
             const SizedBox(width: 14),
@@ -385,7 +385,7 @@ class _SpecCard extends StatelessWidget {
                       _MiniLabel(
                           icon: Icons.people,
                           text: '$userCount',
-                          color: const Color(0xFF2563EB)),
+                          color: const Color(0xFFDC2626)),
                       if (isRoot && childCount > 0)
                         _MiniLabel(
                             icon: Icons.subdirectory_arrow_right,

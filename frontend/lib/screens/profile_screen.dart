@@ -224,7 +224,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDBEAFE),
+                        color: const Color(0xFFFEE2E2),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text('Διαχειριστής', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600, fontSize: 12)),
@@ -262,7 +262,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text('Ανάλυση $currentYear',
                         style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF374151))),
                     const SizedBox(height: 12),
-                    _HoursRow(label: 'Κάλυψη', hours: _yearServiceHours, icon: Icons.medical_services_outlined, color: const Color(0xFF2563EB)),
+                    _HoursRow(label: 'Κάλυψη', hours: _yearServiceHours, icon: Icons.medical_services_outlined, color: const Color(0xFFDC2626)),
                     const SizedBox(height: 8),
                     _HoursRow(label: 'Εθελοντικές', hours: _yearVolHours, icon: Icons.volunteer_activism, color: const Color(0xFF059669)),
                     const SizedBox(height: 8),

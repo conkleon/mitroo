@@ -122,7 +122,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   Color _statusColor(String status) {
     switch (status) {
       case 'Προσεχής':
-        return const Color(0xFF2563EB);
+        return const Color(0xFFDC2626);
       case 'Ενεργή':
         return const Color(0xFF059669);
       case 'Ολοκληρωμένη':
@@ -619,13 +619,13 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                               // Members badge
                               const Icon(Icons.people,
                                   size: 12,
-                                  color: Color(0xFF2563EB)),
+                                  color: Color(0xFFDC2626)),
                               const SizedBox(width: 3),
                               Text('$enrolledCount',
                                   style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xFF2563EB))),
+                                      color: Color(0xFFDC2626))),
                               if (requestedCount > 0) ...[
                                 const SizedBox(width: 4),
                                 Container(
@@ -687,8 +687,8 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                       if (enrolledCount > 0)
                         Material(
                           color: isExpanded
-                              ? const Color(0xFF2563EB).withAlpha(20)
-                              : const Color(0xFFF0F4FF),
+                              ? const Color(0xFFDC2626).withAlpha(20)
+                              : const Color(0xFFFEF2F2),
                           borderRadius: BorderRadius.circular(10),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(10),
@@ -705,19 +705,19 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                 children: [
                                   Icon(Icons.people_outline,
                                       size: 16,
-                                      color: const Color(0xFF2563EB)),
+                                      color: const Color(0xFFDC2626)),
                                   const SizedBox(width: 5),
                                   Text('$enrolledCount',
                                       style: const TextStyle(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
-                                          color: Color(0xFF2563EB))),
+                                          color: Color(0xFFDC2626))),
                                   Icon(
                                     isExpanded
                                         ? Icons.expand_less
                                         : Icons.expand_more,
                                     size: 20,
-                                    color: const Color(0xFF2563EB),
+                                    color: const Color(0xFFDC2626),
                                   ),
                                 ],
                               ),
@@ -923,7 +923,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                       child: _ActionButton(
                         icon: Icons.schedule,
                         label: 'Ώρες',
-                        color: const Color(0xFF2563EB),
+                        color: const Color(0xFFDC2626),
                         filled: false,
                         onTap: () => _updateEnrollmentHours(
                             serviceId, userId, us),

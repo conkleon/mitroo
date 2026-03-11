@@ -72,7 +72,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
   Color _statusColor(String status) {
     switch (status) {
       case 'Προσεχής':
-        return const Color(0xFF2563EB);
+        return const Color(0xFFDC2626);
       case 'Ενεργή':
         return const Color(0xFF059669);
       case 'Ολοκληρωμένη':
@@ -1016,7 +1016,7 @@ class _HoursDefaultCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.schedule, size: 18, color: Color(0xFF2563EB)),
+                const Icon(Icons.schedule, size: 18, color: Color(0xFFDC2626)),
                 const SizedBox(width: 8),
                 Text('Προεπιλεγμένες Ώρες',
                     style:
@@ -1027,7 +1027,7 @@ class _HoursDefaultCard extends StatelessWidget {
             Row(
               children: [
                 _HoursBadge(
-                    label: 'Κάλυψη', value: svc['defaultHours'] ?? 0, color: const Color(0xFF2563EB)),
+                    label: 'Κάλυψη', value: svc['defaultHours'] ?? 0, color: const Color(0xFFDC2626)),
                 const SizedBox(width: 8),
                 _HoursBadge(
                     label: 'Εθελοντικές', value: svc['defaultHoursVol'] ?? 0, color: const Color(0xFF059669)),
@@ -1183,7 +1183,7 @@ class _PeopleSection extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.people, size: 20, color: Color(0xFF2563EB)),
+                const Icon(Icons.people, size: 20, color: Color(0xFFDC2626)),
                 const SizedBox(width: 8),
                 Text('Μέλη Υπηρεσίας',
                     style: tt.titleMedium
@@ -1193,12 +1193,12 @@ class _PeopleSection extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withAlpha(15),
+                    color: const Color(0xFFDC2626).withAlpha(15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text('$totalPeople σύνολο',
                       style: const TextStyle(
-                          color: Color(0xFF2563EB),
+                          color: Color(0xFFDC2626),
                           fontSize: 12,
                           fontWeight: FontWeight.w600)),
                 ),
@@ -1491,7 +1491,7 @@ class _AcceptedUserTile extends StatelessWidget {
                 if (showActions) ...[
                   IconButton(
                     onPressed: onEditHours,
-                    icon: const Icon(Icons.timer, color: Color(0xFF2563EB)),
+                    icon: const Icon(Icons.timer, color: Color(0xFFDC2626)),
                     iconSize: 20,
                     tooltip: 'Επεξεργασία ωρών',
                     visualDensity: VisualDensity.compact,
@@ -1512,7 +1512,7 @@ class _AcceptedUserTile extends StatelessWidget {
                 children: [
                   const SizedBox(width: 46), // align with name
                   if (hours > 0)
-                    _MiniHoursBadge(label: 'Κάλ.', value: hours, color: const Color(0xFF2563EB)),
+                    _MiniHoursBadge(label: 'Κάλ.', value: hours, color: const Color(0xFFDC2626)),
                   if (hoursVol > 0)
                     _MiniHoursBadge(label: 'Εθελ.', value: hoursVol, color: const Color(0xFF059669)),
                   if (hoursTraining > 0)
@@ -1683,7 +1683,7 @@ class _MemberEquipmentCard extends StatelessWidget {
                   icon: const Icon(Icons.add_circle_outline, size: 20),
                   label: const Text('Προσθήκη Εξοπλισμού'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
+                    backgroundColor: const Color(0xFFDC2626),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
@@ -1732,13 +1732,13 @@ class _MemberEquipmentCard extends StatelessWidget {
                     radius: 18,
                     backgroundColor: (isContainer
                             ? const Color(0xFF7C3AED)
-                            : const Color(0xFF2563EB))
+                            : const Color(0xFFDC2626))
                         .withAlpha(25),
                     child: Icon(
                       isContainer ? Icons.inventory : Icons.build_outlined,
                       color: isContainer
                           ? const Color(0xFF7C3AED)
-                          : const Color(0xFF2563EB),
+                          : const Color(0xFFDC2626),
                       size: 18,
                     ),
                   ),

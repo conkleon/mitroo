@@ -346,18 +346,18 @@ model Vehicle {
 // ──────────────────────────────────────────────
 
 model VehicleLog {
-  id         Int      @id @default(autoincrement())
-  vehicleId  Int      @map("vehicle_id")
-  userId     Int      @map("user_id")
-  serviceId  Int?     @map("service_id")
+  id         Int       @id @default(autoincrement())
+  vehicleId  Int       @map("vehicle_id")
+  userId     Int       @map("user_id")
+  serviceId  Int?      @map("service_id")
 
-  startAt    DateTime @map("start_at")
-  endAt      DateTime @map("end_at")
-  meterStart Decimal  @map("meter_start") @db.Decimal(12, 2)
-  meterEnd   Decimal  @map("meter_end") @db.Decimal(12, 2)
+  startAt    DateTime  @map("start_at")
+  endAt      DateTime? @map("end_at")
+  meterStart Decimal   @map("meter_start") @db.Decimal(12, 2)
+  meterEnd   Decimal?  @map("meter_end") @db.Decimal(12, 2)
 
-  comment    String?  @db.Text
-  createdAt  DateTime @default(now()) @map("created_at")
+  comment    String?   @db.Text
+  createdAt  DateTime  @default(now()) @map("created_at")
 
   vehicle Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)

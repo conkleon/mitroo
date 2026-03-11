@@ -30,12 +30,12 @@ class AuthProvider extends ChangeNotifier {
     return depts.any((d) => d['role'] == 'missionAdmin');
   }
 
-  /// True when user is itemAdmin in at least one department (or global admin).
+  /// True when user is itemAdmin (or missionAdmin) in at least one department (or global admin).
   bool get isItemAdmin {
     if (isAdmin) return true;
     final depts = _user?['departments'] as List<dynamic>?;
     if (depts == null) return false;
-    return depts.any((d) => d['role'] == 'itemAdmin');
+    return depts.any((d) => d['role'] == 'itemAdmin' || d['role'] == 'missionAdmin');
   }
 
   /// Departments where the user is missionAdmin.
@@ -48,12 +48,12 @@ class AuthProvider extends ChangeNotifier {
         .toList();
   }
 
-  /// Departments where the user is itemAdmin.
+  /// Departments where the user is itemAdmin (or missionAdmin, since missionAdmin inherits itemAdmin).
   List<Map<String, dynamic>> get itemAdminDepartments {
     final depts = _user?['departments'] as List<dynamic>?;
     if (depts == null) return [];
     return depts
-        .where((d) => d['role'] == 'itemAdmin')
+        .where((d) => d['role'] == 'itemAdmin' || d['role'] == 'missionAdmin')
         .map((d) => Map<String, dynamic>.from(d['department'] as Map))
         .toList();
   }

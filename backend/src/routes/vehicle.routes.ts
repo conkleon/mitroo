@@ -57,6 +57,55 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/vehicles/available — vehicles not currently in use
+router.get("/available/list", async (req: Request, res: Response) => {
+  const { search } = req.query;
+
+  // Get IDs of vehicles currently in use (have open logs)
+  const openLogs = await prisma.vehicleLog.findMany({
+    where: { endAt: null },
+    select: { vehicleId: true },
+  });
+  const inUseIds = openLogs.map((l) => l.vehicleId);
+
+  const where: any = {};
+  if (inUseIds.length > 0) {
+    where.id = { notIn: inUseIds };
+  }
+  if (search && typeof search === "string" && search.trim()) {
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { registrationNumber: { contains: search, mode: "insensitive" } },
+      { type: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  const vehicles = await prisma.vehicle.findMany({
+    where,
+    include: { department: { select: { id: true, name: true } } },
+    orderBy: { name: "asc" },
+  });
+  res.json(vehicles);
+});
+
+// GET /api/vehicles/my/active — current user's active vehicle logs
+router.get("/my/active", async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const logs = await prisma.vehicleLog.findMany({
+    where: { userId, endAt: null },
+    include: {
+      vehicle: {
+        select: {
+          id: true, name: true, type: true, meterType: true,
+          registrationNumber: true, currentMeter: true,
+        },
+      },
+    },
+    orderBy: { startAt: "desc" },
+  });
+  res.json(logs);
+});
+
 // ── GET /api/vehicles/:id ───────────────────────
 router.get("/:id", async (req: Request, res: Response) => {
   const vehicle = await prisma.vehicle.findUnique({
@@ -158,6 +207,93 @@ router.post("/:id/logs", async (req: Request, res: Response) => {
 router.delete("/logs/:logId", async (req: Request, res: Response) => {
   await prisma.vehicleLog.delete({ where: { id: Number(req.params.logId) } });
   res.status(204).end();
+});
+
+// ── Self-service vehicle take / return ──────────
+
+// POST /api/vehicles/:id/take — start using a vehicle
+router.post("/:id/take", async (req: Request, res: Response) => {
+  const vehicleId = Number(req.params.id);
+  const userId = req.user!.userId;
+
+  const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
+  if (!vehicle) { res.status(404).json({ error: "Vehicle not found" }); return; }
+
+  // Check vehicle isn't already in use (open log exists)
+  const openLog = await prisma.vehicleLog.findFirst({
+    where: { vehicleId, endAt: null },
+  });
+  if (openLog) {
+    res.status(400).json({ error: "Το όχημα χρησιμοποιείται ήδη" });
+    return;
+  }
+
+  const meterStart = req.body.meterStart != null ? Number(req.body.meterStart) : Number(vehicle.currentMeter);
+  if (isNaN(meterStart) || meterStart < 0) {
+    res.status(400).json({ error: "Invalid meterStart" });
+    return;
+  }
+
+  const log = await prisma.vehicleLog.create({
+    data: {
+      vehicleId,
+      userId,
+      serviceId: req.body.serviceId ? Number(req.body.serviceId) : null,
+      startAt: new Date(),
+      meterStart,
+      comment: req.body.comment,
+    },
+    include: {
+      vehicle: { select: { id: true, name: true, type: true, meterType: true, registrationNumber: true } },
+    },
+  });
+
+  res.json(log);
+});
+
+// POST /api/vehicles/:id/return — finish using a vehicle
+router.post("/:id/return", async (req: Request, res: Response) => {
+  const vehicleId = Number(req.params.id);
+  const userId = req.user!.userId;
+
+  // Find the user's open log for this vehicle
+  const openLog = await prisma.vehicleLog.findFirst({
+    where: { vehicleId, userId, endAt: null },
+  });
+  if (!openLog) {
+    res.status(400).json({ error: "Δεν έχετε ανοιχτό αρχείο για αυτό το όχημα" });
+    return;
+  }
+
+  const meterEnd = Number(req.body.meterEnd);
+  if (isNaN(meterEnd) || meterEnd < 0) {
+    res.status(400).json({ error: "Invalid meterEnd" });
+    return;
+  }
+  if (meterEnd < Number(openLog.meterStart)) {
+    res.status(400).json({ error: "Τα τελικά πρέπει να είναι >= αρχικά" });
+    return;
+  }
+
+  const log = await prisma.vehicleLog.update({
+    where: { id: openLog.id },
+    data: {
+      endAt: new Date(),
+      meterEnd,
+      comment: req.body.comment ?? openLog.comment,
+    },
+    include: {
+      vehicle: { select: { id: true, name: true, type: true, meterType: true, registrationNumber: true } },
+    },
+  });
+
+  // Update vehicle current meter
+  await prisma.vehicle.update({
+    where: { id: vehicleId },
+    data: { currentMeter: meterEnd },
+  });
+
+  res.json(log);
 });
 
 export default router;

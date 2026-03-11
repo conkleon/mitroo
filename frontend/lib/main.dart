@@ -27,8 +27,8 @@ void main() async {
 class MitrooApp extends StatelessWidget {
   const MitrooApp({super.key});
 
-  static const _primaryBlue = Color(0xFF1A3C7A);
-  static const _accentBlue = Color(0xFF2B5EA7);
+  static const _primaryRed = Color(0xFFC62828);
+  static const _accentRed = Color(0xFFE53935);
 
   @override
   Widget build(BuildContext context) {
@@ -52,10 +52,10 @@ class MitrooApp extends StatelessWidget {
               useMaterial3: true,
               brightness: Brightness.light,
               colorScheme: ColorScheme.fromSeed(
-                seedColor: _primaryBlue,
+                seedColor: _primaryRed,
                 brightness: Brightness.light,
-                primary: _primaryBlue,
-                secondary: _accentBlue,
+                primary: _primaryRed,
+                secondary: _accentRed,
                 surface: const Color(0xFFF5F7FA),
                 onSurface: const Color(0xFF1A1C1E),
               ),
@@ -78,17 +78,17 @@ class MitrooApp extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF1A1C1E),
                 ),
-                iconTheme: const IconThemeData(color: Color(0xFF1A3C7A)),
+                iconTheme: const IconThemeData(color: Color(0xFFC62828)),
               ),
               navigationBarTheme: NavigationBarThemeData(
                 backgroundColor: Colors.white,
                 elevation: 0,
                 height: 64,
-                indicatorColor: _primaryBlue.withAlpha(25),
+                indicatorColor: _primaryRed.withAlpha(25),
                 labelTextStyle: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {
                     return baseTextTheme.labelSmall?.copyWith(
-                      color: _primaryBlue,
+                      color: _primaryRed,
                       fontWeight: FontWeight.w600,
                     );
                   }
@@ -98,7 +98,7 @@ class MitrooApp extends StatelessWidget {
                 }),
                 iconTheme: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {
-                    return const IconThemeData(color: Color(0xFF1A3C7A), size: 24);
+                    return const IconThemeData(color: Color(0xFFC62828), size: 24);
                   }
                   return const IconThemeData(color: Color(0xFF6B7280), size: 24);
                 }),
@@ -116,13 +116,13 @@ class MitrooApp extends StatelessWidget {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _primaryBlue, width: 1.5),
+                  borderSide: const BorderSide(color: _primaryRed, width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
               filledButtonTheme: FilledButtonThemeData(
                 style: FilledButton.styleFrom(
-                  backgroundColor: _primaryBlue,
+                  backgroundColor: _primaryRed,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -131,7 +131,7 @@ class MitrooApp extends StatelessWidget {
                 ),
               ),
               floatingActionButtonTheme: FloatingActionButtonThemeData(
-                backgroundColor: _primaryBlue,
+                backgroundColor: _primaryRed,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),

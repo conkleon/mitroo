@@ -286,12 +286,12 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: _selectedSpecId != null
-            ? const Color(0xFF2563EB).withAlpha(15)
+            ? const Color(0xFFDC2626).withAlpha(15)
             : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: _selectedSpecId != null
-              ? const Color(0xFF2563EB)
+              ? const Color(0xFFDC2626)
               : Colors.grey.shade300,
         ),
       ),

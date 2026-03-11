@@ -598,7 +598,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final isContainer = _item!['isContainer'] == true;
     final isAvailable = _item!['availableForAssignment'] == true;
     final assigned = _item!['assignedTo'];
-    final accentColor = isContainer ? const Color(0xFF7C3AED) : const Color(0xFF2563EB);
+    final accentColor = isContainer ? const Color(0xFF7C3AED) : const Color(0xFFDC2626);
 
     return SliverAppBar(
       expandedHeight: 200,
@@ -731,7 +731,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           if (_item!['department'] != null)
             _infoChip(Icons.business_outlined, _item!['department']['name'], const Color(0xFF0D9488)),
           if (_item!['barCode'] != null)
-            _infoChip(Icons.qr_code, _item!['barCode'], const Color(0xFF2563EB)),
+            _infoChip(Icons.qr_code, _item!['barCode'], const Color(0xFFDC2626)),
           if (_item!['location'] != null)
             _infoChip(Icons.location_on_outlined, _item!['location'], const Color(0xFF0891B2)),
           if (_item!['category'] != null)
@@ -949,16 +949,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFF2563EB).withAlpha(10),
+            color: const Color(0xFFDC2626).withAlpha(10),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFF2563EB).withAlpha(30)),
+            border: Border.all(color: const Color(0xFFDC2626).withAlpha(30)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: const Color(0xFF2563EB)),
+              Icon(icon, size: 14, color: const Color(0xFFDC2626)),
               const SizedBox(width: 4),
-              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2563EB))),
+              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
             ],
           ),
         ),
@@ -1032,7 +1032,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 final child = entry.value;
                 final childIsContainer = child['isContainer'] == true;
                 final childAssigned = child['assignedTo'];
-                final childColor = childIsContainer ? const Color(0xFF7C3AED) : const Color(0xFF2563EB);
+                final childColor = childIsContainer ? const Color(0xFF7C3AED) : const Color(0xFFDC2626);
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Material(

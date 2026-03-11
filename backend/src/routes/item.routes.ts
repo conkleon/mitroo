@@ -8,11 +8,11 @@ router.use(authenticate);
 
 // ── Helpers ─────────────────────────────────────
 
-/** Check whether the caller is a global admin or has `itemAdmin` role in any department. */
+/** Check whether the caller is a global admin or has `itemAdmin` / `missionAdmin` role in any department. */
 async function isItemManager(req: Request): Promise<boolean> {
   if (req.user?.isAdmin) return true;
   const count = await prisma.userDepartment.count({
-    where: { userId: req.user!.userId, role: "itemAdmin" },
+    where: { userId: req.user!.userId, role: { in: ["itemAdmin", "missionAdmin"] } },
   });
   return count > 0;
 }

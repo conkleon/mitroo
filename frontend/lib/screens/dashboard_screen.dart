@@ -112,8 +112,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _StatCard(
                     icon: Icons.business_rounded,
-                    iconColor: const Color(0xFF2563EB),
-                    bgColor: const Color(0xFFDBEAFE),
+                    iconColor: const Color(0xFFDC2626),
+                    bgColor: const Color(0xFFFEE2E2),
                     value: '${deptProv.departments.length}',
                     label: 'Τμήματα',
                   ),

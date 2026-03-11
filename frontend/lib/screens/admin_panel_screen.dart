@@ -68,8 +68,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       subtitle = 'Διαχειριστής Συστήματος';
     } else {
       final roles = <String>[];
-      if (isMissionAdmin) roles.add('Διαχ. Αποστολών');
-      if (isItemAdmin) roles.add('Διαχ. Υλικού');
+      if (isMissionAdmin) roles.add('Διαχειριστής Αποστολών');
+      if (isItemAdmin) roles.add('Διαχειριστής Υλικού');
       subtitle = roles.join(' · ');
     }
 
@@ -115,8 +115,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                             tiles: [
                               _AdminTileData(
                                 icon: Icons.people,
-                                iconColor: const Color(0xFF2563EB),
-                                bgColor: const Color(0xFFDBEAFE),
+                                iconColor: const Color(0xFFDC2626),
+                                bgColor: const Color(0xFFFEE2E2),
                                 title: 'Διαχείρηση Χρηστών',
                                 subtitle: 'Δημιουργία, επεξεργασία & ανάθεση ρόλων στους χρήστες',
                                 onTap: () => context.push('/admin/users'),

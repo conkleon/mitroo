@@ -268,8 +268,8 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                   value: selectedRole,
                   items: const [
                     DropdownMenuItem(value: 'volunteer', child: Text('Εθελοντής')),
-                    DropdownMenuItem(value: 'missionAdmin', child: Text('Διαχ. Αποστολών')),
-                    DropdownMenuItem(value: 'itemAdmin', child: Text('Διαχ. Υλικού')),
+                    DropdownMenuItem(value: 'missionAdmin', child: Text('Διαχειριστής Αποστολών')),
+                    DropdownMenuItem(value: 'itemAdmin', child: Text('Διαχειριστής Υλικού')),
                   ],
                   onChanged: (v) => setDlgState(() => selectedRole = v ?? 'volunteer'),
                 ),
@@ -485,10 +485,10 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
           children: [
             CircleAvatar(
               radius: 40,
-              backgroundColor: isAdmin ? Colors.amber.shade100 : const Color(0xFFDBEAFE),
+              backgroundColor: isAdmin ? Colors.amber.shade100 : const Color(0xFFFEE2E2),
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: isAdmin ? Colors.amber.shade800 : const Color(0xFF2563EB)),
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: isAdmin ? Colors.amber.shade800 : const Color(0xFFDC2626)),
               ),
             ),
             const SizedBox(height: 16),
@@ -583,9 +583,9 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                       if (role != 'volunteer')
                         const PopupMenuItem(value: 'volunteer', child: Text('Ορισμός Εθελοντή')),
                       if (role != 'missionAdmin')
-                        const PopupMenuItem(value: 'missionAdmin', child: Text('Ορισμός Διαχ. Αποστολών')),
+                        const PopupMenuItem(value: 'missionAdmin', child: Text('Ορισμός Διαχειριστή Αποστολών')),
                       if (role != 'itemAdmin')
-                        const PopupMenuItem(value: 'itemAdmin', child: Text('Ορισμός Διαχ. Υλικού')),
+                        const PopupMenuItem(value: 'itemAdmin', child: Text('Ορισμός Διαχειριστή Υλικού')),
                       const PopupMenuDivider(),
                       const PopupMenuItem(value: 'remove', child: Text('Αφαίρεση', style: TextStyle(color: Colors.red))),
                     ],
@@ -758,7 +758,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
 
             // Summary chips
             Wrap(spacing: 8, runSpacing: 6, children: [
-              _hoursSummaryChip('Total', sumTotal, const Color(0xFF2563EB)),
+              _hoursSummaryChip('Total', sumTotal, const Color(0xFFDC2626)),
               _hoursSummaryChip('Hours', sumH, const Color(0xFF059669)),
               _hoursSummaryChip('Vol', sumVol, const Color(0xFF7C3AED)),
               _hoursSummaryChip('Training', sumTrain, const Color(0xFFD97706)),
@@ -901,10 +901,10 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                 style: TextStyle(
                     fontSize: 10,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                    color: isActive ? const Color(0xFF2563EB) : const Color(0xFF374151))),
+                    color: isActive ? const Color(0xFFDC2626) : const Color(0xFF374151))),
             if (isActive)
               Icon(_svcSortAsc ? Icons.arrow_upward : Icons.arrow_downward,
-                  size: 10, color: const Color(0xFF2563EB)),
+                  size: 10, color: const Color(0xFFDC2626)),
           ],
         ),
       ),
@@ -1013,8 +1013,8 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
 
   static String _roleLabelFull(String role) {
     switch (role) {
-      case 'missionAdmin': return 'Διαχ. Αποστολών';
-      case 'itemAdmin': return 'Διαχ. Υλικού';
+      case 'missionAdmin': return 'Διαχειριστής Αποστολών';
+      case 'itemAdmin': return 'Διαχειριστής Υλικού';
       case 'volunteer': return 'Εθελοντής';
       default: return role;
     }
@@ -1024,7 +1024,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     switch (role) {
       case 'missionAdmin': return const Color(0xFF059669);
       case 'itemAdmin': return const Color(0xFF7C3AED);
-      default: return const Color(0xFF2563EB);
+      default: return const Color(0xFFDC2626);
     }
   }
 }

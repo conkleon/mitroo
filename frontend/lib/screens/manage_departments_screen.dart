@@ -173,7 +173,7 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
                           label: 'Μέλη',
                           value: '$totalMembers',
                           icon: Icons.people,
-                          color: const Color(0xFF2563EB)),
+                          color: const Color(0xFFDC2626)),
                       const SizedBox(width: 12),
                       _MiniStat(
                           label: 'Εμφαν.',
@@ -306,7 +306,7 @@ class _DeptCard extends StatelessWidget {
                         _CountBadge(
                             icon: Icons.people,
                             count: memberCount,
-                            color: const Color(0xFF2563EB)),
+                            color: const Color(0xFFDC2626)),
                         _CountBadge(
                             icon: Icons.miscellaneous_services,
                             count: serviceCount,

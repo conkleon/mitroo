@@ -79,4 +79,54 @@ class VehicleProvider extends ChangeNotifier {
       return jsonDecode(res.body)['error'] ?? 'Failed';
     } catch (e) { return 'Error: $e'; }
   }
+
+  // ── Self-service take / return ──────────────────
+
+  List<dynamic> _availableVehicles = [];
+  List<dynamic> _myActiveVehicles = [];
+
+  List<dynamic> get availableVehicles => _availableVehicles;
+  List<dynamic> get myActiveVehicles => _myActiveVehicles;
+
+  Future<void> fetchAvailable([String search = '']) async {
+    try {
+      final q = search.isNotEmpty ? '?search=${Uri.encodeComponent(search)}' : '';
+      final res = await _api.get('/vehicles/available/list$q');
+      if (res.statusCode == 200) {
+        _availableVehicles = jsonDecode(res.body);
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> fetchMyActive() async {
+    try {
+      final res = await _api.get('/vehicles/my/active');
+      if (res.statusCode == 200) {
+        _myActiveVehicles = jsonDecode(res.body);
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  Future<Map<String, dynamic>?> takeVehicle(int vehicleId, num meterStart, {int? serviceId, String? comment}) async {
+    try {
+      final body = <String, dynamic>{'meterStart': meterStart};
+      if (serviceId != null) body['serviceId'] = serviceId;
+      if (comment != null) body['comment'] = comment;
+      final res = await _api.post('/vehicles/$vehicleId/take', body: body);
+      if (res.statusCode == 200) return jsonDecode(res.body);
+      return {'error': jsonDecode(res.body)['error'] ?? 'Failed'};
+    } catch (e) { return {'error': 'Error: $e'}; }
+  }
+
+  Future<Map<String, dynamic>?> returnVehicle(int vehicleId, num meterEnd, {String? comment}) async {
+    try {
+      final body = <String, dynamic>{'meterEnd': meterEnd};
+      if (comment != null) body['comment'] = comment;
+      final res = await _api.post('/vehicles/$vehicleId/return', body: body);
+      if (res.statusCode == 200) return jsonDecode(res.body);
+      return {'error': jsonDecode(res.body)['error'] ?? 'Failed'};
+    } catch (e) { return {'error': 'Error: $e'}; }
+  }
 }

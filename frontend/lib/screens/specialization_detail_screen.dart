@@ -276,7 +276,7 @@ class _SpecializationDetailScreenState
                             dense: true,
                             leading: const Icon(Icons.person,
                                 size: 18,
-                                color: Color(0xFF2563EB)),
+                                color: Color(0xFFDC2626)),
                             title: Text(
                                 name.isNotEmpty
                                     ? name
@@ -411,7 +411,7 @@ class _SpecializationDetailScreenState
                   decoration: BoxDecoration(
                     color: isRoot
                         ? const Color(0xFFEDE9FE)
-                        : const Color(0xFFDBEAFE),
+                        : const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(
@@ -421,7 +421,7 @@ class _SpecializationDetailScreenState
                       size: 48,
                       color: isRoot
                           ? const Color(0xFF7C3AED)
-                          : const Color(0xFF2563EB)),
+                          : const Color(0xFFDC2626)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -527,7 +527,7 @@ class _SpecializationDetailScreenState
                     dense: true,
                     leading: const Icon(
                         Icons.subdirectory_arrow_right,
-                        color: Color(0xFF2563EB),
+                        color: Color(0xFFDC2626),
                         size: 20),
                     title: Text(c['name'] ?? ''),
                     trailing: const Icon(Icons.chevron_right, size: 18),
@@ -553,7 +553,7 @@ class _SpecializationDetailScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(children: [
-                const Icon(Icons.people, color: Color(0xFF2563EB)),
+                const Icon(Icons.people, color: Color(0xFFDC2626)),
                 const SizedBox(width: 8),
                 Text('Ανατεθ. Χρήστες (${_users.length})',
                     style: tt.titleSmall

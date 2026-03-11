@@ -375,7 +375,7 @@ class _SidebarItemState extends State<_SidebarItem> {
   @override
   Widget build(BuildContext context) {
     final selected = widget.selected;
-    const activeColor = Color(0xFF2563EB);
+    const activeColor = Color(0xFFDC2626);
     final bgColor = selected
         ? activeColor.withAlpha(20)
         : _hovering

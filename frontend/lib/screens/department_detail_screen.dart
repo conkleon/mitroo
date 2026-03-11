@@ -251,7 +251,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                                 dense: true,
                                 leading: const Icon(Icons.person,
                                     size: 18,
-                                    color: Color(0xFF2563EB)),
+                                    color: Color(0xFFDC2626)),
                                 title: Text(
                                     name.isNotEmpty
                                         ? name
@@ -282,9 +282,9 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                         value: 'volunteer', child: Text('Εθελοντής')),
                     DropdownMenuItem(
                         value: 'missionAdmin',
-                        child: Text('Διαχ. Αποστολών')),
+                        child: Text('Διαχειριστής Αποστολών')),
                     DropdownMenuItem(
-                        value: 'itemAdmin', child: Text('Διαχ. Υλικού')),
+                        value: 'itemAdmin', child: Text('Διαχειριστής Υλικού')),
                   ],
                   onChanged: (v) => setS(() => selectedRole = v ?? selectedRole),
                 ),
@@ -479,7 +479,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              const Icon(Icons.people, color: Color(0xFF2563EB)),
+              const Icon(Icons.people, color: Color(0xFFDC2626)),
               const SizedBox(width: 8),
               Text('Μέλη (${_members.length})',
                   style:
@@ -555,10 +555,10 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                               child: Text('Εθελοντής')),
                           const PopupMenuItem(
                               value: 'missionAdmin',
-                              child: Text('Διαχ. Αποστολών')),
+                              child: Text('Διαχειριστής Αποστολών')),
                           const PopupMenuItem(
                               value: 'itemAdmin',
-                              child: Text('Διαχ. Υλικού')),
+                              child: Text('Διαχειριστής Υλικού')),
                           const PopupMenuDivider(),
                           const PopupMenuItem(
                             value: '__remove__',
@@ -600,9 +600,9 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
   String _roleLabel(String role) {
     switch (role) {
       case 'missionAdmin':
-        return 'Διαχ. Αποστ.';
+        return 'Διαχειριστής Αποστολών';
       case 'itemAdmin':
-        return 'Διαχ. Υλικού';
+        return 'Διαχειριστής Υλικού';
       default:
         return 'Εθελοντής';
     }
@@ -613,7 +613,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
       case 'missionAdmin':
         return const Color(0xFF7C3AED);
       case 'itemAdmin':
-        return const Color(0xFF2563EB);
+        return const Color(0xFFDC2626);
       default:
         return const Color(0xFF059669);
     }
@@ -624,7 +624,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
       case 'missionAdmin':
         return const Color(0xFFEDE9FE);
       case 'itemAdmin':
-        return const Color(0xFFDBEAFE);
+        return const Color(0xFFFEE2E2);
       default:
         return const Color(0xFFD1FAE5);
     }
@@ -694,7 +694,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
       case 'active':
         return const Color(0xFF059669);
       case 'completed':
-        return const Color(0xFF2563EB);
+        return const Color(0xFFDC2626);
       case 'cancelled':
         return Colors.red;
       default:
@@ -707,7 +707,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
       case 'active':
         return const Color(0xFFD1FAE5);
       case 'completed':
-        return const Color(0xFFDBEAFE);
+        return const Color(0xFFFEE2E2);
       case 'cancelled':
         return const Color(0xFFFEE2E2);
       default:

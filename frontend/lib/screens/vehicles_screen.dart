@@ -212,7 +212,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                                           _VehicleChip(
                                             icon: Icons.confirmation_number_outlined,
                                             label: v['registrationNumber'],
-                                            color: const Color(0xFF2563EB),
+                                            color: const Color(0xFFDC2626),
                                           ),
                                         if (v['registrationNumber'] != null) const SizedBox(width: 8),
                                         _VehicleChip(

@@ -474,13 +474,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         leading: CircleAvatar(
                           backgroundColor: (isContainer
                                   ? const Color(0xFF7C3AED)
-                                  : const Color(0xFF2563EB))
+                                  : const Color(0xFFDC2626))
                               .withAlpha(25),
                           child: Icon(
                             isContainer ? Icons.inventory : Icons.build_outlined,
                             color: isContainer
                                 ? const Color(0xFF7C3AED)
-                                : const Color(0xFF2563EB),
+                                : const Color(0xFFDC2626),
                             size: 20,
                           ),
                         ),
@@ -894,7 +894,7 @@ class _ItemRow extends StatelessWidget {
     final assignedTo = item['assignedTo'];
     final isAvailable = item['availableForAssignment'] == true;
     final category = item['category'];
-    final accentColor = isContainer ? const Color(0xFF7C3AED) : const Color(0xFF2563EB);
+    final accentColor = isContainer ? const Color(0xFF7C3AED) : const Color(0xFFDC2626);
 
     // Build subtitle parts
     final infoParts = <String>[

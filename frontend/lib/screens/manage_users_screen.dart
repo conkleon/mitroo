@@ -276,15 +276,15 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(children: [
-                    _chip('All (${_users.length})', 'all'),
+                    _chip('Όλοι (${_users.length})', 'all'),
                     const SizedBox(width: 6),
                     _chip('Admins (${_countRole('admin')})', 'admin', color: Colors.amber.shade700),
                     const SizedBox(width: 6),
-                    _chip('Mission (${_countRole('missionAdmin')})', 'missionAdmin', color: const Color(0xFF059669)),
+                    _chip('Δ. Αποστολών (${_countRole('missionAdmin')})', 'missionAdmin', color: const Color(0xFF059669)),
                     const SizedBox(width: 6),
-                    _chip('Items (${_countRole('itemAdmin')})', 'itemAdmin', color: const Color(0xFF7C3AED)),
+                    _chip('Δ. Υλικού (${_countRole('itemAdmin')})', 'itemAdmin', color: const Color(0xFF7C3AED)),
                     const SizedBox(width: 6),
-                    _chip('Volunteer (${_countRole('volunteer')})', 'volunteer', color: const Color(0xFF2563EB)),
+                    _chip('Εθελοντές (${_countRole('volunteer')})', 'volunteer', color: const Color(0xFFDC2626)),
                   ]),
                 ),
               ]),
@@ -376,10 +376,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                 style: TextStyle(
                     fontSize: 11,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                    color: isActive ? const Color(0xFF2563EB) : const Color(0xFF374151))),
+                    color: isActive ? const Color(0xFFDC2626) : const Color(0xFF374151))),
             if (isActive)
               Icon(_sortAsc ? Icons.arrow_upward : Icons.arrow_downward,
-                  size: 12, color: const Color(0xFF2563EB)),
+                  size: 12, color: const Color(0xFFDC2626)),
           ],
         ),
       ),
@@ -405,13 +405,13 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
             child: Row(children: [
               CircleAvatar(
                 radius: 15,
-                backgroundColor: isAdmin ? Colors.amber.shade100 : const Color(0xFFDBEAFE),
+                backgroundColor: isAdmin ? Colors.amber.shade100 : const Color(0xFFFEE2E2),
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : 'U',
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: isAdmin ? Colors.amber.shade800 : const Color(0xFF2563EB)),
+                      color: isAdmin ? Colors.amber.shade800 : const Color(0xFFDC2626)),
                 ),
               ),
               const SizedBox(width: 8),
