@@ -10,6 +10,7 @@ import '../providers/department_provider.dart';
 import '../services/api_client.dart';
 import 'scanner_screen.dart';
 import 'my_equipment_sheet.dart';
+import 'item_detail_screen.dart';
 
 class ItemsScreen extends StatefulWidget {
   const ItemsScreen({super.key});
@@ -22,8 +23,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
   final _searchCtrl = TextEditingController();
   final _api = ApiClient();
   List<Map<String, dynamic>> _myEquipment = [];
+  int _myVehiclesCount = 0;
   int? _selectedCategoryId;
   int? _selectedDepartmentId;
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -52,6 +55,14 @@ class _ItemsScreenState extends State<ItemsScreen> {
                 [];
           });
         }
+      }
+    } catch (_) {}
+    // Also load active vehicles count
+    try {
+      final vRes = await _api.get('/vehicles/my/active');
+      if (vRes.statusCode == 200 && mounted) {
+        final list = jsonDecode(vRes.body) as List<dynamic>;
+        setState(() => _myVehiclesCount = list.length);
       }
     } catch (_) {}
   }
@@ -311,7 +322,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
       // QR code contains the item ID
       final id = int.tryParse(value);
       if (id != null) {
-        context.push('/items/$id');
+        ItemDetailScreen.show(context, id);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Μη έγκυρος κωδικός QR')),
@@ -493,7 +504,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         trailing: const Icon(Icons.chevron_right, size: 20),
                         onTap: () {
                           Navigator.pop(ctx);
-                          context.push('/items/${item['id']}');
+                          ItemDetailScreen.show(context, item['id'] as int);
                         },
                       );
                     },
@@ -544,21 +555,21 @@ class _ItemsScreenState extends State<ItemsScreen> {
       );
       // Refresh the list and my equipment
       _loadMyEquipment();
-      final auth = context.read<AuthProvider>();
-      final canManage = auth.isAdmin || auth.isItemAdmin;
-      context.read<ItemProvider>().fetchItems(available: canManage ? null : true);
+      _fetchWithFilters(page: _currentPage);
     }
   }
 
-  void _fetchWithFilters() {
+  void _fetchWithFilters({int page = 1}) {
     final auth = context.read<AuthProvider>();
     final canManage = auth.isAdmin || auth.isItemAdmin;
     final search = _searchCtrl.text.trim().isNotEmpty ? _searchCtrl.text.trim() : null;
+    setState(() => _currentPage = page);
     context.read<ItemProvider>().fetchItems(
       available: canManage ? null : true,
       search: search,
       categoryId: _selectedCategoryId,
       departmentId: _selectedDepartmentId,
+      page: page,
     );
   }
 
@@ -687,7 +698,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            await prov.fetchItems(available: canManage ? null : true, categoryId: _selectedCategoryId, departmentId: _selectedDepartmentId);
+            await prov.fetchItems(available: canManage ? null : true, categoryId: _selectedCategoryId, departmentId: _selectedDepartmentId, page: _currentPage);
             await context.read<CategoryProvider>().fetchCategories();
             await context.read<DepartmentProvider>().fetchDepartments();
           },
@@ -728,6 +739,28 @@ class _ItemsScreenState extends State<ItemsScreen> {
                                       '${_myEquipment.length}',
                                       style: const TextStyle(
                                           fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF059669)),
+                                    ),
+                                  ),
+                                ],
+                                if (_myVehiclesCount > 0) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.withAlpha(25),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.directions_car, size: 12, color: Colors.orange.shade800),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          '$_myVehiclesCount',
+                                          style: TextStyle(
+                                              fontSize: 11, fontWeight: FontWeight.w700, color: Colors.orange.shade800),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -795,7 +828,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       const SizedBox(width: 8),
                       Text('Αντικείμενα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                       const Spacer(),
-                      Text('${prov.items.length} σύνολο', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                      Text('${prov.totalItems} σύνολο', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
                     ],
                   ),
                 ),
@@ -848,6 +881,34 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     ),
                   ),
                 ),
+              // ── Pagination controls ──
+              if (!prov.loading && prov.items.isNotEmpty && prov.totalPages > 1)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          onPressed: _currentPage > 1 ? () => _fetchWithFilters(page: _currentPage - 1) : null,
+                          icon: const Icon(Icons.chevron_left),
+                          tooltip: 'Προηγούμενη',
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$_currentPage / ${prov.totalPages}',
+                          style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: _currentPage < prov.totalPages ? () => _fetchWithFilters(page: _currentPage + 1) : null,
+                          icon: const Icon(Icons.chevron_right),
+                          tooltip: 'Επόμενη',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
             ],
           ),
@@ -896,6 +957,12 @@ class _ItemRow extends StatelessWidget {
     final category = item['category'];
     final accentColor = isContainer ? const Color(0xFF7C3AED) : const Color(0xFFDC2626);
 
+    // First image thumbnail
+    final attachments = item['attachments'] as List?;
+    final thumbPath = attachments != null && attachments.isNotEmpty
+        ? attachments.first['thumbnailPath'] as String?
+        : null;
+
     // Build subtitle parts
     final infoParts = <String>[
       if (category != null) category['name'],
@@ -905,21 +972,42 @@ class _ItemRow extends StatelessWidget {
     ];
 
     return InkWell(
-      onTap: () => context.push('/items/${item['id']}'),
+      onTap: () => ItemDetailScreen.show(context, item['id'] as int),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         color: Colors.white,
         child: Row(
           children: [
-            // Thin color accent bar
-            Container(
-              width: 3,
-              height: 32,
-              decoration: BoxDecoration(
-                color: accentColor,
-                borderRadius: BorderRadius.circular(2),
+            // Thumbnail or accent bar
+            if (thumbPath != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  '${ApiClient.uploadsBaseUrl}$thumbPath',
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: accentColor.withAlpha(20),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(isContainer ? Icons.inventory : Icons.build_outlined, size: 18, color: accentColor),
+                  ),
+                ),
+              )
+            else ...[
+              Container(
+                width: 3,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
+            ],
             const SizedBox(width: 10),
             // Name + meta
             Expanded(

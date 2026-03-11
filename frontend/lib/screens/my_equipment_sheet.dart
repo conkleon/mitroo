@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../services/api_client.dart';
 import 'scanner_screen.dart';
+import 'item_detail_screen.dart';
+import 'vehicle_detail_screen.dart';
 
 /// Bottom sheet that shows the user's assigned equipment & active vehicles,
 /// with the ability to take / return both.
@@ -202,8 +203,9 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
     final label = meterType == 'hours' ? 'Ώρες' : 'Χιλιόμετρα';
 
     final meterCtrl = TextEditingController(text: '$currentMeter');
+    final destCtrl = TextEditingController();
 
-    final result = await showDialog<num>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Λήψη ${vehicle['name']}'),
@@ -227,6 +229,19 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               ),
               autofocus: true,
             ),
+            const SizedBox(height: 12),
+            const Text('Προορισμός:',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: destCtrl,
+              decoration: InputDecoration(
+                hintText: 'Προορισμός (προαιρετικό)',
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                isDense: true,
+              ),
+            ),
           ],
         ),
         actions: [
@@ -236,7 +251,9 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
           FilledButton(
             onPressed: () {
               final val = num.tryParse(meterCtrl.text);
-              if (val != null && val >= 0) Navigator.pop(ctx, val);
+              if (val != null && val >= 0) {
+                Navigator.pop(ctx, {'meterStart': val, 'destination': destCtrl.text.trim()});
+              }
             },
             child: const Text('Λήψη'),
           ),
@@ -248,10 +265,13 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
 
     setState(() => _busy.add(vehicleId));
     try {
+      final body = <String, dynamic>{'meterStart': result['meterStart']};
+      final dest = result['destination'] as String;
+      if (dest.isNotEmpty) body['destination'] = dest;
       final res = await widget.api
-          .post('/vehicles/$vehicleId/take', body: {'meterStart': result});
+          .post('/vehicles/$vehicleId/take', body: body);
       if (mounted) {
-        final body = jsonDecode(res.body);
+        final respBody = jsonDecode(res.body);
         if (res.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -262,7 +282,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
           widget.onChanged?.call();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(body['error'] ?? 'Σφάλμα')),
+            SnackBar(content: Text(respBody['error'] ?? 'Σφάλμα')),
           );
         }
       }
@@ -284,9 +304,10 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
     final label = meterType == 'hours' ? 'Ώρες' : 'Χιλιόμετρα';
     final vehicleName = vehicle['name'] ?? '';
 
-    final meterCtrl = TextEditingController();
+    final meterCtrl = TextEditingController(text: '$meterStart');
+    final destCtrl = TextEditingController(text: (log['destination'] ?? '') as String);
 
-    final result = await showDialog<num>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Επιστροφή $vehicleName'),
@@ -313,6 +334,19 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               ),
               autofocus: true,
             ),
+            const SizedBox(height: 12),
+            const Text('Προορισμός:',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: destCtrl,
+              decoration: InputDecoration(
+                hintText: 'Προορισμός',
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                isDense: true,
+              ),
+            ),
           ],
         ),
         actions: [
@@ -323,7 +357,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
             onPressed: () {
               final val = num.tryParse(meterCtrl.text);
               if (val != null && val >= num.parse('$meterStart')) {
-                Navigator.pop(ctx, val);
+                Navigator.pop(ctx, {'meterEnd': val, 'destination': destCtrl.text.trim()});
               }
             },
             style:
@@ -338,10 +372,13 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
 
     setState(() => _busy.add(vehicleId));
     try {
+      final body = <String, dynamic>{'meterEnd': result['meterEnd']};
+      final dest = result['destination'] as String;
+      if (dest.isNotEmpty) body['destination'] = dest;
       final res = await widget.api.post('/vehicles/$vehicleId/return',
-          body: {'meterEnd': result});
+          body: body);
       if (mounted) {
-        final body = jsonDecode(res.body);
+        final respBody = jsonDecode(res.body);
         if (res.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('"$vehicleName" επεστράφη')),
@@ -350,7 +387,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
           widget.onChanged?.call();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(body['error'] ?? 'Σφάλμα')),
+            SnackBar(content: Text(respBody['error'] ?? 'Σφάλμα')),
           );
         }
       }
@@ -507,7 +544,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                     final id = int.tryParse(result.value);
                     if (id != null) {
                       Navigator.pop(context);
-                      GoRouter.of(context).push('/items/$id');
+                      ItemDetailScreen.show(context, id);
                     }
                   } else {
                     setState(() => _searchLoading = true);
@@ -679,7 +716,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                 color: const Color(0xFF6B7280),
                 onPressed: () {
                   Navigator.pop(context);
-                  GoRouter.of(context).push('/items/$itemId');
+                  ItemDetailScreen.show(context, itemId);
                 },
               ),
               IconButton(
@@ -808,23 +845,37 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                 title: v['name'] ?? '',
                 subtitle: subtitle,
                 tt: tt,
-                trailing: FilledButton.icon(
-                  onPressed: isBusy ? null : () => _takeVehicle(v),
-                  icon: isBusy
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.key, size: 16),
-                  label: const Text('Λήψη',
-                      style: TextStyle(fontSize: 12)),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.open_in_new, size: 18),
+                      tooltip: 'Λεπτομέρειες',
+                      color: const Color(0xFF6B7280),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        VehicleDetailScreen.show(context, vid);
+                      },
+                    ),
+                    FilledButton.icon(
+                      onPressed: isBusy ? null : () => _takeVehicle(v),
+                      icon: isBusy
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.key, size: 16),
+                      label: const Text('Λήψη',
+                          style: TextStyle(fontSize: 12)),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -855,24 +906,38 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
           subtitle:
               '${_vehicleTypeLabel(vehicle['type'] ?? '')} · Έναρξη: ${log['meterStart']} $meterUnit',
           tt: tt,
-          trailing: FilledButton.icon(
-            onPressed: isBusy ? null : () => _returnVehicle(log),
-            icon: isBusy
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.assignment_return, size: 16),
-            label:
-                const Text('Επιστροφή', style: TextStyle(fontSize: 12)),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red.shade600,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 4),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.open_in_new, size: 18),
+                tooltip: 'Λεπτομέρειες',
+                color: const Color(0xFF6B7280),
+                onPressed: () {
+                  Navigator.pop(context);
+                  VehicleDetailScreen.show(context, vehicleId);
+                },
+              ),
+              FilledButton.icon(
+                onPressed: isBusy ? null : () => _returnVehicle(log),
+                icon: isBusy
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.assignment_return, size: 16),
+                label:
+                    const Text('Επιστροφή', style: TextStyle(fontSize: 12)),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red.shade600,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
           ),
         );
       },

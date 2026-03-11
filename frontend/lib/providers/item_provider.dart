@@ -8,14 +8,22 @@ class ItemProvider extends ChangeNotifier {
   List<dynamic> _items = [];
   Map<String, dynamic>? _selected;
   bool _loading = false;
+  int _currentPage = 1;
+  int _totalPages = 1;
+  int _totalItems = 0;
+  int _pageSize = 20;
 
   List<dynamic> get items => _items;
   Map<String, dynamic>? get selected => _selected;
   bool get loading => _loading;
+  int get currentPage => _currentPage;
+  int get totalPages => _totalPages;
+  int get totalItems => _totalItems;
+  int get pageSize => _pageSize;
 
   // ── Fetch all items (with optional filters) ──
 
-  Future<void> fetchItems({int? containerId, String? search, bool? available, int? categoryId, int? departmentId}) async {
+  Future<void> fetchItems({int? containerId, String? search, bool? available, int? categoryId, int? departmentId, int page = 1, int limit = 20}) async {
     _loading = true;
     notifyListeners();
     try {
@@ -25,9 +33,18 @@ class ItemProvider extends ChangeNotifier {
       if (available == true) params.add('available=true');
       if (categoryId != null) params.add('categoryId=$categoryId');
       if (departmentId != null) params.add('departmentId=$departmentId');
-      final q = params.isNotEmpty ? '?${params.join('&')}' : '';
+      params.add('page=$page');
+      params.add('limit=$limit');
+      final q = '?${params.join('&')}';
       final res = await _api.get('/items$q');
-      if (res.statusCode == 200) _items = jsonDecode(res.body);
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        _items = body['data'];
+        _currentPage = body['page'];
+        _totalPages = body['totalPages'];
+        _totalItems = body['total'];
+        _pageSize = body['limit'];
+      }
     } catch (_) {}
     _loading = false;
     notifyListeners();

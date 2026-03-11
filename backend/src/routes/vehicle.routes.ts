@@ -25,6 +25,7 @@ const logSchema = z.object({
   endAt: z.string().datetime(),
   meterStart: z.number().min(0),
   meterEnd: z.number().min(0),
+  destination: z.string().max(255).optional(),
   comment: z.string().optional(),
 });
 
@@ -36,7 +37,15 @@ router.get("/", async (req: Request, res: Response) => {
 
   const vehicles = await prisma.vehicle.findMany({
     where,
-    include: { department: { select: { id: true, name: true } } },
+    include: {
+      department: { select: { id: true, name: true } },
+      attachments: {
+        where: { isImage: true },
+        select: { id: true, thumbnailPath: true },
+        take: 1,
+        orderBy: { uploadedAt: "asc" as const },
+      },
+    },
     orderBy: { name: "asc" },
   });
   res.json(vehicles);
@@ -120,6 +129,10 @@ router.get("/:id", async (req: Request, res: Response) => {
         orderBy: { startAt: "desc" },
         take: 50,
       },
+      comments: {
+        include: { user: { select: { id: true, forename: true, surname: true, ename: true } } },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
   if (!vehicle) { res.status(404).json({ error: "Vehicle not found" }); return; }
@@ -186,6 +199,7 @@ router.post("/:id/logs", async (req: Request, res: Response) => {
         endAt: new Date(data.endAt),
         meterStart: data.meterStart,
         meterEnd: data.meterEnd,
+        destination: data.destination,
         comment: data.comment,
       },
     });
@@ -241,6 +255,7 @@ router.post("/:id/take", async (req: Request, res: Response) => {
       serviceId: req.body.serviceId ? Number(req.body.serviceId) : null,
       startAt: new Date(),
       meterStart,
+      destination: req.body.destination || null,
       comment: req.body.comment,
     },
     include: {
@@ -280,6 +295,7 @@ router.post("/:id/return", async (req: Request, res: Response) => {
     data: {
       endAt: new Date(),
       meterEnd,
+      destination: req.body.destination ?? openLog.destination,
       comment: req.body.comment ?? openLog.comment,
     },
     include: {
@@ -294,6 +310,45 @@ router.post("/:id/return", async (req: Request, res: Response) => {
   });
 
   res.json(log);
+});
+
+// ── Vehicle Comments ────────────────────────────
+
+// GET /api/vehicles/:id/comments
+router.get("/:id/comments", async (req: Request, res: Response) => {
+  const comments = await prisma.vehicleComment.findMany({
+    where: { vehicleId: Number(req.params.id) },
+    include: { user: { select: { id: true, forename: true, surname: true, ename: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+  res.json(comments);
+});
+
+// POST /api/vehicles/:id/comments
+router.post("/:id/comments", async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const vehicleId = Number(req.params.id);
+  const { text } = req.body;
+  if (!text || typeof text !== "string" || text.trim().length === 0) {
+    res.status(400).json({ error: "Text is required" });
+    return;
+  }
+
+  const comment = await prisma.vehicleComment.create({
+    data: { vehicleId, userId, text: text.trim() },
+    include: { user: { select: { id: true, forename: true, surname: true, ename: true } } },
+  });
+  res.status(201).json(comment);
+});
+
+// DELETE /api/vehicles/:id/comments/:commentId
+router.delete("/:id/comments/:commentId", async (req: Request, res: Response) => {
+  if (!req.user?.isAdmin) {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+  await prisma.vehicleComment.delete({ where: { id: Number(req.params.commentId) } });
+  res.status(204).end();
 });
 
 export default router;

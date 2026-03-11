@@ -109,10 +109,11 @@ class VehicleProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<Map<String, dynamic>?> takeVehicle(int vehicleId, num meterStart, {int? serviceId, String? comment}) async {
+  Future<Map<String, dynamic>?> takeVehicle(int vehicleId, num meterStart, {int? serviceId, String? destination, String? comment}) async {
     try {
       final body = <String, dynamic>{'meterStart': meterStart};
       if (serviceId != null) body['serviceId'] = serviceId;
+      if (destination != null && destination.isNotEmpty) body['destination'] = destination;
       if (comment != null) body['comment'] = comment;
       final res = await _api.post('/vehicles/$vehicleId/take', body: body);
       if (res.statusCode == 200) return jsonDecode(res.body);
@@ -120,13 +121,45 @@ class VehicleProvider extends ChangeNotifier {
     } catch (e) { return {'error': 'Error: $e'}; }
   }
 
-  Future<Map<String, dynamic>?> returnVehicle(int vehicleId, num meterEnd, {String? comment}) async {
+  Future<Map<String, dynamic>?> returnVehicle(int vehicleId, num meterEnd, {String? destination, String? comment}) async {
     try {
       final body = <String, dynamic>{'meterEnd': meterEnd};
+      if (destination != null && destination.isNotEmpty) body['destination'] = destination;
       if (comment != null) body['comment'] = comment;
       final res = await _api.post('/vehicles/$vehicleId/return', body: body);
       if (res.statusCode == 200) return jsonDecode(res.body);
       return {'error': jsonDecode(res.body)['error'] ?? 'Failed'};
     } catch (e) { return {'error': 'Error: $e'}; }
+  }
+
+  // ── Comments ──────────────────────────────────
+
+  List<dynamic> _comments = [];
+  List<dynamic> get comments => _comments;
+
+  Future<void> fetchComments(int vehicleId) async {
+    try {
+      final res = await _api.get('/vehicles/$vehicleId/comments');
+      if (res.statusCode == 200) {
+        _comments = jsonDecode(res.body);
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  Future<String?> addComment(int vehicleId, String text) async {
+    try {
+      final res = await _api.post('/vehicles/$vehicleId/comments', body: {'text': text});
+      if (res.statusCode == 201) { await fetchComments(vehicleId); return null; }
+      return jsonDecode(res.body)['error'] ?? 'Failed';
+    } catch (e) { return 'Error: $e'; }
+  }
+
+  Future<String?> deleteComment(int vehicleId, int commentId) async {
+    try {
+      final res = await _api.delete('/vehicles/$vehicleId/comments/$commentId');
+      if (res.statusCode == 204) { await fetchComments(vehicleId); return null; }
+      return 'Failed';
+    } catch (e) { return 'Error: $e'; }
   }
 }

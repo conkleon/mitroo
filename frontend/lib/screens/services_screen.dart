@@ -62,6 +62,7 @@ class _ServicesScreenState extends State<ServicesScreen>
   final Set<int> _expandedIds = {};
   final _api = ApiClient();
   List<Map<String, dynamic>> _myEquipment = [];
+  int _myVehiclesCount = 0;
   bool _equipmentLoading = false;
 
   late final TabController _tabController;
@@ -99,6 +100,14 @@ class _ServicesScreenState extends State<ServicesScreen>
                   .toList() ??
               [];
         });
+      }
+    } catch (_) {}
+    // Also load active vehicles count
+    try {
+      final vRes = await _api.get('/vehicles/my/active');
+      if (vRes.statusCode == 200 && mounted) {
+        final list = jsonDecode(vRes.body) as List<dynamic>;
+        setState(() => _myVehiclesCount = list.length);
       }
     } catch (_) {}
     if (mounted) setState(() => _equipmentLoading = false);
@@ -329,6 +338,30 @@ class _ServicesScreenState extends State<ServicesScreen>
                                   '${_myEquipment.length}',
                                   style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
                                   textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          if (_myVehiclesCount > 0)
+                            Positioned(
+                              right: 2,
+                              bottom: 2,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade700,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                constraints: const BoxConstraints(minWidth: 18, minHeight: 16),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.directions_car, size: 9, color: Colors.white),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      '$_myVehiclesCount',
+                                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

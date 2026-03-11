@@ -118,6 +118,7 @@ model User {
   responsibleServices  Service[]           @relation("ResponsibleServices")
   assignedItems        Item[]              @relation("AssignedItems")
   itemComments         ItemComment[]       @relation("ItemComments")
+  vehicleComments      VehicleComment[]    @relation("VehicleComments")
 
   @@map("users")
 }
@@ -337,6 +338,7 @@ model Vehicle {
   department  Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   logs        VehicleLog[]
   attachments FileAttachment[]
+  comments    VehicleComment[]
 
   @@map("vehicles")
 }
@@ -351,13 +353,14 @@ model VehicleLog {
   userId     Int       @map("user_id")
   serviceId  Int?      @map("service_id")
 
-  startAt    DateTime  @map("start_at")
-  endAt      DateTime? @map("end_at")
-  meterStart Decimal   @map("meter_start") @db.Decimal(12, 2)
-  meterEnd   Decimal?  @map("meter_end") @db.Decimal(12, 2)
+  startAt     DateTime  @map("start_at")
+  endAt       DateTime? @map("end_at")
+  meterStart  Decimal   @map("meter_start") @db.Decimal(12, 2)
+  meterEnd    Decimal?  @map("meter_end") @db.Decimal(12, 2)
 
-  comment    String?   @db.Text
-  createdAt  DateTime  @default(now()) @map("created_at")
+  destination String?   @db.VarChar(255)
+  comment     String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   vehicle Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -367,16 +370,39 @@ model VehicleLog {
 }
 
 // ──────────────────────────────────────────────
+// Vehicle Comments
+// ──────────────────────────────────────────────
+
+model VehicleComment {
+  id        Int      @id @default(autoincrement())
+  vehicleId Int      @map("vehicle_id")
+  userId    Int      @map("user_id")
+  text      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  user    User    @relation("VehicleComments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("vehicle_comments")
+}
+
+// ──────────────────────────────────────────────
 // File Attachments (polymorphic – one FK set per row)
 // ──────────────────────────────────────────────
 
 model FileAttachment {
-  id         Int      @id @default(autoincrement())
-  fileName   String   @map("file_name") @db.VarChar(500)
-  filePath   String   @map("file_path")
-  mimeType   String?  @map("mime_type") @db.VarChar(255)
-  fileSize   Int?     @map("file_size")   // bytes
-  uploadedAt DateTime @default(now()) @map("uploaded_at")
+  id            Int      @id @default(autoincrement())
+  fileName      String   @map("file_name") @db.VarChar(500)
+  filePath      String   @map("file_path")
+  mimeType      String?  @map("mime_type") @db.VarChar(255)
+  fileSize      Int?     @map("file_size")   // bytes
+  uploadedAt    DateTime @default(now()) @map("uploaded_at")
+
+  // Image-specific metadata
+  isImage       Boolean  @default(false) @map("is_image")
+  thumbnailPath String?  @map("thumbnail_path")
+  width         Int?
+  height        Int?
 
   // Nullable FKs – exactly one should be non-null per row
   userId       Int? @map("user_id")
@@ -391,5 +417,10 @@ model FileAttachment {
   item       Item?       @relation(fields: [itemId], references: [id], onDelete: Cascade)
   vehicle    Vehicle?    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([departmentId])
+  @@index([serviceId])
+  @@index([itemId])
+  @@index([vehicleId])
   @@map("file_attachments")
 }

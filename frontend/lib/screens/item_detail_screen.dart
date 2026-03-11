@@ -1,18 +1,27 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/item_provider.dart';
 import '../providers/category_provider.dart';
 import '../providers/department_provider.dart';
 import '../services/api_client.dart';
+import '../widgets/image_gallery_card.dart';
 
-/// Full detail view for a single item.
-/// Shows item info, assigned user, container contents, edit/delete actions.
+/// Detail view for a single item shown as a modal bottom sheet.
 class ItemDetailScreen extends StatefulWidget {
   final int itemId;
   const ItemDetailScreen({super.key, required this.itemId});
+
+  /// Show item detail as a modal bottom sheet dialog.
+  static Future<bool?> show(BuildContext context, int itemId) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ItemDetailScreen(itemId: itemId),
+    );
+  }
 
   @override
   State<ItemDetailScreen> createState() => _ItemDetailScreenState();
@@ -253,7 +262,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               if (err != null && mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
               } else if (mounted) {
-                context.pop();
+                Navigator.of(context).pop(true);
               }
             },
             child: const Text('Διαγραφή'),
@@ -544,32 +553,40 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     final canManage = _canManage;
+    final isContainer = _item?['isContainer'] == true;
+    final accentColor = isContainer ? const Color(0xFF7C3AED) : const Color(0xFFDC2626);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _item == null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
-                      const SizedBox(height: 12),
-                      const Text('Αντικείμενο δεν βρέθηκε'),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: CustomScrollView(
-                    slivers: [
-                      _buildSliverAppBar(tt, cs, canManage),
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                        sliver: SliverList(
-                          delegate: SliverChildListDelegate([
-                            const SizedBox(height: 16),
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.92,
+      decoration: const BoxDecoration(
+        color: Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          // ── Header ──
+          _buildHeader(tt, cs, canManage, accentColor),
+          // ── Body ──
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _item == null
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
+                            const SizedBox(height: 12),
+                            const Text('Αντικείμενο δεν βρέθηκε'),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _load,
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                          children: [
                             _buildQuickInfoRow(tt, cs),
                             const SizedBox(height: 16),
                             _buildDetailsCard(tt, cs),
@@ -582,113 +599,140 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             ],
                             _buildContainerCard(tt, cs, canManage),
                             const SizedBox(height: 12),
+                            ImageGalleryCard(
+                              entityParam: 'itemId',
+                              entityId: widget.itemId,
+                              canManage: canManage,
+                            ),
+                            const SizedBox(height: 12),
                             _buildCommentsCard(tt, cs, canManage),
-                          ]),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-    );
-  }
-
-  // ── Sliver App Bar with hero header ──
-
-  Widget _buildSliverAppBar(TextTheme tt, ColorScheme cs, bool canManage) {
-    final isContainer = _item!['isContainer'] == true;
-    final isAvailable = _item!['availableForAssignment'] == true;
-    final assigned = _item!['assignedTo'];
-    final accentColor = isContainer ? const Color(0xFF7C3AED) : const Color(0xFFDC2626);
-
-    return SliverAppBar(
-      expandedHeight: 200,
-      pinned: true,
-      backgroundColor: accentColor,
-      foregroundColor: Colors.white,
-      actions: [
-        if (canManage) ...[
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: _item != null ? _editItem : null,
-            tooltip: 'Επεξεργασία',
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: _item != null ? _deleteItem : null,
-            tooltip: 'Διαγραφή',
-          ),
-        ],
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [accentColor, accentColor.withAlpha(180)],
-            ),
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 56, 20, 16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withAlpha(30),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(
-                          isContainer ? Icons.inventory_2 : Icons.build_outlined,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _item!['name'] ?? '',
-                              style: tt.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 6),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 4,
-                              children: [
-                                if (isContainer)
-                                  _heroBadge('Κουτί', Icons.inventory_2, Colors.white.withAlpha(30)),
-                                if (isAvailable)
-                                  _heroBadge('Διαθέσιμο', Icons.check_circle_outline, const Color(0xFF34D399).withAlpha(60)),
-                                if (assigned != null)
-                                  _heroBadge(
-                                    '${assigned['forename'] ?? ''} ${assigned['surname'] ?? ''}'.trim(),
-                                    Icons.person,
-                                    Colors.white.withAlpha(30),
-                                  ),
-                              ],
-                            ),
                           ],
                         ),
                       ),
-                    ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Header with gradient, drag handle, title & actions ──
+
+  Widget _buildHeader(TextTheme tt, ColorScheme cs, bool canManage, Color accentColor) {
+    final isAvailable = _item?['availableForAssignment'] == true;
+    final assigned = _item?['assignedTo'];
+    final isContainer = _item?['isContainer'] == true;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [accentColor, accentColor.withAlpha(180)],
+        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 6),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(100),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            // Action row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (canManage && _item != null) ...[
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      color: Colors.white,
+                      onPressed: _editItem,
+                      tooltip: 'Επεξεργασία',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      color: Colors.white,
+                      onPressed: _deleteItem,
+                      tooltip: 'Διαγραφή',
+                    ),
+                  ],
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 22),
+                    color: Colors.white,
+                    onPressed: () => Navigator.of(context).pop(),
+                    tooltip: 'Κλείσιμο',
                   ),
                 ],
               ),
             ),
-          ),
+            // Title & badges
+            if (_item != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(30),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        isContainer ? Icons.inventory_2 : Icons.build_outlined,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _item!['name'] ?? '',
+                            style: tt.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              if (isContainer)
+                                _heroBadge('Κουτί', Icons.inventory_2, Colors.white.withAlpha(30)),
+                              if (isAvailable)
+                                _heroBadge('Διαθέσιμο', Icons.check_circle_outline, const Color(0xFF34D399).withAlpha(60)),
+                              if (assigned != null)
+                                _heroBadge(
+                                  '${assigned['forename'] ?? ''} ${assigned['surname'] ?? ''}'.trim(),
+                                  Icons.person,
+                                  Colors.white.withAlpha(30),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -717,7 +761,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
   }
 
-  // ── Quick info chips row (below app bar) ──
+  // ── Quick info chips row ──
 
   Widget _buildQuickInfoRow(TextTheme tt, ColorScheme cs) {
     final expDate = _item!['expirationDate'];
@@ -1039,7 +1083,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
-                      onTap: () => context.push('/items/${child['id']}'),
+                      onTap: () => ItemDetailScreen.show(context, child['id'] as int),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -1339,7 +1383,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  onTap: () => context.push('/items/${parent['id']}'),
+                  onTap: () => ItemDetailScreen.show(context, parent['id'] as int),
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(

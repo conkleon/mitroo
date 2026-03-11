@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/vehicle_provider.dart';
+import '../services/api_client.dart';
+import 'vehicle_detail_screen.dart';
 
 class VehiclesScreen extends StatefulWidget {
   const VehiclesScreen({super.key});
@@ -170,12 +172,16 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                         final meter = v['currentMeter'] ?? 0;
                         final meterType = v['meterType'] ?? 'km';
                         final vehicleType = v['type'] as String?;
+                        final attachments = v['attachments'] as List?;
+                        final thumbPath = attachments != null && attachments.isNotEmpty
+                            ? attachments.first['thumbnailPath'] as String?
+                            : null;
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Card(
                             child: InkWell(
                               borderRadius: BorderRadius.circular(16),
-                              onTap: () {},
+                              onTap: () => VehicleDetailScreen.show(context, v['id'] as int),
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
                                 child: Column(
@@ -183,14 +189,33 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                                   children: [
                                     Row(
                                       children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFD97706).withAlpha(20),
+                                        if (thumbPath != null)
+                                          ClipRRect(
                                             borderRadius: BorderRadius.circular(12),
+                                            child: Image.network(
+                                              '${ApiClient.uploadsBaseUrl}$thumbPath',
+                                              width: 44,
+                                              height: 44,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) => Container(
+                                                padding: const EdgeInsets.all(10),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFD97706).withAlpha(20),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Icon(_vehicleIcon(vehicleType), color: const Color(0xFFD97706), size: 22),
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFD97706).withAlpha(20),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(_vehicleIcon(vehicleType), color: const Color(0xFFD97706), size: 22),
                                           ),
-                                          child: Icon(_vehicleIcon(vehicleType), color: const Color(0xFFD97706), size: 22),
-                                        ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Column(

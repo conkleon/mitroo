@@ -162,7 +162,7 @@ router.post("/import/csv", async (req: Request, res: Response) => {
 });
 // ── GET /api/items ──────────────────────────────
 router.get("/", async (req: Request, res: Response) => {
-  const { containerId, search, barCode, available, categoryId, departmentId } = req.query;
+  const { containerId, search, barCode, available, categoryId, departmentId, page, limit } = req.query;
   const where: any = {};
   if (containerId) where.containedById = Number(containerId);
   if (search) where.name = { contains: String(search), mode: "insensitive" };
@@ -174,18 +174,35 @@ router.get("/", async (req: Request, res: Response) => {
     where.assignedToId = null; // only show unassigned items
   }
 
-  const items = await prisma.item.findMany({
-    where,
-    include: {
-      department: { select: { id: true, name: true } },
-      containedBy: { select: { id: true, name: true } },
-      assignedTo: { select: { id: true, forename: true, surname: true } },
-      category: { select: { id: true, name: true, departmentId: true } },
-      _count: { select: { contents: true } },
+  const pageNum = Math.max(1, parseInt(String(page || "1"), 10) || 1);
+  const pageSize = Math.min(100, Math.max(1, parseInt(String(limit || "20"), 10) || 20));
+
+  const include = {
+    department: { select: { id: true, name: true } },
+    containedBy: { select: { id: true, name: true } },
+    assignedTo: { select: { id: true, forename: true, surname: true } },
+    category: { select: { id: true, name: true, departmentId: true } },
+    _count: { select: { contents: true } },
+    attachments: {
+      where: { isImage: true },
+      select: { id: true, thumbnailPath: true },
+      take: 1,
+      orderBy: { uploadedAt: "asc" as const },
     },
-    orderBy: { name: "asc" },
-  });
-  res.json(items);
+  };
+
+  const [items, total] = await Promise.all([
+    prisma.item.findMany({
+      where,
+      include,
+      orderBy: { name: "asc" },
+      skip: (pageNum - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.item.count({ where }),
+  ]);
+
+  res.json({ data: items, total, page: pageNum, limit: pageSize, totalPages: Math.ceil(total / pageSize) });
 });
 
 // ── GET /api/items/barcode/:code ────────────────
