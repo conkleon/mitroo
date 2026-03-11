@@ -567,11 +567,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
     final depts = deptProv.departments;
     if (depts.isEmpty) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-      child: SizedBox(
-        height: 34,
-        child: ListView.separated(
+    return SizedBox(
+      height: 34,
+      child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: depts.length + 1,
           separatorBuilder: (_, __) => const SizedBox(width: 6),
@@ -618,7 +616,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
             );
           },
         ),
-      ),
     );
   }
 
@@ -739,7 +736,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
                           ),
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
+                      Expanded(child: _buildDepartmentChips(cs)),
                       if (canManage)
                         IconButton(
                           onPressed: () => context.push('/items/csv'),
@@ -782,10 +780,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     onSubmitted: (v) => _fetchWithFilters(),
                   ),
                 ),
-              ),
-              // ── Department filter chips ──
-              SliverToBoxAdapter(
-                child: _buildDepartmentChips(cs),
               ),
               // ── Category filter chips ──
               SliverToBoxAdapter(

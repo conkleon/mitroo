@@ -137,23 +137,9 @@ class _DesktopSidebar extends StatelessWidget {
         children: [
           // ── App header ──
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: cs.primary.withAlpha(25),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.shield, color: cs.primary, size: 22),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text('Mitroo',
-                      style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5)),
-                ),
-              ],
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+            child: Center(
+              child: Image.asset('assets/logo.png', height: 72),
             ),
           ),
           const SizedBox(height: 8),

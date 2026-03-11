@@ -649,15 +649,15 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     bool isMember,
     List<dynamic> userServices,
   ) {
-    return Padding(
+    return ListView(
       padding: const EdgeInsets.all(24),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Left column: Service info
-          Expanded(
-            flex: 2,
-            child: SingleChildScrollView(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left column: Service info
+            Expanded(
+              flex: 2,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -674,6 +674,18 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                   if (visibility.isNotEmpty) const SizedBox(height: 16),
                   _HoursDefaultCard(svc: svc),
                   const SizedBox(height: 16),
+                  _VehicleLogsCard(
+                      vehicleLogs: vehicleLogs, formatDate: _formatDate),
+                ],
+              ),
+            ),
+            const SizedBox(width: 24),
+            // Right column: Equipment + People
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   _MemberEquipmentCard(
                     userServices: userServices,
                     visible: isMember || canManage,
@@ -683,18 +695,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                     onTakeItems: () => context.push('/items'),
                   ),
                   const SizedBox(height: 16),
-                  _VehicleLogsCard(
-                      vehicleLogs: vehicleLogs, formatDate: _formatDate),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 24),
-          // Right column: People
-          Expanded(
-            flex: 3,
-            child: SingleChildScrollView(
-              child: _PeopleSection(
+                  _PeopleSection(
                 requested: requested,
                 accepted: accepted,
                 rejected: rejected,
@@ -705,10 +706,12 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                 onRemove: _removeUser,
                 onEditHours: _editUserHours,
               ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -740,6 +743,15 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         if (visibility.isNotEmpty) const SizedBox(height: 16),
         _HoursDefaultCard(svc: svc),
         const SizedBox(height: 20),
+        _MemberEquipmentCard(
+          userServices: userServices,
+          visible: isMember || canManage,
+          currentUserId: context.read<AuthProvider>().user?['id'] as int?,
+          canManage: canManage,
+          onReturnItem: _returnItem,
+          onTakeItems: () => context.push('/items'),
+        ),
+        const SizedBox(height: 16),
         _PeopleSection(
           requested: requested,
           accepted: accepted,
@@ -750,15 +762,6 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
           onReject: (uid) => _updateUserStatus(uid, 'rejected'),
           onRemove: _removeUser,
           onEditHours: _editUserHours,
-        ),
-        const SizedBox(height: 16),
-        _MemberEquipmentCard(
-          userServices: userServices,
-          visible: isMember || canManage,
-          currentUserId: context.read<AuthProvider>().user?['id'] as int?,
-          canManage: canManage,
-          onReturnItem: _returnItem,
-          onTakeItems: () => context.push('/items'),
         ),
         const SizedBox(height: 16),
         _VehicleLogsCard(vehicleLogs: vehicleLogs, formatDate: _formatDate),
@@ -1663,20 +1666,26 @@ class _MemberEquipmentCard extends StatelessWidget {
                     style: tt.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w600)),
                 const Spacer(),
-                Text('${memberItems.length}',
-                    style: tt.bodySmall?.copyWith(
-                        color: const Color(0xFF6B7280))),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7C3AED).withAlpha(20),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text('${memberItems.length}',
+                      style: tt.bodySmall?.copyWith(
+                          color: const Color(0xFF7C3AED),
+                          fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(width: 10),
                 FilledButton.icon(
                   onPressed: onTakeItems,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Εξοπλισμός'),
+                  icon: const Icon(Icons.add_circle_outline, size: 20),
+                  label: const Text('Προσθήκη Εξοπλισμού'),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF2563EB),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    textStyle: const TextStyle(fontSize: 12),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],

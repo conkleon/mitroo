@@ -28,6 +28,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   List<dynamic> _services = [];
   bool _loading = true;
   String _search = '';
+  int? _selectedSpecId;
   final Set<int> _expandedCards = {};
 
   @override
@@ -80,6 +81,14 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
             loc.contains(q) ||
             carrier.contains(q) ||
             desc.contains(q);
+      }).toList();
+    }
+
+    // Filter by specialization
+    if (_selectedSpecId != null) {
+      list = list.where((s) {
+        final vis = s['visibility'] as List<dynamic>? ?? [];
+        return vis.any((v) => v['specialization']?['id'] == _selectedSpecId);
       }).toList();
     }
 
@@ -301,10 +310,29 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     if (mounted) _load();
   }
 
+  /// Collect all unique specializations from loaded services
+  List<Map<String, dynamic>> get _allSpecs {
+    final seen = <int>{};
+    final specs = <Map<String, dynamic>>[];
+    for (final svc in _services) {
+      final vis = svc['visibility'] as List<dynamic>? ?? [];
+      for (final v in vis) {
+        final spec = v['specialization'] as Map<String, dynamic>?;
+        if (spec != null) {
+          final id = spec['id'] as int;
+          if (seen.add(id)) specs.add(spec);
+        }
+      }
+    }
+    return specs;
+  }
+
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
     final filtered = _filtered;
+    final specs = _allSpecs;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -365,9 +393,85 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                         onChanged: (v) => setState(() => _search = v),
                       ),
                     ),
+
+                    // ── Specialization filter chips ──
+                    if (specs.isNotEmpty)
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 0),
+                        child: SizedBox(
+                          height: 36,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: specs.length + 1,
+                            separatorBuilder: (_, __) => const SizedBox(width: 6),
+                            itemBuilder: (context, i) {
+                              if (i == 0) {
+                                final selected = _selectedSpecId == null;
+                                return FilterChip(
+                                  avatar: Icon(Icons.apps,
+                                      size: 14,
+                                      color: selected
+                                          ? const Color(0xFF7C3AED)
+                                          : const Color(0xFF6B7280)),
+                                  label: const Text('Όλες'),
+                                  selected: selected,
+                                  onSelected: (_) =>
+                                      setState(() => _selectedSpecId = null),
+                                  selectedColor: const Color(0xFFF5F3FF),
+                                  checkmarkColor: const Color(0xFF7C3AED),
+                                  side: BorderSide(
+                                      color: selected
+                                          ? const Color(0xFFDDD6FE)
+                                          : Colors.grey.shade300),
+                                  visualDensity: VisualDensity.compact,
+                                  labelStyle: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight:
+                                        selected ? FontWeight.w600 : FontWeight.w400,
+                                    color: selected
+                                        ? const Color(0xFF6D28D9)
+                                        : const Color(0xFF6B7280),
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                );
+                              }
+                              final spec = specs[i - 1];
+                              final specId = spec['id'] as int;
+                              final selected = _selectedSpecId == specId;
+                              return FilterChip(
+                                avatar: Icon(Icons.workspace_premium,
+                                    size: 14,
+                                    color: selected
+                                        ? const Color(0xFF7C3AED)
+                                        : const Color(0xFF6B7280)),
+                                label: Text(spec['name'] ?? ''),
+                                selected: selected,
+                                onSelected: (_) => setState(() =>
+                                    _selectedSpecId = selected ? null : specId),
+                                selectedColor: const Color(0xFFF5F3FF),
+                                checkmarkColor: const Color(0xFF7C3AED),
+                                side: BorderSide(
+                                    color: selected
+                                        ? const Color(0xFFDDD6FE)
+                                        : Colors.grey.shade300),
+                                visualDensity: VisualDensity.compact,
+                                labelStyle: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight:
+                                      selected ? FontWeight.w600 : FontWeight.w400,
+                                  color: selected
+                                      ? const Color(0xFF6D28D9)
+                                      : const Color(0xFF6B7280),
+                                ),
+                                padding: EdgeInsets.zero,
+                              );
+                            },
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 8),
 
-                    // ── Service cards ──
+                    // ── Service rows ──
                     Expanded(
                       child: filtered.isEmpty
                           ? Center(
@@ -384,9 +488,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                   ]))
                           : RefreshIndicator(
                               onRefresh: _load,
-                              child: isWide
-                                  ? _buildGrid(filtered)
-                                  : _buildList(filtered),
+                              child: _buildList(filtered),
                             ),
                     ),
                   ],
@@ -399,20 +501,6 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   Widget _buildList(List<dynamic> services) {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 80),
-      itemCount: services.length,
-      itemBuilder: (ctx, i) => _buildCard(services[i]),
-    );
-  }
-
-  Widget _buildGrid(List<dynamic> services) {
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(32, 4, 32, 80),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 14,
-        crossAxisSpacing: 14,
-        childAspectRatio: 1.45,
-      ),
       itemCount: services.length,
       itemBuilder: (ctx, i) => _buildCard(services[i]),
     );
@@ -432,192 +520,229 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     final isExpanded = _expandedCards.contains(id);
     final requestedCount =
         userServices.where((us) => us['status'] == 'requested').length;
-    final acceptedCount =
-        userServices.where((us) => us['status'] == 'accepted').length;
-    final responsibleUser = svc['responsibleUser'] as Map<String, dynamic>?;
-    final responsibleName = responsibleUser != null
-        ? '${responsibleUser['forename'] ?? ''} ${responsibleUser['surname'] ?? ''}'.trim()
-        : null;
+    final description = (svc['description'] ?? '') as String;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shadowColor: Colors.black.withAlpha(18),
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 1,
+      shadowColor: Colors.black.withAlpha(12),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade200),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ── Main card content ──
           InkWell(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             onTap: () => _openDetail(svc),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Status accent strip
-                Container(
-                  height: 4,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [sColor, sColor.withAlpha(120)],
-                    ),
+            child: Container(
+              color: Colors.white,
+              child: Row(
+                children: [
+                  // Status accent bar
+                  Container(
+                    width: 4,
+                    height: 80,
+                    color: sColor,
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  // Top row: name + status badge
-                  Row(children: [
-                    Expanded(
-                      child: Text(name,
-                          style: tt.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w700, fontSize: 15),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: sColor.withAlpha(20),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: sColor.withAlpha(50)),
-                      ),
-                      child: Text(status,
-                          style: TextStyle(
-                              color: sColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700)),
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-
-                  // Info chips
-                  Wrap(spacing: 14, runSpacing: 6, children: [
-                    if (location.isNotEmpty)
-                      _InfoChip(Icons.location_on, location),
-                    if (carrier.isNotEmpty) _InfoChip(Icons.groups, carrier),
-                    _InfoChip(
-                        Icons.calendar_today, _fmtDate(svc['startAt'])),
-                    if (responsibleName != null)
-                      _InfoChip(Icons.admin_panel_settings, responsibleName),
-                  ]),
-
-                  if (visSpecs.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: visSpecs
-                          .map((v) => Chip(
-                                label: Text(
-                                    v['specialization']?['name'] ?? '',
-                                    style: const TextStyle(fontSize: 10)),
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                                labelPadding:
-                                    const EdgeInsets.symmetric(horizontal: 6),
-                              ))
-                          .toList(),
-                    ),
-                  ],
-                  const SizedBox(height: 10),
-
-                  // Action row
-                  Row(children: [
-                    // Enrollment summary + expand toggle
-                    InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: enrolledCount > 0
-                          ? () => setState(() {
-                                isExpanded
-                                    ? _expandedCards.remove(id)
-                                    : _expandedCards.add(id);
-                              })
-                          : null,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0F4FF),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFDBEAFE)),
-                        ),
-                        child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                  const SizedBox(width: 14),
+                  // Main content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Title row
+                          Row(
                             children: [
+                              Expanded(
+                                child: Text(name,
+                                    style: tt.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: sColor.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(status,
+                                    style: TextStyle(
+                                        color: sColor,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700)),
+                              ),
+                            ],
+                          ),
+                          if (description.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(description,
+                                style: tt.bodySmall?.copyWith(
+                                    color: const Color(0xFF9CA3AF),
+                                    fontSize: 12),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis),
+                          ],
+                          const SizedBox(height: 6),
+                          // Info row
+                          Row(
+                            children: [
+                              if (location.isNotEmpty) ...[
+                                Icon(Icons.location_on,
+                                    size: 12,
+                                    color: Colors.grey.shade500),
+                                const SizedBox(width: 3),
+                                Flexible(
+                                  child: Text(location,
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey.shade600),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis),
+                                ),
+                                const SizedBox(width: 10),
+                              ],
+                              Icon(Icons.calendar_today,
+                                  size: 12, color: Colors.grey.shade500),
+                              const SizedBox(width: 3),
+                              Text(_fmtDate(svc['startAt']),
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey.shade600)),
+                              const SizedBox(width: 10),
+                              // Members badge
                               const Icon(Icons.people,
-                                  size: 14,
+                                  size: 12,
                                   color: Color(0xFF2563EB)),
-                              const SizedBox(width: 5),
-                              Text('$enrolledCount μέλη',
+                              const SizedBox(width: 3),
+                              Text('$enrolledCount',
                                   style: const TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                       color: Color(0xFF2563EB))),
                               if (requestedCount > 0) ...[
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 4),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 2),
+                                      horizontal: 5, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFF59E0B),
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Text('$requestedCount',
+                                  child: Text('+$requestedCount',
                                       style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 10,
+                                          fontSize: 9,
                                           fontWeight: FontWeight.w700)),
                                 ),
                               ],
-                              if (enrolledCount > 0) ...[
-                                const SizedBox(width: 4),
-                                Icon(
-                                  isExpanded
-                                      ? Icons.expand_less
-                                      : Icons.expand_more,
-                                  size: 16,
-                                  color: const Color(0xFF2563EB),
-                                ),
+                              // Specialization chips inline
+                              if (visSpecs.isNotEmpty) ...[
+                                const SizedBox(width: 10),
+                                ...visSpecs.take(2).map((v) => Padding(
+                                      padding: const EdgeInsets.only(right: 4),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF5F3FF),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                          border: Border.all(
+                                              color:
+                                                  const Color(0xFFDDD6FE)),
+                                        ),
+                                        child: Text(
+                                            v['specialization']?['name'] ?? '',
+                                            style: const TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF6D28D9))),
+                                      ),
+                                    )),
+                                if (visSpecs.length > 2)
+                                  Text('+${visSpecs.length - 2}',
+                                      style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Color(0xFF6D28D9))),
                               ],
-                            ]),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    const Spacer(),
-                    _CardActionButton(
-                      icon: Icons.visibility_outlined,
-                      label: 'Προβολή',
-                      color: const Color(0xFF2563EB),
-                      onTap: () => _openDetail(svc),
-                    ),
-                    const SizedBox(width: 6),
-                    _CardActionButton(
-                      icon: Icons.edit_outlined,
-                      label: 'Επεξ.',
-                      color: const Color(0xFF059669),
-                      onTap: () => _editService(svc),
-                    ),
-                    const SizedBox(width: 6),
-                    _CardActionButton(
-                      icon: Icons.delete_outline,
-                      label: 'Διαγρ.',
-                      color: Colors.red.shade400,
-                      onTap: () => _deleteService(id, name),
-                    ),
-                  ]),
+                  ),
+                  const SizedBox(width: 8),
+                  // Action buttons
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Expand toggle
+                      if (enrolledCount > 0)
+                        Material(
+                          color: isExpanded
+                              ? const Color(0xFF2563EB).withAlpha(20)
+                              : const Color(0xFFF0F4FF),
+                          borderRadius: BorderRadius.circular(10),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(10),
+                            onTap: () => setState(() {
+                              isExpanded
+                                  ? _expandedCards.remove(id)
+                                  : _expandedCards.add(id);
+                            }),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.people_outline,
+                                      size: 16,
+                                      color: const Color(0xFF2563EB)),
+                                  const SizedBox(width: 5),
+                                  Text('$enrolledCount',
+                                      style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF2563EB))),
+                                  Icon(
+                                    isExpanded
+                                        ? Icons.expand_less
+                                        : Icons.expand_more,
+                                    size: 20,
+                                    color: const Color(0xFF2563EB),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined,
+                            size: 18, color: Color(0xFF059669)),
+                        onPressed: () => _editService(svc),
+                        visualDensity: VisualDensity.compact,
+                        tooltip: 'Επεξεργασία',
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete_outline,
+                            size: 18, color: Colors.red.shade400),
+                        onPressed: () => _deleteService(id, name),
+                        visualDensity: VisualDensity.compact,
+                        tooltip: 'Διαγραφή',
+                      ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                ],
+              ),
             ),
           ),
 
@@ -830,77 +955,6 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
 
 // ─── Reusable widgets ─────────────────────────────────────
 
-
-
-class _InfoChip extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _InfoChip(this.icon, this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 12, color: const Color(0xFF6B7280)),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(text,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF4B5563), fontWeight: FontWeight.w500),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis),
-        ),
-      ]),
-    );
-  }
-}
-
-class _CardActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _CardActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withAlpha(60)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 4),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: color)),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _EnrollBadge extends StatelessWidget {
   final String label;
