@@ -10,6 +10,7 @@ import 'providers/department_provider.dart';
 import 'providers/service_provider.dart';
 import 'providers/item_provider.dart';
 import 'providers/vehicle_provider.dart';
+import 'providers/category_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +41,7 @@ class MitrooApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ServiceProvider()),
         ChangeNotifierProvider(create: (_) => ItemProvider()),
         ChangeNotifierProvider(create: (_) => VehicleProvider()),
+        ChangeNotifierProvider(create: (_) => CategoryProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {

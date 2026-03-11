@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/item_provider.dart';
+import '../providers/category_provider.dart';
+import '../providers/department_provider.dart';
 import '../services/api_client.dart';
 import 'scanner_screen.dart';
 import 'my_equipment_sheet.dart';
@@ -20,6 +22,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
   final _searchCtrl = TextEditingController();
   final _api = ApiClient();
   List<Map<String, dynamic>> _myEquipment = [];
+  int? _selectedCategoryId;
+  int? _selectedDepartmentId;
 
   @override
   void initState() {
@@ -29,6 +33,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
       final canManage = auth.isAdmin || auth.isItemAdmin;
       // Regular users only see available (unassigned) items
       context.read<ItemProvider>().fetchItems(available: canManage ? null : true);
+      context.read<CategoryProvider>().fetchCategories();
+      context.read<DepartmentProvider>().fetchDepartments();
     });
     _loadMyEquipment();
   }
@@ -87,6 +93,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
     bool isContainer = false;
     DateTime? expirationDate;
     bool autoFilling = false;
+    int? selectedCategoryId;
+    final depts = context.read<DepartmentProvider>().departments;
+    int? selectedDeptId = _selectedDepartmentId ?? (depts.isNotEmpty ? depts.first['id'] as int : null);
 
     /// Scan barcode via camera, put result in barcodeCtrl, then auto-fill.
     Future<void> scanBarcode(StateSetter setSt) async {
@@ -142,6 +151,39 @@ class _ItemsScreenState extends State<ItemsScreen> {
                 TextField(controller: locationCtrl, decoration: const InputDecoration(labelText: 'Τοποθεσία')),
                 const SizedBox(height: 12),
                 TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Περιγραφή'), maxLines: 2),
+                const SizedBox(height: 12),
+                Builder(
+                  builder: (_) {
+                    final depts = context.read<DepartmentProvider>().departments;
+                    return DropdownButtonFormField<int>(
+                      value: selectedDeptId,
+                      decoration: const InputDecoration(labelText: 'Τμήμα'),
+                      items: depts.map<DropdownMenuItem<int>>((d) => DropdownMenuItem(
+                        value: d['id'] as int,
+                        child: Text(d['name'] ?? ''),
+                      )).toList(),
+                      onChanged: (v) => setSt(() => selectedDeptId = v),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                Builder(
+                  builder: (_) {
+                    final cats = context.read<CategoryProvider>().categories;
+                    return DropdownButtonFormField<int?>(
+                      value: selectedCategoryId,
+                      decoration: const InputDecoration(labelText: 'Κατηγορία'),
+                      items: [
+                        const DropdownMenuItem<int?>(value: null, child: Text('Χωρίς κατηγορία')),
+                        ...cats.map((c) => DropdownMenuItem<int?>(
+                          value: c['id'] as int,
+                          child: Text('${c['name']}'),
+                        )),
+                      ],
+                      onChanged: (v) => setSt(() => selectedCategoryId = v),
+                    );
+                  },
+                ),
                 const SizedBox(height: 8),
                 SwitchListTile(
                   title: const Text('Κουτί'),
@@ -184,11 +226,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
             FilledButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
-                final data = <String, dynamic>{'name': nameCtrl.text.trim(), 'isContainer': isContainer};
+                if (selectedDeptId == null) return;
+                final data = <String, dynamic>{'name': nameCtrl.text.trim(), 'isContainer': isContainer, 'departmentId': selectedDeptId};
                 if (barcodeCtrl.text.isNotEmpty) data['barCode'] = barcodeCtrl.text.trim();
                 if (locationCtrl.text.isNotEmpty) data['location'] = locationCtrl.text.trim();
                 if (descCtrl.text.isNotEmpty) data['description'] = descCtrl.text.trim();
                 if (expirationDate != null) data['expirationDate'] = expirationDate!.toIso8601String();
+                if (selectedCategoryId != null) data['categoryId'] = selectedCategoryId;
                 final err = await context.read<ItemProvider>().create(data);
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (err != null && mounted) {
@@ -498,11 +542,138 @@ class _ItemsScreenState extends State<ItemsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Το "$itemName" ανατέθηκε σε εσάς')),
       );
-      // Refresh the list (item should disappear from available)
+      // Refresh the list and my equipment
+      _loadMyEquipment();
       final auth = context.read<AuthProvider>();
       final canManage = auth.isAdmin || auth.isItemAdmin;
       context.read<ItemProvider>().fetchItems(available: canManage ? null : true);
     }
+  }
+
+  void _fetchWithFilters() {
+    final auth = context.read<AuthProvider>();
+    final canManage = auth.isAdmin || auth.isItemAdmin;
+    final search = _searchCtrl.text.trim().isNotEmpty ? _searchCtrl.text.trim() : null;
+    context.read<ItemProvider>().fetchItems(
+      available: canManage ? null : true,
+      search: search,
+      categoryId: _selectedCategoryId,
+      departmentId: _selectedDepartmentId,
+    );
+  }
+
+  Widget _buildDepartmentChips(ColorScheme cs) {
+    final deptProv = context.watch<DepartmentProvider>();
+    final depts = deptProv.departments;
+    if (depts.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      child: SizedBox(
+        height: 34,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: depts.length + 1,
+          separatorBuilder: (_, __) => const SizedBox(width: 6),
+          itemBuilder: (context, i) {
+            if (i == 0) {
+              final selected = _selectedDepartmentId == null;
+              return FilterChip(
+                label: const Text('Όλα τα τμήματα'),
+                selected: selected,
+                onSelected: (_) {
+                  setState(() {
+                    _selectedDepartmentId = null;
+                    _selectedCategoryId = null;
+                  });
+                  _fetchWithFilters();
+                },
+                visualDensity: VisualDensity.compact,
+                labelStyle: TextStyle(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
+                padding: EdgeInsets.zero,
+              );
+            }
+            final dept = depts[i - 1];
+            final deptId = dept['id'] as int;
+            final selected = _selectedDepartmentId == deptId;
+            return FilterChip(
+              label: Text(dept['name'] ?? ''),
+              selected: selected,
+              onSelected: (_) {
+                setState(() {
+                  _selectedDepartmentId = selected ? null : deptId;
+                  _selectedCategoryId = null;
+                });
+                _fetchWithFilters();
+              },
+              visualDensity: VisualDensity.compact,
+              labelStyle: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              ),
+              padding: EdgeInsets.zero,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChips(ColorScheme cs) {
+    final catProv = context.watch<CategoryProvider>();
+    final cats = catProv.categories;
+    if (cats.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      child: SizedBox(
+        height: 34,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: cats.length + 1,
+          separatorBuilder: (_, __) => const SizedBox(width: 6),
+          itemBuilder: (context, i) {
+            if (i == 0) {
+              final selected = _selectedCategoryId == null;
+              return FilterChip(
+                label: const Text('Όλα'),
+                selected: selected,
+                onSelected: (_) {
+                  setState(() => _selectedCategoryId = null);
+                  _fetchWithFilters();
+                },
+                visualDensity: VisualDensity.compact,
+                labelStyle: TextStyle(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
+                padding: EdgeInsets.zero,
+              );
+            }
+            final cat = cats[i - 1];
+            final catId = cat['id'] as int;
+            final selected = _selectedCategoryId == catId;
+            return FilterChip(
+              label: Text(cat['name'] ?? ''),
+              selected: selected,
+              onSelected: (_) {
+                setState(() => _selectedCategoryId = selected ? null : catId);
+                _fetchWithFilters();
+              },
+              visualDensity: VisualDensity.compact,
+              labelStyle: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              ),
+              padding: EdgeInsets.zero,
+            );
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -518,7 +689,11 @@ class _ItemsScreenState extends State<ItemsScreen> {
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => prov.fetchItems(available: canManage ? null : true),
+          onRefresh: () async {
+            await prov.fetchItems(available: canManage ? null : true, categoryId: _selectedCategoryId, departmentId: _selectedDepartmentId);
+            await context.read<CategoryProvider>().fetchCategories();
+            await context.read<DepartmentProvider>().fetchDepartments();
+          },
           child: CustomScrollView(
             slivers: [
               // ── Top bar ──
@@ -600,13 +775,21 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         icon: const Icon(Icons.clear, size: 18),
                         onPressed: () {
                           _searchCtrl.clear();
-                          context.read<ItemProvider>().fetchItems(available: canManage ? null : true);
+                          _fetchWithFilters();
                         },
                       ),
                     ),
-                    onSubmitted: (v) => context.read<ItemProvider>().fetchItems(search: v, available: canManage ? null : true),
+                    onSubmitted: (v) => _fetchWithFilters(),
                   ),
                 ),
+              ),
+              // ── Department filter chips ──
+              SliverToBoxAdapter(
+                child: _buildDepartmentChips(cs),
+              ),
+              // ── Category filter chips ──
+              SliverToBoxAdapter(
+                child: _buildCategoryChips(cs),
               ),
               // ── Section header with See Assigned button ──
               SliverToBoxAdapter(
@@ -640,19 +823,34 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   ),
                 )
               else
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, i) => _ItemCard(
-                        item: prov.items[i],
-                        canManage: canManage,
-                        onTake: canManage ? null : () => _selfAssignItem(prov.items[i]),
-                        onToggleAvailability: canManage ? () async {
-                          await context.read<ItemProvider>().toggleAvailability(prov.items[i]['id']);
-                        } : null,
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Card(
+                      elevation: 0,
+                      margin: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.grey.shade200),
                       ),
-                      childCount: prov.items.length,
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: List.generate(prov.items.length, (i) {
+                          return Column(
+                            children: [
+                              if (i > 0) Divider(height: 1, thickness: 1, color: Colors.grey.shade100),
+                              _ItemRow(
+                                item: prov.items[i],
+                                canManage: canManage,
+                                onTake: canManage ? null : () => _selfAssignItem(prov.items[i]),
+                                onToggleAvailability: canManage ? () async {
+                                  await context.read<ItemProvider>().toggleAvailability(prov.items[i]['id']);
+                                } : null,
+                              ),
+                            ],
+                          );
+                        }),
+                      ),
                     ),
                   ),
                 ),
@@ -684,14 +882,14 @@ class _ItemsScreenState extends State<ItemsScreen> {
   }
 }
 
-// ── Extracted item card widget ──
+// ── Compact table-row item widget ──
 
-class _ItemCard extends StatelessWidget {
+class _ItemRow extends StatelessWidget {
   final dynamic item;
   final bool canManage;
   final VoidCallback? onTake;
   final VoidCallback? onToggleAvailability;
-  const _ItemCard({required this.item, this.canManage = true, this.onTake, this.onToggleAvailability});
+  const _ItemRow({required this.item, this.canManage = true, this.onTake, this.onToggleAvailability});
 
   @override
   Widget build(BuildContext context) {
@@ -701,118 +899,117 @@ class _ItemCard extends StatelessWidget {
     final isContainer = item['isContainer'] == true;
     final assignedTo = item['assignedTo'];
     final isAvailable = item['availableForAssignment'] == true;
+    final category = item['category'];
+    final accentColor = isContainer ? const Color(0xFF7C3AED) : const Color(0xFF2563EB);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        elevation: 2,
-        shadowColor: Colors.black.withAlpha(20),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.grey.shade100),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => context.push('/items/${item['id']}'),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: (isContainer ? const Color(0xFF7C3AED) : const Color(0xFF2563EB)).withAlpha(20),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    isContainer ? Icons.inventory : Icons.build_outlined,
-                    color: isContainer ? const Color(0xFF7C3AED) : const Color(0xFF2563EB),
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    // Build subtitle parts
+    final infoParts = <String>[
+      if (category != null) category['name'],
+      if (item['barCode'] != null) item['barCode'],
+      if (parent != null) parent['name'],
+      if (item['location'] != null) item['location'],
+    ];
+
+    return InkWell(
+      onTap: () => context.push('/items/${item['id']}'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        color: Colors.white,
+        child: Row(
+          children: [
+            // Thin color accent bar
+            Container(
+              width: 3,
+              height: 32,
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Name + meta
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
                     children: [
-                      Text(item['name'] ?? '', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 2),
-                      Text(
-                        [
-                          if (item['barCode'] != null) 'Barcode: ${item['barCode']}',
-                          if (parent != null) 'In: ${parent['name']}',
-                          if (item['location'] != null) item['location'],
-                        ].join(' · '),
-                        style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Flexible(
+                        child: Text(
+                          item['name'] ?? '',
+                          style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      if (assignedTo != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.person, size: 14, color: Color(0xFF059669)),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                '${assignedTo['forename'] ?? ''} ${assignedTo['surname'] ?? ''}'.trim(),
-                                style: tt.bodySmall?.copyWith(color: const Color(0xFF059669), fontWeight: FontWeight.w500),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                      if (childCount > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7C3AED).withAlpha(18),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '$childCount',
+                            style: const TextStyle(fontSize: 10, color: Color(0xFF7C3AED), fontWeight: FontWeight.w600),
+                          ),
                         ),
                       ],
                     ],
                   ),
-                ),
-                if (childCount > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF7C3AED).withAlpha(20),
-                      borderRadius: BorderRadius.circular(8),
+                  if (infoParts.isNotEmpty || assignedTo != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        ...infoParts,
+                        if (assignedTo != null)
+                          '${assignedTo['forename'] ?? ''} ${assignedTo['surname'] ?? ''}'.trim(),
+                      ].join(' · '),
+                      style: tt.bodySmall?.copyWith(
+                        color: const Color(0xFF6B7280),
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    child: Text(
-                      '$childCount μέσα',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF7C3AED), fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                // Availability toggle for admin/itemAdmin
-                if (canManage && onToggleAvailability != null) ...[                  const SizedBox(width: 4),
-                  IconButton(
-                    onPressed: onToggleAvailability,
-                    icon: Icon(
-                      isAvailable ? Icons.visibility : Icons.visibility_off_outlined,
-                      size: 20,
-                      color: isAvailable ? const Color(0xFF059669) : const Color(0xFF9CA3AF),
-                    ),
-                    tooltip: isAvailable ? 'Απόκρυψη' : 'Διαθέσιμο',
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  ),
+                  ],
                 ],
-                // "Take" button for regular (non-admin) users
-                if (!canManage && onTake != null) ...[
-                  const SizedBox(width: 8),
-                  FilledButton.tonalIcon(
-                    onPressed: onTake,
-                    icon: const Icon(Icons.add_circle_outline, size: 16),
-                    label: const Text('Λήψη', style: TextStyle(fontSize: 12)),
-                    style: FilledButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    ),
-                  ),
-                ] else ...[
-                  const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right, size: 20, color: Color(0xFF9CA3AF)),
-                ],
-              ],
+              ),
             ),
-          ),
+            // Availability toggle for admin/itemAdmin
+            if (canManage && onToggleAvailability != null)
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: IconButton(
+                  onPressed: onToggleAvailability,
+                  icon: Icon(
+                    isAvailable ? Icons.visibility : Icons.visibility_off_outlined,
+                    size: 18,
+                    color: isAvailable ? const Color(0xFF059669) : const Color(0xFFD1D5DB),
+                  ),
+                  tooltip: isAvailable ? 'Απόκρυψη' : 'Διαθέσιμο',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                ),
+              ),
+            // "Take" button for regular users
+            if (!canManage && onTake != null)
+              SizedBox(
+                height: 28,
+                child: FilledButton.tonal(
+                  onPressed: onTake,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                    minimumSize: Size.zero,
+                  ),
+                  child: const Text('Λήψη'),
+                ),
+              ),
+          ],
         ),
       ),
     );

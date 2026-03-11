@@ -17,6 +17,7 @@ import itemRoutes from "./routes/item.routes";
 import vehicleRoutes from "./routes/vehicle.routes";
 import specializationRoutes from "./routes/specialization.routes";
 import fileRoutes from "./routes/file.routes";
+import categoryRoutes from "./routes/category.routes";
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use("/api/items", itemRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/specializations", specializationRoutes);
 app.use("/api/files", fileRoutes);
+app.use("/api/item-categories", categoryRoutes);
 
 // ── Error handling ──────────────────────────────
 app.use(notFound);

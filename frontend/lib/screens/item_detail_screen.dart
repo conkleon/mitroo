@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/item_provider.dart';
+import '../providers/category_provider.dart';
+import '../providers/department_provider.dart';
 import '../services/api_client.dart';
 
 /// Full detail view for a single item.
@@ -53,6 +55,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       if (results[3].statusCode == 200) {
         _comments = jsonDecode(results[3].body) as List;
       }
+      // Ensure departments are loaded for the edit dialog
+      if (mounted) {
+        context.read<DepartmentProvider>().fetchDepartments();
+      }
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
   }
@@ -82,6 +88,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final locationCtrl = TextEditingController(text: _item!['location'] ?? '');
     bool isContainer = _item!['isContainer'] == true;
     bool availableForAssignment = _item!['availableForAssignment'] == true;
+    int? selectedCategoryId = _item!['category']?['id'] as int?;
+    int? selectedDeptId = _item!['department']?['id'] as int?;
     DateTime? expirationDate;
     if (_item!['expirationDate'] != null) {
       expirationDate = DateTime.tryParse(_item!['expirationDate']);
@@ -117,6 +125,39 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     controller: descCtrl,
                     decoration: const InputDecoration(labelText: 'Περιγραφή', border: OutlineInputBorder()),
                     maxLines: 3,
+                  ),
+                  const SizedBox(height: 12),
+                  Builder(
+                    builder: (_) {
+                      final depts = context.read<DepartmentProvider>().departments;
+                      return DropdownButtonFormField<int>(
+                        value: selectedDeptId,
+                        decoration: const InputDecoration(labelText: 'Τμήμα', border: OutlineInputBorder()),
+                        items: depts.map<DropdownMenuItem<int>>((d) => DropdownMenuItem(
+                          value: d['id'] as int,
+                          child: Text(d['name'] ?? ''),
+                        )).toList(),
+                        onChanged: (v) => setSt(() => selectedDeptId = v),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Builder(
+                    builder: (_) {
+                      final cats = context.read<CategoryProvider>().categories;
+                      return DropdownButtonFormField<int?>(
+                        value: selectedCategoryId,
+                        decoration: const InputDecoration(labelText: 'Κατηγορία', border: OutlineInputBorder()),
+                        items: [
+                          const DropdownMenuItem<int?>(value: null, child: Text('Χωρίς κατηγορία')),
+                          ...cats.map((c) => DropdownMenuItem<int?>(
+                            value: c['id'] as int,
+                            child: Text('${c['name']}'),
+                          )),
+                        ],
+                        onChanged: (v) => setSt(() => selectedCategoryId = v),
+                      );
+                    },
                   ),
                   const SizedBox(height: 8),
                   SwitchListTile(
@@ -175,6 +216,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   'location': locationCtrl.text.isNotEmpty ? locationCtrl.text.trim() : null,
                   'description': descCtrl.text.isNotEmpty ? descCtrl.text.trim() : null,
                   'expirationDate': expirationDate?.toIso8601String(),
+                  'categoryId': selectedCategoryId,
+                  'departmentId': selectedDeptId,
                 };
                 final err = await context.read<ItemProvider>().update(widget.itemId, data);
                 if (ctx.mounted) Navigator.pop(ctx);
@@ -685,10 +728,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       child: Row(
         children: [
           _infoChip(Icons.tag, 'ID: #${_item!['id']}', const Color(0xFF6366F1)),
+          if (_item!['department'] != null)
+            _infoChip(Icons.business_outlined, _item!['department']['name'], const Color(0xFF0D9488)),
           if (_item!['barCode'] != null)
             _infoChip(Icons.qr_code, _item!['barCode'], const Color(0xFF2563EB)),
           if (_item!['location'] != null)
             _infoChip(Icons.location_on_outlined, _item!['location'], const Color(0xFF0891B2)),
+          if (_item!['category'] != null)
+            _infoChip(Icons.category_outlined, _item!['category']['name'], const Color(0xFF8B5CF6)),
           if (expDate != null)
             _infoChip(
               isExpired ? Icons.warning_amber_rounded : Icons.event,

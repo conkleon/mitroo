@@ -27,6 +27,8 @@ model Department {
   userDepartments UserDepartment[]
   vehicles        Vehicle[]
   attachments     FileAttachment[]
+  itemCategories  ItemCategory[]
+  items           Item[]
 
   @@map("departments")
 }
@@ -184,6 +186,7 @@ model Item {
   description   String?  @db.Text
   barCode       String?  @map("bar_code") @db.VarChar(255)
   imagePath     String?  @map("image_path")
+  departmentId  Int      @map("department_id")
 
   containedById Int?     @map("contained_by_id")
   isContainer   Boolean  @default(false) @map("is_container")
@@ -192,18 +195,38 @@ model Item {
   expirationDate        DateTime? @map("expiration_date")
   assignedToId          Int?      @map("assigned_to_id")
   availableForAssignment Boolean  @default(false) @map("available_for_assignment")
+  categoryId            Int?      @map("category_id")
 
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
+  department   Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   containedBy  Item?          @relation("ItemContainment", fields: [containedById], references: [id], onDelete: SetNull)
   contents     Item[]         @relation("ItemContainment")
   assignedTo   User?          @relation("AssignedItems", fields: [assignedToId], references: [id], onDelete: SetNull)
+  category     ItemCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   itemServices ItemService[]
   attachments  FileAttachment[]
   comments     ItemComment[]
 
   @@map("items")
+}
+
+// ──────────────────────────────────────────────
+// Item Categories (department-scoped)
+// ──────────────────────────────────────────────
+
+model ItemCategory {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(255)
+  departmentId Int      @map("department_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  items      Item[]
+
+  @@unique([name, departmentId])
+  @@map("item_categories")
 }
 
 // ──────────────────────────────────────────────

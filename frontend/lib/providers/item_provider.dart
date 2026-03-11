@@ -15,7 +15,7 @@ class ItemProvider extends ChangeNotifier {
 
   // ── Fetch all items (with optional filters) ──
 
-  Future<void> fetchItems({int? containerId, String? search, bool? available}) async {
+  Future<void> fetchItems({int? containerId, String? search, bool? available, int? categoryId, int? departmentId}) async {
     _loading = true;
     notifyListeners();
     try {
@@ -23,6 +23,8 @@ class ItemProvider extends ChangeNotifier {
       if (containerId != null) params.add('containerId=$containerId');
       if (search != null && search.isNotEmpty) params.add('search=$search');
       if (available == true) params.add('available=true');
+      if (categoryId != null) params.add('categoryId=$categoryId');
+      if (departmentId != null) params.add('departmentId=$departmentId');
       final q = params.isNotEmpty ? '?${params.join('&')}' : '';
       final res = await _api.get('/items$q');
       if (res.statusCode == 200) _items = jsonDecode(res.body);

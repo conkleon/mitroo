@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/item_provider.dart';
+import '../providers/category_provider.dart';
+import '../providers/department_provider.dart';
 
 /// Screen for exporting and importing items via CSV.
 class ItemsCsvScreen extends StatefulWidget {
@@ -20,6 +22,15 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
   bool _exporting = false;
   bool _importing = false;
   Map<String, dynamic>? _importResult;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      context.read<CategoryProvider>().fetchCategories();
+      context.read<DepartmentProvider>().fetchDepartments();
+    });
+  }
 
   Future<void> _exportCsv() async {
     setState(() { _exporting = true; _exportedCsv = null; });
@@ -63,6 +74,8 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
         // Convert known boolean/int fields
         if (key == 'isContainer' || key == 'availableForAssignment') {
           row[key] = val.toLowerCase() == 'true';
+        } else if (key == 'departmentId') {
+          row[key] = int.tryParse(val);
         } else {
           row[key] = val.isEmpty ? null : val;
         }
@@ -133,10 +146,13 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(title: const Text('Εισαγωγή / Εξαγωγή CSV')),
+      appBar: AppBar(title: const Text('Ρυθμίσεις Αντικειμένων')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          // ── Category management section ──
+          _buildCategorySection(tt, cs),
+          const SizedBox(height: 20),
           // ── Export section ──
           Card(
             elevation: 2,
@@ -228,7 +244,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Επίλεξε αρχείο CSV ή επικόλλησε δεδομένα για μαζική δημιουργία αντικειμένων.\n'
-                    'Απαιτούμενη στήλη: name. Προαιρετικές: description, barCode, location, isContainer, availableForAssignment.',
+                    'Απαιτούμενες στήλες: name, departmentId. Προαιρετικές: description, barCode, location, isContainer, availableForAssignment.',
                     style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
                   ),
                   const SizedBox(height: 16),
@@ -359,6 +375,205 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
             ),
           ),
           const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+
+  // ── Category management card ──
+
+  Widget _buildCategorySection(TextTheme tt, ColorScheme cs) {
+    final catProv = context.watch<CategoryProvider>();
+    final depts = context.watch<DepartmentProvider>().departments;
+
+    return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withAlpha(20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade100),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.category_outlined, size: 20, color: cs.primary),
+                const SizedBox(width: 8),
+                Text('Κατηγορίες', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                const Spacer(),
+                FilledButton.tonalIcon(
+                  onPressed: () => _showCreateCategoryDialog(depts),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Νέα'),
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Οι κατηγορίες είναι ανά τμήμα. Κάθε τμήμα μπορεί να έχει τις δικές του.',
+              style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+            ),
+            const SizedBox(height: 12),
+            if (catProv.loading)
+              const Center(child: Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ))
+            else if (catProv.categories.isEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                alignment: Alignment.center,
+                child: Text('Δεν υπάρχουν κατηγορίες',
+                    style: tt.bodyMedium?.copyWith(color: const Color(0xFF9CA3AF))),
+              )
+            else
+              ...catProv.categories.map((cat) {
+                final dept = cat['department'];
+                final itemCount = cat['_count']?['items'] ?? 0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 1),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                    dense: true,
+                    title: Text(cat['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w500)),
+                    subtitle: Text(
+                      '${dept?['name'] ?? ''} · $itemCount αντικείμεν${itemCount == 1 ? 'ο' : 'α'}',
+                      style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          onPressed: () => _showRenameCategoryDialog(cat),
+                          tooltip: 'Μετονομασία',
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                          onPressed: () => _confirmDeleteCategory(cat),
+                          tooltip: 'Διαγραφή',
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCreateCategoryDialog(List<dynamic> depts) {
+    final nameCtrl = TextEditingController();
+    int? selectedDeptId = depts.isNotEmpty ? depts.first['id'] as int : null;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => AlertDialog(
+          title: const Text('Νέα Κατηγορία'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Όνομα', border: OutlineInputBorder()),
+                autofocus: true,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: selectedDeptId,
+                decoration: const InputDecoration(labelText: 'Τμήμα', border: OutlineInputBorder()),
+                items: depts.map<DropdownMenuItem<int>>((d) => DropdownMenuItem(
+                  value: d['id'] as int,
+                  child: Text(d['name'] ?? ''),
+                )).toList(),
+                onChanged: (v) => setSt(() => selectedDeptId = v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            FilledButton(
+              onPressed: () async {
+                if (nameCtrl.text.trim().isEmpty || selectedDeptId == null) return;
+                final err = await context.read<CategoryProvider>().create(nameCtrl.text.trim(), selectedDeptId!);
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (err != null && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                }
+              },
+              child: const Text('Δημιουργία'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showRenameCategoryDialog(Map<String, dynamic> cat) {
+    final nameCtrl = TextEditingController(text: cat['name'] ?? '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Μετονομασία'),
+        content: TextField(
+          controller: nameCtrl,
+          decoration: const InputDecoration(labelText: 'Όνομα', border: OutlineInputBorder()),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+          FilledButton(
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) return;
+              final err = await context.read<CategoryProvider>().update(cat['id'] as int, nameCtrl.text.trim());
+              if (ctx.mounted) Navigator.pop(ctx);
+              if (err != null && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+              }
+            },
+            child: const Text('Αποθήκευση'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteCategory(Map<String, dynamic> cat) {
+    final itemCount = cat['_count']?['items'] ?? 0;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Διαγραφή Κατηγορίας'),
+        content: Text(
+          itemCount > 0
+              ? 'Η κατηγορία "${cat['name']}" έχει $itemCount αντικείμενα. Τα αντικείμενα δεν θα διαγραφούν, απλά θα χάσουν την κατηγορία τους.'
+              : 'Διαγραφή της κατηγορίας "${cat['name']}";',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final err = await context.read<CategoryProvider>().deleteCategory(cat['id'] as int);
+              if (err != null && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+              }
+            },
+            child: const Text('Διαγραφή'),
+          ),
         ],
       ),
     );

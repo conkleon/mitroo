@@ -19,6 +19,7 @@ async function isItemManager(req: Request): Promise<boolean> {
 
 // Shared include used when returning a single item with full relations.
 const ITEM_DETAIL_INCLUDE = {
+  department: { select: { id: true, name: true } },
   containedBy: { select: { id: true, name: true } },
   contents: {
     select: {
@@ -32,6 +33,7 @@ const ITEM_DETAIL_INCLUDE = {
     },
   },
   assignedTo: { select: { id: true, forename: true, surname: true, ename: true } },
+  category: { select: { id: true, name: true, departmentId: true } },
   itemServices: {
     include: {
       service: { select: { id: true, name: true } },
@@ -49,13 +51,15 @@ const ITEM_DETAIL_INCLUDE = {
 
 const createSchema = z.object({
   name: z.string().min(1).max(255),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   barCode: z.string().optional().nullable(),
   containedById: z.number().int().optional().nullable(),
   isContainer: z.boolean().optional(),
   location: z.string().optional().nullable(),
   expirationDate: z.string().optional().nullable(), // ISO-8601
   availableForAssignment: z.boolean().optional(),
+  categoryId: z.number().int().optional().nullable(),
+  departmentId: z.number().int(),
 });
 
 const assignServiceSchema = z.object({
@@ -80,11 +84,12 @@ router.get("/export/csv", async (req: Request, res: Response) => {
     include: {
       containedBy: { select: { id: true, name: true } },
       assignedTo: { select: { id: true, forename: true, surname: true } },
+      department: { select: { id: true, name: true } },
     },
     orderBy: { id: "asc" },
   });
 
-  const header = "id,name,description,barCode,location,isContainer,availableForAssignment,containedById,containedByName,assignedToId,assignedToName,expirationDate";
+  const header = "id,name,description,barCode,location,isContainer,availableForAssignment,containedById,containedByName,assignedToId,assignedToName,expirationDate,departmentId,departmentName";
   const rows = items.map((i) => {
     const assignedName = i.assignedTo ? `${i.assignedTo.forename} ${i.assignedTo.surname}` : "";
     return [
@@ -100,6 +105,8 @@ router.get("/export/csv", async (req: Request, res: Response) => {
       i.assignedToId || "",
       `"${assignedName}"`,
       i.expirationDate ? i.expirationDate.toISOString() : "",
+      i.departmentId,
+      `"${i.department?.name || ""}"`,
     ].join(",");
   });
 
@@ -130,6 +137,10 @@ router.post("/import/csv", async (req: Request, res: Response) => {
       continue;
     }
     try {
+      if (!r.departmentId) {
+        errors.push(`Row ${i + 1}: departmentId is required`);
+        continue;
+      }
       await prisma.item.create({
         data: {
           name: r.name.trim(),
@@ -139,6 +150,7 @@ router.post("/import/csv", async (req: Request, res: Response) => {
           isContainer: r.isContainer === true || r.isContainer === "true",
           availableForAssignment: r.availableForAssignment === true || r.availableForAssignment === "true",
           expirationDate: r.expirationDate ? new Date(r.expirationDate) : null,
+          departmentId: Number(r.departmentId),
         },
       });
       created++;
@@ -150,11 +162,13 @@ router.post("/import/csv", async (req: Request, res: Response) => {
 });
 // ── GET /api/items ──────────────────────────────
 router.get("/", async (req: Request, res: Response) => {
-  const { containerId, search, barCode, available } = req.query;
+  const { containerId, search, barCode, available, categoryId, departmentId } = req.query;
   const where: any = {};
   if (containerId) where.containedById = Number(containerId);
   if (search) where.name = { contains: String(search), mode: "insensitive" };
   if (barCode) where.barCode = String(barCode);
+  if (categoryId) where.categoryId = Number(categoryId);
+  if (departmentId) where.departmentId = Number(departmentId);
   if (available === "true") {
     where.availableForAssignment = true;
     where.assignedToId = null; // only show unassigned items
@@ -163,8 +177,10 @@ router.get("/", async (req: Request, res: Response) => {
   const items = await prisma.item.findMany({
     where,
     include: {
+      department: { select: { id: true, name: true } },
       containedBy: { select: { id: true, name: true } },
       assignedTo: { select: { id: true, forename: true, surname: true } },
+      category: { select: { id: true, name: true, departmentId: true } },
       _count: { select: { contents: true } },
     },
     orderBy: { name: "asc" },
@@ -178,8 +194,10 @@ router.get("/barcode/:code", async (req: Request, res: Response) => {
   const items = await prisma.item.findMany({
     where: { barCode: String(req.params.code) },
     include: {
+      department: { select: { id: true, name: true } },
       containedBy: { select: { id: true, name: true } },
       assignedTo: { select: { id: true, forename: true, surname: true } },
+      category: { select: { id: true, name: true, departmentId: true } },
       _count: { select: { contents: true } },
     },
     orderBy: { name: "asc" },

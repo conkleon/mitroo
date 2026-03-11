@@ -260,17 +260,36 @@ async function main() {
     });
   }
 
+  // ── Item categories ────────────────────────────
+  const catMedical = await prisma.itemCategory.upsert({
+    where: { name_departmentId: { name: "Ιατρικά", departmentId: ops.id } },
+    update: {},
+    create: { name: "Ιατρικά", departmentId: ops.id },
+  });
+
+  const catRescueEquip = await prisma.itemCategory.upsert({
+    where: { name_departmentId: { name: "Εξοπλισμός Διάσωσης", departmentId: rescue.id } },
+    update: {},
+    create: { name: "Εξοπλισμός Διάσωσης", departmentId: rescue.id },
+  });
+
+  const catTraining = await prisma.itemCategory.upsert({
+    where: { name_departmentId: { name: "Εκπαιδευτικά", departmentId: trainers.id } },
+    update: {},
+    create: { name: "Εκπαιδευτικά", departmentId: trainers.id },
+  });
+
   // ── Items ─────────────────────────────────────
   const kit = await prisma.item.upsert({
     where: { id: 1 },
     update: {},
-    create: { name: "Rescue Kit #1", isContainer: true, location: "Warehouse A" },
+    create: { name: "Rescue Kit #1", isContainer: true, location: "Warehouse A", categoryId: catMedical.id },
   });
 
   await prisma.item.upsert({
     where: { id: 2 },
     update: {},
-    create: { name: "Defibrillator", barCode: "DEF-001", containedById: kit.id },
+    create: { name: "Defibrillator", barCode: "DEF-001", containedById: kit.id, categoryId: catMedical.id },
   });
 
   // ── Vehicles ──────────────────────────────────
