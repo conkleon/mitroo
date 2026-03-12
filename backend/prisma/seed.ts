@@ -39,32 +39,9 @@ async function main() {
   const ops = await prisma.department.upsert({
     where: { id: 1 },
     update: {},
-    create: { name: "Υγειονομικές", description: "Health / Medical services", location: "HQ" },
+    create: { name: "Τμήμα Αθήνας", description: "Health / Medical services", location: "HQ" },
   });
 
-  const rescue = await prisma.department.upsert({
-    where: { id: 2 },
-    update: {},
-    create: { name: "Ναυαγοσωστικές", description: "Lifeguard / Rescue services" },
-  });
-
-  const general = await prisma.department.upsert({
-    where: { id: 3 },
-    update: {},
-    create: { name: "Γενικές", description: "General-purpose services" },
-  });
-
-  const education = await prisma.department.upsert({
-    where: { id: 4 },
-    update: {},
-    create: { name: "Εκπαιδευτικές", description: "Educational services" },
-  });
-
-  const trainers = await prisma.department.upsert({
-    where: { id: 5 },
-    update: {},
-    create: { name: "Εκπαιδευτών", description: "Trainer staffing services" },
-  });
 
   // ── Department memberships ────────────────────
   await prisma.userDepartment.upsert({
@@ -73,23 +50,6 @@ async function main() {
     create: { userId: admin.id, departmentId: ops.id, role: DepartmentRole.missionAdmin },
   });
 
-  await prisma.userDepartment.upsert({
-    where: { userId_departmentId: { userId: admin.id, departmentId: rescue.id } },
-    update: {},
-    create: { userId: admin.id, departmentId: rescue.id, role: DepartmentRole.missionAdmin },
-  });
-
-  await prisma.userDepartment.upsert({
-    where: { userId_departmentId: { userId: volunteer.id, departmentId: ops.id } },
-    update: {},
-    create: { userId: volunteer.id, departmentId: ops.id, role: DepartmentRole.volunteer },
-  });
-
-  await prisma.userDepartment.upsert({
-    where: { userId_departmentId: { userId: volunteer.id, departmentId: trainers.id } },
-    update: {},
-    create: { userId: volunteer.id, departmentId: trainers.id, role: DepartmentRole.volunteer },
-  });
 
   // ── Role types (reference) ────────────────────
   for (const rt of [
@@ -100,87 +60,6 @@ async function main() {
     await prisma.roleType.upsert({ where: { name: rt.name }, update: {}, create: rt });
   }
 
-  // ── Services ──────────────────────────────────
-  await prisma.service.upsert({
-    where: { id: 1 },
-    update: {},
-    create: {
-      departmentId: ops.id,
-      name: "Υγειονομική κάλυψη αγώνα",
-      description: "ΑΓΩΝΕΣ ΠΟΔΟΣΦΑΙΡΟΥ",
-      carrier: "ΣΥΛΛΟΓΟΣ ΔΑΒΟΥΡΛΗ",
-      location: "ΓΗΠΕΔΟ ΠΡΟΣΦΥΓΙΚΩΝ",
-      defaultHours: 3,
-      startAt: new Date("2026-03-02T19:30:00"),
-      endAt: new Date("2026-03-02T22:30:00"),
-    },
-  });
-
-  await prisma.service.upsert({
-    where: { id: 2 },
-    update: {},
-    create: {
-      departmentId: ops.id,
-      name: "Υγειονομική κάλυψη αγώνα",
-      description: "ΑΓΩΝΕΣ ΜΠΑΣΚΕΤ",
-      carrier: "ΑΣ ΟΛΥΜΠΙΑΚΟΣ",
-      location: "ΚΛΕΙΣΤΟ ΓΥΜΝΑΣΤΗΡΙΟ",
-      defaultHours: 3,
-      startAt: new Date("2026-03-04T20:30:00"),
-      endAt: new Date("2026-03-04T22:30:00"),
-    },
-  });
-
-  await prisma.service.upsert({
-    where: { id: 3 },
-    update: {},
-    create: {
-      departmentId: rescue.id,
-      name: "Ναυαγοσωστική κάλυψη",
-      description: "Κάλυψη κολυμβητηρίου",
-      carrier: "ΔΗΜΟΣ ΑΘΗΝΑΙΩΝ",
-      location: "ΔΗΜΟΤΙΚΟ ΚΟΛΥΜΒΗΤΗΡΙΟ",
-      defaultHours: 6,
-      startAt: new Date("2026-03-05T09:00:00"),
-      endAt: new Date("2026-03-05T15:00:00"),
-    },
-  });
-
-  await prisma.service.upsert({
-    where: { id: 4 },
-    update: {},
-    create: {
-      departmentId: trainers.id,
-      name: "Εκπαίδευση Πρώτων Βοηθειών",
-      description: "Σεμινάριο βασικών πρώτων βοηθειών",
-      carrier: "ΕΕΣ ΤΜΗΜΑ ΑΘΗΝΑΣ",
-      location: "ΑΙΘΟΥΣΑ Α",
-      defaultHours: 4,
-      defaultHoursTraining: 4,
-      startAt: new Date("2026-03-03T17:00:00"),
-      endAt: new Date("2026-03-03T21:00:00"),
-    },
-  });
-
-  for (let i = 5; i <= 16; i++) {
-    const day = 5 + (i - 5);
-    await prisma.service.upsert({
-      where: { id: i },
-      update: {},
-      create: {
-        departmentId: trainers.id,
-        name: `Εκπαίδευση BLS/AED #${i - 4}`,
-        description: "Εκπαιδευτικό σεμινάριο BLS/AED",
-        carrier: "ΕΕΣ",
-        location: "ΑΙΘΟΥΣΑ Β",
-        defaultHours: 3,
-        defaultHoursTrainers: 3,
-        defaultHoursTEP: 0,
-        startAt: new Date(`2026-03-${String(day).padStart(2, '0')}T18:00:00`),
-        endAt: new Date(`2026-03-${String(day).padStart(2, '0')}T21:00:00`),
-      },
-    });
-  }
 
   // ── Specializations ───────────────────────────
   const firstAid = await prisma.specialization.upsert({
@@ -267,30 +146,7 @@ async function main() {
     create: { name: "Ιατρικά", departmentId: ops.id },
   });
 
-  const catRescueEquip = await prisma.itemCategory.upsert({
-    where: { name_departmentId: { name: "Εξοπλισμός Διάσωσης", departmentId: rescue.id } },
-    update: {},
-    create: { name: "Εξοπλισμός Διάσωσης", departmentId: rescue.id },
-  });
 
-  const catTraining = await prisma.itemCategory.upsert({
-    where: { name_departmentId: { name: "Εκπαιδευτικά", departmentId: trainers.id } },
-    update: {},
-    create: { name: "Εκπαιδευτικά", departmentId: trainers.id },
-  });
-
-  // ── Items ─────────────────────────────────────
-  const kit = await prisma.item.upsert({
-    where: { id: 1 },
-    update: {},
-    create: { name: "Rescue Kit #1", isContainer: true, location: "Warehouse A", categoryId: catMedical.id },
-  });
-
-  await prisma.item.upsert({
-    where: { id: 2 },
-    update: {},
-    create: { name: "Defibrillator", barCode: "DEF-001", containedById: kit.id, categoryId: catMedical.id },
-  });
 
   // ── Vehicles ──────────────────────────────────
   await prisma.vehicle.upsert({
