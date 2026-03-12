@@ -1,9 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 
-// Load backend-local .env first (has localhost URLs for dev),
-// then the shared root .env (won't override existing vars).
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
+// Load the single root .env (Docker Compose overrides URLs for containers).
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 import app from "./app";
