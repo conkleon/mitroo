@@ -313,15 +313,18 @@ class _ItemsScreenState extends State<ItemsScreen> {
     );
     if (result == null || !mounted) return;
 
-    await _handleScanResult(result.value, result.isQr);
+    final isQr = choice == ScanChoice.qrCode ? true : choice == ScanChoice.barcode ? false : result.isQr;
+    await _handleScanResult(result.value, isQr);
   }
 
   Future<void> _handleScanResult(String value, bool isQr) async {
-    if (isQr) {
-      // QR code contains the item ID
-      final id = int.tryParse(value);
-      if (id != null) {
-        ItemDetailScreen.show(context, id);
+    // If the value is a pure integer, treat it as an item ID (QR code)
+    // regardless of what the scanner reported, since our QR codes encode
+    // only the numeric item ID.
+    final parsedId = int.tryParse(value);
+    if (isQr || (parsedId != null && value == parsedId.toString())) {
+      if (parsedId != null) {
+        ItemDetailScreen.show(context, parsedId);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Μη έγκυρος κωδικός QR')),

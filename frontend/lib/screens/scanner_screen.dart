@@ -9,7 +9,7 @@ class ScanResult {
 }
 
 /// The user's choice from the scan-choice bottom sheet.
-enum ScanChoice { camera, manual }
+enum ScanChoice { qrCode, barcode, manual }
 
 /// Shows a bottom-sheet letting the user choose camera scan or manual entry.
 Future<ScanChoice?> showScanChoiceDialog(BuildContext context) {
@@ -42,11 +42,19 @@ Future<ScanChoice?> showScanChoiceDialog(BuildContext context) {
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.camera_alt)),
-                title: const Text('Σάρωση με Κάμερα'),
-                subtitle: const Text('QR code ή barcode'),
+                leading: const CircleAvatar(child: Icon(Icons.qr_code)),
+                title: const Text('Σάρωση QR Code'),
+                subtitle: const Text('Σάρωση κωδικού QR με κάμερα'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.pop(ctx, ScanChoice.camera),
+                onTap: () => Navigator.pop(ctx, ScanChoice.qrCode),
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.barcode_reader)),
+                title: const Text('Σάρωση Barcode'),
+                subtitle: const Text('Σάρωση barcode με κάμερα'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pop(ctx, ScanChoice.barcode),
               ),
               const Divider(height: 1, indent: 16, endIndent: 16),
               ListTile(

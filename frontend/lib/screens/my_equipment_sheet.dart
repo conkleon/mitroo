@@ -541,11 +541,12 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                       builder: (_) => const ScannerScreen()),
                 );
                 if (result == null || !mounted) return;
-                if (result.isQr) {
-                  final id = int.tryParse(result.value);
-                  if (id != null) {
+                final isQr = choice == ScanChoice.qrCode ? true : choice == ScanChoice.barcode ? false : result.isQr;
+                final parsedId = int.tryParse(result.value);
+                if (isQr || (parsedId != null && result.value == parsedId.toString())) {
+                  if (parsedId != null) {
                     Navigator.pop(context);
-                    ItemDetailScreen.show(context, id);
+                    ItemDetailScreen.show(context, parsedId);
                   }
                 } else {
                   setState(() => _searchLoading = true);
