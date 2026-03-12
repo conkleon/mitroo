@@ -1,9 +1,11 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { z } from "zod";
 import prisma from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
+import { sendPasswordResetEmail } from "../lib/email";
 
 const router = Router();
 
@@ -208,6 +210,81 @@ router.post("/change-password", authenticate, async (req: Request, res: Response
     await prisma.user.update({ where: { id: user.id }, data: { password: hashed } });
 
     res.json({ message: "Password changed successfully" });
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Validation failed", details: err.errors });
+      return;
+    }
+    throw err;
+  }
+});
+
+// ── POST /api/auth/forgot-password ──────────────
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+router.post("/forgot-password", async (req: Request, res: Response) => {
+  try {
+    const { email } = forgotPasswordSchema.parse(req.body);
+
+    // Always return success to avoid leaking whether an email exists
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (user) {
+      const token = crypto.randomBytes(32).toString("hex");
+      const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordResetToken: token, passwordResetExpires: expires },
+      });
+
+      try {
+        await sendPasswordResetEmail(email, token, user.forename);
+      } catch (emailErr) {
+        console.error("Failed to send password reset email:", emailErr);
+      }
+    }
+
+    res.json({ message: "Αν υπάρχει λογαριασμός με αυτό το email, θα λάβεις οδηγίες επαναφοράς." });
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Validation failed", details: err.errors });
+      return;
+    }
+    throw err;
+  }
+});
+
+// ── POST /api/auth/reset-password ───────────────
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8),
+});
+
+router.post("/reset-password", async (req: Request, res: Response) => {
+  try {
+    const data = resetPasswordSchema.parse(req.body);
+
+    const user = await prisma.user.findFirst({
+      where: {
+        passwordResetToken: data.token,
+        passwordResetExpires: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      res.status(400).json({ error: "Μη έγκυρος ή ληγμένος σύνδεσμος επαναφοράς." });
+      return;
+    }
+
+    const hashed = await bcrypt.hash(data.password, 12);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashed, passwordResetToken: null, passwordResetExpires: null },
+    });
+
+    res.json({ message: "Ο κωδικός άλλαξε επιτυχώς. Μπορείς να συνδεθείς." });
   } catch (err: any) {
     if (err instanceof z.ZodError) {
       res.status(400).json({ error: "Validation failed", details: err.errors });

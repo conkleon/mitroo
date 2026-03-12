@@ -3,13 +3,65 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 /// Result returned by the scanner screen via Navigator.pop().
 class ScanResult {
-  /// The raw string value from the scanned code.
   final String value;
-
-  /// Whether this came from a QR code (true) or a 1-D barcode (false).
   final bool isQr;
-
   const ScanResult({required this.value, required this.isQr});
+}
+
+/// The user's choice from the scan-choice bottom sheet.
+enum ScanChoice { camera, manual }
+
+/// Shows a bottom-sheet letting the user choose camera scan or manual entry.
+Future<ScanChoice?> showScanChoiceDialog(BuildContext context) {
+  return showModalBottomSheet<ScanChoice>(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (ctx) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Text(
+                'Σάρωση Κωδικού',
+                style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.camera_alt)),
+                title: const Text('Σάρωση με Κάμερα'),
+                subtitle: const Text('QR code ή barcode'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pop(ctx, ScanChoice.camera),
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.keyboard_outlined)),
+                title: const Text('Χειροκίνητη Εισαγωγή'),
+                subtitle: const Text('Πληκτρολογήστε κωδικό'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.pop(ctx, ScanChoice.manual),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 /// Full-screen camera scanner that detects both QR codes and barcodes.

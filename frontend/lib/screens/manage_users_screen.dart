@@ -165,7 +165,6 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     final forenameCtrl = TextEditingController();
     final surnameCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
-    final passwordCtrl = TextEditingController();
 
     showDialog(
       context: context,
@@ -184,8 +183,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                 TextField(controller: surnameCtrl, decoration: const InputDecoration(labelText: 'Επώνυμο *', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email *', border: OutlineInputBorder())),
-                const SizedBox(height: 12),
-                TextField(controller: passwordCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'Κωδικός (ελάχ. 8) *', border: OutlineInputBorder())),
+                const SizedBox(height: 8),
+                Text(
+                  'Ο κωδικός θα δημιουργηθεί αυτόματα και θα σταλεί στο email του χρήστη.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
               ],
             ),
           ),
@@ -199,13 +201,17 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                 'forename': forenameCtrl.text.trim(),
                 'surname': surnameCtrl.text.trim(),
                 'email': emailCtrl.text.trim(),
-                'password': passwordCtrl.text,
               };
               try {
-                final res = await _api.post('/auth/register', body: body);
+                final res = await _api.post('/users', body: body);
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (res.statusCode == 201) {
                   _fetch();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Ο χρήστης δημιουργήθηκε και έλαβε email πρόσκλησης.')),
+                    );
+                  }
                 } else {
                   final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
                   if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));

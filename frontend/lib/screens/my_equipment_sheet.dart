@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 import 'scanner_screen.dart';
@@ -530,47 +529,48 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                 },
               ),
             ),
-            if (!kIsWeb) ...[
-              const SizedBox(width: 8),
-              IconButton.filled(
-                onPressed: () async {
-                  final result =
-                      await Navigator.of(context).push<ScanResult>(
-                    MaterialPageRoute(
-                        builder: (_) => const ScannerScreen()),
-                  );
-                  if (result == null || !mounted) return;
-                  if (result.isQr) {
-                    final id = int.tryParse(result.value);
-                    if (id != null) {
-                      Navigator.pop(context);
-                      ItemDetailScreen.show(context, id);
+            const SizedBox(width: 8),
+            IconButton.filled(
+              onPressed: () async {
+                final choice = await showScanChoiceDialog(context);
+                if (choice == null || !mounted) return;
+                if (choice == ScanChoice.manual) return; // user can type in search field
+                final result =
+                    await Navigator.of(context).push<ScanResult>(
+                  MaterialPageRoute(
+                      builder: (_) => const ScannerScreen()),
+                );
+                if (result == null || !mounted) return;
+                if (result.isQr) {
+                  final id = int.tryParse(result.value);
+                  if (id != null) {
+                    Navigator.pop(context);
+                    ItemDetailScreen.show(context, id);
+                  }
+                } else {
+                  setState(() => _searchLoading = true);
+                  try {
+                    final res = await widget.api.get(
+                        '/items/barcode/${Uri.encodeComponent(result.value)}');
+                    if (mounted) {
+                      setState(() {
+                        _searchResults = res.statusCode == 200
+                            ? jsonDecode(res.body) as List<dynamic>
+                            : [];
+                        _searchLoading = false;
+                      });
                     }
-                  } else {
-                    setState(() => _searchLoading = true);
-                    try {
-                      final res = await widget.api.get(
-                          '/items/barcode/${Uri.encodeComponent(result.value)}');
-                      if (mounted) {
-                        setState(() {
-                          _searchResults = res.statusCode == 200
-                              ? jsonDecode(res.body) as List<dynamic>
-                              : [];
-                          _searchLoading = false;
-                        });
-                      }
-                    } catch (_) {
-                      if (mounted) {
-                        setState(() => _searchLoading = false);
-                      }
+                  } catch (_) {
+                    if (mounted) {
+                      setState(() => _searchLoading = false);
                     }
                   }
-                },
-                icon: const Icon(Icons.qr_code_scanner, size: 20),
-                tooltip: 'Σάρωση',
-                style: IconButton.styleFrom(backgroundColor: cs.primary),
-              ),
-            ],
+                }
+              },
+              icon: const Icon(Icons.qr_code_scanner, size: 20),
+              tooltip: 'Σάρωση',
+              style: IconButton.styleFrom(backgroundColor: cs.primary),
+            ),
           ],
         ),
         const SizedBox(height: 12),

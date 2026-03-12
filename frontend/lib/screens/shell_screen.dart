@@ -63,6 +63,7 @@ class ShellScreen extends StatelessWidget {
             child: SafeArea(
               child: NavigationBar(
                 selectedIndex: idx,
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
                 onDestinationSelected: (i) => context.go(mainPaths[i]),
                 destinations: [
                   const NavigationDestination(

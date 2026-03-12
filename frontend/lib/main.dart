@@ -83,7 +83,7 @@ class MitrooApp extends StatelessWidget {
               navigationBarTheme: NavigationBarThemeData(
                 backgroundColor: Colors.white,
                 elevation: 0,
-                height: 64,
+                height: 56,
                 indicatorColor: _primaryRed.withAlpha(25),
                 labelTextStyle: WidgetStateProperty.resolveWith((states) {
                   if (states.contains(WidgetState.selected)) {

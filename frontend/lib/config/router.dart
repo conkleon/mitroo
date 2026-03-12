@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/auth_provider.dart';
 import '../screens/login_screen.dart';
+import '../screens/forgot_password_screen.dart';
+import '../screens/reset_password_screen.dart';
 import '../screens/admin_panel_screen.dart';
 import '../screens/create_service_screen.dart';
 import '../screens/manage_services_screen.dart';
@@ -28,16 +30,29 @@ GoRouter appRouter(AuthProvider auth) {
     refreshListenable: auth,
     redirect: (context, state) {
       final loggedIn = auth.isAuthenticated;
-      final loggingIn = state.matchedLocation == '/login';
+      final path = state.matchedLocation;
+      final publicPaths = ['/login', '/forgot-password', '/reset-password'];
+      final isPublic = publicPaths.any((p) => path.startsWith(p));
 
-      if (!loggedIn && !loggingIn) return '/login';
-      if (loggedIn && loggingIn) return '/services';
+      if (!loggedIn && !isPublic) return '/login';
+      if (loggedIn && isPublic) return '/services';
       return null;
     },
     routes: [
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        builder: (context, state) {
+          final token = state.uri.queryParameters['token'] ?? '';
+          return ResetPasswordScreen(token: token);
+        },
       ),
       // Profile is a full-screen route outside the shell
       GoRoute(

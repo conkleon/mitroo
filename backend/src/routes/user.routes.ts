@@ -1,7 +1,10 @@
 import { Router, Request, Response } from "express";
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 import prisma from "../lib/prisma";
 import { authenticate, requireAdmin } from "../middleware/auth";
+import { sendInviteEmail } from "../lib/email";
 
 const router = Router();
 router.use(authenticate);
@@ -100,6 +103,57 @@ router.get("/:id", async (req: Request, res: Response) => {
   });
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
   res.json(user);
+});
+
+// ── POST /api/users ─────────────────────────────
+// Admin creates a user: random password generated, invite email sent
+const createUserSchema = z.object({
+  ename: z.string().min(2).max(50),
+  forename: z.string().min(1),
+  surname: z.string().min(1),
+  email: z.string().email(),
+});
+
+router.post("/", requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const data = createUserSchema.parse(req.body);
+
+    const existing = await prisma.user.findFirst({
+      where: { OR: [{ email: data.email }, { ename: data.ename }] },
+    });
+    if (existing) {
+      res.status(409).json({ error: existing.email === data.email ? "Το email χρησιμοποιείται ήδη" : "Ο κωδ. μέλους υπάρχει ήδη" });
+      return;
+    }
+
+    const plainPassword = crypto.randomBytes(6).toString("base64url"); // ~8 chars
+    const hashed = await bcrypt.hash(plainPassword, 12);
+
+    const user = await prisma.user.create({
+      data: {
+        ename: data.ename,
+        password: hashed,
+        forename: data.forename,
+        surname: data.surname,
+        email: data.email,
+      },
+      select: USER_SELECT,
+    });
+
+    try {
+      await sendInviteEmail(data.email, data.forename, plainPassword);
+    } catch (emailErr) {
+      console.error("Failed to send invite email:", emailErr);
+    }
+
+    res.status(201).json(user);
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Validation failed", details: err.errors });
+      return;
+    }
+    throw err;
+  }
 });
 
 // ── PATCH /api/users/:id ────────────────────────

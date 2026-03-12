@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 
@@ -118,6 +119,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscureText: true,
                     validator: (v) => (v == null || v.length < 4) ? 'Τουλάχιστον 4 χαρακτήρες' : null,
                   ),
+                  if (!_isRegister) ...[
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => context.go('/forgot-password'),
+                        style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 30)),
+                        child: const Text('Ξεχάσατε τον κωδικό;', style: TextStyle(fontSize: 12)),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,

@@ -1,11 +1,16 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'dart:ui' as ui;
 import '../providers/auth_provider.dart';
 import '../providers/item_provider.dart';
 import '../providers/category_provider.dart';
 import '../providers/department_provider.dart';
 import '../services/api_client.dart';
+import '../services/download_helper.dart';
 import '../widgets/image_gallery_card.dart';
 
 /// Detail view for a single item shown as a modal bottom sheet.
@@ -546,6 +551,135 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     }
   }
 
+  // ── QR Code Generation ──
+
+  void _showQrDialog() {
+    if (_item == null) return;
+    final itemId = _item!['id'].toString();
+    final itemName = _item!['name'] ?? 'Αντικείμενο';
+    final itemDesc = (_item!['description'] ?? '') as String;
+    final repaintKey = GlobalKey();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          title: Row(
+            children: [
+              Icon(Icons.qr_code, color: Theme.of(ctx).colorScheme.primary),
+              const SizedBox(width: 8),
+              const Expanded(child: Text('QR Code')),
+            ],
+          ),
+          contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          content: SizedBox(
+            width: 280,
+            child: RepaintBoundary(
+              key: repaintKey,
+              child: Container(
+                color: Colors.white,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                      Text(
+                        itemName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A1C1E),
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (itemDesc.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          itemDesc,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF6B7280),
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      QrImageView(
+                        data: itemId,
+                        version: QrVersions.auto,
+                        size: 200,
+                        eyeStyle: const QrEyeStyle(
+                          eyeShape: QrEyeShape.square,
+                          color: Color(0xFF1A1C1E),
+                        ),
+                        dataModuleStyle: const QrDataModuleStyle(
+                          dataModuleShape: QrDataModuleShape.square,
+                          color: Color(0xFF1A1C1E),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'ID: #$itemId',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF9CA3AF),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Κλείσιμο'),
+            ),
+            FilledButton.icon(
+              icon: const Icon(Icons.save_alt, size: 18),
+              label: const Text('Αποθήκευση'),
+              onPressed: () async {
+                try {
+                  final boundary = repaintKey.currentContext
+                      ?.findRenderObject() as RenderRepaintBoundary?;
+                  if (boundary == null) return;
+                  final image = await boundary.toImage(pixelRatio: 3.0);
+                  final byteData =
+                      await image.toByteData(format: ui.ImageByteFormat.png);
+                  if (byteData == null) return;
+                  final pngBytes = byteData.buffer.asUint8List();
+                  await _saveQrImage(pngBytes, 'qr_item_$itemId.png');
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('QR Code αποθηκεύτηκε')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Σφάλμα: $e')),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _saveQrImage(Uint8List pngBytes, String filename) async {
+    await downloadFile(pngBytes, filename);
+  }
+
   // ── Build ──
 
   @override
@@ -655,6 +789,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   if (canManage && _item != null) ...[
+                    IconButton(
+                      icon: const Icon(Icons.qr_code, size: 20),
+                      color: Colors.white,
+                      onPressed: _showQrDialog,
+                      tooltip: 'QR Code',
+                    ),
                     IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 20),
                       color: Colors.white,

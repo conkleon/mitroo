@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -110,8 +109,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
     /// Scan barcode via camera, put result in barcodeCtrl, then auto-fill.
     Future<void> scanBarcode(StateSetter setSt) async {
-      if (kIsWeb) return; // camera not available on web
-      final result = await Navigator.of(context).push<ScanResult>(
+      final result = await Navigator.of(context, rootNavigator: true).push<ScanResult>(
         MaterialPageRoute(builder: (_) => const ScannerScreen()),
       );
       if (result == null || !mounted) return;
@@ -147,12 +145,11 @@ class _ItemsScreenState extends State<ItemsScreen> {
                             padding: EdgeInsets.only(right: 8),
                             child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
                           ),
-                        if (!kIsWeb)
-                          IconButton(
-                            icon: const Icon(Icons.qr_code_scanner),
-                            tooltip: 'Σάρωση barcode',
-                            onPressed: () => scanBarcode(setSt),
-                          ),
+                        IconButton(
+                          icon: const Icon(Icons.qr_code_scanner),
+                          tooltip: 'Σάρωση barcode',
+                          onPressed: () => scanBarcode(setSt),
+                        ),
                       ],
                     ),
                   ),
@@ -303,8 +300,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
   // ── Scan FAB handler ──
 
   Future<void> _openScanner() async {
-    // mobile_scanner doesn't support web – use manual entry there.
-    if (kIsWeb) {
+    final choice = await showScanChoiceDialog(context);
+    if (choice == null || !mounted) return;
+
+    if (choice == ScanChoice.manual) {
       _showManualEntryDialog();
       return;
     }

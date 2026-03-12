@@ -109,6 +109,25 @@ async function main() {
     });
   }
 
+  // ── Services ───────────────────────────────────
+  const serviceNames = [
+    "Υγειονομική Κάλυψη Αγώνα Α",
+    "Υγειονομική Κάλυψη Αγώνα Β",
+    "Ναυαγοσωστική Κάλυψη",
+    "Εκπαίδευση Πρώτων Βοηθειών",
+    "BLS/AED Session 1", "BLS/AED Session 2", "BLS/AED Session 3",
+    "BLS/AED Session 4", "BLS/AED Session 5", "BLS/AED Session 6",
+    "BLS/AED Session 7", "BLS/AED Session 8", "BLS/AED Session 9",
+    "BLS/AED Session 10", "BLS/AED Session 11", "BLS/AED Session 12",
+  ];
+  for (let i = 0; i < serviceNames.length; i++) {
+    await prisma.service.upsert({
+      where: { id: i + 1 },
+      update: {},
+      create: { name: serviceNames[i], departmentId: ops.id },
+    });
+  }
+
   // ── Service visibility (specialization requirements) ──
   // Health-coverage games require First Aid (services 1 & 2)
   for (const svcId of [1, 2]) {
