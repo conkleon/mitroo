@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import prisma from "../lib/prisma";
 
 export interface AuthPayload {
   userId: number;
@@ -43,4 +44,28 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
   next();
+}
+
+export async function getMissionAdminDepartmentIds(userId: number): Promise<number[]> {
+  const memberships = await prisma.userDepartment.findMany({
+    where: {
+      userId,
+      role: "missionAdmin",
+    },
+    select: { departmentId: true },
+  });
+
+  return memberships.map((membership) => membership.departmentId);
+}
+
+export async function isMissionAdminInDepartment(userId: number, departmentId: number): Promise<boolean> {
+  const count = await prisma.userDepartment.count({
+    where: {
+      userId,
+      departmentId,
+      role: "missionAdmin",
+    },
+  });
+
+  return count > 0;
 }

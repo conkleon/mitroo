@@ -109,7 +109,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<String?> register(String email, String password, String forename, String surname, String ename) async {
+  Future<String?> register(String email, String password, String forename, String surname, String eame) async {
     _loading = true;
     notifyListeners();
     try {
@@ -118,7 +118,7 @@ class AuthProvider extends ChangeNotifier {
         'password': password,
         'forename': forename,
         'surname': surname,
-        'ename': ename,
+        'eame': eame,
       };
       final res = await _api.post('/auth/register', body: body);
       final data = jsonDecode(res.body);

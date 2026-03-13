@@ -65,3 +65,27 @@ export async function sendInviteEmail(to: string, forename: string, password: st
     `,
   });
 }
+
+export async function sendTrainingApplicationSubmittedEmail(
+  to: string,
+  forename: string,
+  departmentName: string,
+  specializationName: string,
+) {
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `${APP_NAME} – Η αίτησή σας καταχωρήθηκε`,
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:24px">
+        <h2 style="color:#DC2626">Η αίτησή σας καταχωρήθηκε</h2>
+        <p>Γεια σου <strong>${forename}</strong>,</p>
+        <p>Η αίτηση εκπαίδευσης που υπέβαλες στον Ελληνικό Ερυθρό Σταυρό καταχωρήθηκε επιτυχώς.</p>
+        <p><strong>Τμήμα επιλογής:</strong> ${departmentName}<br/>
+        <strong>Ειδίκευση:</strong> ${specializationName}</p>
+        <p>Παρακαλούμε περίμενε επικοινωνία από το τμήμα επιλογής σου για τα επόμενα βήματα.</p>
+        <p style="font-size:12px;color:#6B7280">Αυτό είναι αυτοματοποιημένο μήνυμα επιβεβαίωσης παραλαβής της αίτησης.</p>
+      </div>
+    `,
+  });
+}

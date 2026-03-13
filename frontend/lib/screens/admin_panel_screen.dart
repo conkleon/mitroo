@@ -145,6 +145,26 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                         // ── Service Management ──
                         if (isMissionAdmin) ...[
                           _SectionHeader(
+                              icon: Icons.school_outlined,
+                              label: 'Αιτήσεις Εκπαίδευσης'),
+                          const SizedBox(height: 12),
+                          _ResponsiveTileGrid(
+                            isWide: isWide,
+                            isCompact: isCompact,
+                            tiles: [
+                              _AdminTileData(
+                                icon: Icons.assignment_turned_in,
+                                iconColor: const Color(0xFF1D4ED8),
+                                bgColor: const Color(0xFFDBEAFE),
+                                title: 'Διαχείριση Αιτήσεων Εκπαίδευσης',
+                                subtitle: 'Αποδοχή, απόρριψη και ενεργοποίηση χρηστών μετά την εκπαίδευση',
+                                onTap: () => context.push('/admin/training-applications'),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: isCompact ? 20 : 28),
+
+                          _SectionHeader(
                               icon: Icons.miscellaneous_services,
                               label: 'Διαχείρηση Υπηρεσιών'),
                           const SizedBox(height: 12),

@@ -15,7 +15,7 @@ const registerSchema = z.object({
   password: z.string().min(8),
   forename: z.string().min(1),
   surname: z.string().min(1),
-  ename: z.string().min(2).max(50),
+  eame: z.string().min(2).max(50),
 });
 
 const loginSchema = z.object({
@@ -37,13 +37,13 @@ router.post("/register", async (req: Request, res: Response) => {
     const hashed = await bcrypt.hash(data.password, 12);
     const user = await prisma.user.create({
       data: {
-        ename: data.ename,
+        eame: data.eame,
         password: hashed,
         forename: data.forename,
         surname: data.surname,
         email: data.email,
       },
-      select: { id: true, ename: true, forename: true, surname: true, email: true, isAdmin: true },
+      select: { id: true, eame: true, forename: true, surname: true, email: true, rank: true, isAdmin: true },
     });
 
     const token = jwt.sign(
@@ -82,10 +82,11 @@ router.post("/login", async (req: Request, res: Response) => {
     res.json({
       user: {
         id: user.id,
-        ename: user.ename,
+        eame: user.eame,
         forename: user.forename,
         surname: user.surname,
         email: user.email,
+        rank: user.rank,
         isAdmin: user.isAdmin,
         imagePath: user.imagePath,
       },
@@ -105,7 +106,8 @@ router.get("/me", authenticate, async (req: Request, res: Response) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user!.userId },
     select: {
-      id: true, ename: true, forename: true, surname: true, email: true,
+      id: true, eame: true, forename: true, surname: true, email: true,
+      rank: true,
       isAdmin: true, imagePath: true, phonePrimary: true, phoneSecondary: true,
       birthDate: true, address: true, extraInfo: true,
       departments: { include: { department: { select: { id: true, name: true } } } },

@@ -66,7 +66,11 @@ class _ManageSpecializationsScreenState
   void _showCreateDialog() {
     final nameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
+    final yearlyHoursCtrl = TextEditingController();
+    final yearlyHoursTrainingCtrl = TextEditingController();
     final hoursCtrl = TextEditingController();
+    final hoursTepCtrl = TextEditingController();
+    final eamePrefixCtrl = TextEditingController();
     int? selectedRoot;
 
     final roots = _specs.where((s) => s['rootId'] == null).toList();
@@ -95,12 +99,39 @@ class _ManageSpecializationsScreenState
                           border: OutlineInputBorder()),
                       maxLines: 2),
                   const SizedBox(height: 12),
+                    TextField(
+                      controller: yearlyHoursCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Ετήσιες Ώρες',
+                        border: OutlineInputBorder()),
+                      keyboardType: TextInputType.number),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: yearlyHoursTrainingCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Ετήσιες Ώρες Εκπαίδευσης',
+                        border: OutlineInputBorder()),
+                      keyboardType: TextInputType.number),
+                    const SizedBox(height: 12),
                   TextField(
                       controller: hoursCtrl,
                       decoration: const InputDecoration(
                           labelText: 'Ώρες Εκπαίδευσης',
                           border: OutlineInputBorder()),
                       keyboardType: TextInputType.number),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: hoursTepCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Ώρες ΤΕΠ',
+                        border: OutlineInputBorder()),
+                      keyboardType: TextInputType.number),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: eamePrefixCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Πρόθεμα EAME',
+                        border: OutlineInputBorder())),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int?>(
                     value: selectedRoot,
@@ -133,9 +164,19 @@ class _ManageSpecializationsScreenState
                 if (descCtrl.text.isNotEmpty) {
                   body['description'] = descCtrl.text.trim();
                 }
+                if (yearlyHoursCtrl.text.isNotEmpty) {
+                  body['yearlyHours'] = int.tryParse(yearlyHoursCtrl.text) ?? 0;
+                }
+                if (yearlyHoursTrainingCtrl.text.isNotEmpty) {
+                  body['yearlyHoursTraining'] = int.tryParse(yearlyHoursTrainingCtrl.text) ?? 0;
+                }
                 if (hoursCtrl.text.isNotEmpty) {
                   body['hoursTraining'] = int.tryParse(hoursCtrl.text) ?? 0;
                 }
+                if (hoursTepCtrl.text.isNotEmpty) {
+                  body['hoursTEP'] = int.tryParse(hoursTepCtrl.text) ?? 0;
+                }
+                body['eamePrefix'] = eamePrefixCtrl.text.trim();
                 if (selectedRoot != null) body['rootId'] = selectedRoot;
                 final res =
                     await _api.post('/specializations', body: body);
@@ -336,7 +377,11 @@ class _SpecCard extends StatelessWidget {
     final userCount = counts['users'] ?? 0;
     final childCount = counts['children'] ?? 0;
     final root = spec['root'] as Map<String, dynamic>?;
+    final yearlyHours = spec['yearlyHours'] ?? 0;
+    final yearlyHoursTraining = spec['yearlyHoursTraining'] ?? 0;
     final hours = spec['hoursTraining'] ?? 0;
+    final hoursTep = spec['hoursTEP'] ?? 0;
+    final eamePrefix = (spec['eamePrefix'] ?? '').toString();
     final isRoot = spec['rootId'] == null;
 
     return Card(
@@ -396,6 +441,26 @@ class _SpecCard extends StatelessWidget {
                             icon: Icons.schedule,
                             text: '${hours}h',
                             color: const Color(0xFFD97706)),
+                      if (yearlyHours > 0)
+                        _MiniLabel(
+                            icon: Icons.calendar_month,
+                            text: 'Ετήσιες ${yearlyHours}h',
+                            color: const Color(0xFF2563EB)),
+                      if (yearlyHoursTraining > 0)
+                        _MiniLabel(
+                            icon: Icons.school_outlined,
+                            text: 'Εκπ. ${yearlyHoursTraining}h',
+                            color: const Color(0xFF0F766E)),
+                      if (hoursTep > 0)
+                        _MiniLabel(
+                            icon: Icons.timer,
+                            text: 'TEP ${hoursTep}h',
+                            color: const Color(0xFF0EA5E9)),
+                      if (eamePrefix.isNotEmpty)
+                        _MiniLabel(
+                            icon: Icons.badge_outlined,
+                            text: 'EAME $eamePrefix',
+                            color: const Color(0xFF111827)),
                     ]),
                   ]),
             ),

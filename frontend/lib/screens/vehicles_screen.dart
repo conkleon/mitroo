@@ -96,7 +96,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
     final prov = context.watch<VehicleProvider>();
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    final name = auth.displayName.isNotEmpty ? auth.displayName : (auth.user?['ename'] ?? 'User');
+    final name = auth.displayName.isNotEmpty ? auth.displayName : (auth.user?['eame'] ?? 'User');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),

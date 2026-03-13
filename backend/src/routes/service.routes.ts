@@ -66,7 +66,7 @@ router.get("/", async (req: Request, res: Response) => {
 
   const includeBlock: any = {
     department: { select: { id: true, name: true } },
-    responsibleUser: { select: { id: true, ename: true, forename: true, surname: true, imagePath: true } },
+    responsibleUser: { select: { id: true, eame: true, forename: true, surname: true, imagePath: true } },
     visibility: { include: { specialization: { select: { id: true, name: true } } } },
     _count: { select: { userServices: true, itemServices: true } },
   };
@@ -76,7 +76,7 @@ router.get("/", async (req: Request, res: Response) => {
     includeBlock.userServices = {
       include: {
         user: {
-          select: { id: true, ename: true, forename: true, surname: true, imagePath: true },
+          select: { id: true, eame: true, forename: true, surname: true, imagePath: true },
         },
       },
     };
@@ -137,7 +137,7 @@ router.get("/my", async (req: Request, res: Response) => {
     where,
     include: {
       department: { select: { id: true, name: true } },
-      responsibleUser: { select: { id: true, ename: true, forename: true, surname: true, imagePath: true } },
+      responsibleUser: { select: { id: true, eame: true, forename: true, surname: true, imagePath: true } },
       visibility: { include: { specialization: { select: { id: true, name: true } } } },
       // Include ONLY the current user's enrollment so the client knows if already applied
       userServices: {
@@ -177,12 +177,12 @@ router.get("/:id", async (req: Request, res: Response) => {
     where: { id: Number(req.params.id) },
     include: {
       department: true,
-      responsibleUser: { select: { id: true, ename: true, forename: true, surname: true, imagePath: true } },
+      responsibleUser: { select: { id: true, eame: true, forename: true, surname: true, imagePath: true } },
       userServices: {
         include: {
           user: {
             select: {
-              id: true, ename: true, forename: true, surname: true, imagePath: true,
+              id: true, eame: true, forename: true, surname: true, imagePath: true,
               assignedItems: {
                 select: { id: true, name: true, barCode: true, isContainer: true, location: true, imagePath: true, expirationDate: true },
               },
@@ -245,7 +245,7 @@ router.post("/:id/enroll", async (req: Request, res: Response) => {
         hoursTrainers: service.defaultHoursTrainers,
         hoursTEP: service.defaultHoursTEP,
       },
-      include: { user: { select: { id: true, ename: true, forename: true, surname: true } } },
+      include: { user: { select: { id: true, eame: true, forename: true, surname: true } } },
     });
     res.status(201).json(record);
   } catch (err: any) {
@@ -318,7 +318,7 @@ router.patch("/:id/responsible", async (req: Request, res: Response) => {
   const service = await prisma.service.update({
     where: { id: serviceId },
     data: { responsibleUserId: responsibleUserId ?? null },
-    include: { responsibleUser: { select: { id: true, ename: true, forename: true, surname: true, imagePath: true } } },
+    include: { responsibleUser: { select: { id: true, eame: true, forename: true, surname: true, imagePath: true } } },
   });
   res.json(service);
 });

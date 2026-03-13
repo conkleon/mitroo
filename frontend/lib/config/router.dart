@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/auth_provider.dart';
 import '../screens/login_screen.dart';
+import '../screens/training_application_screen.dart';
 import '../screens/forgot_password_screen.dart';
 import '../screens/reset_password_screen.dart';
 import '../screens/admin_panel_screen.dart';
@@ -16,6 +17,7 @@ import '../screens/manage_departments_screen.dart';
 import '../screens/department_detail_screen.dart';
 import '../screens/manage_specializations_screen.dart';
 import '../screens/specialization_detail_screen.dart';
+import '../screens/training_applications_review_screen.dart';
 import '../screens/services_screen.dart';
 import '../screens/items_screen.dart';
 import '../screens/items_csv_screen.dart';
@@ -31,7 +33,7 @@ GoRouter appRouter(AuthProvider auth) {
     redirect: (context, state) {
       final loggedIn = auth.isAuthenticated;
       final path = state.matchedLocation;
-      final publicPaths = ['/login', '/forgot-password', '/reset-password'];
+      final publicPaths = ['/login', '/forgot-password', '/reset-password', '/apply-training'];
       final isPublic = publicPaths.any((p) => path.startsWith(p));
 
       if (!loggedIn && !isPublic) return '/login';
@@ -46,6 +48,10 @@ GoRouter appRouter(AuthProvider auth) {
       GoRoute(
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/apply-training',
+        builder: (context, state) => const TrainingApplicationScreen(),
       ),
       GoRoute(
         path: '/reset-password',
@@ -176,6 +182,10 @@ GoRouter appRouter(AuthProvider auth) {
               final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
               return SpecializationDetailScreen(specializationId: id);
             },
+          ),
+          GoRoute(
+            path: '/admin/training-applications',
+            builder: (context, state) => const TrainingApplicationsReviewScreen(),
           ),
           GoRoute(
             path: '/chat',

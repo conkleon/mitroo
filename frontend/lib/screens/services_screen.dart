@@ -254,7 +254,7 @@ class _ServicesScreenState extends State<ServicesScreen>
     final cs = Theme.of(context).colorScheme;
     final name = auth.displayName.isNotEmpty
         ? auth.displayName
-        : (auth.user?['ename'] ?? 'Χρήστης');
+        : (auth.user?['eame'] ?? 'Χρήστης');
 
     final userSpecs = auth.specializations; // [{id, name, description}, ...]
 

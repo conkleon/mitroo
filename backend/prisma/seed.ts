@@ -9,10 +9,10 @@ async function main() {
   // ── Admin user ────────────────────────────────
   const hashedPassword = await bcrypt.hash("admin123", 12);
   const admin = await prisma.user.upsert({
-    where: { ename: "admin" },
+    where: { eame: "admin" },
     update: {},
     create: {
-      ename: "admin",
+      eame: "admin",
       password: hashedPassword,
       forename: "System",
       surname: "Admin",
@@ -24,10 +24,10 @@ async function main() {
   // ── Sample volunteer ──────────────────────────
   const volPassword = await bcrypt.hash("volunteer1", 12);
   const volunteer = await prisma.user.upsert({
-    where: { ename: "jdoe" },
+    where: { eame: "jdoe" },
     update: {},
     create: {
-      ename: "jdoe",
+      eame: "jdoe",
       password: volPassword,
       forename: "Jane",
       surname: "Doe",
@@ -64,31 +64,33 @@ async function main() {
   // ── Specializations ───────────────────────────
   const firstAid = await prisma.specialization.upsert({
     where: { name: "First Aid" },
-    update: {},
-    create: { name: "First Aid", description: "Basic first-aid certification", hoursTraining: 16 },
+    update: { hoursTEP: 0, eamePrefix: "" },
+    create: { name: "First Aid", description: "Basic first-aid certification", hoursTraining: 16, hoursTEP: 0, eamePrefix: "" },
   });
 
   const als = await prisma.specialization.upsert({
     where: { name: "Advanced Life Support" },
-    update: {},
+    update: { hoursTEP: 0, eamePrefix: "" },
     create: {
       name: "Advanced Life Support",
       description: "ALS certification",
       hoursTraining: 40,
+      hoursTEP: 0,
+      eamePrefix: "",
       rootId: firstAid.id,
     },
   });
 
   const lifeguard = await prisma.specialization.upsert({
     where: { name: "Lifeguard" },
-    update: {},
-    create: { name: "Lifeguard", description: "Ναυαγοσωστική πιστοποίηση", hoursTraining: 24 },
+    update: { hoursTEP: 0, eamePrefix: "ΝΕ" },
+    create: { name: "Lifeguard", description: "Ναυαγοσωστική πιστοποίηση", hoursTraining: 24, hoursTEP: 0, eamePrefix: "ΝΕ" },
   });
 
   const blsAed = await prisma.specialization.upsert({
     where: { name: "BLS/AED Instructor" },
-    update: {},
-    create: { name: "BLS/AED Instructor", description: "BLS/AED εκπαιδευτής", hoursTraining: 20 },
+    update: { hoursTEP: 0, eamePrefix: "Π" },
+    create: { name: "BLS/AED Instructor", description: "BLS/AED εκπαιδευτής", hoursTraining: 20, hoursTEP: 0, eamePrefix: "Π" },
   });
 
   // ── User ↔ Specialization assignments ─────────

@@ -53,7 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final cs = Theme.of(context).colorScheme;
     final name = auth.displayName.isNotEmpty
         ? auth.displayName
-        : (auth.user?['ename'] ?? 'Χρήστης');
+        : (auth.user?['eame'] ?? 'Χρήστης');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),

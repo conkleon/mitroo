@@ -29,6 +29,7 @@ model Department {
   attachments     FileAttachment[]
   itemCategories  ItemCategory[]
   items           Item[]
+  trainingApplications TrainingApplication[]
 
   @@map("departments")
 }
@@ -89,7 +90,7 @@ model Service {
 
 model User {
   id             Int       @id @default(autoincrement())
-  ename          String    @unique @db.VarChar(50)   // internal identity code
+  eame           String    @unique @db.VarChar(50)
   password       String                               // bcrypt hash
 
   forename       String    @db.VarChar(150)
@@ -103,6 +104,7 @@ model User {
   birthDate      DateTime? @map("birth_date") @db.Date
   imagePath      String?   @map("image_path")
   extraInfo      String?   @map("extra_info") @db.Text
+  rank           String    @default("Γ") @db.VarChar(4)
 
   isAdmin        Boolean   @default(false) @map("is_admin")
 
@@ -122,8 +124,54 @@ model User {
   assignedItems        Item[]              @relation("AssignedItems")
   itemComments         ItemComment[]       @relation("ItemComments")
   vehicleComments      VehicleComment[]    @relation("VehicleComments")
+  reviewedTrainingApplications TrainingApplication[] @relation("ReviewedTrainingApplications")
+  linkedTrainingApplications   TrainingApplication[] @relation("LinkedTrainingApplications")
 
   @@map("users")
+}
+
+enum TrainingApplicationStatus {
+  submitted
+  training
+  rejected
+  enabled
+
+  @@map("training_application_status")
+}
+
+model TrainingApplication {
+  id                 Int                       @id @default(autoincrement())
+  email              String                    @db.VarChar(255)
+  forename           String                    @db.VarChar(150)
+  surname            String                    @db.VarChar(150)
+  phonePrimary       String                    @map("phone_primary") @db.VarChar(30)
+  phoneSecondary     String?                   @map("phone_secondary") @db.VarChar(30)
+  address            String?                   @db.Text
+  birthDate          DateTime?                 @map("birth_date") @db.Date
+  extraInfo          String?                   @map("extra_info") @db.Text
+
+  departmentId       Int                       @map("department_id")
+  specializationId   Int                       @map("specialization_id")
+
+  status             TrainingApplicationStatus @default(submitted)
+  reviewNotes        String?                   @map("review_notes") @db.Text
+  reviewedAt         DateTime?                 @map("reviewed_at")
+  reviewedById       Int?                      @map("reviewed_by_id")
+  enabledAt          DateTime?                 @map("enabled_at")
+  linkedUserId       Int?                      @unique @map("linked_user_id")
+
+  createdAt          DateTime                  @default(now()) @map("created_at")
+  updatedAt          DateTime                  @updatedAt @map("updated_at")
+
+  department         Department                @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  specialization     Specialization            @relation(fields: [specializationId], references: [id], onDelete: Restrict)
+  reviewedBy         User?                     @relation("ReviewedTrainingApplications", fields: [reviewedById], references: [id], onDelete: SetNull)
+  linkedUser         User?                     @relation("LinkedTrainingApplications", fields: [linkedUserId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([departmentId, status])
+  @@index([email])
+  @@map("training_applications")
 }
 
 // ──────────────────────────────────────────────
@@ -277,7 +325,11 @@ model Specialization {
   id             Int     @id @default(autoincrement())
   name           String  @unique @db.VarChar(255)
   description    String? @db.Text
+  yearlyHours    Int     @default(0) @map("yearly_hours")
+  yearlyHoursTraining Int @default(0) @map("yearly_hours_training")
   hoursTraining  Int     @default(0) @map("hours_training")
+  hoursTEP       Int     @default(0) @map("hours_tep")
+  eamePrefix     String? @map("eame_prefix") @db.VarChar(8)
   rootId         Int?    @map("root_id")
 
   root     Specialization?  @relation("SpecTree", fields: [rootId], references: [id], onDelete: SetNull)
@@ -285,6 +337,7 @@ model Specialization {
 
   users             UserSpecialization[]
   serviceVisibility ServiceVisibility[]
+  trainingApplications TrainingApplication[]
 
   @@map("specializations")
 }

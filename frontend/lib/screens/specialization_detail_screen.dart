@@ -63,8 +63,16 @@ class _SpecializationDetailScreenState
     final nameCtrl = TextEditingController(text: _spec!['name'] ?? '');
     final descCtrl =
         TextEditingController(text: _spec!['description'] ?? '');
+    final yearlyHoursCtrl = TextEditingController(
+      text: (_spec!['yearlyHours'] ?? 0).toString());
+    final yearlyHoursTrainingCtrl = TextEditingController(
+      text: (_spec!['yearlyHoursTraining'] ?? 0).toString());
     final hoursCtrl = TextEditingController(
         text: (_spec!['hoursTraining'] ?? 0).toString());
+    final hoursTepCtrl = TextEditingController(
+      text: (_spec!['hoursTEP'] ?? 0).toString());
+    final eamePrefixCtrl = TextEditingController(
+      text: (_spec!['eamePrefix'] ?? '').toString());
     int? selectedRoot = _spec!['rootId'] as int?;
 
     final roots =
@@ -93,12 +101,39 @@ class _SpecializationDetailScreenState
                           border: OutlineInputBorder()),
                       maxLines: 2),
                   const SizedBox(height: 12),
+                    TextField(
+                      controller: yearlyHoursCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Ετήσιες Ώρες',
+                        border: OutlineInputBorder()),
+                      keyboardType: TextInputType.number),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: yearlyHoursTrainingCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Ετήσιες Ώρες Εκπαίδευσης',
+                        border: OutlineInputBorder()),
+                      keyboardType: TextInputType.number),
+                    const SizedBox(height: 12),
                   TextField(
                       controller: hoursCtrl,
                       decoration: const InputDecoration(
                           labelText: 'Ώρες Εκπαίδευσης',
                           border: OutlineInputBorder()),
                       keyboardType: TextInputType.number),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: hoursTepCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Ώρες ΤΕΠ',
+                        border: OutlineInputBorder()),
+                      keyboardType: TextInputType.number),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: eamePrefixCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Πρόθεμα EAME',
+                        border: OutlineInputBorder())),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int?>(
                     value: selectedRoot,
@@ -132,10 +167,21 @@ class _SpecializationDetailScreenState
                 if (descCtrl.text.isNotEmpty) {
                   body['description'] = descCtrl.text.trim();
                 }
+                if (yearlyHoursCtrl.text.isNotEmpty) {
+                  body['yearlyHours'] = int.tryParse(yearlyHoursCtrl.text) ?? 0;
+                }
+                if (yearlyHoursTrainingCtrl.text.isNotEmpty) {
+                  body['yearlyHoursTraining'] = int.tryParse(yearlyHoursTrainingCtrl.text) ?? 0;
+                }
                 if (hoursCtrl.text.isNotEmpty) {
                   body['hoursTraining'] =
                       int.tryParse(hoursCtrl.text) ?? 0;
                 }
+                if (hoursTepCtrl.text.isNotEmpty) {
+                  body['hoursTEP'] =
+                      int.tryParse(hoursTepCtrl.text) ?? 0;
+                }
+                body['eamePrefix'] = eamePrefixCtrl.text.trim();
                 await _api.patch(
                     '/specializations/${widget.specializationId}',
                     body: body);
@@ -196,7 +242,7 @@ class _SpecializationDetailScreenState
             width: 400,
             child: Autocomplete<Map<String, dynamic>>(
               displayStringForOption: (u) =>
-                  '${u['forename'] ?? ''} ${u['surname'] ?? ''} (${u['ename'] ?? ''})'
+                  '${u['forename'] ?? ''} ${u['surname'] ?? ''} (${u['eame'] ?? ''})'
                       .trim(),
               optionsBuilder: (textEditingValue) {
                 final q = textEditingValue.text.toLowerCase();
@@ -206,16 +252,16 @@ class _SpecializationDetailScreenState
                   final name =
                       '${u['forename'] ?? ''} ${u['surname'] ?? ''}'
                           .toLowerCase();
-                  final ename =
-                      (u['ename'] ?? '').toString().toLowerCase();
-                  return name.contains(q) || ename.contains(q);
+                  final eame =
+                      (u['eame'] ?? '').toString().toLowerCase();
+                  return name.contains(q) || eame.contains(q);
                 });
               },
               onSelected: (u) {
                 setS(() {
                   selectedUser = u['id'] as int;
                   selectedUserName =
-                      '${u['forename'] ?? ''} ${u['surname'] ?? ''} (${u['ename'] ?? ''})'
+                      '${u['forename'] ?? ''} ${u['surname'] ?? ''} (${u['eame'] ?? ''})'
                           .trim();
                 });
               },
@@ -280,10 +326,10 @@ class _SpecializationDetailScreenState
                             title: Text(
                                 name.isNotEmpty
                                     ? name
-                                    : opt['ename'] ?? '',
+                                    : opt['eame'] ?? '',
                                 style:
                                     const TextStyle(fontSize: 14)),
-                            subtitle: Text(opt['ename'] ?? '',
+                            subtitle: Text(opt['eame'] ?? '',
                                 style: const TextStyle(
                                     fontSize: 12,
                                     color: Color(0xFF9CA3AF))),
@@ -457,6 +503,14 @@ class _SpecializationDetailScreenState
               const Divider(height: 24),
               _infoRow(Icons.schedule, 'Ώρες Εκπαίδευσης',
                   '${_spec!['hoursTraining'] ?? 0}h'),
+                _infoRow(Icons.calendar_month, 'Ετήσιες Ώρες',
+                  '${_spec!['yearlyHours'] ?? 0}h'),
+                _infoRow(Icons.school_outlined, 'Ετήσιες Ώρες Εκπαίδευσης',
+                  '${_spec!['yearlyHoursTraining'] ?? 0}h'),
+                _infoRow(Icons.timer, 'Ώρες ΤΕΠ',
+                  '${_spec!['hoursTEP'] ?? 0}h'),
+                _infoRow(Icons.badge_outlined, 'Πρόθεμα EAME',
+                  (_spec!['eamePrefix'] ?? '').toString().isEmpty ? '—' : (_spec!['eamePrefix'] ?? '').toString()),
               _infoRow(Icons.people, 'Ανατεθ. Χρήστες',
                   '${_users.length}'),
               _infoRow(Icons.account_tree, 'Υπο-ειδικεύσεις',
@@ -582,7 +636,7 @@ class _SpecializationDetailScreenState
                   final name =
                       '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
                           .trim();
-                  final ename = user['ename'] ?? '';
+                  final eame = user['eame'] ?? '';
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -604,11 +658,11 @@ class _SpecializationDetailScreenState
                               CrossAxisAlignment.start,
                           children: [
                             Text(
-                                name.isNotEmpty ? name : ename,
+                                name.isNotEmpty ? name : eame,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13)),
-                            Text(ename,
+                            Text(eame,
                                 style: const TextStyle(
                                     fontSize: 11,
                                     color: Color(0xFF9CA3AF))),

@@ -692,7 +692,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
     final prov = context.watch<ItemProvider>();
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    final name = auth.displayName.isNotEmpty ? auth.displayName : (auth.user?['ename'] ?? 'User');
+    final name = auth.displayName.isNotEmpty ? auth.displayName : (auth.user?['eame'] ?? 'User');
     final canManage = auth.isAdmin || auth.isItemAdmin;
 
     return Scaffold(

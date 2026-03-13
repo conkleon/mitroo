@@ -130,7 +130,7 @@ router.get("/:id", async (req: Request, res: Response) => {
         take: 50,
       },
       comments: {
-        include: { user: { select: { id: true, forename: true, surname: true, ename: true } } },
+        include: { user: { select: { id: true, forename: true, surname: true, eame: true } } },
         orderBy: { createdAt: "desc" },
       },
     },
@@ -318,7 +318,7 @@ router.post("/:id/return", async (req: Request, res: Response) => {
 router.get("/:id/comments", async (req: Request, res: Response) => {
   const comments = await prisma.vehicleComment.findMany({
     where: { vehicleId: Number(req.params.id) },
-    include: { user: { select: { id: true, forename: true, surname: true, ename: true } } },
+    include: { user: { select: { id: true, forename: true, surname: true, eame: true } } },
     orderBy: { createdAt: "desc" },
   });
   res.json(comments);
@@ -336,7 +336,7 @@ router.post("/:id/comments", async (req: Request, res: Response) => {
 
   const comment = await prisma.vehicleComment.create({
     data: { vehicleId, userId, text: text.trim() },
-    include: { user: { select: { id: true, forename: true, surname: true, ename: true } } },
+    include: { user: { select: { id: true, forename: true, surname: true, eame: true } } },
   });
   res.status(201).json(comment);
 });

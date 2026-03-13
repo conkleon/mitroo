@@ -2,21 +2,27 @@ import { Router, Request, Response } from "express";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import prisma from "../lib/prisma";
-import { authenticate, requireAdmin } from "../middleware/auth";
+import { authenticate, getMissionAdminDepartmentIds, requireAdmin } from "../middleware/auth";
 import { sendInviteEmail } from "../lib/email";
+import { formatGeneratedEame, getNextGeneratedEameSequence } from "../lib/eame";
 
 const router = Router();
 router.use(authenticate);
 
+const RANK_VALUES = ["Α", "Β", "Γ"] as const;
+
 const USER_SELECT = {
-  id: true, ename: true, forename: true, surname: true, email: true,
+  id: true, eame: true, forename: true, surname: true, email: true,
+  rank: true,
   phonePrimary: true, phoneSecondary: true, address: true,
   birthDate: true, imagePath: true, extraInfo: true, isAdmin: true,
   createdAt: true, updatedAt: true,
 };
 
 const updateSchema = z.object({
+  eame: z.string().min(2).max(50).optional(),
   forename: z.string().min(1).optional(),
   surname: z.string().min(1).optional(),
   email: z.string().email().optional(),
@@ -25,12 +31,82 @@ const updateSchema = z.object({
   address: z.string().optional().nullable(),
   birthDate: z.string().datetime().optional().nullable(),
   extraInfo: z.string().optional().nullable(),
+  rank: z.enum(RANK_VALUES).optional(),
   isAdmin: z.boolean().optional(),
 });
 
+const createUserSchema = z.object({
+  eame: z.string().min(2).max(50).optional(),
+  forename: z.string().min(1),
+  surname: z.string().min(1),
+  email: z.string().email(),
+  rank: z.enum(RANK_VALUES).default("Γ"),
+  departmentId: z.number().int(),
+  departmentRole: z.enum(["missionAdmin", "itemAdmin", "volunteer"]).default("volunteer"),
+  specializationId: z.number().int(),
+});
+
+type UserAccessScope =
+  | { kind: "admin" }
+  | { kind: "missionAdmin"; departmentIds: number[] }
+  | { kind: "self" };
+
+function isEameUniqueError(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false;
+  }
+  if (error.code !== "P2002") {
+    return false;
+  }
+
+  const target = Array.isArray(error.meta?.target) ? error.meta.target : [];
+  return target.includes("ename") || target.includes("eame");
+}
+
+async function getAccessScope(req: Request): Promise<UserAccessScope> {
+  if (req.user!.isAdmin) {
+    return { kind: "admin" };
+  }
+
+  const departmentIds = await getMissionAdminDepartmentIds(req.user!.userId);
+  if (departmentIds.length > 0) {
+    return { kind: "missionAdmin", departmentIds };
+  }
+
+  return { kind: "self" };
+}
+
+async function canReadUserByScope(scope: UserAccessScope, currentUserId: number, targetUserId: number): Promise<boolean> {
+  if (scope.kind === "admin") {
+    return true;
+  }
+
+  if (scope.kind === "self") {
+    return currentUserId === targetUserId;
+  }
+
+  const count = await prisma.userDepartment.count({
+    where: {
+      userId: targetUserId,
+      departmentId: { in: scope.departmentIds },
+    },
+  });
+  return count > 0;
+}
+
 // ── GET /api/users ──────────────────────────────
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
+  const scope = await getAccessScope(req);
+
+  const where =
+    scope.kind === "admin"
+      ? undefined
+      : scope.kind === "self"
+        ? { id: req.user!.userId }
+        : { departments: { some: { departmentId: { in: scope.departmentIds } } } };
+
   const users = await prisma.user.findMany({
+    where,
     select: { ...USER_SELECT, departments: { include: { department: { select: { id: true, name: true } } } } },
     orderBy: { surname: "asc" },
   });
@@ -39,11 +115,21 @@ router.get("/", async (_req: Request, res: Response) => {
 
 // ── GET /api/users/stats ────────────────────────
 // Returns all users + aggregated hours (total & this year)
-router.get("/stats", async (_req: Request, res: Response) => {
+router.get("/stats", async (req: Request, res: Response) => {
+  const scope = await getAccessScope(req);
+
+  const where =
+    scope.kind === "admin"
+      ? undefined
+      : scope.kind === "self"
+        ? { id: req.user!.userId }
+        : { departments: { some: { departmentId: { in: scope.departmentIds } } } };
+
   const now = new Date();
   const yearStart = new Date(now.getFullYear(), 0, 1);
 
   const users = await prisma.user.findMany({
+    where,
     select: {
       ...USER_SELECT,
       departments: { include: { department: { select: { id: true, name: true } } } },
@@ -93,8 +179,16 @@ router.get("/stats", async (_req: Request, res: Response) => {
 
 // ── GET /api/users/:id ──────────────────────────
 router.get("/:id", async (req: Request, res: Response) => {
+  const targetUserId = Number(req.params.id);
+  const scope = await getAccessScope(req);
+  const allowed = await canReadUserByScope(scope, req.user!.userId, targetUserId);
+  if (!allowed) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+
   const user = await prisma.user.findUnique({
-    where: { id: Number(req.params.id) },
+    where: { id: targetUserId },
     select: {
       ...USER_SELECT,
       departments: { include: { department: true } },
@@ -107,38 +201,102 @@ router.get("/:id", async (req: Request, res: Response) => {
 
 // ── POST /api/users ─────────────────────────────
 // Admin creates a user: random password generated, invite email sent
-const createUserSchema = z.object({
-  ename: z.string().min(2).max(50),
-  forename: z.string().min(1),
-  surname: z.string().min(1),
-  email: z.string().email(),
-});
-
 router.post("/", requireAdmin, async (req: Request, res: Response) => {
   try {
     const data = createUserSchema.parse(req.body);
+    const providedEame = data.eame?.trim();
 
-    const existing = await prisma.user.findFirst({
-      where: { OR: [{ email: data.email }, { ename: data.ename }] },
-    });
-    if (existing) {
-      res.status(409).json({ error: existing.email === data.email ? "Το email χρησιμοποιείται ήδη" : "Ο κωδ. μέλους υπάρχει ήδη" });
+    const existingEmail = await prisma.user.findUnique({ where: { email: data.email } });
+    if (existingEmail) {
+      res.status(409).json({ error: "Το email χρησιμοποιείται ήδη" });
       return;
+    }
+
+    if (providedEame) {
+      const existingEame = await prisma.user.findUnique({ where: { eame: providedEame } });
+      if (existingEame) {
+        res.status(409).json({ error: "Το EAME υπάρχει ήδη" });
+        return;
+      }
+    }
+
+    const department = await prisma.department.findUnique({ where: { id: data.departmentId }, select: { id: true } });
+    if (!department) {
+      res.status(404).json({ error: "Department not found" });
+      return;
+    }
+
+    const specialization = await prisma.specialization.findUnique({
+      where: { id: data.specializationId },
+      select: { id: true, rootId: true, eamePrefix: true },
+    });
+    if (!specialization) {
+      res.status(404).json({ error: "Specialization not found" });
+      return;
+    }
+    if (specialization.rootId !== null) {
+      res.status(400).json({ error: "Η αρχική ειδίκευση πρέπει να είναι ριζική." });
+      return;
+    }
+
+    let eamePrefix = "";
+    if (!providedEame) {
+      eamePrefix = specialization.eamePrefix?.trim() ?? "";
     }
 
     const plainPassword = crypto.randomBytes(6).toString("base64url"); // ~8 chars
     const hashed = await bcrypt.hash(plainPassword, 12);
 
-    const user = await prisma.user.create({
-      data: {
-        ename: data.ename,
-        password: hashed,
-        forename: data.forename,
-        surname: data.surname,
-        email: data.email,
-      },
-      select: USER_SELECT,
-    });
+    let user: Pick<Prisma.UserGetPayload<{ select: typeof USER_SELECT }>, keyof typeof USER_SELECT> | null = null;
+    const maxAttempts = providedEame ? 1 : 5;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        user = await prisma.$transaction(async (tx) => {
+          const finalEame = providedEame ?? formatGeneratedEame(eamePrefix, await getNextGeneratedEameSequence(tx));
+
+          const createdUser = await tx.user.create({
+            data: {
+              eame: finalEame,
+              password: hashed,
+              forename: data.forename,
+              surname: data.surname,
+              email: data.email,
+              rank: data.rank,
+            },
+            select: USER_SELECT,
+          });
+
+          await tx.userDepartment.create({
+            data: {
+              userId: createdUser.id,
+              departmentId: data.departmentId,
+              role: data.departmentRole,
+            },
+          });
+
+          await tx.userSpecialization.create({
+            data: {
+              userId: createdUser.id,
+              specializationId: data.specializationId,
+            },
+          });
+
+          return createdUser;
+        });
+        break;
+      } catch (error) {
+        if (!providedEame && isEameUniqueError(error) && attempt < maxAttempts - 1) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    if (!user) {
+      res.status(500).json({ error: "Failed to create user" });
+      return;
+    }
 
     try {
       await sendInviteEmail(data.email, data.forename, plainPassword);
@@ -157,16 +315,29 @@ router.post("/", requireAdmin, async (req: Request, res: Response) => {
 });
 
 // ── PATCH /api/users/:id ────────────────────────
-router.patch("/:id", async (req: Request, res: Response) => {
+router.patch("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
+    const targetUserId = Number(req.params.id);
     const data = updateSchema.parse(req.body);
-    // Only admins can change isAdmin flag
-    if (data.isAdmin !== undefined && !req.user!.isAdmin) {
-      res.status(403).json({ error: "Only admins can change admin flag" });
-      return;
+
+    if (data.eame) {
+      const existingEame = await prisma.user.findUnique({ where: { eame: data.eame } });
+      if (existingEame && existingEame.id !== targetUserId) {
+        res.status(409).json({ error: "Το EAME υπάρχει ήδη" });
+        return;
+      }
     }
+
+    if (data.email) {
+      const existingEmail = await prisma.user.findUnique({ where: { email: data.email } });
+      if (existingEmail && existingEmail.id !== targetUserId) {
+        res.status(409).json({ error: "Το email χρησιμοποιείται ήδη" });
+        return;
+      }
+    }
+
     const user = await prisma.user.update({
-      where: { id: Number(req.params.id) },
+      where: { id: targetUserId },
       data: {
         ...data,
         birthDate: data.birthDate ? new Date(data.birthDate) : data.birthDate === null ? null : undefined,
@@ -188,8 +359,16 @@ router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
 
 // ── GET /api/users/:id/specializations ──────────
 router.get("/:id/specializations", async (req: Request, res: Response) => {
+  const targetUserId = Number(req.params.id);
+  const scope = await getAccessScope(req);
+  const allowed = await canReadUserByScope(scope, req.user!.userId, targetUserId);
+  if (!allowed) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+
   const specs = await prisma.userSpecialization.findMany({
-    where: { userId: Number(req.params.id) },
+    where: { userId: targetUserId },
     include: { specialization: true },
   });
   res.json(specs);
@@ -199,6 +378,13 @@ router.get("/:id/specializations", async (req: Request, res: Response) => {
 // Returns user's service enrolments with service details & hours
 router.get("/:id/services", async (req: Request, res: Response) => {
   const userId = Number(req.params.id);
+  const scope = await getAccessScope(req);
+  const allowed = await canReadUserByScope(scope, req.user!.userId, userId);
+  if (!allowed) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+
   const enrolments = await prisma.userService.findMany({
     where: { userId },
     include: {
@@ -232,7 +418,7 @@ router.get("/:id/services", async (req: Request, res: Response) => {
 });
 
 // ── POST /api/users/:id/specializations ─────────
-router.post("/:id/specializations", async (req: Request, res: Response) => {
+router.post("/:id/specializations", requireAdmin, async (req: Request, res: Response) => {
   const { specializationId } = req.body;
   const record = await prisma.userSpecialization.create({
     data: { userId: Number(req.params.id), specializationId: Number(specializationId) },
@@ -242,7 +428,7 @@ router.post("/:id/specializations", async (req: Request, res: Response) => {
 });
 
 // ── DELETE /api/users/:uid/specializations/:sid ─
-router.delete("/:uid/specializations/:sid", async (req: Request, res: Response) => {
+router.delete("/:uid/specializations/:sid", requireAdmin, async (req: Request, res: Response) => {
   await prisma.userSpecialization.delete({
     where: { userId_specializationId: { userId: Number(req.params.uid), specializationId: Number(req.params.sid) } },
   });

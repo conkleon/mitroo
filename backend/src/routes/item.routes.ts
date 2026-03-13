@@ -32,7 +32,7 @@ const ITEM_DETAIL_INCLUDE = {
       assignedTo: { select: { id: true, forename: true, surname: true } },
     },
   },
-  assignedTo: { select: { id: true, forename: true, surname: true, ename: true } },
+  assignedTo: { select: { id: true, forename: true, surname: true, eame: true } },
   category: { select: { id: true, name: true, departmentId: true } },
   itemServices: {
     include: {
@@ -42,7 +42,7 @@ const ITEM_DETAIL_INCLUDE = {
     orderBy: { assignedAt: "desc" as const },
   },
   comments: {
-    include: { user: { select: { id: true, forename: true, surname: true, ename: true } } },
+    include: { user: { select: { id: true, forename: true, surname: true, eame: true } } },
     orderBy: { createdAt: "desc" as const },
   },
 };
@@ -461,7 +461,7 @@ router.patch("/:id/toggle-availability", async (req: Request, res: Response) => 
 router.get("/:id/comments", async (req: Request, res: Response) => {
   const comments = await prisma.itemComment.findMany({
     where: { itemId: Number(req.params.id) },
-    include: { user: { select: { id: true, forename: true, surname: true, ename: true } } },
+    include: { user: { select: { id: true, forename: true, surname: true, eame: true } } },
     orderBy: { createdAt: "desc" },
   });
   res.json(comments);
@@ -489,7 +489,7 @@ router.post("/:id/comments", async (req: Request, res: Response) => {
 
   const comment = await prisma.itemComment.create({
     data: { itemId, userId, text: text.trim() },
-    include: { user: { select: { id: true, forename: true, surname: true, ename: true } } },
+    include: { user: { select: { id: true, forename: true, surname: true, eame: true } } },
   });
   res.status(201).json(comment);
 });

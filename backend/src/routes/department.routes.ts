@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
-import { authenticate, requireAdmin } from "../middleware/auth";
+import { authenticate, isMissionAdminInDepartment, requireAdmin } from "../middleware/auth";
 
 const router = Router();
 router.use(authenticate);
@@ -47,7 +47,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     include: {
       services: { orderBy: { startAt: "desc" }, take: 20 },
       userDepartments: {
-        include: { user: { select: { id: true, ename: true, forename: true, surname: true, imagePath: true } } },
+        include: { user: { select: { id: true, eame: true, forename: true, surname: true, imagePath: true } } },
       },
       vehicles: true,
     },
@@ -76,20 +76,29 @@ router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
 
 // ── GET /api/departments/:id/members ────────────
 router.get("/:id/members", async (req: Request, res: Response) => {
+  const departmentId = Number(req.params.id);
+  if (!req.user!.isAdmin) {
+    const allowed = await isMissionAdminInDepartment(req.user!.userId, departmentId);
+    if (!allowed) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+  }
+
   const members = await prisma.userDepartment.findMany({
-    where: { departmentId: Number(req.params.id) },
-    include: { user: { select: { id: true, ename: true, forename: true, surname: true, email: true, imagePath: true } } },
+    where: { departmentId },
+    include: { user: { select: { id: true, eame: true, forename: true, surname: true, email: true, imagePath: true } } },
   });
   res.json(members);
 });
 
 // ── POST /api/departments/:id/members ───────────
-router.post("/:id/members", async (req: Request, res: Response) => {
+router.post("/:id/members", requireAdmin, async (req: Request, res: Response) => {
   try {
     const data = memberSchema.parse(req.body);
     const member = await prisma.userDepartment.create({
       data: { departmentId: Number(req.params.id), userId: data.userId, role: data.role },
-      include: { user: { select: { id: true, ename: true, forename: true, surname: true } } },
+      include: { user: { select: { id: true, eame: true, forename: true, surname: true } } },
     });
     res.status(201).json(member);
   } catch (err: any) {
@@ -99,7 +108,7 @@ router.post("/:id/members", async (req: Request, res: Response) => {
 });
 
 // ── PATCH /api/departments/:deptId/members/:userId
-router.patch("/:deptId/members/:userId", async (req: Request, res: Response) => {
+router.patch("/:deptId/members/:userId", requireAdmin, async (req: Request, res: Response) => {
   const { role } = req.body;
   const record = await prisma.userDepartment.update({
     where: {
@@ -111,7 +120,7 @@ router.patch("/:deptId/members/:userId", async (req: Request, res: Response) => 
 });
 
 // ── DELETE /api/departments/:deptId/members/:userId
-router.delete("/:deptId/members/:userId", async (req: Request, res: Response) => {
+router.delete("/:deptId/members/:userId", requireAdmin, async (req: Request, res: Response) => {
   await prisma.userDepartment.delete({
     where: {
       userId_departmentId: { userId: Number(req.params.userId), departmentId: Number(req.params.deptId) },

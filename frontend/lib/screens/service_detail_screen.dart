@@ -335,8 +335,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
             if (search.isEmpty) return true;
             final q = search.toLowerCase();
             final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
-            final ename = (u['ename'] ?? '').toString().toLowerCase();
-            return name.contains(q) || ename.contains(q);
+            final eame = (u['eame'] ?? '').toString().toLowerCase();
+            return name.contains(q) || eame.contains(q);
           }).toList();
 
           return AlertDialog(
@@ -366,7 +366,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                         final u = filtered[i];
                         final uid = u['id'] as int;
                         final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim();
-                        final ename = u['ename'] ?? '';
+                        final eame = u['eame'] ?? '';
                         final isSelected = uid == currentId;
 
                         return ListTile(
@@ -389,7 +389,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                           title: Text(name,
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600, fontSize: 14)),
-                          subtitle: Text('@$ename',
+                          subtitle: Text('@$eame',
                               style: const TextStyle(
                                   fontSize: 12, color: Color(0xFF6B7280))),
                           trailing: isSelected
@@ -790,7 +790,7 @@ class _ResponsibleUserCard extends StatelessWidget {
     final name = hasUser
         ? '${responsibleUser!['forename'] ?? ''} ${responsibleUser!['surname'] ?? ''}'.trim()
         : '';
-    final ename = hasUser ? (responsibleUser!['ename'] ?? '') : '';
+    final eame = hasUser ? (responsibleUser!['eame'] ?? '') : '';
 
     return Card(
       elevation: 2,
@@ -862,7 +862,7 @@ class _ResponsibleUserCard extends StatelessWidget {
                           Text(name,
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600, fontSize: 15)),
-                          Text('@$ename',
+                          Text('@$eame',
                               style: const TextStyle(
                                   fontSize: 12, color: Color(0xFF6B7280))),
                         ],
@@ -1357,7 +1357,7 @@ class _PendingUserTile extends StatelessWidget {
     final user = userService['user'] as Map<String, dynamic>? ?? {};
     final name =
         '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
-    final ename = user['ename'] ?? '';
+    final eame = user['eame'] ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -1389,7 +1389,7 @@ class _PendingUserTile extends StatelessWidget {
             ],
           ],
         ),
-        subtitle: Text(ename,
+        subtitle: Text(eame,
             style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1435,7 +1435,7 @@ class _AcceptedUserTile extends StatelessWidget {
     final user = userService['user'] as Map<String, dynamic>? ?? {};
     final name =
         '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
-    final ename = user['ename'] ?? '';
+    final eame = user['eame'] ?? '';
     final hours = userService['hours'] ?? 0;
     final hoursVol = userService['hoursVol'] ?? 0;
     final hoursTraining = userService['hoursTraining'] ?? 0;
@@ -1483,7 +1483,7 @@ class _AcceptedUserTile extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 2),
-                      Text(ename,
+                      Text(eame,
                           style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
                     ],
                   ),
@@ -1549,7 +1549,7 @@ class _RejectedUserTile extends StatelessWidget {
     final user = userService['user'] as Map<String, dynamic>? ?? {};
     final name =
         '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
-    final ename = user['ename'] ?? '';
+    final eame = user['eame'] ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
@@ -1581,7 +1581,7 @@ class _RejectedUserTile extends StatelessWidget {
             ],
           ],
         ),
-        subtitle: Text(ename,
+        subtitle: Text(eame,
             style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,

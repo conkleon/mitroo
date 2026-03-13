@@ -182,7 +182,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = auth.user;
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    final String name = auth.displayName.isNotEmpty ? auth.displayName : (user?['ename'] ?? 'Χρήστης').toString();
+    final String name = auth.displayName.isNotEmpty ? auth.displayName : (user?['eame'] ?? 'Χρήστης').toString();
     final initials = name.split(' ').where((w) => w.isNotEmpty).map((w) => w[0].toUpperCase()).take(2).join();
     final currentYear = DateTime.now().year;
 
@@ -287,7 +287,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Text('Στοιχεία', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 16),
-                  _DetailRow(icon: Icons.badge_outlined, label: 'Κωδικός', value: user?['ename'] ?? '-'),
+                  _DetailRow(icon: Icons.badge_outlined, label: 'EAME', value: user?['eame'] ?? '-'),
                   const Divider(height: 24),
                   _DetailRow(icon: Icons.person_outline, label: 'Όνομα', value: user?['forename'] ?? '-'),
                   const Divider(height: 24),

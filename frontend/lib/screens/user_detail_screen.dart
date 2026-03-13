@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
 
 /// Full detail view for a single user. Admins can edit profile, toggle admin,
@@ -57,12 +59,22 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
   // ── Edit profile ──────────────────────────────────
   void _editProfile() {
     if (_user == null) return;
+    final canManage = context.read<AuthProvider>().isAdmin;
+    if (!canManage) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Δεν έχετε δικαίωμα επεξεργασίας χρήστη.')),
+      );
+      return;
+    }
+
+    final eameCtrl = TextEditingController(text: _user!['eame'] ?? '');
     final forenameCtrl = TextEditingController(text: _user!['forename'] ?? '');
     final surnameCtrl = TextEditingController(text: _user!['surname'] ?? '');
     final emailCtrl = TextEditingController(text: _user!['email'] ?? '');
     final phoneCtrl = TextEditingController(text: _user!['phonePrimary'] ?? '');
     final addressCtrl = TextEditingController(text: _user!['address'] ?? '');
     bool isAdmin = _user!['isAdmin'] == true;
+    String rank = (_user!['rank'] ?? 'Γ').toString();
 
     showDialog(
       context: context,
@@ -75,6 +87,8 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  TextField(controller: eameCtrl, decoration: const InputDecoration(labelText: 'EAME', border: OutlineInputBorder())),
+                  const SizedBox(height: 12),
                   TextField(controller: forenameCtrl, decoration: const InputDecoration(labelText: 'Όνομα', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
                   TextField(controller: surnameCtrl, decoration: const InputDecoration(labelText: 'Επώνυμο', border: OutlineInputBorder())),
@@ -84,6 +98,17 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                   TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Τηλέφωνο', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
                   TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'Διεύθυνση', border: OutlineInputBorder()), maxLines: 2),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: rank,
+                    decoration: const InputDecoration(labelText: 'Βαθμός', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 'Α', child: Text('Α')),
+                      DropdownMenuItem(value: 'Β', child: Text('Β')),
+                      DropdownMenuItem(value: 'Γ', child: Text('Γ')),
+                    ],
+                    onChanged: (v) => setDlgState(() => rank = v ?? 'Γ'),
+                  ),
                   const SizedBox(height: 8),
                   SwitchListTile(
                     title: const Text('Διαχειριστής Συστήματος'),
@@ -100,10 +125,12 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
             FilledButton(
               onPressed: () async {
                 final body = <String, dynamic>{
+                  'eame': eameCtrl.text.trim(),
                   'forename': forenameCtrl.text.trim(),
                   'surname': surnameCtrl.text.trim(),
                   'email': emailCtrl.text.trim(),
                   'isAdmin': isAdmin,
+                  'rank': rank,
                 };
                 if (phoneCtrl.text.trim().isNotEmpty) body['phonePrimary'] = phoneCtrl.text.trim();
                 if (addressCtrl.text.trim().isNotEmpty) body['address'] = addressCtrl.text.trim();
@@ -386,6 +413,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
+    final canManage = context.watch<AuthProvider>().isAdmin;
 
     if (_loading) {
       return Scaffold(
@@ -409,14 +437,16 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text(name.isNotEmpty ? name : u['ename'] ?? 'User',
+        title: Text(name.isNotEmpty ? name : u['eame'] ?? 'User',
             style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.edit), onPressed: _editProfile, tooltip: 'Επεξεργασία'),
-          IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: _deleteUser, tooltip: 'Διαγραφή'),
+          if (canManage) ...[
+            IconButton(icon: const Icon(Icons.edit), onPressed: _editProfile, tooltip: 'Επεξεργασία'),
+            IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: _deleteUser, tooltip: 'Διαγραφή'),
+          ],
         ],
       ),
       body: RefreshIndicator(
@@ -426,8 +456,8 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
             final isWide = constraints.maxWidth >= 900;
 
             final profileCard = _buildProfileCard(u, name, isAdmin, tt, cs);
-            final deptsCard = _buildDepartmentsCard(departments, tt, cs);
-            final specsCard = _buildSpecializationsCard(specializations, tt, cs);
+            final deptsCard = _buildDepartmentsCard(departments, tt, cs, canManage);
+            final specsCard = _buildSpecializationsCard(specializations, tt, cs, canManage);
             final servicesCard = _buildServicesCard(tt, cs);
 
             if (isWide) {
@@ -492,9 +522,9 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Text(name.isNotEmpty ? name : u['ename'] ?? '', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            Text(name.isNotEmpty ? name : u['eame'] ?? '', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text('@${u['ename'] ?? ''}', style: tt.bodyMedium?.copyWith(color: const Color(0xFF6B7280))),
+            Text('@${u['eame'] ?? ''}', style: tt.bodyMedium?.copyWith(color: const Color(0xFF6B7280))),
             if (isAdmin) ...[
               const SizedBox(height: 8),
               Container(
@@ -507,6 +537,8 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
             const Divider(),
             const SizedBox(height: 12),
             _InfoRow(icon: Icons.email, label: 'Email', value: u['email'] ?? '—'),
+            _InfoRow(icon: Icons.badge_outlined, label: 'EAME', value: u['eame'] ?? '—'),
+            _InfoRow(icon: Icons.workspace_premium_outlined, label: 'Βαθμός', value: u['rank'] ?? 'Γ'),
             _InfoRow(icon: Icons.phone, label: 'Τηλέφωνο', value: u['phonePrimary'] ?? '—'),
             _InfoRow(icon: Icons.location_on, label: 'Διεύθυνση', value: u['address'] ?? '—'),
             _InfoRow(icon: Icons.calendar_today, label: 'Ημ. Γέννησης', value: _formatDate(u['birthDate'])),
@@ -526,7 +558,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
   }
 
   // ── Departments card ──────────────────────────────
-  Widget _buildDepartmentsCard(List<dynamic> departments, TextTheme tt, ColorScheme cs) {
+  Widget _buildDepartmentsCard(List<dynamic> departments, TextTheme tt, ColorScheme cs, bool canManage) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 0,
@@ -541,11 +573,12 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                 const SizedBox(width: 10),
                 Text('Τμήματα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                 const Spacer(),
-                TextButton.icon(
-                  onPressed: _addToDepartment,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Προσθήκη'),
-                ),
+                if (canManage)
+                  TextButton.icon(
+                    onPressed: _addToDepartment,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Προσθήκη'),
+                  ),
               ],
             ),
             const Divider(),
@@ -570,26 +603,28 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                   ),
                   title: Text(deptName, style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                   subtitle: Text(_roleLabelFull(role), style: tt.bodySmall?.copyWith(color: _roleColor(role))),
-                  trailing: PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, size: 20),
-                    onSelected: (action) {
-                      if (action == 'remove') {
-                        _removeDeptMembership(deptId);
-                      } else {
-                        _changeDeptRole(deptId, action);
-                      }
-                    },
-                    itemBuilder: (_) => [
-                      if (role != 'volunteer')
-                        const PopupMenuItem(value: 'volunteer', child: Text('Ορισμός Εθελοντή')),
-                      if (role != 'missionAdmin')
-                        const PopupMenuItem(value: 'missionAdmin', child: Text('Ορισμός Διαχειριστή Αποστολών')),
-                      if (role != 'itemAdmin')
-                        const PopupMenuItem(value: 'itemAdmin', child: Text('Ορισμός Διαχειριστή Υλικού')),
-                      const PopupMenuDivider(),
-                      const PopupMenuItem(value: 'remove', child: Text('Αφαίρεση', style: TextStyle(color: Colors.red))),
-                    ],
-                  ),
+                  trailing: canManage
+                      ? PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert, size: 20),
+                          onSelected: (action) {
+                            if (action == 'remove') {
+                              _removeDeptMembership(deptId);
+                            } else {
+                              _changeDeptRole(deptId, action);
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            if (role != 'volunteer')
+                              const PopupMenuItem(value: 'volunteer', child: Text('Ορισμός Εθελοντή')),
+                            if (role != 'missionAdmin')
+                              const PopupMenuItem(value: 'missionAdmin', child: Text('Ορισμός Διαχειριστή Αποστολών')),
+                            if (role != 'itemAdmin')
+                              const PopupMenuItem(value: 'itemAdmin', child: Text('Ορισμός Διαχειριστή Υλικού')),
+                            const PopupMenuDivider(),
+                            const PopupMenuItem(value: 'remove', child: Text('Αφαίρεση', style: TextStyle(color: Colors.red))),
+                          ],
+                        )
+                      : null,
                 );
               }),
           ],
@@ -599,7 +634,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
   }
 
   // ── Specializations card ──────────────────────────
-  Widget _buildSpecializationsCard(List<dynamic> specializations, TextTheme tt, ColorScheme cs) {
+  Widget _buildSpecializationsCard(List<dynamic> specializations, TextTheme tt, ColorScheme cs, bool canManage) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 0,
@@ -614,11 +649,12 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                 const SizedBox(width: 10),
                 Text('Ειδικεύσεις', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                 const Spacer(),
-                TextButton.icon(
-                  onPressed: _addSpecialization,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Προσθήκη'),
-                ),
+                if (canManage)
+                  TextButton.icon(
+                    onPressed: _addSpecialization,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Προσθήκη'),
+                  ),
               ],
             ),
             const Divider(),
@@ -638,8 +674,8 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                   return Chip(
                     avatar: const Icon(Icons.school, size: 16, color: Color(0xFFD97706)),
                     label: Text(specName),
-                    deleteIcon: const Icon(Icons.close, size: 16),
-                    onDeleted: () => _removeSpecialization(specId),
+                    deleteIcon: canManage ? const Icon(Icons.close, size: 16) : null,
+                    onDeleted: canManage ? () => _removeSpecialization(specId) : null,
                     backgroundColor: const Color(0xFFFEF3C7),
                     side: BorderSide.none,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

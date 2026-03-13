@@ -168,7 +168,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
               children: [
                 Autocomplete<Map<String, dynamic>>(
                   displayStringForOption: (u) =>
-                      '${u['forename'] ?? ''} ${u['surname'] ?? ''} (${u['ename'] ?? ''})'
+                      '${u['forename'] ?? ''} ${u['surname'] ?? ''} (${u['eame'] ?? ''})'
                           .trim(),
                   optionsBuilder: (textEditingValue) {
                     final q = textEditingValue.text.toLowerCase();
@@ -178,16 +178,16 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                       final name =
                           '${u['forename'] ?? ''} ${u['surname'] ?? ''}'
                               .toLowerCase();
-                      final ename =
-                          (u['ename'] ?? '').toString().toLowerCase();
-                      return name.contains(q) || ename.contains(q);
+                      final eame =
+                          (u['eame'] ?? '').toString().toLowerCase();
+                      return name.contains(q) || eame.contains(q);
                     });
                   },
                   onSelected: (u) {
                     setS(() {
                       selectedUser = u['id'] as int;
                       selectedUserName =
-                          '${u['forename'] ?? ''} ${u['surname'] ?? ''} (${u['ename'] ?? ''})'
+                          '${u['forename'] ?? ''} ${u['surname'] ?? ''} (${u['eame'] ?? ''})'
                               .trim();
                     });
                   },
@@ -255,11 +255,11 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                                 title: Text(
                                     name.isNotEmpty
                                         ? name
-                                        : opt['ename'] ?? '',
+                                        : opt['eame'] ?? '',
                                     style: const TextStyle(
                                         fontSize: 14)),
                                 subtitle: Text(
-                                    opt['ename'] ?? '',
+                                    opt['eame'] ?? '',
                                     style: const TextStyle(
                                         fontSize: 12,
                                         color: Color(0xFF9CA3AF))),
@@ -507,7 +507,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                 final name =
                     '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
                         .trim();
-                final ename = user['ename'] ?? '';
+                final eame = user['eame'] ?? '';
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -528,11 +528,11 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(name.isNotEmpty ? name : ename,
+                            Text(name.isNotEmpty ? name : eame,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13)),
-                            Text(ename,
+                            Text(eame,
                                 style: const TextStyle(
                                     fontSize: 11,
                                     color: Color(0xFF9CA3AF))),

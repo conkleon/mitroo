@@ -17,6 +17,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
   final _api = ApiClient();
   List<Map<String, dynamic>> _users = [];
   List<dynamic> _allDepts = [];
+  List<dynamic> _allSpecs = [];
   bool _loading = true;
 
   // Filters
@@ -45,6 +46,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       final results = await Future.wait([
         _api.get('/users/stats'),
         _api.get('/departments'),
+        _api.get('/specializations'),
       ]);
       if (results[0].statusCode == 200) {
         _users = (jsonDecode(results[0].body) as List)
@@ -52,6 +54,9 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       }
       if (results[1].statusCode == 200) {
         _allDepts = jsonDecode(results[1].body);
+      }
+      if (results[2].statusCode == 200) {
+        _allSpecs = jsonDecode(results[2].body);
       }
 
       if (!_deptInitialized && mounted) {
@@ -103,9 +108,9 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       final q = _search.toLowerCase();
       list = list.where((u) {
         final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
-        final ename = (u['ename'] ?? '').toString().toLowerCase();
+        final eame = (u['eame'] ?? '').toString().toLowerCase();
         final email = (u['email'] ?? '').toString().toLowerCase();
-        return name.contains(q) || ename.contains(q) || email.contains(q);
+        return name.contains(q) || eame.contains(q) || email.contains(q);
       }).toList();
     }
 
@@ -161,75 +166,212 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
 
   // ── Create user dialog ───────────────────────────
   void _showCreateDialog() {
-    final enameCtrl = TextEditingController();
+    final eameCtrl = TextEditingController();
     final forenameCtrl = TextEditingController();
     final surnameCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
+    int? selectedDeptId;
+    String? selectedDeptName;
+    String selectedDeptRole = 'volunteer';
+    int? selectedSpecId;
+    String selectedRank = 'Γ';
+    final rootSpecs = _allSpecs.where((s) => s['rootId'] == null).toList();
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Νέος Χρήστης'),
-        content: SizedBox(
-          width: 400,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: enameCtrl, decoration: const InputDecoration(labelText: 'Κωδ. Μέλους *', border: OutlineInputBorder())),
-                const SizedBox(height: 12),
-                TextField(controller: forenameCtrl, decoration: const InputDecoration(labelText: 'Όνομα *', border: OutlineInputBorder())),
-                const SizedBox(height: 12),
-                TextField(controller: surnameCtrl, decoration: const InputDecoration(labelText: 'Επώνυμο *', border: OutlineInputBorder())),
-                const SizedBox(height: 12),
-                TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email *', border: OutlineInputBorder())),
-                const SizedBox(height: 8),
-                Text(
-                  'Ο κωδικός θα δημιουργηθεί αυτόματα και θα σταλεί στο email του χρήστη.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                ),
-              ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          title: const Text('Νέος Χρήστης'),
+          content: SizedBox(
+            width: 420,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: eameCtrl, decoration: const InputDecoration(labelText: 'EAME (προαιρετικό)', border: OutlineInputBorder())),
+                  const SizedBox(height: 12),
+                  TextField(controller: forenameCtrl, decoration: const InputDecoration(labelText: 'Όνομα *', border: OutlineInputBorder())),
+                  const SizedBox(height: 12),
+                  TextField(controller: surnameCtrl, decoration: const InputDecoration(labelText: 'Επώνυμο *', border: OutlineInputBorder())),
+                  const SizedBox(height: 12),
+                  TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email *', border: OutlineInputBorder())),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedRank,
+                    decoration: const InputDecoration(labelText: 'Βαθμός', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 'Α', child: Text('Α')),
+                      DropdownMenuItem(value: 'Β', child: Text('Β')),
+                      DropdownMenuItem(value: 'Γ', child: Text('Γ')),
+                    ],
+                    onChanged: (v) => setDlgState(() => selectedRank = v ?? 'Γ'),
+                  ),
+                  const SizedBox(height: 12),
+                  Autocomplete<Map<String, dynamic>>(
+                    displayStringForOption: (d) => d['name']?.toString() ?? '',
+                    optionsBuilder: (textEditingValue) {
+                      final q = textEditingValue.text.toLowerCase().trim();
+                      final opts = _allDepts.cast<Map<String, dynamic>>();
+                      if (q.isEmpty) return opts;
+                      return opts.where((d) => (d['name'] ?? '').toString().toLowerCase().contains(q));
+                    },
+                    onSelected: (d) {
+                      setDlgState(() {
+                        selectedDeptId = d['id'] as int;
+                        selectedDeptName = d['name']?.toString();
+                      });
+                    },
+                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                      if (selectedDeptName != null && controller.text.isEmpty) {
+                        controller.text = selectedDeptName!;
+                      }
+                      return TextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        decoration: InputDecoration(
+                          labelText: 'Τμήμα πρώτης ανάθεσης *',
+                          hintText: 'Αναζήτηση τμήματος...',
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          suffixIcon: controller.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    controller.clear();
+                                    setDlgState(() {
+                                      selectedDeptId = null;
+                                      selectedDeptName = null;
+                                    });
+                                  },
+                                )
+                              : null,
+                        ),
+                        onChanged: (_) {
+                          setDlgState(() {
+                            selectedDeptId = null;
+                            selectedDeptName = null;
+                          });
+                        },
+                      );
+                    },
+                    optionsViewBuilder: (context, onSelected, options) {
+                      return Align(
+                        alignment: Alignment.topLeft,
+                        child: Material(
+                          elevation: 4,
+                          borderRadius: BorderRadius.circular(8),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 220, maxWidth: 380),
+                            child: ListView.builder(
+                              padding: EdgeInsets.zero,
+                              shrinkWrap: true,
+                              itemCount: options.length,
+                              itemBuilder: (context, i) {
+                                final opt = options.elementAt(i);
+                                return ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.business, size: 18, color: Color(0xFF7C3AED)),
+                                  title: Text(opt['name']?.toString() ?? '', style: const TextStyle(fontSize: 14)),
+                                  onTap: () => onSelected(opt),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedDeptRole,
+                    decoration: const InputDecoration(labelText: 'Ρόλος στο τμήμα', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 'volunteer', child: Text('Εθελοντής')),
+                      DropdownMenuItem(value: 'missionAdmin', child: Text('Διαχειριστής Αποστολών')),
+                      DropdownMenuItem(value: 'itemAdmin', child: Text('Διαχειριστής Υλικού')),
+                    ],
+                    onChanged: (v) => setDlgState(() => selectedDeptRole = v ?? 'volunteer'),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int?>(
+                    value: selectedSpecId,
+                    decoration: const InputDecoration(labelText: 'Ειδίκευση πρώτης ανάθεσης *', border: OutlineInputBorder()),
+                    items: rootSpecs.map((s) => DropdownMenuItem<int?>(
+                      value: s['id'] as int,
+                      child: Text(s['name']?.toString() ?? ''),
+                    )).toList(),
+                    onChanged: (v) => setDlgState(() => selectedSpecId = v),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Η αρχική ειδίκευση μπορεί να είναι μόνο ριζική. Αν το EAME μείνει κενό, δημιουργείται αυτόματα από αυτήν.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
-          FilledButton(
-            onPressed: () async {
-              final body = {
-                'ename': enameCtrl.text.trim(),
-                'forename': forenameCtrl.text.trim(),
-                'surname': surnameCtrl.text.trim(),
-                'email': emailCtrl.text.trim(),
-              };
-              try {
-                final res = await _api.post('/users', body: body);
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (res.statusCode == 201) {
-                  _fetch();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Ο χρήστης δημιουργήθηκε και έλαβε email πρόσκλησης.')),
-                    );
-                  }
-                } else {
-                  final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            FilledButton(
+              onPressed: () async {
+                if (selectedDeptId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Επιλέξτε τμήμα πρώτης ανάθεσης.')),
+                  );
+                  return;
                 }
-              } catch (e) {
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
-              }
-            },
-            child: const Text('Δημιουργία'),
-          ),
-        ],
+                if (selectedSpecId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Επιλέξτε ειδίκευση πρώτης ανάθεσης.')),
+                  );
+                  return;
+                }
+
+                final body = <String, dynamic>{
+                  'forename': forenameCtrl.text.trim(),
+                  'surname': surnameCtrl.text.trim(),
+                  'email': emailCtrl.text.trim(),
+                  'rank': selectedRank,
+                  'departmentId': selectedDeptId,
+                  'specializationId': selectedSpecId,
+                  'departmentRole': selectedDeptRole,
+                };
+                final eame = eameCtrl.text.trim();
+                if (eame.isNotEmpty) {
+                  body['eame'] = eame;
+                }
+
+                try {
+                  final res = await _api.post('/users', body: body);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (res.statusCode == 201) {
+                    _fetch();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Ο χρήστης δημιουργήθηκε και έλαβε email πρόσκλησης.')),
+                      );
+                    }
+                  } else {
+                    final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
+                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                  }
+                } catch (e) {
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+                }
+              },
+              child: const Text('Δημιουργία'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     final tt = Theme.of(context).textTheme;
     final processed = _processed;
     final totalPages = (processed.length / _rowsPerPage).ceil();
@@ -248,11 +390,13 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           IconButton(icon: const Icon(Icons.refresh), onPressed: _fetch, tooltip: 'Ανανέωση'),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showCreateDialog,
-        icon: const Icon(Icons.person_add),
-        label: const Text('Νέος Χρήστης'),
-      ),
+      floatingActionButton: auth.isAdmin
+          ? FloatingActionButton.extended(
+              onPressed: _showCreateDialog,
+              icon: const Icon(Icons.person_add),
+              label: const Text('Νέος Χρήστης'),
+            )
+          : null,
       body: SafeArea(
         child: Column(
           children: [
@@ -427,7 +571,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   children: [
                     Row(children: [
                       Flexible(
-                        child: Text(name.isNotEmpty ? name : user['ename'] ?? '',
+                        child: Text(name.isNotEmpty ? name : user['eame'] ?? '',
                             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis),
@@ -447,7 +591,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                         ),
                       ],
                     ]),
-                    Text(user['ename'] ?? '',
+                    Text(user['eame'] ?? '',
                         style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),

@@ -7,12 +7,12 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "prisma:generate": "dotenv -e ../.env -- prisma generate",
-    "prisma:migrate": "dotenv -e ../.env -- prisma migrate dev",
+    "prisma:generate": "node scripts/run-with-dev-env.js prisma generate",
+    "prisma:migrate": "node scripts/run-with-dev-env.js prisma migrate dev",
     "prisma:migrate:prod": "dotenv -e ../.env -- prisma migrate deploy",
-    "prisma:reset": "dotenv -e ../.env -- prisma migrate reset",
-    "prisma:studio": "dotenv -e ../.env -- prisma studio",
-    "seed": "dotenv -e ../.env -- ts-node prisma/seed.ts",
+    "prisma:reset": "node scripts/run-with-dev-env.js prisma migrate reset",
+    "prisma:studio": "node scripts/run-with-dev-env.js prisma studio",
+    "seed": "node scripts/run-with-dev-env.js ts-node prisma/seed.ts",
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {

@@ -149,6 +149,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     }),
                     child: Text(_isRegister ? 'Έχετε ήδη λογαριασμό; Σύνδεση' : 'Δεν έχετε λογαριασμό; Εγγραφή'),
                   ),
+                  if (!_isRegister) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => context.go('/apply-training'),
+                      icon: const Icon(Icons.school_outlined, size: 18),
+                      label: const Text('Θέλω να εκπαιδευτώ στον Ελληνικό Ερυθρό Σταυρό'),
+                    ),
+                  ],
                 ],
               ),
             ),

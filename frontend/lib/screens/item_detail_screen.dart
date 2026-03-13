@@ -310,15 +310,15 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   ),
                 Autocomplete<Map<String, dynamic>>(
                   displayStringForOption: (u) =>
-                      '${u['forename'] ?? ''} ${u['surname'] ?? ''} (${u['ename'] ?? ''})'.trim(),
+                      '${u['forename'] ?? ''} ${u['surname'] ?? ''} (${u['eame'] ?? ''})'.trim(),
                   optionsBuilder: (textEditingValue) {
                     final q = textEditingValue.text.toLowerCase();
                     final opts = _allUsers.cast<Map<String, dynamic>>();
                     if (q.isEmpty) return opts;
                     return opts.where((u) {
                       final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
-                      final ename = (u['ename'] ?? '').toString().toLowerCase();
-                      return name.contains(q) || ename.contains(q);
+                      final eame = (u['eame'] ?? '').toString().toLowerCase();
+                      return name.contains(q) || eame.contains(q);
                     });
                   },
                   onSelected: (u) {
@@ -1065,8 +1065,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             '${assigned['forename'] ?? ''} ${assigned['surname'] ?? ''}'.trim(),
                             style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                           ),
-                          if (assigned['ename'] != null)
-                            Text(assigned['ename'], style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                          if (assigned['eame'] != null)
+                            Text(assigned['eame'], style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
                         ],
                       ),
                     ),

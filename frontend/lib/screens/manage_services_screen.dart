@@ -819,7 +819,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
             final uName = user != null
                 ? '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim()
                 : 'Unknown';
-            final ename = user?['ename'] ?? '';
+            final eame = user?['eame'] ?? '';
             final st = (us['status'] ?? 'requested') as String;
             final stColor = _enrollColor(st);
             final serviceId = svc['id'] as int;
@@ -866,8 +866,8 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                   fontWeight: FontWeight.w600),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis),
-                          if (ename.isNotEmpty)
-                            Text('@$ename',
+                          if (eame.isNotEmpty)
+                            Text('@$eame',
                                 style: TextStyle(
                                     fontSize: 11,
                                     color: Colors.grey.shade500)),

@@ -9,7 +9,11 @@ router.use(authenticate);
 const createSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().optional(),
+  yearlyHours: z.number().int().min(0).optional(),
+  yearlyHoursTraining: z.number().int().min(0).optional(),
   hoursTraining: z.number().int().min(0).optional(),
+  hoursTEP: z.number().int().min(0).optional(),
+  eamePrefix: z.string().max(8).optional().nullable(),
   rootId: z.number().int().optional().nullable(),
 });
 
@@ -45,7 +49,7 @@ router.get("/:id", async (req: Request, res: Response) => {
       root: { select: { id: true, name: true } },
       children: { select: { id: true, name: true } },
       users: {
-        include: { user: { select: { id: true, ename: true, forename: true, surname: true } } },
+        include: { user: { select: { id: true, eame: true, forename: true, surname: true } } },
       },
     },
   });
