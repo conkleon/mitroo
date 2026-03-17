@@ -429,8 +429,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: () => context.go('/apply-training'),
                 icon: const Icon(Icons.school_outlined, size: 18, color: _primaryRed),
                 label: const Text(
-                  'Αίτηση Εκπαίδευσης — Ελληνικός Ερυθρός Σταυρός',
-                  style: TextStyle(fontSize: 12, color: _primaryRed),
+                  'Αίτηση Εκπαίδευσης ΕΕΣ',
+                  style: TextStyle(fontSize: 13, color: _primaryRed),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: _primaryRed),
