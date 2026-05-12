@@ -237,6 +237,13 @@ class _ServicesScreenState extends State<ServicesScreen>
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
+      floatingActionButton: (auth.isAdmin || auth.isMissionAdmin)
+          ? FloatingActionButton(
+              onPressed: () => context.push('/admin/services/create'),
+              tooltip: 'Νέα υπηρεσία',
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => svcProv.fetchMyServices(),
