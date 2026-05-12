@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../services/api_client.dart';
+import '../services/push_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final _api = ApiClient();
@@ -77,6 +78,7 @@ class AuthProvider extends ChangeNotifier {
       final res = await _api.get('/auth/me');
       if (res.statusCode == 200) {
         _user = jsonDecode(res.body);
+        if (kIsWeb) PushService.init();
       }
     } catch (_) {}
     _loading = false;
@@ -95,6 +97,7 @@ class AuthProvider extends ChangeNotifier {
       if (res.statusCode == 200) {
         await _api.setToken(data['token']);
         _user = data['user'];
+        if (kIsWeb) PushService.init();
         _loading = false;
         notifyListeners();
         return null;
