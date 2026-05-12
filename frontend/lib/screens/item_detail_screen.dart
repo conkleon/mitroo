@@ -570,72 +570,76 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     int? selectedUserId;
     final commentCtrl = TextEditingController();
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          title: const Text('Ανάθεση σε Υπηρεσία'),
-          content: SizedBox(
-            width: 360,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DropdownButtonFormField<int>(
-                  decoration: const InputDecoration(labelText: 'Υπηρεσία', border: OutlineInputBorder()),
-                  items: _allServices.map<DropdownMenuItem<int>>((s) {
-                    return DropdownMenuItem<int>(value: s['id'] as int, child: Text(s['name'] as String? ?? ''));
-                  }).toList(),
-                  onChanged: (v) => setS(() => selectedServiceId = v),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<int>(
-                  decoration: const InputDecoration(labelText: 'Χρήστης', border: OutlineInputBorder()),
-                  items: _allUsers.map<DropdownMenuItem<int>>((u) {
-                    final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim();
-                    return DropdownMenuItem<int>(value: u['id'] as int, child: Text(name));
-                  }).toList(),
-                  onChanged: (v) => setS(() => selectedUserId = v),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: commentCtrl,
-                  decoration: const InputDecoration(labelText: 'Σχόλιο (προαιρετικό)', border: OutlineInputBorder()),
-                  maxLines: 2,
-                ),
-              ],
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setS) => AlertDialog(
+            title: const Text('Ανάθεση σε Υπηρεσία'),
+            content: SizedBox(
+              width: 360,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DropdownButtonFormField<int>(
+                    decoration: const InputDecoration(labelText: 'Υπηρεσία', border: OutlineInputBorder()),
+                    items: _allServices.map<DropdownMenuItem<int>>((s) {
+                      return DropdownMenuItem<int>(value: s['id'] as int, child: Text(s['name'] as String? ?? ''));
+                    }).toList(),
+                    onChanged: (v) => setS(() => selectedServiceId = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int>(
+                    decoration: const InputDecoration(labelText: 'Χρήστης', border: OutlineInputBorder()),
+                    items: _allUsers.map<DropdownMenuItem<int>>((u) {
+                      final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim();
+                      return DropdownMenuItem<int>(value: u['id'] as int, child: Text(name));
+                    }).toList(),
+                    onChanged: (v) => setS(() => selectedUserId = v),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: commentCtrl,
+                    decoration: const InputDecoration(labelText: 'Σχόλιο (προαιρετικό)', border: OutlineInputBorder()),
+                    maxLines: 2,
+                  ),
+                ],
+              ),
             ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+              FilledButton(
+                onPressed: selectedServiceId != null && selectedUserId != null
+                    ? () => Navigator.pop(ctx, true)
+                    : null,
+                child: const Text('Ανάθεση'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
-            FilledButton(
-              onPressed: selectedServiceId != null && selectedUserId != null
-                  ? () => Navigator.pop(ctx, true)
-                  : null,
-              child: const Text('Ανάθεση'),
-            ),
-          ],
         ),
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    final comment = commentCtrl.text.trim().isEmpty ? null : commentCtrl.text.trim();
-    final err = await context.read<ItemProvider>().assignToService(
-      selectedServiceId!,
-      selectedUserId!,
-      widget.itemId,
-      comment: comment,
-    );
-    if (!mounted) return;
-    if (err != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Η ανάθεση αποθηκεύτηκε')),
       );
-      _load();
+
+      if (confirmed != true || !mounted) return;
+
+      final comment = commentCtrl.text.trim().isEmpty ? null : commentCtrl.text.trim();
+      final err = await context.read<ItemProvider>().assignToService(
+        selectedServiceId!,
+        selectedUserId!,
+        widget.itemId,
+        comment: comment,
+      );
+      if (!mounted) return;
+      if (err != null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Η ανάθεση αποθηκεύτηκε')),
+        );
+        _load();
+      }
+    } finally {
+      commentCtrl.dispose();
     }
   }
 
@@ -1326,9 +1330,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               ...assignments.map((a) {
                 final service = a['service'] as Map<String, dynamic>? ?? {};
                 final user = a['user'] as Map<String, dynamic>? ?? {};
-                final assignedAt = a['assignedAt'] != null
-                    ? DateTime.tryParse(a['assignedAt'] as String)
-                    : null;
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
@@ -1349,9 +1350,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                               '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim(),
                               style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
                             ),
-                            if (assignedAt != null)
+                            if (a['assignedAt'] != null)
                               Text(
-                                '${assignedAt.day}/${assignedAt.month}/${assignedAt.year}',
+                                _formatDate(a['assignedAt'] as String?),
                                 style: tt.labelSmall?.copyWith(color: Colors.grey.shade400),
                               ),
                             if ((a['comment'] as String?)?.isNotEmpty == true) ...[
