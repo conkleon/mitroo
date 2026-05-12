@@ -48,7 +48,7 @@ class MitrooApp extends StatelessWidget {
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
           return MaterialApp.router(
-            title: 'Mitroo',
+            title: 'R.C.D.',
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
               useMaterial3: true,

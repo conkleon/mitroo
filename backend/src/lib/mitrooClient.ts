@@ -2,19 +2,19 @@
 // Uses cookie+CSRF session auth — no REST API, all server-side PHP/CodeIgniter.
 
 export interface ExternalVolunteer {
-  member_id: number;
-  email: string;
-  firstname: string;
-  lastname: string;
-  mobile?: string;
-  phone?: string;
-  address?: string;
-  [key: string]: unknown; // allow unknown fields — log on first run to confirm mapping
+  id: string | number;
+  first_name: string;
+  last_name: string;
+  registration_code?: string;
+  member_status?: string;
+  rank_id?: string;
+  member_department?: string;
+  member_rank?: string;
+  [key: string]: unknown;
 }
 
 export interface ExternalMission {
-  mission_id: number;
-  name?: string;
+  id: number;
   title?: string;
   start_date?: string;
   end_date?: string;
@@ -22,12 +22,11 @@ export interface ExternalMission {
 }
 
 export interface ExternalShift {
-  shift_id: number;
-  mission_id: number;
+  id: number | string;
+  mission_id: number | string;
   shift_start_date?: string;
   shift_end_date?: string;
-  total_participants?: number;
-  name?: string;
+  total_participants?: number | string;
   title?: string;
   [key: string]: unknown;
 }
@@ -88,7 +87,10 @@ export class MitrooClient {
     const res = await this._xhr("/index.php/ajaxmember/grid_get_volunteers");
     const text = await res.text();
     try {
-      return JSON.parse(text);
+      const parsed = JSON.parse(text);
+      // Response is { count: "N", result: [...] }
+      const rows = Array.isArray(parsed) ? parsed : (parsed.result ?? []);
+      return rows;
     } catch {
       console.error("[MitrooClient] fetchVolunteers: unexpected response:", text.slice(0, 300));
       throw new Error("fetchVolunteers: invalid JSON response");
@@ -99,7 +101,9 @@ export class MitrooClient {
     const res = await this._xhr("/index.php/ajaxdptadmin/GridGetMissions");
     const text = await res.text();
     try {
-      return JSON.parse(text);
+      const parsed = JSON.parse(text);
+      const rows = Array.isArray(parsed) ? parsed : (parsed.result ?? []);
+      return rows;
     } catch {
       console.error("[MitrooClient] fetchMissions: unexpected response:", text.slice(0, 300));
       throw new Error("fetchMissions: invalid JSON response");
@@ -108,11 +112,16 @@ export class MitrooClient {
 
   async fetchShiftsForMission(missionId: number): Promise<ExternalShift[]> {
     const res = await this._xhr(
-      `/ajaxdptadmin/mission_shifts_by_mission_with_members?mission_id=${missionId}`,
+      `/index.php/ajaxdptadmin/mission_shifts_by_mission_with_members/${missionId}`,
     );
     const text = await res.text();
     try {
-      return JSON.parse(text);
+      const parsed = JSON.parse(text);
+      // Response: { status: 1, mission_shifts: { count: N, data: [...] } }
+      const rows = Array.isArray(parsed)
+        ? parsed
+        : (parsed.mission_shifts?.data ?? parsed.result ?? []);
+      return rows;
     } catch {
       console.error("[MitrooClient] fetchShiftsForMission: unexpected response:", text.slice(0, 300));
       throw new Error("fetchShiftsForMission: invalid JSON response");
@@ -175,21 +184,120 @@ export class MitrooClient {
     }
   }
 
-  // ⚠️ HAR GAP: confirm exact POST body format for approval.
-  // The status value and field names must be verified from a live HAR recording.
-  async approveShiftApplication(applicationId: number): Promise<void> {
+  async findApplicationIdForMember(shiftId: number, memberId: number): Promise<number | null> {
+    // grid_get_shiftapplications returns { count, result: [{ id, mission_shift_id, member_id, ... }] }
+    // Fetch a generous page — departments rarely have more than a few hundred pending applications
+    const res = await this._xhr(
+      `/index.php/ajaxdptadmin/grid_get_shiftapplications/?$count=true&$skip=0&$top=500`,
+    );
+    const text = await res.text();
+    try {
+      const parsed = JSON.parse(text);
+      const rows: Record<string, unknown>[] = Array.isArray(parsed)
+        ? parsed
+        : (parsed.result ?? []);
+      const app = rows.find(
+        (r) => Number(r.mission_shift_id) === shiftId && Number(r.member_id) === memberId,
+      );
+      return app ? Number(app.id) : null;
+    } catch {
+      console.error("[MitrooClient] findApplicationIdForMember: unexpected response:", text.slice(0, 300));
+      return null;
+    }
+  }
+
+  async updateApplicationHours(
+    applicationId: number,
+    missionId: number,
+    hours: {
+      volunteering?: number;
+      sanitary?: number;
+      training?: number;
+      retraining?: number;
+      tep?: number;
+      lifeguard?: number;
+    },
+  ): Promise<void> {
     await this._refreshCsrf();
     const body = new URLSearchParams({
-      status: "2", // assumed "approved" status value — verify from HAR
       rccrmtk: this.csrfToken,
+      mission_id: String(missionId),
+      shift_application_id: String(applicationId),
+      popup_hours_volunteering: String(hours.volunteering ?? 0),
+      popup_hours_sanitary: String(hours.sanitary ?? 0),
+      popup_hours_training: String(hours.training ?? 0),
+      popup_hours_retraining: String(hours.retraining ?? 0),
+      popup_hours_tep: String(hours.tep ?? 0),
+      popup_hours_lifeguard: String(hours.lifeguard ?? 0),
+      also_change_application_status: "0",
+    });
+    const res = await this._post("/ajaxdptadmin/ShiftApplicationUpdateHours", body);
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      if (!json.status) throw new Error(`updateApplicationHours: server returned status=false`);
+    } catch (e) {
+      if (!res.ok) throw new Error(`updateApplicationHours failed (${res.status}): ${text.slice(0, 200)}`);
+    }
+  }
+
+  // Returns the new application ID, or null if the response doesn't include it.
+  async addUserToShift(shiftId: number, memberId: number): Promise<number | null> {
+    await this._refreshCsrf();
+    const body = new URLSearchParams({
+      rccrmtk: this.csrfToken,
+      mission_shift_id: String(shiftId),
+      mission_application_comments: "",
     });
     const res = await this._post(
-      `/index.php/dptadmin/ShiftApplicationStatusChange/${applicationId}`,
+      `/ajaxcommon/mission_shifts_application_add/0/1/${memberId}`,
       body,
     );
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`approveShiftApplication failed (${res.status}): ${text.slice(0, 200)}`);
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      if (json.status !== 1) {
+        // status 0 often means the user already has an application for this shift
+        const msg = (json.title as string) || String(json.status);
+        throw new Error(`addUserToShift: ${msg} (status=${json.status})`);
+      }
+      return json.application_id ?? json.id ?? null;
+    } catch (e) {
+      throw new Error(`addUserToShift failed: ${e}`);
+    }
+  }
+
+  async approveShiftApplication(applicationId: number): Promise<void> {
+    const res = await this._xhr(
+      `/ajaxdptadmin/ShiftApplicationStatusChange/${applicationId}/3`,
+    );
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      if (json.status !== 1) {
+        throw new Error(`approveShiftApplication: server returned status ${json.status}`);
+      }
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error(`approveShiftApplication failed (${res.status}): ${text.slice(0, 200)}`);
+      }
+    }
+  }
+
+  async cancelShiftApplication(applicationId: number): Promise<void> {
+    const res = await this._xhr(
+      `/ajaxdptadmin/ShiftApplicationStatusChange/${applicationId}/4`,
+    );
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      if (json.status !== 1) {
+        throw new Error(`cancelShiftApplication: server returned status ${json.status}`);
+      }
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error(`cancelShiftApplication failed (${res.status}): ${text.slice(0, 200)}`);
+      }
     }
   }
 

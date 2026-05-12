@@ -4,7 +4,7 @@ import prisma from "../lib/prisma";
 import { authenticate, isMissionAdminInDepartment } from "../middleware/auth";
 import { sendServiceEnrollmentEmail, sendServiceStatusEmail } from "../lib/email";
 import { sendPushToUser } from "../lib/webpush";
-import { writeBackNewService, writeBackAssignment } from "../lib/mitrooSync";
+import { writeBackNewService, writeBackAssignment, writeBackRejection, writeBackHoursUpdate } from "../lib/mitrooSync";
 
 const router = Router();
 router.use(authenticate);
@@ -360,7 +360,9 @@ router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
 
     // Fire-and-forget: approve shift application in original Mitroo when accepted
     if (status === "accepted") {
-      writeBackAssignment(sid, uid).catch(() => {});
+      writeBackAssignment(sid, uid).catch((e) => console.error("[service] writeBackAssignment error:", e));
+    } else if (status === "rejected") {
+      writeBackRejection(sid, uid).catch((e) => console.error("[service] writeBackRejection error:", e));
     }
 
     // Fire-and-forget: notify the enrolled user on accept/reject
@@ -395,6 +397,9 @@ router.patch("/:sid/users/:uid/hours", async (req: Request, res: Response) => {
     },
   });
   res.json(record);
+
+  writeBackHoursUpdate(Number(req.params.sid), Number(req.params.uid))
+    .catch((e) => console.error("[service] writeBackHoursUpdate error:", e));
 });
 
 // ── DELETE /api/services/:sid/users/:uid ────────

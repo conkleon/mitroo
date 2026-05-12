@@ -57,30 +57,34 @@ export async function syncUsers(departmentId: number): Promise<SyncResult> {
 
     for (const v of volunteers) {
       try {
-        const externalId = Number(v.member_id);
-        const email = (v.email as string)?.trim()?.toLowerCase();
-        if (!email || !externalId) continue;
+        const externalId = Number(v.id);
+        if (!externalId) continue;
 
-        const forename = (v.firstname as string) ?? "";
-        const surname = (v.lastname as string) ?? "";
-        const phone = (v.mobile as string) ?? (v.phone as string) ?? undefined;
-        const address = (v.address as string) ?? undefined;
+        const forename = (v.first_name as string) ?? "";
+        const surname = (v.last_name as string) ?? "";
+        const email = `ext.${externalId}@mitroo.sync`;
+        const eame =
+          (v.registration_code as string)?.trim() || `EXT-${externalId}`;
 
         const existing = await prisma.user.findFirst({
-          where: { OR: [{ externalId }, { email }] },
-          select: { id: true },
+          where: { OR: [{ externalId }, { eame }] },
+          select: { id: true, externalId: true },
         });
 
         if (existing) {
           await prisma.user.update({
             where: { id: existing.id },
-            data: { externalId, forename, surname, phonePrimary: phone, address },
+            data: {
+              forename,
+              surname,
+              // Link the account if found by eame but externalId wasn't set yet
+              ...(existing.externalId == null ? { externalId } : {}),
+            },
           });
           result.updated++;
         } else {
           const rawPassword = crypto.randomBytes(15).toString("base64url");
           const hashed = await bcrypt.hash(rawPassword, 12);
-          const eame = `EXT-${externalId}`;
 
           const user = await prisma.user.create({
             data: {
@@ -90,8 +94,6 @@ export async function syncUsers(departmentId: number): Promise<SyncResult> {
               surname,
               eame,
               password: hashed,
-              phonePrimary: phone,
-              address,
             },
           });
 
@@ -103,7 +105,7 @@ export async function syncUsers(departmentId: number): Promise<SyncResult> {
           result.created++;
         }
       } catch (e: unknown) {
-        result.errors.push(`member_id=${v.member_id}: ${e}`);
+        result.errors.push(`id=${v.id}: ${e}`);
       }
     }
 
@@ -130,7 +132,7 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
     }
 
     for (const mission of missions) {
-      const missionId = Number(mission.mission_id);
+      const missionId = Number(mission.id);
       let shifts = [];
       try {
         shifts = await client.fetchShiftsForMission(missionId);
@@ -141,11 +143,10 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
 
       for (const shift of shifts) {
         try {
-          const externalShiftId = Number(shift.shift_id);
+          const externalShiftId = Number(shift.id);
           const name =
             (shift.name as string) ??
             (shift.title as string) ??
-            (mission.name as string) ??
             (mission.title as string) ??
             `Shift ${externalShiftId}`;
 
@@ -181,7 +182,7 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
             result.created++;
           }
         } catch (e: unknown) {
-          result.errors.push(`shift_id=${shift.shift_id}: ${e}`);
+          result.errors.push(`shift_id=${shift.id}: ${e}`);
         }
       }
     }
@@ -251,18 +252,137 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
 // ── Write-back: user assignment → approve shift application ────────────────
 
 export async function writeBackAssignment(serviceId: number, userId: number): Promise<void> {
-  const [userService, service] = await Promise.all([
+  const [userService, service, user] = await Promise.all([
     prisma.userService.findUnique({
       where: { userId_serviceId: { userId, serviceId } },
       select: { externalApplicationId: true },
     }),
     prisma.service.findUnique({
       where: { id: serviceId },
-      select: { externalShiftId: true, departmentId: true },
+      select: {
+        externalShiftId: true,
+        externalMissionId: true,
+        departmentId: true,
+        defaultHours: true,
+        defaultHoursVol: true,
+        defaultHoursTraining: true,
+        defaultHoursTrainers: true,
+        defaultHoursTEP: true,
+      },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { externalId: true },
     }),
   ]);
 
-  if (!userService?.externalApplicationId || !service?.externalShiftId) return;
+  console.log(`[mitrooSync] writeBackAssignment: service=${serviceId} user=${userId}`, {
+    externalShiftId: service?.externalShiftId,
+    externalMissionId: service?.externalMissionId,
+    externalApplicationId: userService?.externalApplicationId,
+    externalId: user?.externalId,
+  });
+
+  if (!service?.externalShiftId) {
+    console.log(`[mitrooSync] writeBackAssignment: skipped — service has no externalShiftId`);
+    return;
+  }
+
+  const config = await prisma.departmentSyncConfig.findUnique({
+    where: { departmentId: service.departmentId },
+    select: { syncEnabled: true },
+  });
+  if (!config?.syncEnabled) {
+    console.log(`[mitrooSync] writeBackAssignment: skipped — sync not enabled for dept ${service.departmentId}`);
+    return;
+  }
+
+  try {
+    const client = await getClient(service.departmentId);
+
+    const pushHours = async (applicationId: number) => {
+      if (!service.externalMissionId) return;
+      await client.updateApplicationHours(applicationId, service.externalMissionId, {
+        sanitary: service.defaultHours ?? 0,
+        volunteering: service.defaultHoursVol ?? 0,
+        training: service.defaultHoursTraining ?? 0,
+        retraining: service.defaultHoursTrainers ?? 0,
+        tep: service.defaultHoursTEP ?? 0,
+      });
+    };
+
+    if (userService?.externalApplicationId) {
+      await client.approveShiftApplication(userService.externalApplicationId);
+      await pushHours(userService.externalApplicationId);
+      console.log(
+        `[mitrooSync] writeBackAssignment: approved application ${userService.externalApplicationId}`,
+      );
+    } else if (user?.externalId) {
+      console.log(`[mitrooSync] writeBackAssignment: adding user ${user.externalId} to shift ${service.externalShiftId}`);
+      try {
+        await client.addUserToShift(service.externalShiftId, user.externalId);
+      } catch (addErr) {
+        // User may already have an application (e.g. from a previous partial run) — log and continue to lookup
+        console.warn(`[mitrooSync] writeBackAssignment: addUserToShift failed (will try to find existing application): ${addErr}`);
+      }
+
+      // addUserToShift response doesn't return the application ID — look it up from shift members
+      const applicationId = await client.findApplicationIdForMember(
+        service.externalShiftId,
+        user.externalId,
+      );
+      console.log(`[mitrooSync] writeBackAssignment: resolved applicationId=${applicationId}`);
+
+      if (applicationId) {
+        await prisma.userService.update({
+          where: { userId_serviceId: { userId, serviceId } },
+          data: { externalApplicationId: applicationId },
+        });
+        await client.approveShiftApplication(applicationId);
+        await pushHours(applicationId);
+        console.log(
+          `[mitrooSync] writeBackAssignment: added+approved+hours for application ${applicationId}, user ${userId}`,
+        );
+      } else {
+        console.warn(
+          `[mitrooSync] writeBackAssignment: could not resolve application ID for user ${userId} — manual approval needed in original Mitroo`,
+        );
+      }
+    } else {
+      console.log(`[mitrooSync] writeBackAssignment: skipped — user has no externalId`);
+    }
+  } catch (e) {
+    console.error(
+      `[mitrooSync] writeBackAssignment failed for service ${serviceId}, user ${userId}:`,
+      e,
+    );
+  }
+}
+
+export async function writeBackHoursUpdate(serviceId: number, userId: number): Promise<void> {
+  const [userService, service, user] = await Promise.all([
+    prisma.userService.findUnique({
+      where: { userId_serviceId: { userId, serviceId } },
+      select: {
+        externalApplicationId: true,
+        hours: true,
+        hoursVol: true,
+        hoursTraining: true,
+        hoursTrainers: true,
+        hoursTEP: true,
+      },
+    }),
+    prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { externalShiftId: true, externalMissionId: true, departmentId: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { externalId: true },
+    }),
+  ]);
+
+  if (!service?.externalShiftId || !service.externalMissionId) return;
 
   const config = await prisma.departmentSyncConfig.findUnique({
     where: { departmentId: service.departmentId },
@@ -272,14 +392,76 @@ export async function writeBackAssignment(serviceId: number, userId: number): Pr
 
   try {
     const client = await getClient(service.departmentId);
-    await client.approveShiftApplication(userService.externalApplicationId);
-    console.log(
-      `[mitrooSync] writeBackAssignment: approved application ${userService.externalApplicationId}`,
-    );
+
+    let applicationId = userService?.externalApplicationId ?? null;
+    if (!applicationId && user?.externalId) {
+      applicationId = await client.findApplicationIdForMember(
+        service.externalShiftId,
+        user.externalId,
+      );
+    }
+    if (!applicationId) {
+      console.log(`[mitrooSync] writeBackHoursUpdate: no application found for user ${userId} — skipping`);
+      return;
+    }
+
+    await client.updateApplicationHours(applicationId, service.externalMissionId, {
+      sanitary: userService?.hours ?? 0,
+      volunteering: userService?.hoursVol ?? 0,
+      training: userService?.hoursTraining ?? 0,
+      retraining: userService?.hoursTrainers ?? 0,
+      tep: userService?.hoursTEP ?? 0,
+    });
+    console.log(`[mitrooSync] writeBackHoursUpdate: updated hours for application ${applicationId}`);
   } catch (e) {
-    console.error(
-      `[mitrooSync] writeBackAssignment failed for service ${serviceId}, user ${userId}:`,
-      e,
-    );
+    console.error(`[mitrooSync] writeBackHoursUpdate failed for service ${serviceId}, user ${userId}:`, e);
+  }
+}
+
+export async function writeBackRejection(serviceId: number, userId: number): Promise<void> {
+  const [userService, service, user] = await Promise.all([
+    prisma.userService.findUnique({
+      where: { userId_serviceId: { userId, serviceId } },
+      select: { externalApplicationId: true },
+    }),
+    prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { externalShiftId: true, departmentId: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { externalId: true },
+    }),
+  ]);
+
+  if (!service?.externalShiftId) return;
+
+  const config = await prisma.departmentSyncConfig.findUnique({
+    where: { departmentId: service.departmentId },
+    select: { syncEnabled: true },
+  });
+  if (!config?.syncEnabled) return;
+
+  try {
+    const client = await getClient(service.departmentId);
+
+    let applicationId = userService?.externalApplicationId ?? null;
+
+    if (!applicationId && user?.externalId) {
+      applicationId = await client.findApplicationIdForMember(
+        service.externalShiftId,
+        user.externalId,
+      );
+    }
+
+    if (!applicationId) {
+      console.log(`[mitrooSync] writeBackRejection: no application found for user ${userId} — skipping`);
+      return;
+    }
+
+    await client.cancelShiftApplication(applicationId);
+    console.log(`[mitrooSync] writeBackRejection: cancelled application ${applicationId} for user ${userId}`);
+  } catch (e) {
+    console.error(`[mitrooSync] writeBackRejection failed for service ${serviceId}, user ${userId}:`, e);
   }
 }

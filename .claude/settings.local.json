@@ -30,7 +30,16 @@
       "PowerShell(git *)",
       "mcp__plugin_context-mode_context-mode__ctx_execute_file",
       "Bash(Get-ChildItem *)",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "Bash(grep -E \"\\\\.\\(dart|json\\)$\")",
+      "Bash(xargs grep -l \"ItemService\")",
+      "PowerShell(\\(Get-Content \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\lib\\\\screens\\\\item_detail_screen.dart\" | Measure-Object -Line\\).Lines)",
+      "Bash(npx prisma *)",
+      "PowerShell(Head *)",
+      "PowerShell(New-Item *)",
+      "Bash(2>&1)",
+      "Bash(dart analyze *)",
+      "Bash(node -e ' *)"
     ]
   }
 }

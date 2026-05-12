@@ -113,7 +113,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                     children: [
                       Image.asset('assets/logo.png', height: 32),
                       const SizedBox(width: 10),
-                      Text('Mitroo', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.primary)),
+                      Text('R.C.D.', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.primary)),
                       const Spacer(),
                       GestureDetector(
                         onTap: () => context.push('/profile'),
