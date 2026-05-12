@@ -180,7 +180,21 @@ class ItemProvider extends ChangeNotifier {
       final body = <String, dynamic>{'serviceId': serviceId, 'userId': userId, 'itemId': itemId};
       if (comment != null) body['comment'] = comment;
       final res = await _api.post('/items/assign', body: body);
-      if (res.statusCode == 201) return null;
+      if (res.statusCode == 201) {
+        await fetchItem(itemId);
+        return null;
+      }
+      return jsonDecode(res.body)['error'] ?? 'Failed';
+    } catch (e) { return 'Error: $e'; }
+  }
+
+  Future<String?> unassignFromService(int itemServiceId, int itemId) async {
+    try {
+      final res = await _api.delete('/items/assign/$itemServiceId');
+      if (res.statusCode == 204) {
+        await fetchItem(itemId);
+        return null;
+      }
       return jsonDecode(res.body)['error'] ?? 'Failed';
     } catch (e) { return 'Error: $e'; }
   }
