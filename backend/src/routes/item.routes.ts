@@ -461,6 +461,8 @@ router.delete("/assign/:id", async (req: Request, res: Response) => {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }
+  const existing = await prisma.itemService.findUnique({ where: { id: Number(req.params.id) } });
+  if (!existing) { res.status(404).json({ error: "Assignment not found" }); return; }
   await prisma.itemService.delete({ where: { id: Number(req.params.id) } });
   res.status(204).end();
 });
