@@ -90,6 +90,14 @@ export async function sendTrainingApplicationSubmittedEmail(
   });
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 export async function sendServiceEnrollmentEmail(
   to: string,
   adminName: string,
@@ -99,12 +107,12 @@ export async function sendServiceEnrollmentEmail(
   await transporter.sendMail({
     from: FROM,
     to,
-    subject: `${APP_NAME} – Νέα αίτηση για "${serviceName}"`,
+    subject: `${APP_NAME} – Νέα αίτηση για "${escapeHtml(serviceName)}"`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:24px">
         <h2 style="color:#DC2626">Νέα αίτηση συμμετοχής</h2>
-        <p>Γεια σου <strong>${adminName}</strong>,</p>
-        <p>Ο/Η <strong>${applicantName}</strong> αιτήθηκε συμμετοχή στην υπηρεσία <strong>"${serviceName}"</strong>.</p>
+        <p>Γεια σου <strong>${escapeHtml(adminName)}</strong>,</p>
+        <p>Ο/Η <strong>${escapeHtml(applicantName)}</strong> αιτήθηκε συμμετοχή στην υπηρεσία <strong>"${escapeHtml(serviceName)}"</strong>.</p>
         <p>Συνδέσου στην πλατφόρμα για να αποδεχθείς ή να απορρίψεις την αίτηση.</p>
         <p style="text-align:center;margin:24px 0">
           <a href="${FRONTEND_URL}"
@@ -127,14 +135,14 @@ export async function sendServiceStatusEmail(
   await transporter.sendMail({
     from: FROM,
     to,
-    subject: `${APP_NAME} – Ενημέρωση αίτησης για "${serviceName}"`,
+    subject: `${APP_NAME} – Ενημέρωση αίτησης για "${escapeHtml(serviceName)}"`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:24px">
         <h2 style="color:${accepted ? "#059669" : "#DC2626"}">
           ${accepted ? "Η αίτησή σας εγκρίθηκε" : "Η αίτησή σας απορρίφθηκε"}
         </h2>
-        <p>Γεια σου <strong>${userName}</strong>,</p>
-        <p>Η αίτησή σας για συμμετοχή στην υπηρεσία <strong>"${serviceName}"</strong>
+        <p>Γεια σου <strong>${escapeHtml(userName)}</strong>,</p>
+        <p>Η αίτησή σας για συμμετοχή στην υπηρεσία <strong>"${escapeHtml(serviceName)}"</strong>
            ${accepted ? "εγκρίθηκε" : "απορρίφθηκε"}.</p>
         <p style="text-align:center;margin:24px 0">
           <a href="${FRONTEND_URL}"
