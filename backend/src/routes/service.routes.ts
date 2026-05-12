@@ -2,6 +2,8 @@ import { Router, Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
 import { authenticate, isMissionAdminInDepartment } from "../middleware/auth";
+import { sendServiceEnrollmentEmail, sendServiceStatusEmail } from "../lib/email";
+import { sendPushToUser } from "../lib/webpush";
 
 const router = Router();
 router.use(authenticate);
@@ -244,26 +246,73 @@ router.delete("/:id", async (req: Request, res: Response) => {
 // User requests to join (or admin directly accepts)
 router.post("/:id/enroll", async (req: Request, res: Response) => {
   try {
-    const data = enrollSchema.parse(req.body);
+    const requesterId = req.user!.userId;
     const serviceId = Number(req.params.id);
 
-    // Grab default hours from the service
-    const service = await prisma.service.findUnique({ where: { id: serviceId } });
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId },
+      include: { department: { select: { id: true, name: true } } },
+    });
     if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+
+    const isServiceAdmin = req.user!.isAdmin || await isMissionAdminInDepartment(requesterId, service.departmentId);
+
+    let targetUserId: number;
+    let status: "requested" | "accepted" | "rejected";
+
+    if (isServiceAdmin) {
+      const data = enrollSchema.parse(req.body);
+      targetUserId = data.userId ?? requesterId;
+      status = data.status ?? "requested";
+    } else {
+      targetUserId = requesterId;
+      status = "requested";
+      const membership = await prisma.userDepartment.count({
+        where: { userId: requesterId, departmentId: service.departmentId },
+      });
+      if (!membership) {
+        res.status(403).json({ error: "Δεν ανήκετε σε αυτό το τμήμα" });
+        return;
+      }
+    }
 
     const record = await prisma.userService.create({
       data: {
-        userId: data.userId,
+        userId: targetUserId,
         serviceId,
-        status: data.status ?? "requested",
+        status,
         hours: service.defaultHours,
         hoursVol: service.defaultHoursVol,
         hoursTraining: service.defaultHoursTraining,
         hoursTrainers: service.defaultHoursTrainers,
         hoursTEP: service.defaultHoursTEP,
       },
-      include: { user: { select: { id: true, eame: true, forename: true, surname: true } } },
+      include: {
+        user: { select: { id: true, eame: true, forename: true, surname: true, email: true } },
+      },
     });
+
+    // Notify missionAdmins of this department when a regular user self-enrolls
+    if (status === "requested") {
+      const applicantName = `${record.user.forename} ${record.user.surname}`.trim();
+      const admins = await prisma.userDepartment.findMany({
+        where: { departmentId: service.departmentId, role: "missionAdmin" },
+        include: { user: { select: { id: true, email: true, forename: true, surname: true } } },
+      });
+      for (const admin of admins) {
+        const adminName = `${admin.user.forename} ${admin.user.surname}`.trim();
+        try {
+          await sendServiceEnrollmentEmail(admin.user.email, adminName, applicantName, service.name);
+        } catch { /* non-fatal */ }
+        try {
+          await sendPushToUser(admin.user.id, {
+            title: "Νέα αίτηση",
+            body: `${applicantName} αιτήθηκε για "${service.name}"`,
+          });
+        } catch { /* non-fatal */ }
+      }
+    }
+
     res.status(201).json(record);
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
