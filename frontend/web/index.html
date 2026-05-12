@@ -26,9 +26,13 @@
   <script src="flutter_bootstrap.js" async></script>
   <script>
     // Register push service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/push_sw.js');
-    }
+    window.addEventListener('load', function() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/push_sw.js').catch(function(err) {
+          console.error('push_sw registration failed', err);
+        });
+      }
+    });
 
     // Helper called from Dart via dart:js
     function urlBase64ToUint8Array(base64String) {
