@@ -6,7 +6,11 @@ import 'dart:js' as js;
 import 'api_client.dart';
 
 class PushService {
+  static bool _initialized = false;
+
   static Future<void> init() async {
+    if (_initialized) return;
+    _initialized = true;
     // Only supported on web
     try {
       await _subscribeAndRegister();
