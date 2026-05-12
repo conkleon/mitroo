@@ -23,13 +23,14 @@ model Department {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  services        Service[]
-  userDepartments UserDepartment[]
-  vehicles        Vehicle[]
-  attachments     FileAttachment[]
-  itemCategories  ItemCategory[]
-  items           Item[]
+  services             Service[]
+  userDepartments      UserDepartment[]
+  vehicles             Vehicle[]
+  attachments          FileAttachment[]
+  itemCategories       ItemCategory[]
+  items                Item[]
   trainingApplications TrainingApplication[]
+  syncConfig           DepartmentSyncConfig?
 
   @@map("departments")
 }
@@ -51,27 +52,30 @@ model RoleType {
 // ──────────────────────────────────────────────
 
 model Service {
-  id                   Int       @id @default(autoincrement())
-  departmentId         Int       @map("department_id")
-  name                 String    @db.VarChar(255)
-  description          String?   @db.Text
-  location             String?   @db.VarChar(255)
-  carrier              String?   @db.VarChar(255)   /// hosting organisation / provider
-  imagePath            String?   @map("image_path")
+  id           Int     @id @default(autoincrement())
+  departmentId Int     @map("department_id")
+  name         String  @db.VarChar(255)
+  description  String? @db.Text
+  location     String? @db.VarChar(255)
+  carrier      String? @db.VarChar(255) /// hosting organisation / provider
+  imagePath    String? @map("image_path")
 
-  responsibleUserId   Int?      @map("responsible_user_id")
+  responsibleUserId Int? @map("responsible_user_id")
 
-  defaultHours         Int       @default(0) @map("default_hours")
-  defaultHoursVol      Int       @default(0) @map("default_hours_vol")
-  defaultHoursTraining Int       @default(0) @map("default_hours_training")
-  defaultHoursTrainers Int       @default(0) @map("default_hours_trainers")
-  defaultHoursTEP      Int       @default(0) @map("default_hours_tep")
+  defaultHours         Int @default(0) @map("default_hours")
+  defaultHoursVol      Int @default(0) @map("default_hours_vol")
+  defaultHoursTraining Int @default(0) @map("default_hours_training")
+  defaultHoursTrainers Int @default(0) @map("default_hours_trainers")
+  defaultHoursTEP      Int @default(0) @map("default_hours_tep")
 
-  startAt              DateTime? @map("start_at")
-  endAt                DateTime? @map("end_at")
+  startAt DateTime? @map("start_at")
+  endAt   DateTime? @map("end_at")
 
-  createdAt            DateTime  @default(now()) @map("created_at")
-  updatedAt            DateTime  @updatedAt @map("updated_at")
+  externalShiftId   Int? @map("external_shift_id")
+  externalMissionId Int? @map("external_mission_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   department      Department          @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   responsibleUser User?               @relation("ResponsibleServices", fields: [responsibleUserId], references: [id], onDelete: SetNull)
@@ -89,41 +93,43 @@ model Service {
 // ──────────────────────────────────────────────
 
 model User {
-  id             Int       @id @default(autoincrement())
-  eame           String    @unique @db.VarChar(50)
-  password       String                               // bcrypt hash
+  id       Int    @id @default(autoincrement())
+  eame     String @unique @db.VarChar(50)
+  password String // bcrypt hash
 
-  forename       String    @db.VarChar(150)
-  surname        String    @db.VarChar(150)
+  forename String @db.VarChar(150)
+  surname  String @db.VarChar(150)
 
-  address        String?   @db.Text
-  phonePrimary   String?   @map("phone_primary") @db.VarChar(30)
-  phoneSecondary String?   @map("phone_secondary") @db.VarChar(30)
-  email          String    @unique @db.VarChar(255)
+  address        String? @db.Text
+  phonePrimary   String? @map("phone_primary") @db.VarChar(30)
+  phoneSecondary String? @map("phone_secondary") @db.VarChar(30)
+  email          String  @unique @db.VarChar(255)
 
-  birthDate      DateTime? @map("birth_date") @db.Date
-  imagePath      String?   @map("image_path")
-  extraInfo      String?   @map("extra_info") @db.Text
-  rank           String    @default("Γ") @db.VarChar(4)
+  birthDate DateTime? @map("birth_date") @db.Date
+  imagePath String?   @map("image_path")
+  extraInfo String?   @map("extra_info") @db.Text
+  rank      String    @default("Γ") @db.VarChar(4)
 
-  isAdmin        Boolean   @default(false) @map("is_admin")
+  isAdmin Boolean @default(false) @map("is_admin")
+
+  externalId Int? @unique @map("external_id")
 
   passwordResetToken   String?   @unique @map("password_reset_token") @db.VarChar(255)
   passwordResetExpires DateTime? @map("password_reset_expires")
 
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  departments          UserDepartment[]
-  services             UserService[]
-  itemServices         ItemService[]
-  vehicleLogs          VehicleLog[]
-  specializations      UserSpecialization[]
-  attachments          FileAttachment[]
-  responsibleServices  Service[]           @relation("ResponsibleServices")
-  assignedItems        Item[]              @relation("AssignedItems")
-  itemComments         ItemComment[]       @relation("ItemComments")
-  vehicleComments      VehicleComment[]    @relation("VehicleComments")
+  departments                  UserDepartment[]
+  services                     UserService[]
+  itemServices                 ItemService[]
+  vehicleLogs                  VehicleLog[]
+  specializations              UserSpecialization[]
+  attachments                  FileAttachment[]
+  responsibleServices          Service[]             @relation("ResponsibleServices")
+  assignedItems                Item[]                @relation("AssignedItems")
+  itemComments                 ItemComment[]         @relation("ItemComments")
+  vehicleComments              VehicleComment[]      @relation("VehicleComments")
   reviewedTrainingApplications TrainingApplication[] @relation("ReviewedTrainingApplications")
   linkedTrainingApplications   TrainingApplication[] @relation("LinkedTrainingApplications")
   pushSubscriptions            PushSubscription[]
@@ -141,33 +147,33 @@ enum TrainingApplicationStatus {
 }
 
 model TrainingApplication {
-  id                 Int                       @id @default(autoincrement())
-  email              String                    @db.VarChar(255)
-  forename           String                    @db.VarChar(150)
-  surname            String                    @db.VarChar(150)
-  phonePrimary       String                    @map("phone_primary") @db.VarChar(30)
-  phoneSecondary     String?                   @map("phone_secondary") @db.VarChar(30)
-  address            String?                   @db.Text
-  birthDate          DateTime?                 @map("birth_date") @db.Date
-  extraInfo          String?                   @map("extra_info") @db.Text
+  id             Int       @id @default(autoincrement())
+  email          String    @db.VarChar(255)
+  forename       String    @db.VarChar(150)
+  surname        String    @db.VarChar(150)
+  phonePrimary   String    @map("phone_primary") @db.VarChar(30)
+  phoneSecondary String?   @map("phone_secondary") @db.VarChar(30)
+  address        String?   @db.Text
+  birthDate      DateTime? @map("birth_date") @db.Date
+  extraInfo      String?   @map("extra_info") @db.Text
 
-  departmentId       Int                       @map("department_id")
-  specializationId   Int                       @map("specialization_id")
+  departmentId     Int @map("department_id")
+  specializationId Int @map("specialization_id")
 
-  status             TrainingApplicationStatus @default(submitted)
-  reviewNotes        String?                   @map("review_notes") @db.Text
-  reviewedAt         DateTime?                 @map("reviewed_at")
-  reviewedById       Int?                      @map("reviewed_by_id")
-  enabledAt          DateTime?                 @map("enabled_at")
-  linkedUserId       Int?                      @unique @map("linked_user_id")
+  status       TrainingApplicationStatus @default(submitted)
+  reviewNotes  String?                   @map("review_notes") @db.Text
+  reviewedAt   DateTime?                 @map("reviewed_at")
+  reviewedById Int?                      @map("reviewed_by_id")
+  enabledAt    DateTime?                 @map("enabled_at")
+  linkedUserId Int?                      @unique @map("linked_user_id")
 
-  createdAt          DateTime                  @default(now()) @map("created_at")
-  updatedAt          DateTime                  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  department         Department                @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  specialization     Specialization            @relation(fields: [specializationId], references: [id], onDelete: Restrict)
-  reviewedBy         User?                     @relation("ReviewedTrainingApplications", fields: [reviewedById], references: [id], onDelete: SetNull)
-  linkedUser         User?                     @relation("LinkedTrainingApplications", fields: [linkedUserId], references: [id], onDelete: SetNull)
+  department     Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  specialization Specialization @relation(fields: [specializationId], references: [id], onDelete: Restrict)
+  reviewedBy     User?          @relation("ReviewedTrainingApplications", fields: [reviewedById], references: [id], onDelete: SetNull)
+  linkedUser     User?          @relation("LinkedTrainingApplications", fields: [linkedUserId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([departmentId, status])
@@ -180,9 +186,9 @@ model TrainingApplication {
 // ──────────────────────────────────────────────
 
 enum DepartmentRole {
-  missionAdmin   // can create & assign users to services
-  itemAdmin      // can edit / update / delete items
-  volunteer      // can request access to services, view info
+  missionAdmin // can create & assign users to services
+  itemAdmin // can edit / update / delete items
+  volunteer // can request access to services, view info
 
   @@map("department_role_enum")
 }
@@ -212,15 +218,17 @@ enum ServiceStatus {
 }
 
 model UserService {
-  userId        Int           @map("user_id")
-  serviceId     Int           @map("service_id")
-  status        ServiceStatus
+  userId    Int           @map("user_id")
+  serviceId Int           @map("service_id")
+  status    ServiceStatus
 
-  hours         Int           @default(0)
-  hoursVol      Int           @default(0) @map("hours_vol")
-  hoursTraining Int           @default(0) @map("hours_training")
-  hoursTrainers Int           @default(0) @map("hours_trainers")
-  hoursTEP      Int           @default(0) @map("hours_tep")
+  hours         Int @default(0)
+  hoursVol      Int @default(0) @map("hours_vol")
+  hoursTraining Int @default(0) @map("hours_training")
+  hoursTrainers Int @default(0) @map("hours_trainers")
+  hoursTEP      Int @default(0) @map("hours_tep")
+
+  externalApplicationId Int? @map("external_application_id")
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
@@ -234,30 +242,30 @@ model UserService {
 // ──────────────────────────────────────────────
 
 model Item {
-  id            Int      @id @default(autoincrement())
-  name          String   @db.VarChar(255)
-  description   String?  @db.Text
-  barCode       String?  @map("bar_code") @db.VarChar(255)
-  imagePath     String?  @map("image_path")
-  departmentId  Int      @map("department_id")
+  id           Int     @id @default(autoincrement())
+  name         String  @db.VarChar(255)
+  description  String? @db.Text
+  barCode      String? @map("bar_code") @db.VarChar(255)
+  imagePath    String? @map("image_path")
+  departmentId Int     @map("department_id")
 
-  containedById Int?     @map("contained_by_id")
-  isContainer   Boolean  @default(false) @map("is_container")
-  location      String?  @db.VarChar(255)
+  containedById Int?    @map("contained_by_id")
+  isContainer   Boolean @default(false) @map("is_container")
+  location      String? @db.VarChar(255)
 
-  expirationDate        DateTime? @map("expiration_date")
-  assignedToId          Int?      @map("assigned_to_id")
-  availableForAssignment Boolean  @default(false) @map("available_for_assignment")
-  categoryId            Int?      @map("category_id")
+  expirationDate         DateTime? @map("expiration_date")
+  assignedToId           Int?      @map("assigned_to_id")
+  availableForAssignment Boolean   @default(false) @map("available_for_assignment")
+  categoryId             Int?      @map("category_id")
 
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  department   Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  containedBy  Item?          @relation("ItemContainment", fields: [containedById], references: [id], onDelete: SetNull)
-  contents     Item[]         @relation("ItemContainment")
-  assignedTo   User?          @relation("AssignedItems", fields: [assignedToId], references: [id], onDelete: SetNull)
-  category     ItemCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  department   Department       @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  containedBy  Item?            @relation("ItemContainment", fields: [containedById], references: [id], onDelete: SetNull)
+  contents     Item[]           @relation("ItemContainment")
+  assignedTo   User?            @relation("AssignedItems", fields: [assignedToId], references: [id], onDelete: SetNull)
+  category     ItemCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   itemServices ItemService[]
   attachments  FileAttachment[]
   comments     ItemComment[]
@@ -324,21 +332,21 @@ model ItemService {
 // ──────────────────────────────────────────────
 
 model Specialization {
-  id             Int     @id @default(autoincrement())
-  name           String  @unique @db.VarChar(255)
-  description    String? @db.Text
-  yearlyHours    Int     @default(0) @map("yearly_hours")
-  yearlyHoursTraining Int @default(0) @map("yearly_hours_training")
-  hoursTraining  Int     @default(0) @map("hours_training")
-  hoursTEP       Int     @default(0) @map("hours_tep")
-  eamePrefix     String? @map("eame_prefix") @db.VarChar(8)
-  rootId         Int?    @map("root_id")
+  id                  Int     @id @default(autoincrement())
+  name                String  @unique @db.VarChar(255)
+  description         String? @db.Text
+  yearlyHours         Int     @default(0) @map("yearly_hours")
+  yearlyHoursTraining Int     @default(0) @map("yearly_hours_training")
+  hoursTraining       Int     @default(0) @map("hours_training")
+  hoursTEP            Int     @default(0) @map("hours_tep")
+  eamePrefix          String? @map("eame_prefix") @db.VarChar(8)
+  rootId              Int?    @map("root_id")
 
   root     Specialization?  @relation("SpecTree", fields: [rootId], references: [id], onDelete: SetNull)
   children Specialization[] @relation("SpecTree")
 
-  users             UserSpecialization[]
-  serviceVisibility ServiceVisibility[]
+  users                UserSpecialization[]
+  serviceVisibility    ServiceVisibility[]
   trainingApplications TrainingApplication[]
 
   @@map("specializations")
@@ -394,24 +402,24 @@ model PushSubscription {
 // ──────────────────────────────────────────────
 
 model Vehicle {
-  id                 Int      @id @default(autoincrement())
-  name               String   @db.VarChar(255)
-  type               String   @db.VarChar(100)   // boat, car, jet_ski …
-  registrationNumber String?  @map("registration_number") @db.VarChar(100)
-  serialNumber       String?  @map("serial_number") @db.VarChar(100)
-  departmentId       Int?     @map("department_id")
-  imagePath          String?  @map("image_path")
+  id                 Int     @id @default(autoincrement())
+  name               String  @db.VarChar(255)
+  type               String  @db.VarChar(100) // boat, car, jet_ski …
+  registrationNumber String? @map("registration_number") @db.VarChar(100)
+  serialNumber       String? @map("serial_number") @db.VarChar(100)
+  departmentId       Int?    @map("department_id")
+  imagePath          String? @map("image_path")
 
-  meterType          String   @map("meter_type") @db.VarChar(20) // "km" | "hours"
-  currentMeter       Decimal  @default(0) @map("current_meter") @db.Decimal(12, 2)
+  meterType    String  @map("meter_type") @db.VarChar(20) // "km" | "hours"
+  currentMeter Decimal @default(0) @map("current_meter") @db.Decimal(12, 2)
 
-  location           String?  @db.VarChar(255)
-  description        String?  @db.Text
+  location    String? @db.VarChar(255)
+  description String? @db.Text
 
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  department  Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  department  Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   logs        VehicleLog[]
   attachments FileAttachment[]
   comments    VehicleComment[]
@@ -424,19 +432,19 @@ model Vehicle {
 // ──────────────────────────────────────────────
 
 model VehicleLog {
-  id         Int       @id @default(autoincrement())
-  vehicleId  Int       @map("vehicle_id")
-  userId     Int       @map("user_id")
-  serviceId  Int?      @map("service_id")
+  id        Int  @id @default(autoincrement())
+  vehicleId Int  @map("vehicle_id")
+  userId    Int  @map("user_id")
+  serviceId Int? @map("service_id")
 
-  startAt     DateTime  @map("start_at")
-  endAt       DateTime? @map("end_at")
-  meterStart  Decimal   @map("meter_start") @db.Decimal(12, 2)
-  meterEnd    Decimal?  @map("meter_end") @db.Decimal(12, 2)
+  startAt    DateTime  @map("start_at")
+  endAt      DateTime? @map("end_at")
+  meterStart Decimal   @map("meter_start") @db.Decimal(12, 2)
+  meterEnd   Decimal?  @map("meter_end") @db.Decimal(12, 2)
 
-  destination String?   @db.VarChar(255)
-  comment     String?   @db.Text
-  createdAt   DateTime  @default(now()) @map("created_at")
+  destination String?  @db.VarChar(255)
+  comment     String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
 
   vehicle Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -463,20 +471,45 @@ model VehicleComment {
 }
 
 // ──────────────────────────────────────────────
+// External Sync Config (per department)
+// ──────────────────────────────────────────────
+
+model DepartmentSyncConfig {
+  id           Int        @id @default(autoincrement())
+  departmentId Int        @unique @map("department_id")
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  externalUsername String @map("external_username") @db.VarChar(255)
+  externalPassword String @map("external_password") @db.Text // AES-256-GCM encrypted
+
+  syncEnabled Boolean @default(false) @map("sync_enabled")
+
+  lastUserSyncAt    DateTime? @map("last_user_sync_at")
+  lastServiceSyncAt DateTime? @map("last_service_sync_at")
+  lastSyncStatus    String?   @map("last_sync_status") @db.VarChar(20) // "success" | "failed"
+  lastSyncError     String?   @map("last_sync_error") @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("department_sync_configs")
+}
+
+// ──────────────────────────────────────────────
 // File Attachments (polymorphic – one FK set per row)
 // ──────────────────────────────────────────────
 
 model FileAttachment {
-  id            Int      @id @default(autoincrement())
-  fileName      String   @map("file_name") @db.VarChar(500)
-  filePath      String   @map("file_path")
-  mimeType      String?  @map("mime_type") @db.VarChar(255)
-  fileSize      Int?     @map("file_size")   // bytes
-  uploadedAt    DateTime @default(now()) @map("uploaded_at")
+  id         Int      @id @default(autoincrement())
+  fileName   String   @map("file_name") @db.VarChar(500)
+  filePath   String   @map("file_path")
+  mimeType   String?  @map("mime_type") @db.VarChar(255)
+  fileSize   Int?     @map("file_size") // bytes
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
 
   // Image-specific metadata
-  isImage       Boolean  @default(false) @map("is_image")
-  thumbnailPath String?  @map("thumbnail_path")
+  isImage       Boolean @default(false) @map("is_image")
+  thumbnailPath String? @map("thumbnail_path")
   width         Int?
   height        Int?
 
