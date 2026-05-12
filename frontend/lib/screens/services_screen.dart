@@ -205,47 +205,6 @@ class _ServicesScreenState extends State<ServicesScreen>
     );
   }
 
-  // ── Create dialog (admin) ───────────────────────
-  void _showCreateDialog() {
-    final nameCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final deptIdCtrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Νέα Υπηρεσία'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Όνομα')),
-            const SizedBox(height: 12),
-            TextField(controller: deptIdCtrl, decoration: const InputDecoration(labelText: 'Department ID'), keyboardType: TextInputType.number),
-            const SizedBox(height: 12),
-            TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Περιγραφή'), maxLines: 2),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
-          FilledButton(
-            onPressed: () async {
-              final data = <String, dynamic>{
-                'name': nameCtrl.text.trim(),
-                'departmentId': int.tryParse(deptIdCtrl.text.trim()) ?? 0,
-              };
-              if (descCtrl.text.isNotEmpty) data['description'] = descCtrl.text.trim();
-              final result = await context.read<ServiceProvider>().create(data);
-              if (ctx.mounted) Navigator.pop(ctx);
-              if (result is String && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
-              }
-            },
-            child: const Text('Δημιουργία'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
