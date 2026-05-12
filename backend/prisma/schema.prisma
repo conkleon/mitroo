@@ -126,6 +126,7 @@ model User {
   vehicleComments      VehicleComment[]    @relation("VehicleComments")
   reviewedTrainingApplications TrainingApplication[] @relation("ReviewedTrainingApplications")
   linkedTrainingApplications   TrainingApplication[] @relation("LinkedTrainingApplications")
+  pushSubscriptions            PushSubscription[]
 
   @@map("users")
 }
@@ -367,6 +368,24 @@ model ServiceVisibility {
 
   @@id([serviceId, specializationId])
   @@map("service_visibility")
+}
+
+// ──────────────────────────────────────────────
+// Web Push subscriptions
+// ──────────────────────────────────────────────
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  endpoint  String   @db.Text
+  p256dhKey String   @map("p256dh_key") @db.Text
+  authKey   String   @map("auth_key") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@map("push_subscriptions")
 }
 
 // ──────────────────────────────────────────────
