@@ -340,15 +340,29 @@ router.delete("/:id/unenroll", async (req: Request, res: Response) => {
 // ── PATCH /api/services/:sid/users/:uid/status ──
 router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
   try {
-    const service = await prisma.service.findUnique({ where: { id: Number(req.params.sid) }, select: { departmentId: true } });
+    const sid = Number(req.params.sid);
+    const uid = Number(req.params.uid);
+    const service = await prisma.service.findUnique({ where: { id: sid }, select: { departmentId: true, name: true } });
     if (!service) { res.status(404).json({ error: "Service not found" }); return; }
     if (!await requireServiceAdmin(req, res, service.departmentId)) return;
     const { status } = statusSchema.parse(req.body);
     const record = await prisma.userService.update({
-      where: { userId_serviceId: { userId: Number(req.params.uid), serviceId: Number(req.params.sid) } },
+      where: { userId_serviceId: { userId: uid, serviceId: sid } },
       data: { status },
+      include: { user: { select: { id: true, email: true, forename: true, surname: true } } },
     });
+
     res.json(record);
+
+    // Fire-and-forget: notify the enrolled user on accept/reject
+    if (status === "accepted" || status === "rejected") {
+      const userName = `${record.user.forename} ${record.user.surname}`.trim();
+      sendServiceStatusEmail(record.user.email, userName, service.name, status).catch(() => {});
+      sendPushToUser(record.user.id, {
+        title: "Ενημέρωση αίτησης",
+        body: `Η αίτησή σας για "${service.name}" ${status === "accepted" ? "εγκρίθηκε" : "απορρίφθηκε"}`,
+      }).catch(() => {});
+    }
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
     throw err;
