@@ -1,7 +1,7 @@
-# Service Flows: Auth Guards & Enrollment Fix
+# Service Flows: Auth Guards, Enrollment Fix & Notifications
 
 **Date:** 2026-05-12  
-**Scope:** Backend authorization on service mutations + self-enrollment fix + frontend stub removal
+**Scope:** Backend authorization on service mutations + self-enrollment fix + frontend stub removal + email & web push notifications
 
 ---
 
@@ -90,16 +90,83 @@ No frontend changes needed — `ServiceProvider.enrollSelf` already omits direct
 
 ---
 
+### 4. Email notifications (nodemailer — existing infrastructure)
+
+**New functions in `backend/src/lib/email.ts`:**
+
+- `sendServiceEnrollmentEmail(adminEmail, adminName, applicantName, serviceName)` — sent to each `missionAdmin` of the service's dept when a user applies.
+- `sendServiceStatusEmail(userEmail, userName, serviceName, status: 'accepted' | 'rejected')` — sent to the enrolled user when their status changes.
+
+**Trigger points** (fire-and-forget, same try/catch pattern as existing email calls):
+- `POST /services/:id/enroll` (self-enrollment) → email all missionAdmins of the service's dept.
+- `PATCH /:sid/users/:uid/status` → email the user whose status changed.
+
+---
+
+### 5. Web Push notifications
+
+#### 5a. Schema — new `PushSubscription` table
+
+```prisma
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  endpoint  String   @db.Text
+  p256dhKey String   @map("p256dh_key") @db.Text
+  authKey   String   @map("auth_key") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@map("push_subscriptions")
+}
+```
+
+New Prisma migration required.
+
+#### 5b. Backend
+
+- Install `web-push` npm package + `@types/web-push`.
+- Add to `.env`: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`.
+- **`backend/src/lib/webpush.ts`** — configure VAPID, export `sendPushToUser(userId: number, payload: object)`: fetches all subscriptions for the user and calls `webpush.sendNotification`, swallowing `410 Gone` (expired subscription) by deleting those records.
+- **`backend/src/routes/push.routes.ts`**:
+  - `POST /push/subscribe` — upsert subscription for `req.user.userId`.
+  - `DELETE /push/unsubscribe` — delete by endpoint.
+  - `GET /push/vapid-public-key` — returns `VAPID_PUBLIC_KEY` (public, no auth needed).
+
+**Trigger points** (same two as email, fire-and-forget):
+- `POST /services/:id/enroll` → push to all missionAdmins of the service's dept: `{ title: "Νέα αίτηση", body: "[name] αιτήθηκε για [service name]" }`
+- `PATCH /:sid/users/:uid/status` → push to the enrolled user: `{ title: "Ενημέρωση αίτησης", body: "Η αίτησή σας για [service name] εγκρίθηκε / απορρίφθηκε" }`
+
+#### 5c. Frontend (Flutter Web)
+
+- **`frontend/web/push_sw.js`** — standalone service worker that handles `push` events and calls `self.registration.showNotification(...)`.
+- Register `push_sw.js` in **`frontend/web/index.html`** via `navigator.serviceWorker.register`.
+- **`frontend/lib/services/push_service.dart`** — JS interop (`dart:js_interop`):
+  - `init()`: fetches VAPID public key from backend, requests notification permission, subscribes to `PushManager`, POSTs subscription to `/push/subscribe`.
+  - Called from `AuthProvider` on successful login.
+
+---
+
 ## Files Changed
 
 | File | Change |
 |---|---|
-| `backend/src/routes/service.routes.ts` | Add `requireServiceAdmin` helper; apply to all mutation routes; fix enroll endpoint |
+| `backend/src/routes/service.routes.ts` | `requireServiceAdmin` helper; auth guards on all mutations; fix enroll endpoint; trigger email+push |
+| `backend/src/lib/email.ts` | Add `sendServiceEnrollmentEmail` and `sendServiceStatusEmail` |
+| `backend/src/lib/webpush.ts` | New — VAPID config + `sendPushToUser` |
+| `backend/src/routes/push.routes.ts` | New — subscribe / unsubscribe / public key endpoints |
+| `backend/src/app.ts` | Mount push router |
+| `backend/prisma/schema.prisma` | Add `PushSubscription` model + relation on `User` |
+| `frontend/web/push_sw.js` | New — service worker push handler |
+| `frontend/web/index.html` | Register `push_sw.js` |
+| `frontend/lib/services/push_service.dart` | New — JS interop subscribe + permission |
+| `frontend/lib/providers/auth_provider.dart` | Call `PushService.init()` on login |
 | `frontend/lib/screens/services_screen.dart` | Remove stub dialog; route create button to `/admin/services/new` |
 
 ## Out of Scope
 
-- Push notifications on enrollment status change
-- Email notifications
 - Pagination on enrollment lists
-- Any schema/migration changes (all data already present)
+- Mobile/native push (FCM)
+- Notification history / inbox UI
