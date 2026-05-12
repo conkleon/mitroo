@@ -89,3 +89,60 @@ export async function sendTrainingApplicationSubmittedEmail(
     `,
   });
 }
+
+export async function sendServiceEnrollmentEmail(
+  to: string,
+  adminName: string,
+  applicantName: string,
+  serviceName: string
+) {
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `${APP_NAME} – Νέα αίτηση για "${serviceName}"`,
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:24px">
+        <h2 style="color:#DC2626">Νέα αίτηση συμμετοχής</h2>
+        <p>Γεια σου <strong>${adminName}</strong>,</p>
+        <p>Ο/Η <strong>${applicantName}</strong> αιτήθηκε συμμετοχή στην υπηρεσία <strong>"${serviceName}"</strong>.</p>
+        <p>Συνδέσου στην πλατφόρμα για να αποδεχθείς ή να απορρίψεις την αίτηση.</p>
+        <p style="text-align:center;margin:24px 0">
+          <a href="${FRONTEND_URL}"
+             style="background:#DC2626;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600">
+            Διαχείριση αιτήσεων
+          </a>
+        </p>
+      </div>
+    `,
+  });
+}
+
+export async function sendServiceStatusEmail(
+  to: string,
+  userName: string,
+  serviceName: string,
+  status: "accepted" | "rejected"
+) {
+  const accepted = status === "accepted";
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `${APP_NAME} – Ενημέρωση αίτησης για "${serviceName}"`,
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:auto;padding:24px">
+        <h2 style="color:${accepted ? "#059669" : "#DC2626"}">
+          ${accepted ? "Η αίτησή σας εγκρίθηκε" : "Η αίτησή σας απορρίφθηκε"}
+        </h2>
+        <p>Γεια σου <strong>${userName}</strong>,</p>
+        <p>Η αίτησή σας για συμμετοχή στην υπηρεσία <strong>"${serviceName}"</strong>
+           ${accepted ? "εγκρίθηκε" : "απορρίφθηκε"}.</p>
+        <p style="text-align:center;margin:24px 0">
+          <a href="${FRONTEND_URL}"
+             style="background:#DC2626;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600">
+            Άνοιγμα εφαρμογής
+          </a>
+        </p>
+      </div>
+    `,
+  });
+}
