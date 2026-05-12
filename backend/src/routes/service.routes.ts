@@ -292,28 +292,27 @@ router.post("/:id/enroll", async (req: Request, res: Response) => {
       },
     });
 
-    // Notify missionAdmins of this department when a regular user self-enrolls
+    res.status(201).json(record);
+
+    // Fire-and-forget: notify missionAdmins (excluding the requester themselves)
     if (status === "requested") {
       const applicantName = `${record.user.forename} ${record.user.surname}`.trim();
-      const admins = await prisma.userDepartment.findMany({
-        where: { departmentId: service.departmentId, role: "missionAdmin" },
+      prisma.userDepartment.findMany({
+        where: { departmentId: service.departmentId, role: "missionAdmin", userId: { not: targetUserId } },
         include: { user: { select: { id: true, email: true, forename: true, surname: true } } },
-      });
-      for (const admin of admins) {
-        const adminName = `${admin.user.forename} ${admin.user.surname}`.trim();
-        try {
-          await sendServiceEnrollmentEmail(admin.user.email, adminName, applicantName, service.name);
-        } catch { /* non-fatal */ }
-        try {
-          await sendPushToUser(admin.user.id, {
-            title: "Νέα αίτηση",
-            body: `${applicantName} αιτήθηκε για "${service.name}"`,
-          });
-        } catch { /* non-fatal */ }
-      }
+      }).then((admins) => {
+        return Promise.allSettled(admins.flatMap((admin) => {
+          const adminName = `${admin.user.forename} ${admin.user.surname}`.trim();
+          return [
+            sendServiceEnrollmentEmail(admin.user.email, adminName, applicantName, service.name).catch(() => {}),
+            sendPushToUser(admin.user.id, {
+              title: "Νέα αίτηση",
+              body: `${applicantName} αιτήθηκε για "${service.name}"`,
+            }).catch(() => {}),
+          ];
+        }));
+      }).catch(() => {});
     }
-
-    res.status(201).json(record);
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
     if (err?.code === "P2002") { res.status(409).json({ error: "Ήδη εγγεγραμμένος σε αυτή την υπηρεσία" }); return; }
