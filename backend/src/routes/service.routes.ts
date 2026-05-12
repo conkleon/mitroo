@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
-import { authenticate } from "../middleware/auth";
+import { authenticate, isMissionAdminInDepartment } from "../middleware/auth";
 
 const router = Router();
 router.use(authenticate);
@@ -30,6 +30,16 @@ const enrollSchema = z.object({
 const statusSchema = z.object({
   status: z.enum(["requested", "accepted", "rejected"]),
 });
+
+async function requireServiceAdmin(req: Request, res: Response, departmentId: number): Promise<boolean> {
+  if (req.user!.isAdmin) return true;
+  const allowed = await isMissionAdminInDepartment(req.user!.userId, departmentId);
+  if (!allowed) {
+    res.status(403).json({ error: "Δεν έχετε δικαίωμα" });
+    return false;
+  }
+  return true;
+}
 
 // ── GET /api/services ───────────────────────────
 router.get("/", async (req: Request, res: Response) => {
@@ -156,6 +166,7 @@ router.get("/my", async (req: Request, res: Response) => {
 router.post("/", async (req: Request, res: Response) => {
   try {
     const data = createSchema.parse(req.body);
+    if (!await requireServiceAdmin(req, res, data.departmentId)) return;
     const service = await prisma.service.create({
       data: {
         ...data,
@@ -201,8 +212,11 @@ router.get("/:id", async (req: Request, res: Response) => {
 // ── PATCH /api/services/:id ─────────────────────
 router.patch("/:id", async (req: Request, res: Response) => {
   try {
+    const service = await prisma.service.findUnique({ where: { id: Number(req.params.id) }, select: { departmentId: true } });
+    if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+    if (!await requireServiceAdmin(req, res, service.departmentId)) return;
     const data = createSchema.partial().parse(req.body);
-    const service = await prisma.service.update({
+    const updated = await prisma.service.update({
       where: { id: Number(req.params.id) },
       data: {
         ...data,
@@ -210,7 +224,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
         endAt: data.endAt ? new Date(data.endAt) : undefined,
       },
     });
-    res.json(service);
+    res.json(updated);
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
     throw err;
@@ -219,6 +233,9 @@ router.patch("/:id", async (req: Request, res: Response) => {
 
 // ── DELETE /api/services/:id ────────────────────
 router.delete("/:id", async (req: Request, res: Response) => {
+  const service = await prisma.service.findUnique({ where: { id: Number(req.params.id) }, select: { departmentId: true } });
+  if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+  if (!await requireServiceAdmin(req, res, service.departmentId)) return;
   await prisma.service.delete({ where: { id: Number(req.params.id) } });
   res.status(204).end();
 });
@@ -275,6 +292,9 @@ router.delete("/:id/unenroll", async (req: Request, res: Response) => {
 // ── PATCH /api/services/:sid/users/:uid/status ──
 router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
   try {
+    const service = await prisma.service.findUnique({ where: { id: Number(req.params.sid) }, select: { departmentId: true } });
+    if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+    if (!await requireServiceAdmin(req, res, service.departmentId)) return;
     const { status } = statusSchema.parse(req.body);
     const record = await prisma.userService.update({
       where: { userId_serviceId: { userId: Number(req.params.uid), serviceId: Number(req.params.sid) } },
@@ -289,6 +309,9 @@ router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
 
 // ── PATCH /api/services/:sid/users/:uid/hours ───
 router.patch("/:sid/users/:uid/hours", async (req: Request, res: Response) => {
+  const service = await prisma.service.findUnique({ where: { id: Number(req.params.sid) }, select: { departmentId: true } });
+  if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+  if (!await requireServiceAdmin(req, res, service.departmentId)) return;
   const { hours, hoursVol, hoursTraining, hoursTrainers, hoursTEP } = req.body;
   const record = await prisma.userService.update({
     where: { userId_serviceId: { userId: Number(req.params.uid), serviceId: Number(req.params.sid) } },
@@ -305,6 +328,9 @@ router.patch("/:sid/users/:uid/hours", async (req: Request, res: Response) => {
 
 // ── DELETE /api/services/:sid/users/:uid ────────
 router.delete("/:sid/users/:uid", async (req: Request, res: Response) => {
+  const service = await prisma.service.findUnique({ where: { id: Number(req.params.sid) }, select: { departmentId: true } });
+  if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+  if (!await requireServiceAdmin(req, res, service.departmentId)) return;
   await prisma.userService.delete({
     where: { userId_serviceId: { userId: Number(req.params.uid), serviceId: Number(req.params.sid) } },
   });
@@ -314,22 +340,27 @@ router.delete("/:sid/users/:uid", async (req: Request, res: Response) => {
 // ── PATCH /api/services/:id/responsible ──────────
 router.patch("/:id/responsible", async (req: Request, res: Response) => {
   const serviceId = Number(req.params.id);
-  const { responsibleUserId } = req.body; // null to clear
-  const service = await prisma.service.update({
+  const service = await prisma.service.findUnique({ where: { id: serviceId }, select: { departmentId: true } });
+  if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+  if (!await requireServiceAdmin(req, res, service.departmentId)) return;
+  const { responsibleUserId } = req.body;
+  const updated = await prisma.service.update({
     where: { id: serviceId },
     data: { responsibleUserId: responsibleUserId ?? null },
     include: { responsibleUser: { select: { id: true, eame: true, forename: true, surname: true, imagePath: true } } },
   });
-  res.json(service);
+  res.json(updated);
 });
 
 // ── Service visibility (specialization requirements) ──
 
 // ── POST /api/services/:id/visibility ───────────
 router.post("/:id/visibility", async (req: Request, res: Response) => {
-  const { specializationId } = req.body;
   const serviceId = Number(req.params.id);
-  const specId = Number(specializationId);
+  const service = await prisma.service.findUnique({ where: { id: serviceId }, select: { departmentId: true } });
+  if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+  if (!await requireServiceAdmin(req, res, service.departmentId)) return;
+  const specId = Number(req.body.specializationId);
   const record = await prisma.serviceVisibility.upsert({
     where: { serviceId_specializationId: { serviceId, specializationId: specId } },
     update: {},
@@ -341,9 +372,13 @@ router.post("/:id/visibility", async (req: Request, res: Response) => {
 
 // ── DELETE /api/services/:sid/visibility/:specId ─
 router.delete("/:sid/visibility/:specId", async (req: Request, res: Response) => {
+  const serviceId = Number(req.params.sid);
+  const service = await prisma.service.findUnique({ where: { id: serviceId }, select: { departmentId: true } });
+  if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+  if (!await requireServiceAdmin(req, res, service.departmentId)) return;
   await prisma.serviceVisibility.delete({
     where: {
-      serviceId_specializationId: { serviceId: Number(req.params.sid), specializationId: Number(req.params.specId) },
+      serviceId_specializationId: { serviceId, specializationId: Number(req.params.specId) },
     },
   });
   res.status(204).end();
