@@ -335,10 +335,13 @@ router.post("/:id/self-unassign", async (req: Request, res: Response) => {
     res.status(403).json({ error: "Item is not assigned to you" }); return;
   }
 
-  const updated = await prisma.item.update({
-    where: { id: itemId },
-    data: { assignedToId: null },
-    include: ITEM_DETAIL_INCLUDE,
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.itemService.deleteMany({ where: { itemId, userId } });
+    return tx.item.update({
+      where: { id: itemId },
+      data: { assignedToId: null },
+      include: ITEM_DETAIL_INCLUDE,
+    });
   });
   res.json(updated);
 });
@@ -353,6 +356,12 @@ router.post("/:id/assign-user", async (req: Request, res: Response) => {
   }
   try {
     const { userId } = assignUserSchema.parse(req.body);
+    const [existingItem, user] = await Promise.all([
+      prisma.item.findUnique({ where: { id: Number(req.params.id) } }),
+      prisma.user.findUnique({ where: { id: userId } }),
+    ]);
+    if (!existingItem) { res.status(404).json({ error: "Item not found" }); return; }
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
     const item = await prisma.item.update({
       where: { id: Number(req.params.id) },
       data: { assignedToId: userId },
@@ -371,10 +380,18 @@ router.delete("/:id/assign-user", async (req: Request, res: Response) => {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }
-  const item = await prisma.item.update({
-    where: { id: Number(req.params.id) },
-    data: { assignedToId: null },
-    include: ITEM_DETAIL_INCLUDE,
+  const itemId = Number(req.params.id);
+  const existing = await prisma.item.findUnique({ where: { id: itemId } });
+  if (!existing) { res.status(404).json({ error: "Item not found" }); return; }
+  const item = await prisma.$transaction(async (tx) => {
+    if (existing.assignedToId) {
+      await tx.itemService.deleteMany({ where: { itemId, userId: existing.assignedToId } });
+    }
+    return tx.item.update({
+      where: { id: itemId },
+      data: { assignedToId: null },
+      include: ITEM_DETAIL_INCLUDE,
+    });
   });
   res.json(item);
 });
