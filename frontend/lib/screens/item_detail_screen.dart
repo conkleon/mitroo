@@ -38,6 +38,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   List<dynamic> _allUsers = [];
   List<dynamic> _allContainers = [];
   List<dynamic> _comments = [];
+  List<dynamic> _allServices = [];
   final _commentCtrl = TextEditingController();
   bool _loading = true;
 
@@ -55,6 +56,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         _api.get('/users'),
         _api.get('/items?'), // all items for container picker
         _api.get('/items/${widget.itemId}/comments'),
+        _api.get('/services'),
       ]);
       if (results[0].statusCode == 200 && mounted) {
         _item = jsonDecode(results[0].body);
@@ -68,6 +70,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       }
       if (results[3].statusCode == 200) {
         _comments = jsonDecode(results[3].body) as List;
+      }
+      if (results[4].statusCode == 200) {
+        _allServices = jsonDecode(results[4].body) as List;
       }
       // Ensure departments are loaded for the edit dialog
       if (mounted) {
@@ -551,6 +556,119 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     }
   }
 
+  // ── Service assignments ──
+
+  Future<void> _showAssignToServiceDialog() async {
+    if (_allServices.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Δεν υπάρχουν διαθέσιμες υπηρεσίες')),
+      );
+      return;
+    }
+
+    int? selectedServiceId;
+    int? selectedUserId;
+    final commentCtrl = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          title: const Text('Ανάθεση σε Υπηρεσία'),
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<int>(
+                  decoration: const InputDecoration(labelText: 'Υπηρεσία', border: OutlineInputBorder()),
+                  items: _allServices.map<DropdownMenuItem<int>>((s) {
+                    return DropdownMenuItem<int>(value: s['id'] as int, child: Text(s['name'] as String? ?? ''));
+                  }).toList(),
+                  onChanged: (v) => setS(() => selectedServiceId = v),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<int>(
+                  decoration: const InputDecoration(labelText: 'Χρήστης', border: OutlineInputBorder()),
+                  items: _allUsers.map<DropdownMenuItem<int>>((u) {
+                    final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim();
+                    return DropdownMenuItem<int>(value: u['id'] as int, child: Text(name));
+                  }).toList(),
+                  onChanged: (v) => setS(() => selectedUserId = v),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: commentCtrl,
+                  decoration: const InputDecoration(labelText: 'Σχόλιο (προαιρετικό)', border: OutlineInputBorder()),
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+            FilledButton(
+              onPressed: selectedServiceId != null && selectedUserId != null
+                  ? () => Navigator.pop(ctx, true)
+                  : null,
+              child: const Text('Ανάθεση'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final comment = commentCtrl.text.trim().isEmpty ? null : commentCtrl.text.trim();
+    final err = await context.read<ItemProvider>().assignToService(
+      selectedServiceId!,
+      selectedUserId!,
+      widget.itemId,
+      comment: comment,
+    );
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Η ανάθεση αποθηκεύτηκε')),
+      );
+      _load();
+    }
+  }
+
+  Future<void> _removeServiceAssignment(int itemServiceId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Αφαίρεση Ανάθεσης'),
+        content: const Text('Αφαίρεση αυτής της ανάθεσης από την υπηρεσία;'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+            child: const Text('Αφαίρεση'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final err = await context.read<ItemProvider>().unassignFromService(itemServiceId, widget.itemId);
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Η ανάθεση αφαιρέθηκε')),
+      );
+      _load();
+    }
+  }
+
   // ── QR Code Generation ──
 
   void _showQrDialog() {
@@ -726,6 +844,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             _buildDetailsCard(tt, cs),
                             const SizedBox(height: 12),
                             _buildAssignedUserCard(tt, cs, canManage),
+                            const SizedBox(height: 12),
+                            _buildServiceAssignmentsCard(tt, cs, canManage),
                             const SizedBox(height: 12),
                             if (_item!['isContainer'] == true) ...[
                               _buildContentsCard(tt, cs),
@@ -1145,6 +1265,113 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // ── Service assignments card ──
+
+  Widget _buildServiceAssignmentsCard(TextTheme tt, ColorScheme cs, bool canManage) {
+    final assignments = (_item!['itemServices'] as List<dynamic>?) ?? [];
+
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2563EB).withAlpha(15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.miscellaneous_services_outlined, size: 18, color: Color(0xFF2563EB)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Text('Αναθέσεις Υπηρεσιών', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600))),
+                if (canManage)
+                  _actionChip(label: 'Προσθήκη', icon: Icons.add, onTap: _showAssignToServiceDialog),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (assignments.isEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.inbox_outlined, color: Colors.grey.shade400, size: 28),
+                      const SizedBox(height: 6),
+                      Text('Δεν υπάρχουν αναθέσεις', style: tt.bodySmall?.copyWith(color: Colors.grey.shade500)),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ...assignments.map((a) {
+                final service = a['service'] as Map<String, dynamic>? ?? {};
+                final user = a['user'] as Map<String, dynamic>? ?? {};
+                final assignedAt = a['assignedAt'] != null
+                    ? DateTime.tryParse(a['assignedAt'] as String)
+                    : null;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2563EB).withAlpha(8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF2563EB).withAlpha(25)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(service['name'] ?? '—', style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim(),
+                              style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+                            ),
+                            if (assignedAt != null)
+                              Text(
+                                '${assignedAt.day}/${assignedAt.month}/${assignedAt.year}',
+                                style: tt.labelSmall?.copyWith(color: Colors.grey.shade400),
+                              ),
+                            if ((a['comment'] as String?)?.isNotEmpty == true) ...[
+                              const SizedBox(height: 4),
+                              Text(a['comment'] as String, style: tt.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (canManage)
+                        IconButton(
+                          icon: Icon(Icons.close, size: 18, color: Colors.red.shade400),
+                          onPressed: () => _removeServiceAssignment(a['id'] as int),
+                          tooltip: 'Αφαίρεση',
+                        ),
+                    ],
+                  ),
+                );
+              }),
+          ],
         ),
       ),
     );
