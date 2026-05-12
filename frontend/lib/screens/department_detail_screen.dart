@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../services/api_client.dart';
+import '../providers/auth_provider.dart';
+import '../widgets/sync_config_card.dart';
 
 /// Full detail view for a single department.
 /// Shows info, members (with role management), recent services, vehicles.
@@ -363,6 +366,11 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                   onRefresh: _load,
                   child: LayoutBuilder(builder: (context, constraints) {
                     final isWide = constraints.maxWidth >= 900;
+                    final auth = context.read<AuthProvider>();
+                    final canSync = auth.isAdmin ||
+                        auth.missionAdminDepartments.any(
+                          (d) => d['department']?['id'] == widget.departmentId,
+                        );
                     return SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: EdgeInsets.all(isWide ? 32 : 16),
@@ -370,7 +378,17 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                           ? Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(child: _infoCard(tt)),
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      _infoCard(tt),
+                                      if (canSync) ...[
+                                        const SizedBox(height: 16),
+                                        SyncConfigCard(departmentId: widget.departmentId),
+                                      ],
+                                    ],
+                                  ),
+                                ),
                                 const SizedBox(width: 20),
                                 Expanded(
                                     flex: 2,
@@ -393,6 +411,10 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                               _servicesCard(tt),
                               const SizedBox(height: 16),
                               _vehiclesCard(tt),
+                              if (canSync) ...[
+                                const SizedBox(height: 16),
+                                SyncConfigCard(departmentId: widget.departmentId),
+                              ],
                             ]),
                     );
                   }),

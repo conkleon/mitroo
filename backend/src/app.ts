@@ -20,6 +20,7 @@ import trainingApplicationRoutes from "./routes/trainingApplication.routes";
 import fileRoutes from "./routes/file.routes";
 import categoryRoutes from "./routes/category.routes";
 import pushRoutes from "./routes/push.routes";
+import syncRoutes from "./routes/sync.routes";
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use("/api/training-applications", trainingApplicationRoutes);
 app.use("/api/files", fileRoutes);
 app.use("/api/item-categories", categoryRoutes);
 app.use("/api/push", pushRoutes);
+app.use("/api/departments", syncRoutes);
 
 // ── Error handling ──────────────────────────────
 app.use(notFound);

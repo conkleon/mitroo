@@ -4,6 +4,7 @@ import prisma from "../lib/prisma";
 import { authenticate, isMissionAdminInDepartment } from "../middleware/auth";
 import { sendServiceEnrollmentEmail, sendServiceStatusEmail } from "../lib/email";
 import { sendPushToUser } from "../lib/webpush";
+import { writeBackNewService, writeBackAssignment } from "../lib/mitrooSync";
 
 const router = Router();
 router.use(authenticate);
@@ -178,6 +179,9 @@ router.post("/", async (req: Request, res: Response) => {
       include: { department: { select: { id: true, name: true } } },
     });
     res.status(201).json(service);
+
+    // Fire-and-forget: create corresponding mission+shift in original Mitroo
+    writeBackNewService(service.id).catch(() => {});
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
     throw err;
@@ -353,6 +357,11 @@ router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
     });
 
     res.json(record);
+
+    // Fire-and-forget: approve shift application in original Mitroo when accepted
+    if (status === "accepted") {
+      writeBackAssignment(sid, uid).catch(() => {});
+    }
 
     // Fire-and-forget: notify the enrolled user on accept/reject
     if (status === "accepted" || status === "rejected") {

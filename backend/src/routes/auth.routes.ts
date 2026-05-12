@@ -4,8 +4,9 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { z } from "zod";
 import prisma from "../lib/prisma";
-import { authenticate } from "../middleware/auth";
+import { authenticate, getMissionAdminDepartmentIds } from "../middleware/auth";
 import { sendPasswordResetEmail } from "../lib/email";
+import { syncServices } from "../lib/mitrooSync";
 
 const router = Router();
 
@@ -92,6 +93,22 @@ router.post("/login", async (req: Request, res: Response) => {
       },
       token,
     });
+
+    // Fire-and-forget: auto-sync services for departments where this user is missionAdmin
+    getMissionAdminDepartmentIds(user.id)
+      .then(async (deptIds) => {
+        if (!deptIds.length) return;
+        const configs = await prisma.departmentSyncConfig.findMany({
+          where: { departmentId: { in: deptIds }, syncEnabled: true },
+          select: { departmentId: true },
+        });
+        for (const cfg of configs) {
+          syncServices(cfg.departmentId).catch((e) =>
+            console.error(`[auth] auto syncServices failed for dept ${cfg.departmentId}:`, e),
+          );
+        }
+      })
+      .catch(() => {});
   } catch (err: any) {
     if (err instanceof z.ZodError) {
       res.status(400).json({ error: "Validation failed", details: err.errors });
