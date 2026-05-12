@@ -418,6 +418,14 @@ router.post("/assign", async (req: Request, res: Response) => {
   }
   try {
     const data = assignServiceSchema.parse(req.body);
+    const [service, user, item] = await Promise.all([
+      prisma.service.findUnique({ where: { id: data.serviceId } }),
+      prisma.user.findUnique({ where: { id: data.userId } }),
+      prisma.item.findUnique({ where: { id: data.itemId } }),
+    ]);
+    if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    if (!item) { res.status(404).json({ error: "Item not found" }); return; }
     const record = await prisma.itemService.create({
       data,
       include: { item: true, service: { select: { id: true, name: true } }, user: { select: { id: true, forename: true, surname: true } } },
@@ -425,6 +433,7 @@ router.post("/assign", async (req: Request, res: Response) => {
     res.status(201).json(record);
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
+    if ((err as any).code === "P2002") { res.status(409).json({ error: "Item already assigned to this user in this service" }); return; }
     throw err;
   }
 });
