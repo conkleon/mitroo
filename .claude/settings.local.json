@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_context-mode_context-mode__ctx_batch_execute",
+      "Bash(git -C \"C:/Users/KNOWLEDGE/Documents/GitHub/mitroo\" add docs/superpowers/specs/2026-05-12-service-flows-design.md)",
+      "Bash(git -C \"C:/Users/KNOWLEDGE/Documents/GitHub/mitroo\" commit -m \"docs: add service flows auth design spec\")",
+      "Bash(git -C \"C:/Users/KNOWLEDGE/Documents/GitHub/mitroo\" commit -m \"docs: expand service flows spec with email + web push notifications\")",
+      "Bash(git -C \"C:/Users/KNOWLEDGE/Documents/GitHub/mitroo\" add docs/superpowers/plans/2026-05-12-service-flows.md)",
+      "Bash(git -C \"C:/Users/KNOWLEDGE/Documents/GitHub/mitroo\" commit -m \"docs: add service flows implementation plan\")",
+      "Bash(git *)",
+      "Bash(node scripts/run-with-dev-env.js prisma migrate dev --name add_push_subscriptions)",
+      "Bash(node scripts/run-with-dev-env.js npx prisma migrate dev --name add_push_subscriptions)",
+      "Bash(docker compose *)",
+      "Bash(findstr /i \"DATABASE_URL\")",
+      "PowerShell(Test-NetConnection *)",
+      "PowerShell(cd \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\backend\"; $env:DATABASE_URL = \"postgresql://mitroo:WCByztgTlExGZKfU0niH5sJkuAewD2V8@127.0.0.1:5432/mitroo?schema=public\"; npx prisma migrate dev --name add_push_subscriptions 2>&1)",
+      "PowerShell(docker exec mitroo-postgres-1 *)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(docker run *)",
+      "Bash(npm install *)",
+      "Bash(npx web-push *)",
+      "Bash(npm run *)",
+      "mcp__plugin_context-mode_context-mode__ctx_search",
+      "mcp__plugin_context-mode_context-mode__ctx_execute",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object Name)",
+      "Bash(flutter analyze *)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(git *)",
+      "mcp__plugin_context-mode_context-mode__ctx_execute_file",
+      "Bash(Get-ChildItem *)",
+      "Bash(npm test *)"
+    ]
+  }
+}
