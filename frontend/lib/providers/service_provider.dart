@@ -101,7 +101,7 @@ class ServiceProvider extends ChangeNotifier {
   /// Convenience: current user requests to join a service
   Future<String?> enrollSelf(int serviceId, int userId) async {
     final err = await enrollUser(serviceId, userId, status: 'requested');
-    if (err == null) await fetchMyServices();
+    if (err == null) _localEnrollSelf(serviceId);
     return err;
   }
 
@@ -109,9 +109,36 @@ class ServiceProvider extends ChangeNotifier {
   Future<String?> unenrollSelf(int serviceId) async {
     try {
       final res = await _api.delete('/services/$serviceId/unenroll');
-      if (res.statusCode == 204) { await fetchMyServices(); return null; }
+      if (res.statusCode == 204) { _localUnenrollSelf(serviceId); return null; }
       return jsonDecode(res.body)['error'] ?? 'Αποτυχία';
     } catch (e) { return 'Error: $e'; }
+  }
+
+  void _localEnrollSelf(int serviceId) {
+    for (final svc in _services) {
+      if ((svc as Map)['id'] == serviceId) {
+        final us = svc['userServices'];
+        if (us is List) {
+          us.clear();
+          us.add({'status': 'requested'});
+        } else {
+          svc['userServices'] = [{'status': 'requested'}];
+        }
+        break;
+      }
+    }
+    notifyListeners();
+  }
+
+  void _localUnenrollSelf(int serviceId) {
+    for (final svc in _services) {
+      if ((svc as Map)['id'] == serviceId) {
+        final us = svc['userServices'];
+        if (us is List) us.clear();
+        break;
+      }
+    }
+    notifyListeners();
   }
 
   Future<String?> updateUserStatus(int serviceId, int userId, String status) async {
