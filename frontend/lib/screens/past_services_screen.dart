@@ -26,7 +26,6 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
   List<dynamic> _services = [];
   List<dynamic> _specializations = [];
   bool _loading = true;
-  bool _specsLoading = true;
   String _search = '';
   int? _selectedSpecId;
   DateTime? _fromDate;
@@ -43,14 +42,9 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     try {
       final res = await _api.get('/specializations');
       if (res.statusCode == 200 && mounted) {
-        setState(() {
-          _specializations = jsonDecode(res.body);
-          _specsLoading = false;
-        });
+        setState(() => _specializations = jsonDecode(res.body));
       }
-    } catch (_) {
-      if (mounted) setState(() => _specsLoading = false);
-    }
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -169,49 +163,86 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                 ),
               ),
 
-              // ── Filters row ──
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: hPad),
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+              // ── Filter strip ──
+              SizedBox(
+                height: 38,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.symmetric(horizontal: hPad),
                   children: [
-                    // Specialization dropdown
-                    _buildSpecDropdown(tt),
-
-                    // From date
-                    _buildDateChip(
-                      label: _fromDate != null
-                          ? 'Από: ${_fmtDay(_fromDate!)}'
-                          : 'Από ημ/νία',
-                      isSet: _fromDate != null,
-                      onTap: () => _pickDate(isFrom: true),
-                      onClear: _fromDate != null
-                          ? () {
-                              setState(() => _fromDate = null);
-                              _load();
-                            }
-                          : null,
+                    ..._specializations.map((s) {
+                      final specId = s['id'] as int;
+                      final selected = _selectedSpecId == specId;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: FilterChip(
+                          avatar: Icon(Icons.workspace_premium,
+                              size: 14,
+                              color: selected
+                                  ? const Color(0xFF7C3AED)
+                                  : const Color(0xFF6B7280)),
+                          label: Text(s['name'] ?? ''),
+                          selected: selected,
+                          onSelected: (_) {
+                            setState(() =>
+                                _selectedSpecId = selected ? null : specId);
+                            _load();
+                          },
+                          selectedColor: const Color(0xFFF5F3FF),
+                          checkmarkColor: const Color(0xFF7C3AED),
+                          side: BorderSide(
+                              color: selected
+                                  ? const Color(0xFFDDD6FE)
+                                  : Colors.grey.shade300),
+                          visualDensity: VisualDensity.compact,
+                          labelStyle: TextStyle(
+                            fontSize: 12,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            color: selected
+                                ? const Color(0xFF6D28D9)
+                                : const Color(0xFF6B7280),
+                          ),
+                          padding: EdgeInsets.zero,
+                        ),
+                      );
+                    }),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: _buildDateChip(
+                        label: _fromDate != null
+                            ? 'Από: ${_fmtDay(_fromDate!)}'
+                            : 'Από ημ/νία',
+                        isSet: _fromDate != null,
+                        onTap: () => _pickDate(isFrom: true),
+                        onClear: _fromDate != null
+                            ? () {
+                                setState(() => _fromDate = null);
+                                _load();
+                              }
+                            : null,
+                      ),
                     ),
-
-                    // To date
-                    _buildDateChip(
-                      label: _toDate != null
-                          ? 'Έως: ${_fmtDay(_toDate!)}'
-                          : 'Έως ημ/νία',
-                      isSet: _toDate != null,
-                      onTap: () => _pickDate(isFrom: false),
-                      onClear: _toDate != null
-                          ? () {
-                              setState(() => _toDate = null);
-                              _load();
-                            }
-                          : null,
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: _buildDateChip(
+                        label: _toDate != null
+                            ? 'Έως: ${_fmtDay(_toDate!)}'
+                            : 'Έως ημ/νία',
+                        isSet: _toDate != null,
+                        onTap: () => _pickDate(isFrom: false),
+                        onClear: _toDate != null
+                            ? () {
+                                setState(() => _toDate = null);
+                                _load();
+                              }
+                            : null,
+                      ),
                     ),
-
-                    // Clear all filters
-                    if (_selectedSpecId != null || _fromDate != null || _toDate != null)
+                    if (_selectedSpecId != null ||
+                        _fromDate != null ||
+                        _toDate != null)
                       TextButton.icon(
                         onPressed: () {
                           setState(() {
@@ -221,28 +252,28 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                           });
                           _load();
                         },
-                        icon: const Icon(Icons.clear_all, size: 18),
-                        label: const Text('Καθαρισμός φίλτρων'),
+                        icon: const Icon(Icons.clear_all, size: 16),
+                        label: const Text('Καθαρισμός',
+                            style: TextStyle(fontSize: 12)),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.grey.shade600,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          visualDensity: VisualDensity.compact,
                         ),
                       ),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
-
-              // ── Results count ──
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: hPad),
-                child: Row(children: [
-                  Text(
-                    _loading
-                        ? 'Φόρτωση...'
-                        : 'Βρέθηκαν ${filtered.length} υπηρεσίες',
-                    style: tt.bodySmall?.copyWith(color: Colors.grey.shade600),
-                  ),
-                ]),
+                padding:
+                    EdgeInsets.symmetric(horizontal: hPad, vertical: 2),
+                child: Text(
+                  _loading
+                      ? 'Φόρτωση...'
+                      : 'Βρέθηκαν ${filtered.length} υπηρεσίες',
+                  style: tt.bodySmall?.copyWith(color: Colors.grey.shade500),
+                ),
               ),
               const SizedBox(height: 4),
 
@@ -277,56 +308,6 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
             ],
           );
         }),
-      ),
-    );
-  }
-
-  Widget _buildSpecDropdown(TextTheme tt) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: _selectedSpecId != null
-            ? const Color(0xFFDC2626).withAlpha(15)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: _selectedSpecId != null
-              ? const Color(0xFFDC2626)
-              : Colors.grey.shade300,
-        ),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<int?>(
-          value: _selectedSpecId,
-          hint: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.school, size: 16, color: Colors.grey.shade500),
-              const SizedBox(width: 6),
-              const Text('Ειδίκευση',
-                  style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
-            ],
-          ),
-          isDense: true,
-          borderRadius: BorderRadius.circular(12),
-          items: [
-            const DropdownMenuItem<int?>(
-              value: null,
-              child: Text('Όλες οι ειδικεύσεις',
-                  style: TextStyle(fontSize: 13)),
-            ),
-            if (!_specsLoading)
-              ..._specializations.map((s) => DropdownMenuItem<int?>(
-                    value: s['id'] as int,
-                    child: Text(s['name'] ?? '',
-                        style: const TextStyle(fontSize: 13)),
-                  )),
-          ],
-          onChanged: (v) {
-            setState(() => _selectedSpecId = v);
-            _load();
-          },
-        ),
       ),
     );
   }
@@ -410,11 +391,13 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     final name = svc['name'] ?? '';
     final location = svc['location'] ?? '';
     final carrier = svc['carrier'] ?? '';
-    final enrolledCount = (svc['_count']?['userServices'] ?? 0) as int;
     final visSpecs = svc['visibility'] as List<dynamic>? ?? [];
     final userServices = svc['userServices'] as List<dynamic>? ?? [];
+    final enrolledCount = (svc['_count']?['userServices'] ?? 0) as int;
     final acceptedCount =
         userServices.where((us) => us['status'] == 'accepted').length;
+    final totalHours = userServices.fold<int>(
+        0, (sum, us) => sum + ((us['hours'] as int?) ?? 0));
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -431,7 +414,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top row: name + completed badge
+              // ── Top row: name + completed badge ──
               Row(children: [
                 Expanded(
                   child: Text(name,
@@ -444,75 +427,73 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6B7280).withAlpha(20),
+                    color: const Color(0xFFECFDF5),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text('Ολοκληρωμένη',
                       style: TextStyle(
-                          color: Color(0xFF6B7280),
+                          color: Color(0xFF4B5563),
                           fontSize: 11,
                           fontWeight: FontWeight.w600)),
                 ),
               ]),
               const SizedBox(height: 8),
 
-              // Info chips
+              // ── Info row: location, carrier, date range ──
               Wrap(spacing: 12, runSpacing: 4, children: [
                 if (location.isNotEmpty)
                   _PastInfoChip(Icons.location_on, location),
                 if (carrier.isNotEmpty)
                   _PastInfoChip(Icons.groups, carrier),
-                _PastInfoChip(
-                    Icons.calendar_today, _fmtDate(svc['startAt'])),
+                _PastInfoChip(Icons.calendar_today,
+                    '${_fmtDate(svc['startAt'])} → ${_fmtDate(svc['endAt'])}'),
               ]),
 
+              // ── Specialization chips (horizontal scroll) ──
               if (visSpecs.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: visSpecs
-                      .map((v) => Chip(
-                            label: Text(
-                                v['specialization']?['name'] ?? '',
-                                style: const TextStyle(fontSize: 10)),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            labelPadding:
-                                const EdgeInsets.symmetric(horizontal: 6),
-                          ))
-                      .toList(),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 26,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: visSpecs.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 4),
+                    itemBuilder: (context, i) {
+                      final specName =
+                          visSpecs[i]['specialization']?['name'] ?? '';
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F3FF),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFDDD6FE)),
+                        ),
+                        child: Text(specName,
+                            style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6D28D9))),
+                      );
+                    },
+                  ),
                 ),
               ],
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
-              // Bottom row: enrollment info
+              // ── Stats row ──
               Row(children: [
-                Icon(Icons.people, size: 14, color: Colors.grey.shade600),
-                const SizedBox(width: 4),
-                Text('$enrolledCount εγγεγραμμένοι',
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.grey.shade600)),
+                _StatPill(Icons.people, '$enrolledCount εγγ.',
+                    const Color(0xFF6B7280)),
+                const SizedBox(width: 8),
                 if (acceptedCount > 0) ...[
+                  _StatPill(Icons.check_circle_outline,
+                      '$acceptedCount εγκ.', const Color(0xFF059669)),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF059669).withAlpha(15),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                          color: const Color(0xFF059669).withAlpha(50)),
-                    ),
-                    child: Text('$acceptedCount εγκεκριμένοι',
-                        style: const TextStyle(
-                            fontSize: 10,
-                            color: Color(0xFF059669),
-                            fontWeight: FontWeight.w600)),
-                  ),
                 ],
+                if (totalHours > 0)
+                  _StatPill(Icons.schedule, '${totalHours}h',
+                      const Color(0xFF2563EB)),
                 const Spacer(),
                 Icon(Icons.chevron_right,
                     size: 18, color: Colors.grey.shade400),
@@ -539,5 +520,32 @@ class _PastInfoChip extends StatelessWidget {
       Text(text,
           style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
     ]);
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _StatPill(this.icon, this.label, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withAlpha(15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withAlpha(40)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 4),
+        Text(label,
+            style: TextStyle(
+                fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+      ]),
+    );
   }
 }
