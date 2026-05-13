@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_client.dart';
+import '../helpers/vehicle_helpers.dart';
 import 'scanner_screen.dart';
 import 'item_detail_screen.dart';
 import 'vehicle_detail_screen.dart';
@@ -899,14 +900,14 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               final isBusy = _busy.contains(vid);
               final meterType = (v['meterType'] ?? 'km') as String;
               final subtitle = [
-                _vehicleTypeLabel(v['type'] ?? ''),
+                vehicleTypeLabel(v['type'] as String?),
                 if ((v['registrationNumber'] ?? '').toString().isNotEmpty)
                   v['registrationNumber'],
                 '${v['currentMeter'] ?? 0} ${meterType == 'hours' ? 'h' : 'km'}',
               ].join(' · ');
 
               return _card(
-                icon: _vehicleIcon(v['type'] ?? ''),
+                icon: vehicleIcon(v['type'] as String?),
                 iconColor: const Color(0xFF0D47A1),
                 title: v['name'] ?? '',
                 subtitle: subtitle,
@@ -966,11 +967,11 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         final meterUnit = meterType == 'hours' ? 'h' : 'km';
 
         return _card(
-          icon: _vehicleIcon(vehicle['type'] ?? ''),
+          icon: vehicleIcon(vehicle['type'] as String?),
           iconColor: const Color(0xFF0D47A1),
           title: vehicle['name'] ?? '',
           subtitle:
-              '${_vehicleTypeLabel(vehicle['type'] ?? '')} · Έναρξη: ${log['meterStart']} $meterUnit',
+              '${vehicleTypeLabel(vehicle['type'] as String?)} · Έναρξη: ${log['meterStart']} $meterUnit',
           tt: tt,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1090,38 +1091,6 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         ],
       ),
     );
-  }
-
-  IconData _vehicleIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'boat':
-        return Icons.directions_boat;
-      case 'jet_ski':
-        return Icons.surfing;
-      case 'motorcycle':
-        return Icons.two_wheeler;
-      default:
-        return Icons.directions_car;
-    }
-  }
-
-  String _vehicleTypeLabel(String type) {
-    switch (type.toLowerCase()) {
-      case 'car':
-        return 'Αυτοκίνητο';
-      case 'boat':
-        return 'Σκάφος';
-      case 'jet_ski':
-        return 'Jet Ski';
-      case 'motorcycle':
-        return 'Μοτοσικλέτα';
-      case 'truck':
-        return 'Φορτηγό';
-      case 'van':
-        return 'Βαν';
-      default:
-        return type;
-    }
   }
 
   Widget _scanPanel({

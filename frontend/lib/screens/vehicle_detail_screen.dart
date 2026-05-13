@@ -5,6 +5,7 @@ import '../providers/auth_provider.dart';
 import '../providers/vehicle_provider.dart';
 import '../providers/department_provider.dart';
 import '../services/api_client.dart';
+import '../helpers/vehicle_helpers.dart';
 import '../widgets/image_gallery_card.dart';
 
 /// Detail view for a single vehicle shown as a modal bottom sheet.
@@ -32,6 +33,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
   List<dynamic> _comments = [];
   final _commentCtrl = TextEditingController();
   bool _loading = true;
+  bool _busy = false;
 
   @override
   void initState() {
@@ -61,46 +63,6 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  IconData _vehicleIcon(String? type) {
-    switch (type?.toLowerCase()) {
-      case 'boat':
-      case 'ship':
-        return Icons.directions_boat;
-      case 'truck':
-        return Icons.local_shipping;
-      case 'motorcycle':
-      case 'bike':
-        return Icons.two_wheeler;
-      case 'bus':
-        return Icons.directions_bus;
-      case 'jet_ski':
-        return Icons.surfing;
-      default:
-        return Icons.directions_car;
-    }
-  }
-
-  String _vehicleTypeLabel(String? type) {
-    switch (type?.toLowerCase()) {
-      case 'car':
-        return 'Αυτοκίνητο';
-      case 'boat':
-        return 'Σκάφος';
-      case 'jet_ski':
-        return 'Jet Ski';
-      case 'motorcycle':
-        return 'Μοτοσικλέτα';
-      case 'truck':
-        return 'Φορτηγό';
-      case 'van':
-        return 'Βαν';
-      case 'bus':
-        return 'Λεωφορείο';
-      default:
-        return type ?? '';
     }
   }
 
@@ -153,7 +115,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 TextField(
                   controller: meterCtrl,
                   decoration: InputDecoration(
-                    labelText: 'Τρέχον Μετρητή',
+                    labelText: 'Τρέχων Μετρητής',
                     suffixText: (v['meterType'] ?? 'km') == 'hours' ? 'h' : 'km',
                   ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -213,7 +175,29 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Διαγραφή Οχήματος'),
-        content: Text('Διαγραφή "${_vehicle?['name']}";\nΘα χαθούν όλα τα αρχεία καταγραφής.'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.delete_outline, size: 32, color: Colors.red.shade400),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Διαγραφή "${_vehicle?['name']}";',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Θα χαθούν όλα τα αρχεία καταγραφής.',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+          ],
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
           FilledButton(
@@ -226,7 +210,9 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     );
     if (confirmed != true) return;
 
+    setState(() => _busy = true);
     final err = await context.read<VehicleProvider>().deleteVehicle(widget.vehicleId);
+    setState(() => _busy = false);
     if (mounted) {
       if (err == null) {
         Navigator.of(context).pop(true);
@@ -243,65 +229,93 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     final meterType = (v['meterType'] ?? 'km') as String;
     final currentMeter = v['currentMeter'] ?? 0;
     final label = meterType == 'hours' ? 'Ώρες' : 'Χιλιόμετρα';
+    final suffix = meterType == 'hours' ? 'h' : 'km';
 
     final meterCtrl = TextEditingController(text: '$currentMeter');
     final destCtrl = TextEditingController();
+    String? meterError;
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Λήψη ${v['name']}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('$label έναρξης:', style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: meterCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                hintText: label,
-                suffixText: meterType == 'hours' ? 'h' : 'km',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                isDense: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => AlertDialog(
+          title: Text('Λήψη ${v['name']}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 16, color: Colors.grey.shade600),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Τρέχων μετρητής: $currentMeter $suffix',
+                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
               ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            const Text('Προορισμός:', style: TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: destCtrl,
-              decoration: InputDecoration(
-                hintText: 'Προορισμός (προαιρετικό)',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                isDense: true,
+              const SizedBox(height: 14),
+              Text('$label έναρξης:', style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: meterCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  hintText: label,
+                  suffixText: suffix,
+                  errorText: meterError,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  isDense: true,
+                ),
+                autofocus: true,
+                onChanged: (_) => setSt(() => meterError = null),
               ),
+              const SizedBox(height: 12),
+              const Text('Προορισμός:', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: destCtrl,
+                decoration: InputDecoration(
+                  hintText: 'Προορισμός (προαιρετικό)',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            FilledButton(
+              onPressed: () {
+                final val = num.tryParse(meterCtrl.text);
+                if (val == null || val < 0) {
+                  setSt(() => meterError = 'Εισάγετε έγκυρη τιμή');
+                  return;
+                }
+                Navigator.pop(ctx, {'meterStart': val, 'destination': destCtrl.text.trim()});
+              },
+              child: const Text('Λήψη'),
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
-          FilledButton(
-            onPressed: () {
-              final val = num.tryParse(meterCtrl.text);
-              if (val != null && val >= 0) {
-                Navigator.pop(ctx, {'meterStart': val, 'destination': destCtrl.text.trim()});
-              }
-            },
-            child: const Text('Λήψη'),
-          ),
-        ],
       ),
     );
 
     if (result == null) return;
 
+    setState(() => _busy = true);
     final res = await _api.post('/vehicles/${widget.vehicleId}/take', body: {
       'meterStart': result['meterStart'],
       if ((result['destination'] as String).isNotEmpty) 'destination': result['destination'],
     });
+    setState(() => _busy = false);
     if (mounted) {
       final body = jsonDecode(res.body);
       if (res.statusCode == 200) {
@@ -320,7 +334,6 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
   // ── Return vehicle ──
 
   Future<void> _returnVehicle() async {
-    // Find open log for current user
     final logs = (_vehicle?['logs'] as List?) ?? [];
     final auth = context.read<AuthProvider>();
     final userId = auth.user?['id'];
@@ -338,68 +351,98 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     final meterType = (v['meterType'] ?? 'km') as String;
     final meterStart = openLog['meterStart'] ?? 0;
     final label = meterType == 'hours' ? 'Ώρες' : 'Χιλιόμετρα';
+    final suffix = meterType == 'hours' ? 'h' : 'km';
 
-    final meterCtrl = TextEditingController(text: '$meterStart');
+    final meterCtrl = TextEditingController();
     final destCtrl = TextEditingController(text: openLog['destination'] ?? '');
+    String? meterError;
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Επιστροφή ${v['name']}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('$label εκκίνησης: $meterStart', style: const TextStyle(color: Color(0xFF6B7280))),
-            const SizedBox(height: 12),
-            Text('$label τέλους:', style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: meterCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                hintText: label,
-                suffixText: meterType == 'hours' ? 'h' : 'km',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                isDense: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => AlertDialog(
+          title: Text('Επιστροφή ${v['name']}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.speed, size: 16, color: Color(0xFFD97706)),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$label εκκίνησης: $meterStart $suffix',
+                      style: const TextStyle(color: Color(0xFF92400E), fontSize: 13, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
               ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            const Text('Προορισμός:', style: TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: destCtrl,
-              decoration: InputDecoration(
-                hintText: 'Προορισμός',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                isDense: true,
+              const SizedBox(height: 14),
+              Text('$label τέλους:', style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: meterCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  hintText: label,
+                  suffixText: suffix,
+                  errorText: meterError,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  isDense: true,
+                ),
+                autofocus: true,
+                onChanged: (_) => setSt(() => meterError = null),
               ),
+              const SizedBox(height: 12),
+              const Text('Προορισμός:', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: destCtrl,
+                decoration: InputDecoration(
+                  hintText: 'Προορισμός',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            FilledButton(
+              onPressed: () {
+                final val = num.tryParse(meterCtrl.text);
+                if (val == null) {
+                  setSt(() => meterError = 'Εισάγετε έγκυρη τιμή');
+                  return;
+                }
+                if (val < num.parse('$meterStart')) {
+                  setSt(() => meterError = 'Πρέπει να είναι >= $meterStart $suffix');
+                  return;
+                }
+                Navigator.pop(ctx, {'meterEnd': val, 'destination': destCtrl.text.trim()});
+              },
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+              child: const Text('Επιστροφή'),
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
-          FilledButton(
-            onPressed: () {
-              final val = num.tryParse(meterCtrl.text);
-              if (val != null && val >= num.parse('$meterStart')) {
-                Navigator.pop(ctx, {'meterEnd': val, 'destination': destCtrl.text.trim()});
-              }
-            },
-            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
-            child: const Text('Επιστροφή'),
-          ),
-        ],
       ),
     );
 
     if (result == null) return;
 
+    setState(() => _busy = true);
     final res = await _api.post('/vehicles/${widget.vehicleId}/return', body: {
       'meterEnd': result['meterEnd'],
       if ((result['destination'] as String).isNotEmpty) 'destination': result['destination'],
     });
+    setState(() => _busy = false);
     if (mounted) {
       final body = jsonDecode(res.body);
       if (res.statusCode == 200) {
@@ -433,6 +476,23 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
   }
 
   Future<void> _deleteComment(int commentId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Διαγραφή Σχολίου'),
+        content: const Text('Είστε σίγουροι;'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+            child: const Text('Διαγραφή'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
     try {
       final res = await _api.delete('/vehicles/${widget.vehicleId}/comments/$commentId');
       if (res.statusCode == 204 && mounted) {
@@ -459,17 +519,46 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          // ── Header ──
           _buildSheetHeader(tt, cs, isAdmin),
-          // ── Body ──
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _vehicle == null
-                    ? const Center(child: Text('Όχημα δεν βρέθηκε'))
+                    ? _buildNotFound(tt)
                     : _buildBody(tt, cs, auth, isAdmin),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNotFound(TextTheme tt) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 40),
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.directions_car_outlined, size: 32, color: Colors.grey.shade400),
+            ),
+            const SizedBox(height: 16),
+            Text('Το όχημα δεν βρέθηκε', style: tt.bodyLarge?.copyWith(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Text('Μπορεί να έχει διαγραφεί', style: tt.bodySmall?.copyWith(color: Colors.grey.shade400)),
+          ],
+        ),
       ),
     );
   }
@@ -498,7 +587,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
             runSpacing: 8,
             children: [
               _chip(Icons.speed, '$currentMeter $meterUnit', const Color(0xFFD97706)),
-              _chip(Icons.category_outlined, _vehicleTypeLabel(vehicleType), const Color(0xFF6366F1)),
+              _chip(Icons.category_outlined, vehicleTypeLabel(vehicleType), const Color(0xFF6366F1)),
               if (v['registrationNumber'] != null)
                 _chip(Icons.confirmation_number_outlined, v['registrationNumber'], const Color(0xFFDC2626)),
               if (dept != null)
@@ -516,18 +605,18 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: _takeVehicle,
-                icon: const Icon(Icons.key),
-                label: const Text('Λήψη Οχήματος'),
+                onPressed: _busy ? null : _takeVehicle,
+                icon: _busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.key),
+                label: Text(_busy ? 'Παρακαλώ περιμένετε...' : 'Λήψη Οχήματος'),
               ),
             ),
           if (hasOpenLog)
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: _returnVehicle,
-                icon: const Icon(Icons.assignment_return),
-                label: const Text('Επιστροφή Οχήματος'),
+                onPressed: _busy ? null : _returnVehicle,
+                icon: _busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.assignment_return),
+                label: Text(_busy ? 'Παρακαλώ περιμένετε...' : 'Επιστροφή Οχήματος'),
                 style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
               ),
             ),
@@ -549,10 +638,12 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     );
   }
 
-  // ── Modal header with gradient, drag handle, title & actions ──
+  // ── Sheet header ──
 
   Widget _buildSheetHeader(TextTheme tt, ColorScheme cs, bool isAdmin) {
     final vehicleType = _vehicle?['type'] as String?;
+    final logs = (_vehicle?['logs'] as List?) ?? [];
+    final isInUse = logs.any((l) => l['endAt'] == null);
 
     return Container(
       decoration: const BoxDecoration(
@@ -588,15 +679,15 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 children: [
                   if (isAdmin && _vehicle != null) ...[
                     IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      icon: _busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.edit_outlined, size: 20),
                       color: Colors.white,
-                      onPressed: _showEditDialog,
+                      onPressed: _busy ? null : _showEditDialog,
                       tooltip: 'Επεξεργασία',
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline, size: 20),
                       color: Colors.white,
-                      onPressed: _deleteVehicle,
+                      onPressed: _busy ? null : _deleteVehicle,
                       tooltip: 'Διαγραφή',
                     ),
                   ],
@@ -616,27 +707,49 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      width: 52,
+                      height: 52,
                       decoration: BoxDecoration(
                         color: Colors.white.withAlpha(30),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
-                        _vehicleIcon(vehicleType),
+                        vehicleIcon(vehicleType),
                         color: Colors.white,
-                        size: 28,
+                        size: 26,
                       ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
-                      child: Text(
-                        _vehicle!['name'] ?? '',
-                        style: tt.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _vehicle!['name'] ?? '',
+                            style: tt.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isInUse ? Colors.white.withAlpha(30) : const Color(0xFF059669).withAlpha(200),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              isInUse ? 'Σε χρήση' : 'Διαθέσιμο',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isInUse ? Colors.white.withAlpha(220) : Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -671,6 +784,42 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
   // ── Details card ──
 
   Widget _buildDetailsCard(Map<String, dynamic> v, TextTheme tt, ColorScheme cs) {
+    final rows = <Widget>[];
+    final entries = <MapEntry<String, String>>[
+      MapEntry('Όνομα', v['name'] ?? ''),
+      MapEntry('Τύπος', vehicleTypeLabel(v['type'])),
+    ];
+    if (v['registrationNumber'] != null) entries.add(MapEntry('Αρ. Κυκλοφορίας', v['registrationNumber']));
+    if (v['serialNumber'] != null) entries.add(MapEntry('Σειριακός Αρ.', v['serialNumber']));
+    if (v['location'] != null) entries.add(MapEntry('Τοποθεσία', v['location']));
+    if (v['description'] != null && v['description'].toString().isNotEmpty) entries.add(MapEntry('Περιγραφή', v['description']));
+    entries.add(MapEntry('Μετρητής', '${v['currentMeter'] ?? 0} ${(v['meterType'] ?? 'km') == 'hours' ? 'h' : 'km'}'));
+    if (v['department'] != null) entries.add(MapEntry('Τμήμα', v['department']['name'] ?? ''));
+
+    for (var i = 0; i < entries.length; i++) {
+      rows.add(
+        Padding(
+          padding: EdgeInsets.only(bottom: i < entries.length - 1 ? 10 : 0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 120,
+                child: Text(entries[i].key, style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280), fontWeight: FontWeight.w500)),
+              ),
+              Expanded(child: Text(entries[i].value, style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w500))),
+            ],
+          ),
+        ),
+      );
+      if (i < entries.length - 1) {
+        rows.add(Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Divider(height: 1, color: Colors.grey.shade100),
+        ));
+      }
+    }
+
     return Card(
       elevation: 0,
       color: Colors.white,
@@ -698,33 +847,9 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
               ],
             ),
             const SizedBox(height: 14),
-            _detailRow('Όνομα', v['name'] ?? '', tt),
-            _detailRow('Τύπος', _vehicleTypeLabel(v['type']), tt),
-            if (v['registrationNumber'] != null) _detailRow('Αρ. Κυκλοφορίας', v['registrationNumber'], tt),
-            if (v['serialNumber'] != null) _detailRow('Σειριακός Αρ.', v['serialNumber'], tt),
-            if (v['location'] != null) _detailRow('Τοποθεσία', v['location'], tt),
-            if (v['description'] != null && v['description'].toString().isNotEmpty)
-              _detailRow('Περιγραφή', v['description'], tt),
-            _detailRow('Μετρητής', '${v['currentMeter'] ?? 0} ${(v['meterType'] ?? 'km') == 'hours' ? 'h' : 'km'}', tt),
-            if (v['department'] != null) _detailRow('Τμήμα', v['department']['name'] ?? '', tt),
+            ...rows,
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _detailRow(String label, String value, TextTheme tt) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(label, style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280), fontWeight: FontWeight.w500)),
-          ),
-          Expanded(child: Text(value, style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w500))),
-        ],
       ),
     );
   }
@@ -787,7 +912,8 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 ),
               )
             else
-              ...logs.map((log) {
+              ...List.generate(logs.length, (i) {
+                final log = logs[i];
                 final user = log['user'];
                 final userName = user != null ? '${user['forename']} ${user['surname']}' : 'Άγνωστος';
                 final isOpen = log['endAt'] == null;
@@ -796,94 +922,130 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 final destination = log['destination'] as String?;
                 final comment = log['comment'] as String?;
                 final service = log['service'];
+                final isLast = i == logs.length - 1;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isOpen ? const Color(0xFFFEF3C7) : Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: isOpen ? Border.all(color: const Color(0xFFD97706).withAlpha(60)) : null,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                return IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Timeline
+                      SizedBox(
+                        width: 20,
+                        child: Column(
                           children: [
-                            CircleAvatar(
-                              radius: 14,
-                              backgroundColor: cs.primary.withAlpha(180),
-                              child: Text(
-                                userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isOpen ? const Color(0xFFD97706) : const Color(0xFF6366F1),
+                                border: Border.all(color: Colors.white, width: 2),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(userName, style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
-                                  Text(
-                                    '${_formatDate(log['startAt'])} → ${isOpen ? 'σε χρήση' : _formatDate(log['endAt'])}',
-                                    style: tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF), fontSize: 10),
+                            if (!isLast)
+                              Expanded(
+                                child: Container(
+                                  width: 2,
+                                  color: Colors.grey.shade200,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Content
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isOpen ? const Color(0xFFFEF3C7) : Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: isOpen ? Border.all(color: const Color(0xFFD97706).withAlpha(60)) : null,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 14,
+                                      backgroundColor: cs.primary.withAlpha(180),
+                                      child: Text(
+                                        userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(userName, style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
+                                          Text(
+                                            '${_formatDate(log['startAt'])} → ${isOpen ? 'σε χρήση' : _formatDate(log['endAt'])}',
+                                            style: tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF), fontSize: 10),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (isOpen)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFD97706).withAlpha(20),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: const Text('Ενεργό', style: TextStyle(fontSize: 10, color: Color(0xFFD97706), fontWeight: FontWeight.w600)),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(Icons.speed, size: 14, color: Colors.grey.shade600),
+                                    const SizedBox(width: 4),
+                                    Text('$meterStart → $meterEnd $meterUnit', style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
+                                  ],
+                                ),
+                                if (destination != null && destination.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.place, size: 14, color: Colors.grey.shade600),
+                                      const SizedBox(width: 4),
+                                      Expanded(child: Text(destination, style: tt.bodySmall)),
+                                    ],
                                   ),
                                 ],
-                              ),
+                                if (service != null) ...[
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.medical_services_outlined, size: 14, color: Colors.grey.shade600),
+                                      const SizedBox(width: 4),
+                                      Expanded(child: Text(service['name'] ?? '', style: tt.bodySmall)),
+                                    ],
+                                  ),
+                                ],
+                                if (comment != null && comment.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(Icons.notes, size: 14, color: Colors.grey.shade600),
+                                      const SizedBox(width: 4),
+                                      Expanded(child: Text(comment, style: tt.bodySmall)),
+                                    ],
+                                  ),
+                                ],
+                              ],
                             ),
-                            if (isOpen)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFD97706).withAlpha(20),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text('Ενεργό', style: TextStyle(fontSize: 10, color: Color(0xFFD97706), fontWeight: FontWeight.w600)),
-                              ),
-                          ],
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.speed, size: 14, color: Colors.grey.shade600),
-                            const SizedBox(width: 4),
-                            Text('$meterStart → $meterEnd $meterUnit', style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                        if (destination != null && destination.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(Icons.place, size: 14, color: Colors.grey.shade600),
-                              const SizedBox(width: 4),
-                              Expanded(child: Text(destination, style: tt.bodySmall)),
-                            ],
-                          ),
-                        ],
-                        if (service != null) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(Icons.medical_services_outlined, size: 14, color: Colors.grey.shade600),
-                              const SizedBox(width: 4),
-                              Expanded(child: Text(service['name'] ?? '', style: tt.bodySmall)),
-                            ],
-                          ),
-                        ],
-                        if (comment != null && comment.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(Icons.notes, size: 14, color: Colors.grey.shade600),
-                              const SizedBox(width: 4),
-                              Expanded(child: Text(comment, style: tt.bodySmall)),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 );
               }),

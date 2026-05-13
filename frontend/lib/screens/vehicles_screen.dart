@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/vehicle_provider.dart';
 import '../services/api_client.dart';
+import '../helpers/vehicle_helpers.dart';
 import 'vehicle_detail_screen.dart';
 
 class VehiclesScreen extends StatefulWidget {
@@ -14,6 +15,8 @@ class VehiclesScreen extends StatefulWidget {
 }
 
 class _VehiclesScreenState extends State<VehiclesScreen> {
+  bool _creating = false;
+
   @override
   void initState() {
     super.initState();
@@ -25,69 +28,73 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
     final typeCtrl = TextEditingController();
     final regCtrl = TextEditingController();
     String meterType = 'km';
+    String? nameError;
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSt) => AlertDialog(
           title: const Text('Νέο Όχημα'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Όνομα')),
-              const SizedBox(height: 12),
-              TextField(controller: typeCtrl, decoration: const InputDecoration(labelText: 'Τύπος (αυτοκίνητο, σκάφος, κλπ)')),
-              const SizedBox(height: 12),
-              TextField(controller: regCtrl, decoration: const InputDecoration(labelText: 'Αρ. Κυκλοφορίας')),
-              const SizedBox(height: 12),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'km', label: Text('Χιλιόμετρα')),
-                  ButtonSegment(value: 'hours', label: Text('Ώρες')),
-                ],
-                selected: {meterType},
-                onSelectionChanged: (v) => setSt(() => meterType = v.first),
-              ),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'Όνομα',
+                    errorText: nameError,
+                  ),
+                  onChanged: (_) => setSt(() => nameError = null),
+                ),
+                const SizedBox(height: 12),
+                TextField(controller: typeCtrl, decoration: const InputDecoration(labelText: 'Τύπος (αυτοκίνητο, σκάφος, κλπ)')),
+                const SizedBox(height: 12),
+                TextField(controller: regCtrl, decoration: const InputDecoration(labelText: 'Αρ. Κυκλοφορίας')),
+                const SizedBox(height: 12),
+                SegmentedButton<String>(
+                  segments: const [
+                    ButtonSegment(value: 'km', label: Text('Χιλιόμετρα')),
+                    ButtonSegment(value: 'hours', label: Text('Ώρες')),
+                  ],
+                  selected: {meterType},
+                  onSelectionChanged: (v) => setSt(() => meterType = v.first),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
             FilledButton(
-              onPressed: () async {
-                final data = <String, dynamic>{
-                  'name': nameCtrl.text.trim(),
-                  'type': typeCtrl.text.trim(),
-                  'meterType': meterType,
-                };
-                if (regCtrl.text.isNotEmpty) data['registrationNumber'] = regCtrl.text.trim();
-                final err = await context.read<VehicleProvider>().create(data);
-                if (ctx.mounted) Navigator.pop(ctx);
-                if (err != null && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-                }
-              },
-              child: const Text('Δημιουργία'),
+              onPressed: _creating
+                  ? null
+                  : () async {
+                      if (nameCtrl.text.trim().isEmpty) {
+                        setSt(() => nameError = 'Το όνομα είναι υποχρεωτικό');
+                        return;
+                      }
+                      setSt(() => _creating = true);
+                      final data = <String, dynamic>{
+                        'name': nameCtrl.text.trim(),
+                        'type': typeCtrl.text.trim(),
+                        'meterType': meterType,
+                      };
+                      if (regCtrl.text.isNotEmpty) data['registrationNumber'] = regCtrl.text.trim();
+                      final err = await context.read<VehicleProvider>().create(data);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      if (err != null && mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                      }
+                      setSt(() => _creating = false);
+                    },
+              child: _creating
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Δημιουργία'),
             ),
           ],
         ),
       ),
     );
-  }
-
-  IconData _vehicleIcon(String? type) {
-    switch (type?.toLowerCase()) {
-      case 'boat':
-      case 'ship':
-        return Icons.directions_boat;
-      case 'truck':
-        return Icons.local_shipping;
-      case 'motorcycle':
-      case 'bike':
-        return Icons.two_wheeler;
-      case 'bus':
-        return Icons.directions_bus;
-      default:
-        return Icons.directions_car;
-    }
   }
 
   @override
@@ -136,11 +143,28 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                   child: Row(
                     children: [
-                      Icon(Icons.directions_car, size: 20, color: cs.primary),
-                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD97706).withAlpha(25),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.directions_car, size: 18, color: Color(0xFFD97706)),
+                      ),
+                      const SizedBox(width: 10),
                       Text('Οχήματα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
                       const Spacer(),
-                      Text('${prov.vehicles.length} σύνολο', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD97706).withAlpha(15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${prov.vehicles.length} σύνολο',
+                          style: tt.bodySmall?.copyWith(color: const Color(0xFFD97706), fontWeight: FontWeight.w600),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -151,13 +175,31 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
               else if (prov.vehicles.isEmpty)
                 SliverFillRemaining(
                   child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.directions_car_outlined, size: 64, color: Colors.grey.shade300),
-                        const SizedBox(height: 12),
-                        Text('Δεν υπάρχουν οχήματα', style: tt.bodyLarge?.copyWith(color: Colors.grey)),
-                      ],
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 40),
+                      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.directions_car_outlined, size: 32, color: Colors.grey.shade400),
+                          ),
+                          const SizedBox(height: 16),
+                          Text('Δεν υπάρχουν οχήματα', style: tt.bodyLarge?.copyWith(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 6),
+                          Text('Πατήστε το + για να προσθέσετε', style: tt.bodySmall?.copyWith(color: Colors.grey.shade400)),
+                        ],
+                      ),
                     ),
                   ),
                 )
@@ -176,14 +218,23 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                         final thumbPath = attachments != null && attachments.isNotEmpty
                             ? attachments.first['thumbnailPath'] as String?
                             : null;
+                        final logs = v['logs'] as List? ?? [];
+                        final isInUse = logs.any((l) => l['endAt'] == null);
+
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: Card(
-                            child: InkWell(
+                            elevation: 0,
+                            color: Colors.white,
+                            shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: Colors.grey.shade200),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
                               onTap: () => VehicleDetailScreen.show(context, v['id'] as int),
                               child: Padding(
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(14),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -194,44 +245,62 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                                             borderRadius: BorderRadius.circular(12),
                                             child: Image.network(
                                               '${ApiClient.uploadsBaseUrl}$thumbPath',
-                                              width: 44,
-                                              height: 44,
+                                              width: 48,
+                                              height: 48,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) => Container(
-                                                padding: const EdgeInsets.all(10),
-                                                decoration: BoxDecoration(
-                                                  color: const Color(0xFFD97706).withAlpha(20),
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Icon(_vehicleIcon(vehicleType), color: const Color(0xFFD97706), size: 22),
-                                              ),
+                                              errorBuilder: (_, __, ___) => _vehicleIconContainer(vehicleType),
                                             ),
                                           )
                                         else
-                                          Container(
-                                            padding: const EdgeInsets.all(10),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFD97706).withAlpha(20),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Icon(_vehicleIcon(vehicleType), color: const Color(0xFFD97706), size: 22),
-                                          ),
+                                          _vehicleIconContainer(vehicleType),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(v['name'] ?? '', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      v['name'] ?? '',
+                                                      style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Container(
+                                                    width: 8,
+                                                    height: 8,
+                                                    decoration: BoxDecoration(
+                                                      shape: BoxShape.circle,
+                                                      color: isInUse ? const Color(0xFFDC2626) : const Color(0xFF059669),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 2),
+                                                  Text(
+                                                    isInUse ? 'Σε χρήση' : 'Διαθέσιμο',
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: isInUse ? const Color(0xFFDC2626) : const Color(0xFF059669),
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                               if (vehicleType != null && vehicleType.isNotEmpty)
-                                                Text(vehicleType, style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                                                Text(vehicleTypeLabel(vehicleType), style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
                                             ],
                                           ),
                                         ),
-                                        Icon(Icons.chevron_right, color: Colors.grey.shade400),
+                                        const SizedBox(width: 4),
+                                        Icon(Icons.chevron_right, size: 20, color: Colors.grey.shade300),
                                       ],
                                     ),
                                     const SizedBox(height: 12),
-                                    Row(
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
                                       children: [
                                         if (v['registrationNumber'] != null)
                                           _VehicleChip(
@@ -239,20 +308,17 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                                             label: v['registrationNumber'],
                                             color: const Color(0xFFDC2626),
                                           ),
-                                        if (v['registrationNumber'] != null) const SizedBox(width: 8),
                                         _VehicleChip(
                                           icon: Icons.speed,
-                                          label: '$meter $meterType',
+                                          label: '$meter ${meterType == 'hours' ? 'h' : 'km'}',
                                           color: const Color(0xFFD97706),
                                         ),
-                                        if (dept != null) ...[
-                                          const SizedBox(width: 8),
+                                        if (dept != null)
                                           _VehicleChip(
                                             icon: Icons.business_outlined,
                                             label: dept['name'] ?? '',
                                             color: const Color(0xFF059669),
                                           ),
-                                        ],
                                       ],
                                     ),
                                   ],
@@ -277,6 +343,22 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
       ),
     );
   }
+
+  Widget _vehicleIconContainer(String? vehicleType) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFD97706), Color(0xFFB45309)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(vehicleIcon(vehicleType), color: Colors.white, size: 22),
+    );
+  }
 }
 
 class _VehicleChip extends StatelessWidget {
@@ -290,7 +372,7 @@ class _VehicleChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withAlpha(20),
+        color: color.withAlpha(18),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
