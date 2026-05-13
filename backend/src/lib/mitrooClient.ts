@@ -55,6 +55,12 @@ const MISSION_SUBMIT_VALUE = "ΔΗΜΙΟΥΡΓΙΑ";
 // Safety cap: prevent infinite pagination if the upstream API never returns a short page.
 const MAX_OPEN_MISSION_PAGES = 200;
 
+const normalizeDate = (value: string | undefined) =>
+  value ? String(value).trim().slice(0, 10) : "";
+
+const normalizeText = (value: string | undefined) =>
+  value ? String(value).replace(/\s+/g, " ").trim() : "";
+
 export interface CreateShiftParams {
   mission_id: number;
   shift_start_date: string; // "YYYY-MM-DD HH:mm"
@@ -209,11 +215,6 @@ export class MitrooClient {
       throw new Error(`createMission failed (${res.status}): ${text.slice(0, 200)}`);
     }
 
-    const normalizeDate = (value: string | undefined) =>
-      value ? String(value).trim().slice(0, 10) : "";
-    const normalizeText = (value: string | undefined) =>
-      value ? String(value).replace(/\s+/g, " ").trim() : "";
-
     const title = normalizeText(params.title);
     const startDate = normalizeDate(params.start_date);
     const endDate = normalizeDate(params.end_date);
@@ -244,7 +245,9 @@ export class MitrooClient {
         `createMission: could not confirm mission creation for "${params.title}" — verify it exists in Mitroo`,
       );
     }
-    const match = recentMatches.sort((a, b) => Number(b.id) - Number(a.id))[0];
+    const match = recentMatches.reduce((best, mission) =>
+      Number(mission.id) > Number(best.id) ? mission : best,
+    );
     if (!match?.id) {
       throw new Error(`createMission: could not resolve mission ID for "${params.title}"`);
     }
