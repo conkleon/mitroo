@@ -47,7 +47,13 @@
       "Bash(npx tsc *)",
       "Bash(New-Item *)",
       "PowerShell(Get-ChildItem -Path \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend\\\\prisma\\\\migrations\" -Directory | Select-Object -Last 5 | ForEach-Object { $_.Name })",
-      "Bash(flutter pub *)"
+      "Bash(flutter pub *)",
+      "PowerShell(Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\(\"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-192.png\"\\); Write-Host \"Icon-192: $\\($img.Width\\)x$\\($img.Height\\)\"; $img.Dispose\\(\\); $img = [System.Drawing.Image]::FromFile\\(\"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-512.png\"\\); Write-Host \"Icon-512: $\\($img.Width\\)x$\\($img.Height\\)\"; $img.Dispose\\(\\); $img = [System.Drawing.Image]::FromFile\\(\"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\assets\\\\logo.png\"\\); Write-Host \"logo: $\\($img.Width\\)x$\\($img.Height\\)\"; $img.Dispose\\(\\); $img = [System.Drawing.Image]::FromFile\\(\"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\favicon.png\"\\); Write-Host \"favicon: $\\($img.Width\\)x$\\($img.Height\\)\"; $img.Dispose\\(\\))",
+      "PowerShell(Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\(\"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-maskable-192.png\"\\); Write-Host \"maskable-192: $\\($img.Width\\)x$\\($img.Height\\)\"; $img.Dispose\\(\\); $img = [System.Drawing.Image]::FromFile\\(\"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-maskable-512.png\"\\); Write-Host \"maskable-512: $\\($img.Width\\)x$\\($img.Height\\)\"; $img.Dispose\\(\\))",
+      "PowerShell(Get-Command *)",
+      "PowerShell(Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile\\(\"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\assets\\\\logo.png\"\\); Write-Host \"Format: $\\($img.RawFormat\\)\"; Write-Host \"PixelFormat: $\\($img.PixelFormat\\)\"; Write-Host \"Flags: $\\($img.Flags\\)\"; $img.Dispose\\(\\))",
+      "PowerShell(Copy-Item *)",
+      "PowerShell(Start-Process \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-512.png\")"
     ]
   }
 }
