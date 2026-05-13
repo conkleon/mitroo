@@ -188,6 +188,7 @@ export class MitrooClient {
 
   async createMission(params: CreateMissionParams): Promise<number> {
     // Fetch before/after snapshots to detect the newly created mission without an explicit ID response.
+    // This intentionally performs two paginated reads because the external form does not return the new ID.
     const beforeMissions = await this.fetchOpenMissions();
     const existingIds = new Set(beforeMissions.map((mission) => String(mission.id)));
     await this._refreshCsrf();
@@ -240,7 +241,7 @@ export class MitrooClient {
     const recentMatches = matches.filter((mission) => !existingIds.has(String(mission.id)));
     if (!recentMatches.length) {
       throw new Error(
-        `createMission: no new mission found for "${params.title}" after create; check title, dates, and type`,
+        `createMission: could not confirm mission creation for "${params.title}" — verify it exists in Mitroo`,
       );
     }
     const match = recentMatches.sort((a, b) => Number(b.id) - Number(a.id))[0];
