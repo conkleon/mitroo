@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,9 +6,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/department_provider.dart';
-import '../providers/service_provider.dart';
 import '../providers/item_provider.dart';
-import '../providers/vehicle_provider.dart';
+import '../services/api_client.dart';
+import 'user_detail_screen.dart';
 
 // ─── Responsive breakpoints ───────────────────────────────
 const double _kCompactWidth = 600;
@@ -21,93 +22,114 @@ class AdminPanelScreen extends StatefulWidget {
 }
 
 class _AdminPanelScreenState extends State<AdminPanelScreen> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  int? _drawerDeptId;
+  String _drawerDeptName = '';
+  int? _drawerUserId;
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
+      if (!mounted) return;
       context.read<DepartmentProvider>().fetchDepartments();
-      context.read<ServiceProvider>().fetchServices();
       context.read<ItemProvider>().fetchItems();
-      context.read<VehicleProvider>().fetchVehicles();
     });
   }
 
   Future<void> _refresh() async {
     await Future.wait([
       context.read<DepartmentProvider>().fetchDepartments(),
-      context.read<ServiceProvider>().fetchServices(),
       context.read<ItemProvider>().fetchItems(),
-      context.read<VehicleProvider>().fetchVehicles(),
     ]);
+  }
+
+  /// All depts this user admins — deduped union of mission + item depts.
+  List<Map<String, dynamic>> _adminDepts(
+      AuthProvider auth, DepartmentProvider deptProv) {
+    if (auth.isAdmin) return deptProv.departments.cast<Map<String, dynamic>>();
+    final seen = <int>{};
+    final result = <Map<String, dynamic>>[];
+    for (final dept in [
+      ...auth.missionAdminDepartments,
+      ...auth.itemAdminDepartments,
+    ]) {
+      final id = dept['id'] as int;
+      if (seen.add(id)) result.add(dept);
+    }
+    return result;
+  }
+
+  /// Admin roles this user holds in a specific department.
+  Set<String> _rolesInDept(AuthProvider auth, int deptId) {
+    if (auth.isAdmin) return {'missionAdmin', 'itemAdmin'};
+    final depts = auth.user?['departments'] as List<dynamic>? ?? [];
+    return depts
+        .where((d) => d['department']?['id'] == deptId)
+        .map((d) => d['role'] as String)
+        .toSet();
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final deptProv = context.watch<DepartmentProvider>();
-    final svcProv = context.watch<ServiceProvider>();
-    final itemProv = context.watch<ItemProvider>();
-    final vehProv = context.watch<VehicleProvider>();
-    final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
 
     final isSysAdmin = auth.isAdmin;
-    final isMissionAdmin = auth.isMissionAdmin;
-    final isItemAdmin = auth.isItemAdmin;
-
-    // Departments where user has each role (system admin sees all)
-    final missionDepts = isSysAdmin
-        ? deptProv.departments.cast<Map<String, dynamic>>()
-        : auth.missionAdminDepartments;
-    final itemDepts = isSysAdmin
-        ? deptProv.departments.cast<Map<String, dynamic>>()
-        : auth.itemAdminDepartments;
+    final depts = _adminDepts(auth, deptProv);
 
     String subtitle;
     if (isSysAdmin) {
       subtitle = 'Διαχειριστής Συστήματος';
     } else {
       final roles = <String>[];
-      if (isMissionAdmin) roles.add('Διαχειριστής Αποστολών');
-      if (isItemAdmin) roles.add('Διαχειριστής Υλικού');
+      if (auth.isMissionAdmin) roles.add('Διαχειριστής Αποστολών');
+      if (auth.isItemAdmin) roles.add('Διαχειριστής Υλικού');
       subtitle = roles.join(' · ');
     }
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: const Color(0xFFF5F7FA),
+      endDrawer: _UserDrawer(
+        deptId: _drawerDeptId,
+        deptName: _drawerDeptName,
+        selectedUserId: _drawerUserId,
+        onUserSelected: (id) => setState(() => _drawerUserId = id),
+        onBack: () => setState(() => _drawerUserId = null),
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.maxWidth;
             final isCompact = width < _kCompactWidth;
             final isWide = width >= _kMediumWidth;
-            // Horizontal padding scales with width
             final hPad = isCompact ? 16.0 : (isWide ? 40.0 : 24.0);
-            // Max content width on very wide screens
             final contentWidth = math.min(width, 1200.0);
 
             return RefreshIndicator(
               onRefresh: _refresh,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(hPad, isCompact ? 12 : 20, hPad, 24),
+                padding: EdgeInsets.fromLTRB(
+                    hPad, isCompact ? 12 : 20, hPad, 24),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: contentWidth),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // ── Header ──
                         _HeaderBar(
-                          subtitle: subtitle,
-                          auth: auth,
-                          isCompact: isCompact,
-                        ),
+                            subtitle: subtitle,
+                            auth: auth,
+                            isCompact: isCompact),
                         SizedBox(height: isCompact ? 16 : 28),
 
-                        // ── System Management ──
+                        // ── System Management (sysAdmin only) ──
                         if (isSysAdmin) ...[
-                          _SectionHeader(icon: Icons.settings, label: 'Διαχείρηση Συστήματος'),
+                          _SectionHeader(
+                              icon: Icons.settings,
+                              label: 'Διαχείρηση Συστήματος'),
                           const SizedBox(height: 12),
                           _ResponsiveTileGrid(
                             isWide: isWide,
@@ -118,7 +140,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                                 iconColor: const Color(0xFFDC2626),
                                 bgColor: const Color(0xFFFEE2E2),
                                 title: 'Διαχείρηση Χρηστών',
-                                subtitle: 'Δημιουργία, επεξεργασία & ανάθεση ρόλων στους χρήστες',
+                                subtitle:
+                                    'Δημιουργία, επεξεργασία & ανάθεση ρόλων',
                                 onTap: () => context.push('/admin/users'),
                               ),
                               _AdminTileData(
@@ -127,105 +150,57 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                                 bgColor: const Color(0xFFEDE9FE),
                                 title: 'Διαχείρηση Τμημάτων',
                                 subtitle: 'Δημιουργία & ρύθμιση τμημάτων',
-                                onTap: () => context.push('/admin/departments'),
+                                onTap: () =>
+                                    context.push('/admin/departments'),
                               ),
                               _AdminTileData(
                                 icon: Icons.school,
                                 iconColor: const Color(0xFFD97706),
                                 bgColor: const Color(0xFFFEF3C7),
                                 title: 'Διαχείρηση Ειδικεύσεων',
-                                subtitle: 'Δημιουργία & ανάθεση τύπων ειδικεύσεων',
-                                onTap: () => context.push('/admin/specializations'),
+                                subtitle:
+                                    'Δημιουργία & ανάθεση ειδικεύσεων',
+                                onTap: () =>
+                                    context.push('/admin/specializations'),
                               ),
                             ],
                           ),
                           SizedBox(height: isCompact ? 20 : 28),
                         ],
 
-                        // ── Service Management ──
-                        if (isMissionAdmin) ...[
+                        // ── Department cards ──
+                        if (depts.isEmpty && !isSysAdmin)
+                          const _EmptyCard(
+                              message: 'Κανένα τμήμα ανατεθειμένο')
+                        else if (depts.isNotEmpty) ...[
                           _SectionHeader(
-                              icon: Icons.school_outlined,
-                              label: 'Αιτήσεις Εκπαίδευσης'),
+                              icon: Icons.domain, label: 'Τμήματα'),
                           const SizedBox(height: 12),
-                          _ResponsiveTileGrid(
-                            isWide: isWide,
-                            isCompact: isCompact,
-                            tiles: [
-                              _AdminTileData(
-                                icon: Icons.assignment_turned_in,
-                                iconColor: const Color(0xFF1D4ED8),
-                                bgColor: const Color(0xFFDBEAFE),
-                                title: 'Διαχείριση Αιτήσεων Εκπαίδευσης',
-                                subtitle: 'Αποδοχή, απόρριψη και ενεργοποίηση χρηστών μετά την εκπαίδευση',
-                                onTap: () => context.push('/admin/training-applications'),
+                          ...depts.map((dept) {
+                            final deptId = dept['id'] as int;
+                            final roles = _rolesInDept(auth, deptId);
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _DeptAdminCard(
+                                dept: dept,
+                                roles: roles,
+                                isCompact: isCompact,
+                                onUsersTap: roles.contains('missionAdmin')
+                                    ? () {
+                                        setState(() {
+                                          _drawerDeptId = deptId;
+                                          _drawerDeptName =
+                                              dept['name'] as String? ??
+                                                  'Τμήμα';
+                                          _drawerUserId = null;
+                                        });
+                                        _scaffoldKey.currentState
+                                            ?.openEndDrawer();
+                                      }
+                                    : null,
                               ),
-                            ],
-                          ),
-                          SizedBox(height: isCompact ? 20 : 28),
-
-                          _SectionHeader(
-                              icon: Icons.miscellaneous_services,
-                              label: 'Διαχείρηση Υπηρεσιών'),
-                          const SizedBox(height: 12),
-                          if (missionDepts.isEmpty)
-                            const _EmptyCard(message: 'Κανένα τμήμα ανατεθειμένο')
-                          else
-                            _ResponsiveTileGrid(
-                              isWide: isWide,
-                              isCompact: isCompact,
-                              tiles: missionDepts.map((dept) {
-                                final deptName = dept['name'] ?? 'Department';
-                                final deptId = dept['id'] as int;
-                                return _AdminTileData(
-                                  icon: Icons.miscellaneous_services,
-                                  iconColor: const Color(0xFF059669),
-                                  bgColor: const Color(0xFFD1FAE5),
-                                  title: deptName,
-                                  subtitle: 'Προβολή, δημιουργία & διαχείριση υπηρεσιών',
-                                  onTap: () => context.push(
-                                      '/admin/services?departmentId=$deptId&departmentName=${Uri.encodeComponent(deptName)}'),
-                                );
-                              }).toList(),
-                            ),
-                          SizedBox(height: isCompact ? 20 : 28),
-                        ],
-
-                        // ── Item & Vehicle Management ──
-                        if (isItemAdmin) ...[
-                          _SectionHeader(
-                              icon: Icons.inventory_2,
-                              label: 'Διαχείρηση Υλικού & Οχημάτων'),
-                          const SizedBox(height: 12),
-                          if (itemDepts.isEmpty)
-                            const _EmptyCard(message: 'Κανένα τμήμα ανατεθειμένο')
-                          else
-                            _ResponsiveTileGrid(
-                              isWide: isWide,
-                              isCompact: isCompact,
-                              tiles: itemDepts.expand((dept) {
-                                final deptName = dept['name'] ?? 'Department';
-                                return [
-                                  _AdminTileData(
-                                    icon: Icons.inventory_2,
-                                    iconColor: const Color(0xFF7C3AED),
-                                    bgColor: const Color(0xFFEDE9FE),
-                                    title: '$deptName – Αντικείμενα',
-                                    subtitle: 'Διαχείριση εξοπλισμού & κουτιών',
-                                    onTap: () => context.go('/items'),
-                                  ),
-                                  _AdminTileData(
-                                    icon: Icons.directions_car,
-                                    iconColor: const Color(0xFFD97706),
-                                    bgColor: const Color(0xFFFEF3C7),
-                                    title: '$deptName – Οχήματα',
-                                    subtitle: 'Διαχείριση στόλου & χιλιομέτρων',
-                                    onTap: () => context.go('/vehicles'),
-                                  ),
-                                ];
-                              }).toList(),
-                            ),
-                          SizedBox(height: isCompact ? 20 : 28),
+                            );
+                          }),
                         ],
 
                         const SizedBox(height: 60),
@@ -243,21 +218,6 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
 }
 
 // ─── Data classes ──────────────────────────────────────────
-
-class _StatData {
-  final IconData icon;
-  final Color iconColor;
-  final Color bgColor;
-  final String value;
-  final String label;
-  const _StatData({
-    required this.icon,
-    required this.iconColor,
-    required this.bgColor,
-    required this.value,
-    required this.label,
-  });
-}
 
 class _AdminTileData {
   final IconData icon;
@@ -341,39 +301,6 @@ class _HeaderBar extends StatelessWidget {
   }
 }
 
-// ─── Stats row ────────────────────────────────────────────
-
-class _StatsRow extends StatelessWidget {
-  final bool isCompact;
-  final bool isWide;
-  final List<_StatData> stats;
-
-  const _StatsRow({
-    required this.isCompact,
-    required this.isWide,
-    required this.stats,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final crossCount = isWide ? 4 : (isCompact ? 2 : 4);
-    final aspectRatio = isCompact ? 1.3 : (isWide ? 1.6 : 1.5);
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossCount,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: aspectRatio,
-      ),
-      itemCount: stats.length,
-      itemBuilder: (ctx, i) => _StatCard(data: stats[i], isCompact: isCompact),
-    );
-  }
-}
-
 // ─── Responsive tile grid ─────────────────────────────────
 
 class _ResponsiveTileGrid extends StatelessWidget {
@@ -390,7 +317,6 @@ class _ResponsiveTileGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isWide) {
-      // Desktop: 2‑ or 3‑column grid of cards
       final crossCount = tiles.length <= 2 ? 2 : 3;
       return GridView.builder(
         shrinkWrap: true,
@@ -407,7 +333,6 @@ class _ResponsiveTileGrid extends StatelessWidget {
       );
     }
 
-    // Mobile / tablet: stacked list
     return Column(
       children: tiles
           .map((t) => Padding(
@@ -552,46 +477,422 @@ class _EmptyCard extends StatelessWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final _StatData data;
-  final bool isCompact;
+// ─── Dept admin card ──────────────────────────────────────
 
-  const _StatCard({required this.data, required this.isCompact});
+class _DeptAdminCard extends StatelessWidget {
+  final Map<String, dynamic> dept;
+  final Set<String> roles;
+  final bool isCompact;
+  final VoidCallback? onUsersTap;
+
+  const _DeptAdminCard({
+    required this.dept,
+    required this.roles,
+    required this.isCompact,
+    this.onUsersTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final deptName = dept['name'] as String? ?? 'Τμήμα';
+    final deptId = dept['id'] as int;
+    final isMission = roles.contains('missionAdmin');
+
+    final tiles = <_AdminTileData>[
+      if (isMission)
+        _AdminTileData(
+          icon: Icons.assignment_turned_in,
+          iconColor: const Color(0xFF1D4ED8),
+          bgColor: const Color(0xFFDBEAFE),
+          title: 'Αιτήσεις Εκπαίδευσης',
+          subtitle: 'Αποδοχή & ενεργοποίηση εκπαιδευόμενων',
+          onTap: () => context.push('/admin/training-applications'),
+        ),
+      if (isMission)
+        _AdminTileData(
+          icon: Icons.miscellaneous_services,
+          iconColor: const Color(0xFF059669),
+          bgColor: const Color(0xFFD1FAE5),
+          title: 'Υπηρεσίες',
+          subtitle: 'Δημιουργία & διαχείριση υπηρεσιών',
+          onTap: () => context.push(
+              '/admin/services?departmentId=$deptId&departmentName=${Uri.encodeComponent(deptName)}'),
+        ),
+      if (isMission && onUsersTap != null)
+        _AdminTileData(
+          icon: Icons.people,
+          iconColor: const Color(0xFFDC2626),
+          bgColor: const Color(0xFFFEE2E2),
+          title: 'Χρήστες',
+          subtitle: 'Προβολή & επεξεργασία μελών τμήματος',
+          onTap: onUsersTap!,
+        ),
+      _AdminTileData(
+        icon: Icons.inventory_2,
+        iconColor: const Color(0xFF7C3AED),
+        bgColor: const Color(0xFFEDE9FE),
+        title: 'Αντικείμενα',
+        subtitle: 'Διαχείριση εξοπλισμού & κουτιών',
+        onTap: () => context.go('/items?departmentId=$deptId'),
+      ),
+      _AdminTileData(
+        icon: Icons.directions_car,
+        iconColor: const Color(0xFFD97706),
+        bgColor: const Color(0xFFFEF3C7),
+        title: 'Οχήματα',
+        subtitle: 'Διαχείριση στόλου & χιλιομέτρων',
+        onTap: () => context.go('/vehicles'),
+      ),
+    ];
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    deptName,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                if (isMission)
+                  _RoleBadge(
+                      label: 'Αποστολών',
+                      color: const Color(0xFF059669)),
+                if (roles.contains('itemAdmin') && !isMission)
+                  _RoleBadge(
+                      label: 'Υλικού',
+                      color: const Color(0xFF7C3AED)),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          ...tiles.map((t) =>
+              _CompactTileRow(data: t, isCompact: isCompact)),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoleBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _RoleBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(left: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withAlpha(25),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withAlpha(80)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+            fontSize: 11, color: color, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
+class _CompactTileRow extends StatefulWidget {
+  final _AdminTileData data;
+  final bool isCompact;
+  const _CompactTileRow({required this.data, required this.isCompact});
+
+  @override
+  State<_CompactTileRow> createState() => _CompactTileRowState();
+}
+
+class _CompactTileRowState extends State<_CompactTileRow> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final d = widget.data;
+    final tt = Theme.of(context).textTheme;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovering = true),
+      onExit: (_) => setState(() => _hovering = false),
+      cursor: SystemMouseCursors.click,
+      child: InkWell(
+        onTap: d.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          color: _hovering
+              ? const Color(0xFFF9FAFB)
+              : Colors.transparent,
+          padding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: widget.isCompact ? 10 : 12,
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: d.bgColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child:
+                    Icon(d.icon, color: d.iconColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(d.title,
+                        style: tt.bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    Text(d.subtitle,
+                        style: tt.bodySmall?.copyWith(
+                            color: const Color(0xFF6B7280))),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right,
+                  color: Colors.grey.shade400, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── User drawer ──────────────────────────────────────────
+
+class _UserDrawer extends StatefulWidget {
+  final int? deptId;
+  final String deptName;
+  final int? selectedUserId;
+  final ValueChanged<int> onUserSelected;
+  final VoidCallback onBack;
+
+  const _UserDrawer({
+    required this.deptId,
+    required this.deptName,
+    required this.selectedUserId,
+    required this.onUserSelected,
+    required this.onBack,
+  });
+
+  @override
+  State<_UserDrawer> createState() => _UserDrawerState();
+}
+
+class _UserDrawerState extends State<_UserDrawer> {
+  final _api = ApiClient();
+  List<Map<String, dynamic>> _users = [];
+  bool _loading = false;
+  String _search = '';
+  int? _loadedDeptId;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.deptId != null) _loadUsers();
+  }
+
+  @override
+  void didUpdateWidget(covariant _UserDrawer old) {
+    super.didUpdateWidget(old);
+    if (widget.deptId != null && widget.deptId != _loadedDeptId) {
+      _loadUsers();
+    }
+  }
+
+  Future<void> _loadUsers() async {
+    final deptId = widget.deptId;
+    if (deptId == null) return;
+    setState(() => _loading = true);
+    try {
+      final res = await _api.get('/users/stats');
+      if (res.statusCode == 200 && mounted) {
+        final all = (jsonDecode(res.body) as List)
+            .cast<Map<String, dynamic>>();
+        _users = all.where((u) {
+          final depts = u['departments'] as List<dynamic>? ?? [];
+          return depts
+              .any((d) => d['department']?['id'] == deptId);
+        }).toList();
+        _loadedDeptId = deptId;
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
+  }
+
+  List<Map<String, dynamic>> get _filtered {
+    if (_search.isEmpty) return _users;
+    final q = _search.toLowerCase();
+    return _users.where((u) {
+      final name =
+          '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
+      final eame = (u['eame'] ?? '').toString().toLowerCase();
+      return name.contains(q) || eame.contains(q);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final d = data;
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade200),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(isCompact ? 12 : 16),
+    final cs = Theme.of(context).colorScheme;
+    final inDetail = widget.selectedUserId != null;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Drawer(
+      width: screenWidth < 600 ? screenWidth : 420,
+      child: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: d.bgColor,
-                borderRadius: BorderRadius.circular(10),
+            // Header
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(inDetail
+                        ? Icons.arrow_back
+                        : Icons.close),
+                    onPressed: inDetail
+                        ? widget.onBack
+                        : () => Navigator.of(context).pop(),
+                    tooltip: inDetail ? 'Πίσω' : 'Κλείσιμο',
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      inDetail
+                          ? 'Στοιχεία Χρήστη'
+                          : 'Χρήστες – ${widget.deptName}',
+                      style: tt.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-              child: Icon(d.icon, color: d.iconColor, size: 20),
             ),
-            const Spacer(),
-            Text(d.value,
-                style: (isCompact ? tt.titleLarge : tt.headlineMedium)
-                    ?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 2),
-            Text(d.label,
-                style:
-                    tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+            const Divider(height: 1),
+
+            // Content: user detail or user list
+            Expanded(
+              child: inDetail
+                  ? Navigator(
+                      onGenerateRoute: (_) => MaterialPageRoute(
+                        builder: (_) =>
+                            UserDetailBody(userId: widget.selectedUserId!),
+                      ),
+                    )
+                  : _buildList(tt, cs),
+            ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildList(TextTheme tt, ColorScheme cs) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+          child: TextField(
+            decoration: const InputDecoration(
+              hintText: 'Αναζήτηση...',
+              prefixIcon: Icon(Icons.search, size: 20),
+              border: OutlineInputBorder(),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              isDense: true,
+            ),
+            onChanged: (v) => setState(() => _search = v),
+          ),
+        ),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _filtered.isEmpty
+                  ? Center(
+                      child: Text('Κανένα αποτέλεσμα',
+                          style: tt.bodyMedium
+                              ?.copyWith(color: Colors.grey)),
+                    )
+                  : ListView.separated(
+                      itemCount: _filtered.length,
+                      separatorBuilder: (_, __) =>
+                          const Divider(height: 1, indent: 16),
+                      itemBuilder: (ctx, i) {
+                        final u = _filtered[i];
+                        final name =
+                            '${u['forename'] ?? ''} ${u['surname'] ?? ''}'
+                                .trim();
+                        final initial = name.isNotEmpty
+                            ? name[0].toUpperCase()
+                            : '?';
+                        final depts = u['departments']
+                                as List<dynamic>? ??
+                            [];
+                        final roleDept = depts.firstWhere(
+                          (d) =>
+                              d['department']?['id'] ==
+                              widget.deptId,
+                          orElse: () => <String, dynamic>{},
+                        );
+                        final role =
+                            roleDept['role'] as String?;
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: cs.primary,
+                            child: Text(initial,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                          title: Text(name,
+                              style: tt.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w500)),
+                          subtitle: role != null
+                              ? Text(_roleLabel(role),
+                                  style: tt.bodySmall?.copyWith(
+                                      color:
+                                          const Color(0xFF6B7280)))
+                              : null,
+                          trailing: const Icon(
+                              Icons.chevron_right,
+                              size: 18),
+                          onTap: () =>
+                              widget.onUserSelected(u['id'] as int),
+                        );
+                      },
+                    ),
+        ),
+      ],
+    );
+  }
+
+  String _roleLabel(String role) => switch (role) {
+        'missionAdmin' => 'Διαχ. Αποστολών',
+        'itemAdmin' => 'Διαχ. Υλικού',
+        _ => 'Εθελοντής',
+      };
 }
