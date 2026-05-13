@@ -580,8 +580,8 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 40),
             child: Center(child: CircularProgressIndicator()),
-          ),
-        if (_searchResults.isEmpty)
+          )
+        else if (_searchResults.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 32),
             child: Column(
