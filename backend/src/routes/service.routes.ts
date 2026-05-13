@@ -310,6 +310,11 @@ router.post("/:id/enroll", async (req: Request, res: Response) => {
 
     res.status(201).json(record);
 
+    // Fire-and-forget: sync accepted admin enrollment to original Mitroo
+    if (status === "accepted") {
+      writeBackAssignment(serviceId, targetUserId).catch((e) => console.error("[service] writeBackAssignment error:", e));
+    }
+
     // Fire-and-forget: notify missionAdmins (excluding the requester themselves)
     if (status === "requested") {
       const applicantName = `${record.user.forename} ${record.user.surname}`.trim();

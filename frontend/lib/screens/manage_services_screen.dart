@@ -190,7 +190,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
           '/services/$serviceId/users/$userId/status',
           body: {'status': status});
       if (res.statusCode == 200) {
-        _load();
+        _localUpdateStatus(serviceId, userId, status);
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -253,16 +253,17 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     if (confirmed != true || !mounted) return;
 
     try {
+      final hours = {
+        'hours': int.tryParse(hrsCtrl.text) ?? 0,
+        'hoursVol': int.tryParse(volCtrl.text) ?? 0,
+        'hoursTraining': int.tryParse(trnCtrl.text) ?? 0,
+        'hoursTrainers': int.tryParse(trnrCtrl.text) ?? 0,
+      };
       final res = await _api.patch(
           '/services/$serviceId/users/$userId/hours',
-          body: {
-            'hours': int.tryParse(hrsCtrl.text) ?? 0,
-            'hoursVol': int.tryParse(volCtrl.text) ?? 0,
-            'hoursTraining': int.tryParse(trnCtrl.text) ?? 0,
-            'hoursTrainers': int.tryParse(trnrCtrl.text) ?? 0,
-          });
+          body: hours);
       if (res.statusCode == 200) {
-        _load();
+        _localUpdateHours(serviceId, userId, hours);
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Αποτυχία ενημέρωσης ωρών')));
@@ -296,7 +297,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     if (confirmed != true || !mounted) return;
     try {
       await _api.delete('/services/$serviceId/users/$userId');
-      _load();
+      _localRemoveEnrollment(serviceId, userId);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -305,14 +306,15 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     }
   }
 
-  Future<void> _directEnroll(int serviceId, int userId) async {
+  Future<void> _directEnroll(int serviceId, Map<String, dynamic> member) async {
+    final userId = member['user']['id'] as int;
     try {
       final res = await _api.post(
         '/services/$serviceId/enroll',
         body: {'userId': userId, 'status': 'accepted'},
       );
       if (res.statusCode == 201) {
-        _load();
+        _localAddEnrollment(serviceId, userId, member);
       } else if (mounted) {
         final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία εγγραφής';
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
@@ -323,6 +325,73 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
             .showSnackBar(const SnackBar(content: Text('Σφάλμα εγγραφής')));
       }
     }
+  }
+
+  void _localUpdateStatus(int serviceId, int userId, String newStatus) {
+    setState(() {
+      for (final svc in _services) {
+        if ((svc['id'] as int?) == serviceId) {
+          final us = (svc['userServices'] as List<dynamic>? ?? []);
+          for (final e in us) {
+            final uid = e['userId'] as int? ?? (e['user']?['id'] as int?);
+            if (uid == userId) { e['status'] = newStatus; break; }
+          }
+          break;
+        }
+      }
+    });
+  }
+
+  void _localUpdateHours(int serviceId, int userId, Map<String, dynamic> hours) {
+    setState(() {
+      for (final svc in _services) {
+        if ((svc['id'] as int?) == serviceId) {
+          final us = (svc['userServices'] as List<dynamic>? ?? []);
+          for (final e in us) {
+            final uid = e['userId'] as int? ?? (e['user']?['id'] as int?);
+            if (uid == userId) { hours.forEach((k, v) => e[k] = v); break; }
+          }
+          break;
+        }
+      }
+    });
+  }
+
+  void _localRemoveEnrollment(int serviceId, int userId) {
+    setState(() {
+      for (final svc in _services) {
+        if ((svc['id'] as int?) == serviceId) {
+          final us = (svc['userServices'] as List<dynamic>? ?? []);
+          us.removeWhere((e) {
+            final uid = e['userId'] as int? ?? (e['user']?['id'] as int?);
+            return uid == userId;
+          });
+          (svc['_count'] as Map<String, dynamic>?)?['userServices'] = us.length;
+          break;
+        }
+      }
+    });
+  }
+
+  void _localAddEnrollment(int serviceId, int userId, Map<String, dynamic> member) {
+    setState(() {
+      for (final svc in _services) {
+        if ((svc['id'] as int?) == serviceId) {
+          final us = (svc['userServices'] as List<dynamic>? ?? []);
+          us.add({
+            'userId': userId,
+            'status': 'accepted',
+            'hours': 0,
+            'hoursVol': 0,
+            'hoursTraining': 0,
+            'hoursTrainers': 0,
+            'user': member['user'],
+          });
+          (svc['_count'] as Map<String, dynamic>?)?['userServices'] = us.length;
+          break;
+        }
+      }
+    });
   }
 
   Widget _buildDirectEnrollField(Map<String, dynamic> svc, List<dynamic> userServices) {
@@ -353,8 +422,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
         }).cast<Map<String, dynamic>>();
       },
       onSelected: (m) {
-        final uid = m['user']['id'] as int;
-        _directEnroll(serviceId, uid);
+        _directEnroll(serviceId, m);
       },
       fieldViewBuilder: (context, controller, focusNode, _) => TextField(
         controller: controller,
