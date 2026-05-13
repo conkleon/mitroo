@@ -31,6 +31,7 @@ model Department {
   items                Item[]
   trainingApplications TrainingApplication[]
   syncConfig           DepartmentSyncConfig?
+  chats                Chat[]
 
   @@map("departments")
 }
@@ -86,6 +87,7 @@ model Service {
   vehicleLogs     VehicleLog[]
   visibility      ServiceVisibility[]
   attachments     FileAttachment[]
+  chats            Chat[]
 
   @@map("services")
 }
@@ -135,6 +137,9 @@ model User {
   reviewedTrainingApplications TrainingApplication[] @relation("ReviewedTrainingApplications")
   linkedTrainingApplications   TrainingApplication[] @relation("LinkedTrainingApplications")
   pushSubscriptions            PushSubscription[]
+  createdChats                 Chat[]              @relation("CreatedChats")
+  chatMemberships              ChatMember[]
+  chatMessages                 ChatMessage[]       @relation("ChatMessages")
 
   @@map("users")
 }
@@ -471,6 +476,84 @@ model VehicleComment {
   user    User    @relation("VehicleComments", fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("vehicle_comments")
+}
+
+// ──────────────────────────────────────────────
+// Chat
+// ──────────────────────────────────────────────
+
+enum ChatType {
+  department
+  mission
+  custom
+
+  @@map("chat_type")
+}
+
+model Chat {
+  id           Int      @id @default(autoincrement())
+  type         ChatType
+  name         String?  @db.VarChar(255)
+  departmentId Int?     @map("department_id")
+  serviceId    Int?     @map("service_id")
+  createdById  Int?     @map("created_by_id")
+
+  itemAdminsCanSend Boolean @default(false) @map("item_admins_can_send")
+  volunteersCanSend Boolean @default(false) @map("volunteers_can_send")
+  deleteAfter24h    Boolean @default(false) @map("delete_after_24h")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  service    Service?    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  createdBy  User?       @relation("CreatedChats", fields: [createdById], references: [id], onDelete: SetNull)
+
+  members  ChatMember[]
+  messages ChatMessage[]
+
+  @@map("chats")
+}
+
+model ChatMember {
+  chatId   Int      @map("chat_id")
+  userId   Int      @map("user_id")
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([chatId, userId])
+  @@map("chat_members")
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  chatId    Int      @map("chat_id")
+  userId    Int      @map("user_id")
+  text      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  chat Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user User        @relation("ChatMessages", fields: [userId], references: [id], onDelete: Cascade)
+
+  attachments ChatMessageAttachment[]
+
+  @@index([chatId, createdAt])
+  @@map("chat_messages")
+}
+
+model ChatMessageAttachment {
+  id        Int     @id @default(autoincrement())
+  messageId Int?    @map("message_id")
+  fileName  String  @map("file_name") @db.VarChar(500)
+  filePath  String  @map("file_path")
+  mimeType  String? @map("mime_type") @db.VarChar(255)
+  fileSize  Int?    @map("file_size")
+
+  message ChatMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("chat_message_attachments")
 }
 
 // ──────────────────────────────────────────────
