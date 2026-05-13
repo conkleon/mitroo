@@ -133,7 +133,9 @@ export class MitrooClient {
   async fetchOpenMissions(): Promise<ExternalMission[]> {
     const pageSize = 200;
     const all: ExternalMission[] = [];
-    for (let skip = 0; ; skip += pageSize) {
+    const maxPages = 200;
+    for (let page = 0; page < maxPages; page += 1) {
+      const skip = page * pageSize;
       const res = await this._xhr(
         `/index.php/ajaxdptadmin/GridGetMissions/open/?$count=true&$skip=${skip}&$top=${pageSize}`,
       );
@@ -142,7 +144,7 @@ export class MitrooClient {
         const parsed = JSON.parse(text);
         const rows = Array.isArray(parsed) ? parsed : (parsed.result ?? []);
         all.push(...rows);
-        if (rows.length < pageSize) break;
+        if (rows.length < pageSize) return all;
       } catch (error) {
         console.error("[MitrooClient] fetchOpenMissions: failed to parse JSON response:", {
           skip,
@@ -153,6 +155,11 @@ export class MitrooClient {
         throw new Error(`fetchOpenMissions: invalid JSON response (${error})`);
       }
     }
+    console.warn("[MitrooClient] fetchOpenMissions: reached pagination safety limit", {
+      pageSize,
+      maxPages,
+      total: all.length,
+    });
     return all;
   }
 
@@ -197,15 +204,22 @@ export class MitrooClient {
       throw new Error(`createMission failed (${res.status}): ${text.slice(0, 200)}`);
     }
 
-    const title = params.title.trim();
-    const startDate = params.start_date;
-    const endDate = params.end_date;
+    const normalizeDate = (value: string | undefined) =>
+      value ? String(value).trim().slice(0, 10) : "";
+    const normalizeText = (value: string | undefined) =>
+      value ? String(value).replace(/\s+/g, " ").trim() : "";
+
+    const title = normalizeText(params.title);
+    const startDate = normalizeDate(params.start_date);
+    const endDate = normalizeDate(params.end_date);
     const missions = await this.fetchOpenMissions();
     const matches = missions.filter((mission) => {
-      const missionTitle = String(mission.title ?? "").trim();
+      const missionTitle = normalizeText(mission.title as string | undefined);
       if (!missionTitle || missionTitle !== title) return false;
-      if (startDate && mission.start_date && mission.start_date !== startDate) return false;
-      if (endDate && mission.end_date && mission.end_date !== endDate) return false;
+      const missionStart = normalizeDate(mission.start_date as string | undefined);
+      const missionEnd = normalizeDate(mission.end_date as string | undefined);
+      if (startDate && missionStart && missionStart !== startDate) return false;
+      if (endDate && missionEnd && missionEnd !== endDate) return false;
       if (
         params.mission_type_id &&
         mission.mission_type_id &&
@@ -213,9 +227,9 @@ export class MitrooClient {
       ) {
         return false;
       }
-      const expectedLocation = params.location_text?.trim();
-      const missionLocation = String(mission.location_text ?? "").trim();
-      if (expectedLocation && missionLocation !== expectedLocation) return false;
+      const expectedLocation = normalizeText(params.location_text);
+      const missionLocation = normalizeText(mission.location_text as string | undefined);
+      if (expectedLocation && missionLocation && missionLocation !== expectedLocation) return false;
       return true;
     });
 

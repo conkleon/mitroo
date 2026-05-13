@@ -258,11 +258,16 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
       d ? d.toISOString().slice(0, 10) : "";
     const formatDateTime = (d: Date | null | undefined) =>
       d ? d.toISOString().slice(0, 16).replace("T", " ") : "";
-    const endAt = service.endAt ?? service.startAt;
+    const startAt = service.startAt ?? service.endAt;
+    if (!startAt) {
+      console.warn(`[mitrooSync] writeBackNewService: skipped — service ${serviceId} has no dates`);
+      return;
+    }
+    const endAt = service.endAt ?? startAt;
 
     const missionId = await client.createMission({
       title: service.name,
-      start_date: formatDate(service.startAt),
+      start_date: formatDate(startAt),
       end_date: formatDate(endAt),
       location_text: service.location ?? "",
       comments: service.description ?? "",
@@ -270,7 +275,7 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
 
     const shiftId = await client.createShift({
       mission_id: missionId,
-      shift_start_date: formatDateTime(service.startAt),
+      shift_start_date: formatDateTime(startAt),
       shift_end_date: formatDateTime(endAt),
       hours_sanitary: service.defaultHours ?? 0,
       hours_volunteering: service.defaultHoursVol ?? 0,
