@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/service_provider.dart';
 import '../services/api_client.dart';
 
 /// User management with table view, hours columns, pagination, sorting.
@@ -967,12 +968,14 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
 
     int ok = 0;
     int fail = 0;
+    final sp = context.read<ServiceProvider>();
     await Future.wait(_selectedIds.map((uid) async {
-      try {
-        final res = await _api.post('/services/$selectedServiceId/enroll',
-            body: {'userId': uid, 'status': 'accepted'});
-        (res.statusCode == 201 || res.statusCode == 409) ? ok++ : fail++;
-      } catch (_) {
+      final err = await sp.enrollUser(selectedServiceId!, uid, status: 'accepted');
+      if (err == null) {
+        ok++;
+      } else if (err.contains('Ήδη εγγεγραμμένος')) {
+        ok++; // Already enrolled counts as success in bulk
+      } else {
         fail++;
       }
     }));

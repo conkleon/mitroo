@@ -448,6 +448,12 @@ router.delete("/:sid/users/:uid", async (req: Request, res: Response) => {
     where: { userId_serviceId: { userId: Number(req.params.uid), serviceId: Number(req.params.sid) } },
   });
   res.status(204).end();
+
+  // Fire-and-forget: sync removal to original Mitroo + cleanup chat
+  writeBackRejection(Number(req.params.sid), Number(req.params.uid))
+    .catch((e) => console.error("[service] writeBackRejection error:", e));
+  removeFromMissionChat(Number(req.params.sid), Number(req.params.uid))
+    .catch((e) => console.error("[service] removeFromMissionChat error:", e));
 });
 
 // ── PATCH /api/services/:id/responsible ──────────

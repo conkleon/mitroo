@@ -185,23 +185,13 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
 
   Future<void> _updateEnrollmentStatus(
       int serviceId, int userId, String status) async {
-    try {
-      final res = await _api.patch(
-          '/services/$serviceId/users/$userId/status',
-          body: {'status': status});
-      if (res.statusCode == 200) {
-        _localUpdateStatus(serviceId, userId, status);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Αποτυχία ενημέρωσης κατάστασης')));
-        }
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Σφάλμα ενημέρωσης κατάστασης')));
-      }
+    final err = await context.read<ServiceProvider>().updateUserStatus(serviceId, userId, status);
+    if (!mounted) return;
+    if (err == null) {
+      _localUpdateStatus(serviceId, userId, status);
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err)));
     }
   }
 
@@ -295,35 +285,24 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    try {
-      await _api.delete('/services/$serviceId/users/$userId');
+    final err = await context.read<ServiceProvider>().removeUser(serviceId, userId);
+    if (!mounted) return;
+    if (err == null) {
       _localRemoveEnrollment(serviceId, userId);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Σφάλμα αφαίρεσης εγγραφής')));
-      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Σφάλμα αφαίρεσης εγγραφής')));
     }
   }
 
   Future<void> _directEnroll(int serviceId, Map<String, dynamic> member) async {
     final userId = member['user']['id'] as int;
-    try {
-      final res = await _api.post(
-        '/services/$serviceId/enroll',
-        body: {'userId': userId, 'status': 'accepted'},
-      );
-      if (res.statusCode == 201) {
-        _localAddEnrollment(serviceId, userId, member);
-      } else if (mounted) {
-        final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία εγγραφής';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Σφάλμα εγγραφής')));
-      }
+    final err = await context.read<ServiceProvider>().enrollUser(serviceId, userId, status: 'accepted');
+    if (!mounted) return;
+    if (err == null) {
+      _localAddEnrollment(serviceId, userId, member);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     }
   }
 
