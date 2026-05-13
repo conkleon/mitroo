@@ -7,7 +7,10 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY!
 );
 
-export async function sendPushToUser(userId: number, payload: { title: string; body: string }): Promise<void> {
+export async function sendPushToUser(
+  userId: number,
+  payload: { title: string; body: string; data?: Record<string, unknown> }
+): Promise<void> {
   const subscriptions = await prisma.pushSubscription.findMany({ where: { userId } });
   await Promise.all(
     subscriptions.map(async (sub) => {
