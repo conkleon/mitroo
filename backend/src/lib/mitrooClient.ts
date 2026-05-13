@@ -133,7 +133,7 @@ export class MitrooClient {
   async fetchOpenMissions(): Promise<ExternalMission[]> {
     const pageSize = 200;
     const all: ExternalMission[] = [];
-    for (let skip = 0; skip < 5000; skip += pageSize) {
+    for (let skip = 0; ; skip += pageSize) {
       const res = await this._xhr(
         `/index.php/ajaxdptadmin/GridGetMissions/open/?$count=true&$skip=${skip}&$top=${pageSize}`,
       );
@@ -144,7 +144,11 @@ export class MitrooClient {
         all.push(...rows);
         if (rows.length < pageSize) break;
       } catch {
-        console.error("[MitrooClient] fetchOpenMissions: unexpected response:", text.slice(0, 300));
+        console.error("[MitrooClient] fetchOpenMissions: unexpected response:", {
+          skip,
+          pageSize,
+          snippet: text.slice(0, 300),
+        });
         throw new Error("fetchOpenMissions: invalid JSON response");
       }
     }
@@ -172,7 +176,8 @@ export class MitrooClient {
   // ── Write-back ────────────────────────────────────────────────────────────
 
   async createMission(params: CreateMissionParams): Promise<number> {
-    const existingIds = new Set((await this.fetchOpenMissions()).map((mission) => String(mission.id)));
+    const beforeMissions = await this.fetchOpenMissions();
+    const existingIds = new Set(beforeMissions.map((mission) => String(mission.id)));
     await this._refreshCsrf();
     const body = new URLSearchParams({
       title: params.title,
@@ -214,9 +219,10 @@ export class MitrooClient {
     });
 
     const recentMatches = matches.filter((mission) => !existingIds.has(String(mission.id)));
-    const match = (recentMatches.length ? recentMatches : matches).sort(
-      (a, b) => Number(b.id) - Number(a.id),
-    )[0];
+    if (!recentMatches.length) {
+      throw new Error(`createMission: no new mission found for "${params.title}" after create`);
+    }
+    const match = recentMatches.sort((a, b) => Number(b.id) - Number(a.id))[0];
     if (!match?.id) {
       throw new Error(`createMission: could not resolve mission ID for "${params.title}"`);
     }
