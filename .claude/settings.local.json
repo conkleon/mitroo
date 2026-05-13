@@ -39,7 +39,9 @@
       "PowerShell(New-Item *)",
       "Bash(2>&1)",
       "Bash(dart analyze *)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(flutter build *)",
+      "Bash(flutter test *)"
     ]
   }
 }

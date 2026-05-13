@@ -27,6 +27,7 @@ const createSchema = z.object({
   defaultHoursTraining: z.number().int().min(0).optional(),
   defaultHoursTrainers: z.number().int().min(0).optional(),
   defaultHoursTEP: z.number().int().min(0).optional(),
+  maxParticipants: z.number().int().min(1).optional(),
   startAt: z.string().datetime().optional(),
   endAt: z.string().datetime().optional(),
 });

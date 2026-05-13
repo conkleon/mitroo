@@ -39,6 +39,21 @@ export interface ExternalShift {
   [key: string]: unknown;
 }
 
+export interface ExternalShiftApplication {
+  id: number | string;
+  mission_id?: number | string;
+  mission_shift_id?: number | string;
+  member_id?: number | string;
+  application_status_id?: number | string;
+  hours_volunteering?: number | string;
+  hours_sanitary?: number | string;
+  hours_training?: number | string;
+  hours_retraining?: number | string;
+  hours_tep?: number | string;
+  hours_lifeguard?: number | string;
+  [key: string]: unknown;
+}
+
 export interface CreateMissionParams {
   title: string;
   start_date: string; // "YYYY-MM-DD"
@@ -54,6 +69,15 @@ const MISSION_SUBMIT_VALUE = "ΔΗΜΙΟΥΡΓΙΑ";
 
 // Safety cap: prevent infinite pagination if the upstream API never returns a short page.
 const MAX_OPEN_MISSION_PAGES = 200;
+const MAX_SHIFT_APPLICATION_PAGES = 100;
+const MAX_VOLUNTEER_PAGES = 200;
+const EXTERNAL_DEBUG = process.env.MITROO_EXTERNAL_DEBUG === "1";
+
+const debugExternal = (message: string, context?: Record<string, unknown>) => {
+  if (!EXTERNAL_DEBUG) return;
+  if (context) console.info(`[MitrooClient] ${message}`, context);
+  else console.info(`[MitrooClient] ${message}`);
+};
 
 // Normalize external mission fields for matching between form inputs and API responses.
 const normalizeDate = (value: string | undefined) =>
@@ -128,6 +152,73 @@ export class MitrooClient {
     }
   }
 
+  async findVolunteerByEmail(email: string): Promise<ExternalVolunteer | null> {
+    const normalized = email.trim().toLowerCase();
+    const pageSize = 200;
+    debugExternal("findVolunteerByEmail start", { email: normalized, pageSize });
+    for (let page = 0; page < MAX_VOLUNTEER_PAGES; page += 1) {
+      const skip = page * pageSize;
+      const res = await this._xhr(
+        `/index.php/ajaxmember/grid_get_volunteers/?$count=true&$skip=${skip}&$top=${pageSize}`,
+      );
+      const text = await res.text();
+      try {
+        const parsed = JSON.parse(text);
+        const rows: ExternalVolunteer[] = Array.isArray(parsed)
+          ? parsed
+          : (parsed.result ?? []);
+        const match = rows.find((vol) => {
+          const candidate = typeof vol.email === "string" ? vol.email.trim().toLowerCase() : "";
+          return candidate === normalized;
+        });
+        if (match) {
+          debugExternal("findVolunteerByEmail match", { email: normalized, skip });
+          return match;
+        }
+        if (rows.length < pageSize) return null;
+      } catch (error) {
+        console.error("[MitrooClient] findVolunteerByEmail: invalid JSON response:", {
+          skip,
+          pageSize,
+          snippet: text.slice(0, 300),
+          error,
+        });
+        return null;
+      }
+    }
+    console.warn("[MitrooClient] findVolunteerByEmail: reached pagination safety limit", {
+      pageSize,
+      maxPages: MAX_VOLUNTEER_PAGES,
+    });
+    return null;
+  }
+
+  async fetchProfileIdentity(): Promise<{ eame?: string; email?: string; forename?: string; surname?: string }> {
+    const res = await this._get("/index.php/auth/profile");
+    const html = await res.text();
+    const emailMatch = html.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    // Match eame: first char can be ASCII A-Z or Greek uppercase (Α-Ω, U+0391–U+03A9)
+    const eameMatch = html.match(/[A-ZΑ-Ω]\d{5}\/\d{2}\/\d{2}/);
+    const identity: { eame?: string; email?: string; forename?: string; surname?: string } = {};
+    if (emailMatch?.[0]) identity.email = emailMatch[0].trim().toLowerCase();
+    if (eameMatch?.[0]) identity.eame = eameMatch[0].trim();
+
+    // Parse full name from sidebar username div (e.g. "ΧΡΙΣΤΟΠΟΥΛΟΣ ΚΩΝΣΤΑΝΤΙΝΟΣ ΚΛΕΩΝ")
+    const nameMatch = html.match(/class="sidebar-username">([^<\[]+)/);
+    if (nameMatch?.[1]) {
+      const parts = nameMatch[1].trim().split(/\s+/);
+      if (parts.length >= 2) {
+        identity.surname = parts[0];
+        identity.forename = parts.slice(1).join(" ");
+      }
+    }
+
+    if (!identity.eame && !identity.email) {
+      debugExternal("fetchProfileIdentity: no match", { snippet: html.slice(0, 300) });
+    }
+    return identity;
+  }
+
   async fetchMissions(): Promise<ExternalMission[]> {
     const res = await this._xhr("/index.php/ajaxdptadmin/GridGetMissions");
     const text = await res.text();
@@ -191,13 +282,51 @@ export class MitrooClient {
     }
   }
 
+  async fetchShiftApplications(): Promise<ExternalShiftApplication[]> {
+    const pageSize = 500;
+    const all: ExternalShiftApplication[] = [];
+    for (let page = 0; page < MAX_SHIFT_APPLICATION_PAGES; page += 1) {
+      const skip = page * pageSize;
+      const res = await this._xhr(
+        `/index.php/ajaxdptadmin/grid_get_shiftapplications/?$count=true&$skip=${skip}&$top=${pageSize}`,
+      );
+      const text = await res.text();
+      try {
+        const parsed = JSON.parse(text);
+        const rows: ExternalShiftApplication[] = Array.isArray(parsed)
+          ? parsed
+          : (parsed.result ?? []);
+        all.push(...rows);
+        if (rows.length < pageSize) return all;
+      } catch (error) {
+        console.error("[MitrooClient] fetchShiftApplications: failed to parse JSON response:", {
+          skip,
+          pageSize,
+          snippet: text.slice(0, 300),
+          error,
+        });
+        throw new Error(`fetchShiftApplications: invalid JSON response (${error})`);
+      }
+    }
+    console.warn("[MitrooClient] fetchShiftApplications: reached pagination safety limit", {
+      pageSize,
+      maxPages: MAX_SHIFT_APPLICATION_PAGES,
+      total: all.length,
+    });
+    return all;
+  }
+
   // ── Write-back ────────────────────────────────────────────────────────────
 
   async createMission(params: CreateMissionParams): Promise<number> {
     // Fetch before/after snapshots to detect the newly created mission without an explicit ID response.
     // This intentionally performs two paginated reads because the external form does not return the new ID.
-    const beforeMissions = await this.fetchOpenMissions();
-    const existingIds = new Set(beforeMissions.map((mission) => String(mission.id)));
+    const [beforeOpenMissions, beforeAllMissions] = await Promise.all([
+      this.fetchOpenMissions(),
+      this.fetchMissions(),
+    ]);
+    const existingOpenIds = new Set(beforeOpenMissions.map((mission) => String(mission.id)));
+    const existingAllIds = new Set(beforeAllMissions.map((mission) => String(mission.id)));
     await this._refreshCsrf();
     const body = new URLSearchParams({
       title: params.title,
@@ -216,11 +345,18 @@ export class MitrooClient {
       throw new Error(`createMission failed (${res.status}): ${text.slice(0, 200)}`);
     }
 
+    const refreshHeader = res.headers.get("Refresh") ?? "";
+    const refreshMatch = refreshHeader.match(/mission\/(\d+)/i);
+    if (refreshMatch) return Number(refreshMatch[1]);
+
+    const textMatch = text.match(/mission\/(\d+)/i) ?? text.match(/mission_id"\s+value="(\d+)"/i);
+    if (textMatch) return Number(textMatch[1]);
+
     const title = normalizeText(params.title);
     const startDate = normalizeDate(params.start_date);
     const endDate = normalizeDate(params.end_date);
-    const missions = await this.fetchOpenMissions();
-    const matches = missions.filter((mission) => {
+    const expectedLocation = normalizeText(params.location_text);
+    const matchesParams = (mission: ExternalMission) => {
       const missionTitle = normalizeText(mission.title as string | undefined);
       if (!missionTitle || missionTitle !== title) return false;
       const missionStart = normalizeDate(mission.start_date as string | undefined);
@@ -234,22 +370,91 @@ export class MitrooClient {
       ) {
         return false;
       }
-      const expectedLocation = normalizeText(params.location_text);
       const missionLocation = normalizeText(mission.location_text as string | undefined);
       if (expectedLocation && missionLocation && missionLocation !== expectedLocation) return false;
       return true;
-    });
+    };
 
-    const recentMatches = matches.filter((mission) => !existingIds.has(String(mission.id)));
-    if (!recentMatches.length) {
-      throw new Error(
-        `createMission: could not confirm mission creation for "${params.title}" — verify it exists in Mitroo`,
-      );
+    // Some deployments take a moment to index the newly created mission.
+    // Try a few times with increasing backoff before failing.
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    const maxAttempts = 6;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      try {
+        const openMissions = await this.fetchOpenMissions();
+        const openMatches = openMissions.filter(matchesParams);
+        const recentOpenMatches = openMatches.filter(
+          (mission) => !existingOpenIds.has(String(mission.id)),
+        );
+        if (recentOpenMatches.length) {
+          const match = recentOpenMatches.reduce((best, mission) =>
+            Number(mission.id) > Number(best.id) ? mission : best,
+          );
+          return Number(match.id);
+        }
+
+        const allMissions = await this.fetchMissions();
+        const allMatches = allMissions.filter(matchesParams);
+        const recentAllMatches = allMatches.filter(
+          (mission) => !existingAllIds.has(String(mission.id)),
+        );
+        if (recentAllMatches.length) {
+          const match = recentAllMatches.reduce((best, mission) =>
+            Number(mission.id) > Number(best.id) ? mission : best,
+          );
+          return Number(match.id);
+        }
+      } catch (err) {
+        // fetch may fail transiently; retry below
+        console.warn('[MitrooClient] createMission: transient fetch error', err);
+      }
+
+      // Exponential-ish backoff: 0.5s, 1s, 1.5s, ...
+      const waitMs = 500 * (attempt + 1);
+      // If this was the last attempt, break to try relaxed matching below
+      if (attempt < maxAttempts - 1) await sleep(waitMs);
     }
-    const match = recentMatches.reduce((best, mission) =>
-      Number(mission.id) > Number(best.id) ? mission : best,
+
+    // Last resort: relaxed matching by title only (case-insensitive), prefer newest
+    try {
+      const allMissions = await this.fetchMissions();
+      const titleLower = normalizeText(params.title).toLowerCase();
+      const titleMatches = allMissions
+        .filter((m) => normalizeText(m.title as string | undefined).toLowerCase() === titleLower)
+        .filter((mission) => !existingAllIds.has(String(mission.id)));
+      if (titleMatches.length) {
+        const match = titleMatches.reduce((best, mission) =>
+          Number(mission.id) > Number(best.id) ? mission : best,
+        );
+        console.warn(
+          `[MitrooClient] createMission: relaxed title-only match for "${params.title}", mission ${match.id}`,
+        );
+        return Number(match.id);
+      }
+    } catch (err) {
+      console.warn('[MitrooClient] createMission: relaxed matching fetch failed', err);
+    }
+
+    // Final fallback: choose the newest mission that wasn't present in the "before" snapshot.
+    try {
+      const allMissions = await this.fetchMissions();
+      const newMissions = allMissions.filter((m) => !existingAllIds.has(String(m.id)));
+      if (newMissions.length) {
+        const match = newMissions.reduce((best, mission) =>
+          Number(mission.id) > Number(best.id) ? mission : best,
+        );
+        console.warn(
+          `[MitrooClient] createMission: fallback selected newest mission ${match.id} after create for "${params.title}"`,
+        );
+        return Number(match.id);
+      }
+    } catch (err) {
+      console.warn('[MitrooClient] createMission: final-fallback fetch failed', err);
+    }
+
+    throw new Error(
+      `createMission: could not confirm mission creation for "${params.title}" — verify it exists in Mitroo`,
     );
-    return Number(match.id);
   }
 
   async createShift(params: CreateShiftParams): Promise<number> {
@@ -312,6 +517,28 @@ export class MitrooClient {
     const text = await res.text();
     if (!res.ok) {
       throw new Error(`cancelMission failed (${res.status}): ${text.slice(0, 200)}`);
+    }
+  }
+
+  async changeMissionStatus(missionId: number, statusId: number): Promise<void> {
+    await this._refreshCsrf();
+    const body = new URLSearchParams({
+      rccrmtk: this.csrfToken,
+      mission_id: String(missionId),
+      new_status_id: String(statusId),
+    });
+    const res = await this._post("/ajaxdptadmin/MissionChangeStatus", body);
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      if (json.status !== 1) {
+        throw new Error(`changeMissionStatus: server returned status ${json.status}`);
+      }
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error(`changeMissionStatus failed (${res.status}): ${text.slice(0, 200)}`);
+      }
+      throw e;
     }
   }
 

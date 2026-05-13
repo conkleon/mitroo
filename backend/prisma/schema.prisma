@@ -68,6 +68,8 @@ model Service {
   defaultHoursTrainers Int @default(0) @map("default_hours_trainers")
   defaultHoursTEP      Int @default(0) @map("default_hours_tep")
 
+  maxParticipants Int @default(100) @map("max_participants")
+
   startAt DateTime? @map("start_at")
   endAt   DateTime? @map("end_at")
 

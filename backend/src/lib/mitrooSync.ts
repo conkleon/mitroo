@@ -7,11 +7,24 @@ import { MitrooClient } from "./mitrooClient";
 const EXTERNAL_BASE_URL =
   process.env.MITROO_EXTERNAL_BASE_URL ?? "https://mitroo.redcross.gr";
 
+const TRAINER_MISSION_TYPE_IDS = new Set([71, 36, 86, 33, 83]);
+const TRAINING_MISSION_TYPE_IDS = new Set([81]);
+const TEP_MISSION_TYPE_IDS = new Set([85]);
+const VOLUNTEER_MISSION_TYPE_IDS = new Set([56, 57]);
+const SANITARY_MISSION_TYPE_IDS = new Set([60, 16]);
+
 export interface SyncResult {
   created: number;
   updated: number;
   errors: string[];
 }
+
+const mapApplicationStatus = (statusId: unknown): "requested" | "accepted" | "rejected" => {
+  const id = Number(statusId);
+  if (id === 3) return "accepted";
+  if (id === 4) return "rejected";
+  return "requested";
+};
 
 async function getClient(departmentId: number): Promise<MitrooClient> {
   const config = await prisma.departmentSyncConfig.findUnique({
@@ -68,6 +81,81 @@ const parseHours = (value: unknown) => {
   return Number.isFinite(num) ? Math.trunc(num) : 0;
 };
 
+type DefaultHours = {
+  defaultHours: number;
+  defaultHoursVol: number;
+  defaultHoursTraining: number;
+  defaultHoursTrainers: number;
+  defaultHoursTEP: number;
+};
+
+const remapDefaultHoursByMissionType = (
+  missionTypeId: unknown,
+  hours: DefaultHours,
+): DefaultHours => {
+  const id = Number(missionTypeId);
+  if (!Number.isFinite(id)) return hours;
+
+  const total =
+    hours.defaultHours +
+    hours.defaultHoursVol +
+    hours.defaultHoursTraining +
+    hours.defaultHoursTrainers +
+    hours.defaultHoursTEP;
+
+  if (TRAINER_MISSION_TYPE_IDS.has(id)) {
+    return {
+      defaultHours: 0,
+      defaultHoursVol: 0,
+      defaultHoursTraining: 0,
+      defaultHoursTrainers: total,
+      defaultHoursTEP: 0,
+    };
+  }
+
+  if (TRAINING_MISSION_TYPE_IDS.has(id)) {
+    return {
+      defaultHours: 0,
+      defaultHoursVol: 0,
+      defaultHoursTraining: total,
+      defaultHoursTrainers: 0,
+      defaultHoursTEP: 0,
+    };
+  }
+
+  if (TEP_MISSION_TYPE_IDS.has(id)) {
+    return {
+      defaultHours: 0,
+      defaultHoursVol: 0,
+      defaultHoursTraining: 0,
+      defaultHoursTrainers: 0,
+      defaultHoursTEP: total,
+    };
+  }
+
+  if (VOLUNTEER_MISSION_TYPE_IDS.has(id)) {
+    return {
+      defaultHours: 0,
+      defaultHoursVol: total,
+      defaultHoursTraining: 0,
+      defaultHoursTrainers: 0,
+      defaultHoursTEP: 0,
+    };
+  }
+
+  if (SANITARY_MISSION_TYPE_IDS.has(id)) {
+    return {
+      defaultHours: total,
+      defaultHoursVol: 0,
+      defaultHoursTraining: 0,
+      defaultHoursTrainers: 0,
+      defaultHoursTEP: 0,
+    };
+  }
+
+  return hours;
+};
+
 // ── Sync volunteers → Users ────────────────────────────────────────────────
 
 export async function syncUsers(departmentId: number): Promise<SyncResult> {
@@ -81,6 +169,50 @@ export async function syncUsers(departmentId: number): Promise<SyncResult> {
       console.log("[mitrooSync] Sample volunteer fields:", Object.keys(volunteers[0]));
     }
 
+    const externalIds = Array.from(
+      new Set(
+        volunteers
+          .map((v) => Number(v.id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ),
+    );
+    const eames = Array.from(
+      new Set(
+        volunteers
+          .map((v) => (v.registration_code as string | undefined)?.trim())
+          .filter((value): value is string => Boolean(value)),
+      ),
+    );
+
+    const existingUsers = await prisma.user.findMany({
+      where: {
+        OR: [
+          { externalId: { in: externalIds } },
+          { eame: { in: eames } },
+        ],
+      },
+      select: { id: true, externalId: true, eame: true },
+    });
+
+    const existingByExternalId = new Map<number, { id: number; externalId: number | null }>();
+    const existingByEame = new Map<string, { id: number; externalId: number | null }>();
+    for (const user of existingUsers) {
+      if (user.externalId != null) {
+        existingByExternalId.set(user.externalId, { id: user.id, externalId: user.externalId });
+      }
+      existingByEame.set(user.eame, { id: user.id, externalId: user.externalId });
+    }
+
+    const updates: Array<ReturnType<typeof prisma.user.update>> = [];
+    const createData: Array<{
+      externalId: number;
+      email: string;
+      forename: string;
+      surname: string;
+      eame: string;
+      password: string;
+    }> = [];
+
     for (const v of volunteers) {
       try {
         const externalId = Number(v.id);
@@ -92,46 +224,67 @@ export async function syncUsers(departmentId: number): Promise<SyncResult> {
         const eame =
           (v.registration_code as string)?.trim() || `EXT-${externalId}`;
 
-        const existing = await prisma.user.findFirst({
-          where: { OR: [{ externalId }, { eame }] },
-          select: { id: true, externalId: true },
-        });
+        const existing =
+          existingByExternalId.get(externalId) ??
+          existingByEame.get(eame);
 
         if (existing) {
-          await prisma.user.update({
-            where: { id: existing.id },
-            data: {
-              forename,
-              surname,
-              // Link the account if found by eame but externalId wasn't set yet
-              ...(existing.externalId == null ? { externalId } : {}),
-            },
-          });
+          updates.push(
+            prisma.user.update({
+              where: { id: existing.id },
+              data: {
+                forename,
+                surname,
+                // Link the account if found by eame but externalId wasn't set yet
+                ...(existing.externalId == null ? { externalId } : {}),
+              },
+            }),
+          );
           result.updated++;
         } else {
           const rawPassword = crypto.randomBytes(15).toString("base64url");
           const hashed = await bcrypt.hash(rawPassword, 12);
-
-          const user = await prisma.user.create({
-            data: {
-              externalId,
-              email,
-              forename,
-              surname,
-              eame,
-              password: hashed,
-            },
+          createData.push({
+            externalId,
+            email,
+            forename,
+            surname,
+            eame,
+            password: hashed,
           });
-
-          await prisma.userDepartment.upsert({
-            where: { userId_departmentId: { userId: user.id, departmentId } },
-            update: {},
-            create: { userId: user.id, departmentId, role: "volunteer" },
-          });
-          result.created++;
         }
       } catch (e: unknown) {
         result.errors.push(`id=${v.id}: ${e}`);
+      }
+    }
+
+    const batchSize = 200;
+    for (let i = 0; i < updates.length; i += batchSize) {
+      await prisma.$transaction(updates.slice(i, i + batchSize));
+    }
+
+    for (let i = 0; i < createData.length; i += batchSize) {
+      const batch = createData.slice(i, i + batchSize);
+      const created = await prisma.user.createMany({
+        data: batch,
+        skipDuplicates: true,
+      });
+      result.created += created.count;
+
+      const batchExternalIds = batch.map((row) => row.externalId);
+      const createdUsers = await prisma.user.findMany({
+        where: { externalId: { in: batchExternalIds } },
+        select: { id: true },
+      });
+      const userDepartmentUpserts = createdUsers.map((user) =>
+        prisma.userDepartment.upsert({
+          where: { userId_departmentId: { userId: user.id, departmentId } },
+          update: {},
+          create: { userId: user.id, departmentId, role: "volunteer" },
+        }),
+      );
+      if (userDepartmentUpserts.length) {
+        await prisma.$transaction(userDepartmentUpserts);
       }
     }
 
@@ -182,11 +335,24 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
           const endAt = shift.shift_end_date
             ? new Date(shift.shift_end_date as string)
             : undefined;
-          const defaultHours = parseHours(shift.hours_sanitary);
-          const defaultHoursVol = parseHours(shift.hours_volunteering);
-          const defaultHoursTraining = parseHours(shift.hours_training);
-          const defaultHoursTrainers = parseHours(shift.hours_retraining);
-          const defaultHoursTEP = parseHours(shift.hours_tep);
+          const rawHours: DefaultHours = {
+            defaultHours: parseHours(shift.hours_sanitary),
+            defaultHoursVol: parseHours(shift.hours_volunteering),
+            defaultHoursTraining: parseHours(shift.hours_training),
+            defaultHoursTrainers: parseHours(shift.hours_retraining),
+            defaultHoursTEP: parseHours(shift.hours_tep),
+          };
+          const mappedHours = remapDefaultHoursByMissionType(
+            mission.mission_type_id,
+            rawHours,
+          );
+          const {
+            defaultHours,
+            defaultHoursVol,
+            defaultHoursTraining,
+            defaultHoursTrainers,
+            defaultHoursTEP,
+          } = mappedHours;
 
           const existing = await prisma.service.findFirst({
             where: { externalShiftId },
@@ -233,6 +399,167 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
       }
     }
 
+    const appResult = await syncShiftApplications(departmentId);
+    result.created += appResult.created;
+    result.updated += appResult.updated;
+    result.errors.push(...appResult.errors);
+
+    await setSyncStatus(departmentId, "service", "success");
+  } catch (e: unknown) {
+    const msg = String(e);
+    result.errors.push(msg);
+    await setSyncStatus(departmentId, "service", "failed", msg).catch(() => {});
+  }
+  return result;
+}
+
+// ── Sync shift applications → UserServices ─────────────────────────────────
+
+export async function syncShiftApplications(departmentId: number): Promise<SyncResult> {
+  const result: SyncResult = { created: 0, updated: 0, errors: [] };
+  try {
+    const config = await prisma.departmentSyncConfig.findUnique({
+      where: { departmentId },
+      select: { syncEnabled: true },
+    });
+    if (!config?.syncEnabled) return result;
+
+    const client = await getClient(departmentId);
+    const applications = await client.fetchShiftApplications();
+
+    console.log(
+      `[mitrooSync] syncShiftApplications: fetched ${applications.length} applications`,
+    );
+
+    const shiftIds = Array.from(
+      new Set(
+        applications
+          .map((app) => Number(app.mission_shift_id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ),
+    );
+    const userExternalIds = Array.from(
+      new Set(
+        applications
+          .map((app) => Number(app.member_id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ),
+    );
+
+    const [services, users] = await Promise.all([
+      prisma.service.findMany({
+        where: { departmentId, externalShiftId: { in: shiftIds } },
+        select: { id: true, externalShiftId: true },
+      }),
+      prisma.user.findMany({
+        where: { externalId: { in: userExternalIds } },
+        select: { id: true, externalId: true },
+      }),
+    ]);
+
+    const serviceByShift = new Map<number, number>();
+    for (const svc of services) {
+      if (svc.externalShiftId != null) serviceByShift.set(svc.externalShiftId, svc.id);
+    }
+
+    const userByExternal = new Map<number, number>();
+    for (const usr of users) {
+      if (usr.externalId != null) userByExternal.set(usr.externalId, usr.id);
+    }
+
+    const existingUserServices = await prisma.userService.findMany({
+      where: {
+        serviceId: { in: services.map((s) => s.id) },
+        userId: { in: users.map((u) => u.id) },
+      },
+      select: { userId: true, serviceId: true },
+    });
+
+    const existingKeys = new Set(
+      existingUserServices.map((row) => `${row.userId}:${row.serviceId}`),
+    );
+
+    const updates: Array<ReturnType<typeof prisma.userService.update>> = [];
+    const createData: Array<{
+      userId: number;
+      serviceId: number;
+      status: "requested" | "accepted" | "rejected";
+      hours: number;
+      hoursVol: number;
+      hoursTraining: number;
+      hoursTrainers: number;
+      hoursTEP: number;
+      externalApplicationId: number;
+    }> = [];
+
+    for (const app of applications) {
+      try {
+        const externalShiftId = Number(app.mission_shift_id);
+        const externalUserId = Number(app.member_id);
+        const externalApplicationId = Number(app.id);
+        if (!externalShiftId || !externalUserId || !externalApplicationId) continue;
+
+        const serviceId = serviceByShift.get(externalShiftId);
+        if (!serviceId) continue;
+
+        const userId = userByExternal.get(externalUserId);
+        if (!userId) continue;
+
+        const status = mapApplicationStatus(app.application_status_id);
+        const hours = parseHours(app.hours_sanitary);
+        const hoursVol = parseHours(app.hours_volunteering);
+        const hoursTraining = parseHours(app.hours_training);
+        const hoursTrainers = parseHours(app.hours_retraining);
+        const hoursTEP = parseHours(app.hours_tep);
+
+        const key = `${userId}:${serviceId}`;
+        if (existingKeys.has(key)) {
+          updates.push(
+            prisma.userService.update({
+              where: { userId_serviceId: { userId, serviceId } },
+              data: {
+                status,
+                hours,
+                hoursVol,
+                hoursTraining,
+                hoursTrainers,
+                hoursTEP,
+                externalApplicationId,
+              },
+            }),
+          );
+          result.updated++;
+        } else {
+          createData.push({
+            userId,
+            serviceId,
+            status,
+            hours,
+            hoursVol,
+            hoursTraining,
+            hoursTrainers,
+            hoursTEP,
+            externalApplicationId,
+          });
+        }
+      } catch (e: unknown) {
+        result.errors.push(`application_id=${app.id}: ${e}`);
+      }
+    }
+
+    const batchSize = 200;
+    for (let i = 0; i < updates.length; i += batchSize) {
+      await prisma.$transaction(updates.slice(i, i + batchSize));
+    }
+    for (let i = 0; i < createData.length; i += batchSize) {
+      const batch = createData.slice(i, i + batchSize);
+      const created = await prisma.userService.createMany({
+        data: batch,
+        skipDuplicates: true,
+      });
+      result.created += created.count;
+    }
+
     await setSyncStatus(departmentId, "service", "success");
   } catch (e: unknown) {
     const msg = String(e);
@@ -261,6 +588,7 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
       defaultHoursTraining: true,
       defaultHoursTrainers: true,
       defaultHoursTEP: true,
+      maxParticipants: true,
     },
   });
   if (!service || service.externalShiftId) return;
@@ -297,12 +625,15 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
       mission_id: missionId,
       shift_start_date: formatDateTime(startAt),
       shift_end_date: formatDateTime(endAt),
+      total_participants: service.maxParticipants ?? 100,
       hours_sanitary: service.defaultHours ?? 0,
       hours_volunteering: service.defaultHoursVol ?? 0,
       hours_training: service.defaultHoursTraining ?? 0,
       hours_retraining: service.defaultHoursTrainers ?? 0,
       hours_tep: service.defaultHoursTEP ?? 0,
     });
+
+    await client.changeMissionStatus(missionId, 22);
 
     await prisma.service.update({
       where: { id: serviceId },
@@ -370,7 +701,7 @@ export async function writeBackServiceDelete(serviceId: number): Promise<void> {
       : `Η βάρδια ${safeName} έχει ακυρωθεί.`;
 
     await client.cancelShift({
-      missionId: service.externalMissionId,
+      missionId: Number(service.externalMissionId),
       shiftId: Number(service.externalShiftId),
       emailMessage,
     });
@@ -383,7 +714,7 @@ export async function writeBackServiceDelete(serviceId: number): Promise<void> {
     });
 
     if (otherServices === 0) {
-      await client.cancelMission(service.externalMissionId);
+      await client.cancelMission(Number(service.externalMissionId));
     }
 
     console.log(

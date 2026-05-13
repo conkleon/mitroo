@@ -7,6 +7,7 @@ import prisma from "../lib/prisma";
 import { authenticate, getMissionAdminDepartmentIds } from "../middleware/auth";
 import { sendPasswordResetEmail } from "../lib/email";
 import { syncServices } from "../lib/mitrooSync";
+import { MitrooClient } from "../lib/mitrooClient";
 
 const router = Router();
 
@@ -23,6 +24,122 @@ const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
 });
+
+const EXTERNAL_BASE_URL =
+  process.env.MITROO_EXTERNAL_BASE_URL ?? "https://mitroo.redcross.gr";
+const EXTERNAL_DEBUG = process.env.MITROO_EXTERNAL_DEBUG === "1";
+
+const debugExternal = (message: string, context?: Record<string, unknown>) => {
+  if (!EXTERNAL_DEBUG) return;
+  if (context) console.info(`[auth][external] ${message}`, context);
+  else console.info(`[auth][external] ${message}`);
+};
+
+type AuthUser = {
+  id: number;
+  eame: string;
+  forename: string;
+  surname: string;
+  email: string;
+  rank: string;
+  isAdmin: boolean;
+  imagePath: string | null;
+};
+
+const selectAuthUser = {
+  id: true,
+  eame: true,
+  forename: true,
+  surname: true,
+  email: true,
+  rank: true,
+  isAdmin: true,
+  imagePath: true,
+};
+
+async function loginViaExternalMitroo(
+  email: string,
+  password: string,
+): Promise<
+  | { user: AuthUser | null; emailConflict: boolean }
+  | null
+> {
+  const client = new MitrooClient(EXTERNAL_BASE_URL);
+  debugExternal("login attempt", { email });
+  try {
+    await client.login(email, password);
+    debugExternal("login success", { email });
+  } catch (error) {
+    debugExternal("login failed", { email, error: String(error) });
+    return null;
+  }
+
+  const match = await client.findVolunteerByEmail(email);
+  const eame = (match?.registration_code as string | undefined)?.trim();
+  const externalId = match ? Number(match.id) : null;
+  let forename = match ? (match.first_name as string) ?? "" : "";
+  let surname = match ? (match.last_name as string) ?? "" : "";
+  const normalizedEmail = email.trim().toLowerCase();
+
+  let resolvedEame = eame;
+  if (!resolvedEame) {
+    debugExternal("volunteer not found, trying profile", { email });
+    const profileIdentity = await client.fetchProfileIdentity();
+    resolvedEame = profileIdentity.eame;
+    if (!forename && profileIdentity.forename) forename = profileIdentity.forename;
+    if (!surname && profileIdentity.surname) surname = profileIdentity.surname;
+  }
+  if (!resolvedEame) {
+    debugExternal("unable to resolve eame", { email });
+    return null;
+  }
+
+  debugExternal("matched external identity", {
+    email: normalizedEmail,
+    eame: resolvedEame,
+    externalId: Number.isFinite(externalId ?? NaN) ? externalId : null,
+  });
+
+  const emailOwner = normalizedEmail
+    ? await prisma.user.findUnique({ where: { email: normalizedEmail } })
+    : null;
+
+  const existing = await prisma.user.findUnique({ where: { eame: resolvedEame } });
+  if (!existing) {
+    debugExternal("no local user for eame", { eame: resolvedEame, email: normalizedEmail });
+    return null;
+  }
+
+  if (emailOwner && (!existing || emailOwner.id !== existing.id)) {
+    debugExternal("email conflict", {
+      email: normalizedEmail,
+      existingUserId: existing?.id ?? null,
+      emailOwnerId: emailOwner.id,
+    });
+    return { user: null, emailConflict: true };
+  }
+
+  const hashed = await bcrypt.hash(password, 12);
+  if (existing) {
+    debugExternal("updating local user", { userId: existing.id, eame: resolvedEame });
+    const updated = await prisma.user.update({
+      where: { id: existing.id },
+      data: {
+        password: hashed,
+        ...(forename ? { forename } : {}),
+        ...(surname ? { surname } : {}),
+        email: normalizedEmail,
+        ...(Number.isFinite(externalId ?? NaN) && (externalId ?? 0) > 0
+          ? { externalId }
+          : {}),
+      },
+      select: selectAuthUser,
+    });
+    return { user: updated, emailConflict: false };
+  }
+
+  return null;
+}
 
 // ── POST /api/auth/register ─────────────────────
 router.post("/register", async (req: Request, res: Response) => {
@@ -68,9 +185,27 @@ router.post("/login", async (req: Request, res: Response) => {
   try {
     const data = loginSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({ where: { email: data.email } });
+    const identifier = data.email.trim().toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email: identifier } });
+
     if (!user || !(await bcrypt.compare(data.password, user.password))) {
-      res.status(401).json({ error: "Invalid credentials" });
+      const externalResult = await loginViaExternalMitroo(identifier, data.password);
+      if (!externalResult) {
+        res.status(401).json({ error: "Invalid credentials" });
+        return;
+      }
+      if (externalResult.emailConflict) {
+        res.status(409).json({ error: "Email already registered" });
+        return;
+      }
+
+      const token = jwt.sign(
+        { userId: externalResult.user!.id, isAdmin: externalResult.user!.isAdmin },
+        process.env.JWT_SECRET!,
+        { expiresIn: process.env.JWT_EXPIRES_IN || "7d" } as jwt.SignOptions,
+      );
+
+      res.json({ user: externalResult.user, token });
       return;
     }
 
@@ -94,21 +229,27 @@ router.post("/login", async (req: Request, res: Response) => {
       token,
     });
 
-    // Fire-and-forget: auto-sync services for departments where this user is missionAdmin
-    getMissionAdminDepartmentIds(user.id)
-      .then(async (deptIds) => {
-        if (!deptIds.length) return;
-        const configs = await prisma.departmentSyncConfig.findMany({
-          where: { departmentId: { in: deptIds }, syncEnabled: true },
-          select: { departmentId: true },
-        });
-        for (const cfg of configs) {
-          syncServices(cfg.departmentId).catch((e) =>
-            console.error(`[auth] auto syncServices failed for dept ${cfg.departmentId}:`, e),
-          );
-        }
-      })
-      .catch(() => {});
+    // Fire-and-forget: auto-sync services for admins on login
+    (async () => {
+      const configs = user.isAdmin
+        ? await prisma.departmentSyncConfig.findMany({
+            where: { syncEnabled: true },
+            select: { departmentId: true },
+          })
+        : await prisma.departmentSyncConfig.findMany({
+            where: {
+              syncEnabled: true,
+              departmentId: { in: await getMissionAdminDepartmentIds(user.id) },
+            },
+            select: { departmentId: true },
+          });
+
+      for (const cfg of configs) {
+        syncServices(cfg.departmentId).catch((e) =>
+          console.error(`[auth] auto syncServices failed for dept ${cfg.departmentId}:`, e),
+        );
+      }
+    })().catch(() => {});
   } catch (err: any) {
     if (err instanceof z.ZodError) {
       res.status(400).json({ error: "Validation failed", details: err.errors });
