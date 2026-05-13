@@ -49,6 +49,8 @@ export interface CreateMissionParams {
   mission_type_id?: number; // default 16 (observed in HAR)
 }
 
+const MISSION_SUBMIT_VALUE = "ΔΗΜΙΟΥΡΓΙΑ";
+
 export interface CreateShiftParams {
   mission_id: number;
   shift_start_date: string; // "YYYY-MM-DD HH:mm"
@@ -129,18 +131,24 @@ export class MitrooClient {
   }
 
   async fetchOpenMissions(): Promise<ExternalMission[]> {
-    const res = await this._xhr(
-      "/index.php/ajaxdptadmin/GridGetMissions/open/?$count=true&$skip=0&$top=500",
-    );
-    const text = await res.text();
-    try {
-      const parsed = JSON.parse(text);
-      const rows = Array.isArray(parsed) ? parsed : (parsed.result ?? []);
-      return rows;
-    } catch {
-      console.error("[MitrooClient] fetchOpenMissions: unexpected response:", text.slice(0, 300));
-      throw new Error("fetchOpenMissions: invalid JSON response");
+    const pageSize = 200;
+    const all: ExternalMission[] = [];
+    for (let skip = 0; skip < 5000; skip += pageSize) {
+      const res = await this._xhr(
+        `/index.php/ajaxdptadmin/GridGetMissions/open/?$count=true&$skip=${skip}&$top=${pageSize}`,
+      );
+      const text = await res.text();
+      try {
+        const parsed = JSON.parse(text);
+        const rows = Array.isArray(parsed) ? parsed : (parsed.result ?? []);
+        all.push(...rows);
+        if (rows.length < pageSize) break;
+      } catch {
+        console.error("[MitrooClient] fetchOpenMissions: unexpected response:", text.slice(0, 300));
+        throw new Error("fetchOpenMissions: invalid JSON response");
+      }
     }
+    return all;
   }
 
   async fetchShiftsForMission(missionId: number): Promise<ExternalShift[]> {
@@ -164,6 +172,7 @@ export class MitrooClient {
   // ── Write-back ────────────────────────────────────────────────────────────
 
   async createMission(params: CreateMissionParams): Promise<number> {
+    const existingIds = new Set((await this.fetchOpenMissions()).map((mission) => String(mission.id)));
     await this._refreshCsrf();
     const body = new URLSearchParams({
       title: params.title,
@@ -174,7 +183,7 @@ export class MitrooClient {
       comments: params.comments ?? "",
       mission_type_id: String(params.mission_type_id ?? 16),
       rccrmtk: this.csrfToken,
-      submit: "ΔΗΜΙΟΥΡΓΙΑ",
+      submit: MISSION_SUBMIT_VALUE,
     });
     const res = await this._post("/index.php/dptadmin/newmission", body, { xhr: false });
     const text = await res.text();
@@ -191,13 +200,23 @@ export class MitrooClient {
       if (!missionTitle || missionTitle !== title) return false;
       if (startDate && mission.start_date && mission.start_date !== startDate) return false;
       if (endDate && mission.end_date && mission.end_date !== endDate) return false;
+      if (
+        params.mission_type_id &&
+        mission.mission_type_id &&
+        Number(mission.mission_type_id) !== params.mission_type_id
+      ) {
+        return false;
+      }
       if (params.location_text && mission.location_text && mission.location_text !== params.location_text) {
         return false;
       }
       return true;
     });
 
-    const match = matches.sort((a, b) => Number(b.id) - Number(a.id))[0];
+    const recentMatches = matches.filter((mission) => !existingIds.has(String(mission.id)));
+    const match = (recentMatches.length ? recentMatches : matches).sort(
+      (a, b) => Number(b.id) - Number(a.id),
+    )[0];
     if (!match?.id) {
       throw new Error(`createMission: could not resolve mission ID for "${params.title}"`);
     }

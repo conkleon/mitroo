@@ -42,6 +42,11 @@ async function setSyncStatus(
   });
 }
 
+const parseHours = (value: unknown) => {
+  const num = Number(value ?? 0);
+  return Number.isFinite(num) ? num : 0;
+};
+
 // ── Sync volunteers → Users ────────────────────────────────────────────────
 
 export async function syncUsers(departmentId: number): Promise<SyncResult> {
@@ -130,11 +135,6 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
     if (missions.length > 0) {
       console.log("[mitrooSync] Sample mission fields:", Object.keys(missions[0]));
     }
-
-    const parseHours = (value: unknown) => {
-      const num = Number(value ?? 0);
-      return Number.isFinite(num) ? num : 0;
-    };
 
     for (const mission of missions) {
       const missionId = Number(mission.id);
