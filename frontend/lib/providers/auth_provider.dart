@@ -70,16 +70,20 @@ class AuthProvider extends ChangeNotifier {
     _tryAutoLogin();
   }
 
+  Future<void> _loadCurrentUser() async {
+    final res = await _api.get('/auth/me');
+    if (res.statusCode == 200) {
+      _user = jsonDecode(res.body);
+      if (kIsWeb) PushService.init();
+    }
+  }
+
   Future<void> _tryAutoLogin() async {
     _loading = true;
     notifyListeners();
     try {
       await _api.loadToken();
-      final res = await _api.get('/auth/me');
-      if (res.statusCode == 200) {
-        _user = jsonDecode(res.body);
-        if (kIsWeb) PushService.init();
-      }
+      await _loadCurrentUser();
     } catch (_) {}
     _loading = false;
     notifyListeners();
@@ -97,7 +101,9 @@ class AuthProvider extends ChangeNotifier {
       if (res.statusCode == 200) {
         await _api.setToken(data['token']);
         _user = data['user'];
-        if (kIsWeb) PushService.init();
+        try {
+          await _loadCurrentUser();
+        } catch (_) {}
         _loading = false;
         notifyListeners();
         return null;
@@ -128,6 +134,9 @@ class AuthProvider extends ChangeNotifier {
       if (res.statusCode == 201) {
         await _api.setToken(data['token']);
         _user = data['user'];
+        try {
+          await _loadCurrentUser();
+        } catch (_) {}
         _loading = false;
         notifyListeners();
         return null;

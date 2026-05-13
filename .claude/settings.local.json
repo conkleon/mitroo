@@ -41,7 +41,9 @@
       "Bash(dart analyze *)",
       "Bash(node -e ' *)",
       "Bash(flutter build *)",
-      "Bash(flutter test *)"
+      "Bash(flutter test *)",
+      "Bash(sed -n '421,445p' \"C:/Users/KNOWLEDGE/Documents/GitHub/mitroo/backend/src/routes/user.routes.ts\")",
+      "Bash(sed -n '78,130p' \"C:/Users/KNOWLEDGE/Documents/GitHub/mitroo/backend/src/routes/department.routes.ts\")"
     ]
   }
 }

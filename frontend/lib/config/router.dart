@@ -38,6 +38,24 @@ GoRouter appRouter(AuthProvider auth) {
 
       if (!loggedIn && !isPublic) return '/login';
       if (loggedIn && isPublic) return '/services';
+
+      if (loggedIn) {
+        final isAdminPath = path.startsWith('/admin');
+        final isServiceAdminPath = path.startsWith('/admin/services');
+        final isItemsCsvPath = path.startsWith('/items/csv');
+
+        if (isServiceAdminPath && !auth.isMissionAdmin) {
+          return auth.canAccessAdminPanel ? '/admin' : '/services';
+        }
+
+        if (isItemsCsvPath && !auth.isItemAdmin) {
+          return '/items';
+        }
+
+        if (isAdminPath && !auth.canAccessAdminPanel) {
+          return '/services';
+        }
+      }
       return null;
     },
     routes: [
