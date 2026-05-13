@@ -636,8 +636,39 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
 
   Widget _buildMyEquipment(TextTheme tt, ColorScheme cs) {
     if (_items.isEmpty) {
-      return _emptyState(
-          Icons.check_circle_outline, 'Κανένας εξοπλισμός', tt);
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF059669).withAlpha(12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle_outline,
+                size: 40,
+                color: Color(0xFF059669),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Κανένας εξοπλισμός',
+              style: tt.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF374151),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Πατήστε "Λήψη" για να αναζητήσετε διαθέσιμο εξοπλισμό',
+              style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
     }
     return _constrainedList(
       itemCount: _items.length,
@@ -653,17 +684,17 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
+            color: isExpired ? Colors.red.shade50 : Colors.white,
             border: Border.all(
-                color: isExpired
-                    ? Colors.red.shade200
-                    : const Color(0xFFE5E7EB)),
+              color: isExpired ? Colors.red.shade200 : const Color(0xFFE5E7EB),
+            ),
             borderRadius: BorderRadius.circular(12),
-            color: isExpired ? Colors.red.shade50 : null,
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: cs.primary.withAlpha(20),
                   borderRadius: BorderRadius.circular(10),
@@ -680,18 +711,29 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(item['name'] ?? '',
-                        style: tt.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w600)),
-                    if (item['barCode'] != null)
-                      Text(item['barCode'].toString(),
-                          style: tt.bodySmall?.copyWith(
-                              color: const Color(0xFF6B7280))),
-                    if (item['location'] != null)
-                      Text(item['location'].toString(),
-                          style: tt.bodySmall?.copyWith(
-                              color: const Color(0xFF6B7280))),
+                    Text(
+                      item['name'] ?? '',
+                      style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (item['barCode'] != null || item['location'] != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        [item['barCode'], item['location']]
+                            .whereType<String>()
+                            .where((s) => s.isNotEmpty)
+                            .join(' · '),
+                        style: tt.bodySmall?.copyWith(
+                          color: const Color(0xFF6B7280),
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -699,17 +741,20 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                 Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade100,
+                      color: Colors.red.shade50,
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.shade200),
                     ),
-                    child: Text('Έληξε',
-                        style: TextStyle(
-                            color: Colors.red.shade700,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600)),
+                    child: Text(
+                      'Έληξε',
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
               IconButton(
@@ -720,18 +765,19 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                   Navigator.pop(context);
                   ItemDetailScreen.show(context, itemId);
                 },
+                visualDensity: VisualDensity.compact,
               ),
               IconButton(
                 icon: isBusy
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child:
-                            CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2))
                     : Icon(Icons.assignment_return,
                         size: 18, color: Colors.red.shade600),
                 tooltip: 'Επιστροφή',
                 onPressed: isBusy ? null : () => _returnItem(item),
+                visualDensity: VisualDensity.compact,
               ),
             ],
           ),
