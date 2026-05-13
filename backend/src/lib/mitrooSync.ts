@@ -253,24 +253,24 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
   try {
     const client = await getClient(service.departmentId);
 
-    const fmtDate = (d: Date | null | undefined) =>
+    const formatDate = (d: Date | null | undefined) =>
       d ? d.toISOString().slice(0, 10) : "";
-    const fmtDateTime = (d: Date | null | undefined) =>
+    const formatDateTime = (d: Date | null | undefined) =>
       d ? d.toISOString().slice(0, 16).replace("T", " ") : "";
     const endAt = service.endAt ?? service.startAt;
 
     const missionId = await client.createMission({
       title: service.name,
-      start_date: fmtDate(service.startAt),
-      end_date: fmtDate(endAt),
+      start_date: formatDate(service.startAt),
+      end_date: formatDate(endAt),
       location_text: service.location ?? "",
       comments: service.description ?? "",
     });
 
     const shiftId = await client.createShift({
       mission_id: missionId,
-      shift_start_date: fmtDateTime(service.startAt),
-      shift_end_date: fmtDateTime(endAt),
+      shift_start_date: formatDateTime(service.startAt),
+      shift_end_date: formatDateTime(endAt),
       hours_sanitary: service.defaultHours ?? 0,
       hours_volunteering: service.defaultHoursVol ?? 0,
       hours_training: service.defaultHoursTraining ?? 0,

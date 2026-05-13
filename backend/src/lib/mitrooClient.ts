@@ -144,7 +144,7 @@ export class MitrooClient {
         all.push(...rows);
         if (rows.length < pageSize) break;
       } catch {
-        console.error("[MitrooClient] fetchOpenMissions: unexpected response:", {
+        console.error("[MitrooClient] fetchOpenMissions: failed to parse JSON response:", {
           skip,
           pageSize,
           snippet: text.slice(0, 300),
@@ -220,7 +220,9 @@ export class MitrooClient {
 
     const recentMatches = matches.filter((mission) => !existingIds.has(String(mission.id)));
     if (!recentMatches.length) {
-      throw new Error(`createMission: no new mission found for "${params.title}" after create`);
+      throw new Error(
+        `createMission: no new mission found for "${params.title}" after create; check title, dates, and type`,
+      );
     }
     const match = recentMatches.sort((a, b) => Number(b.id) - Number(a.id))[0];
     if (!match?.id) {
