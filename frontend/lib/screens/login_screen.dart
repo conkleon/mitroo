@@ -26,6 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    setState(() => _error = null);
     final auth = context.read<AuthProvider>();
     final err = await auth.login(_emailCtrl.text.trim(), _passwordCtrl.text);
     if (err != null && mounted) {
