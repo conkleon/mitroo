@@ -5,17 +5,37 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
 
+/// User detail content without a Scaffold — safe to embed in a Drawer.
+class UserDetailBody extends StatefulWidget {
+  final int userId;
+  const UserDetailBody({super.key, required this.userId});
+
+  @override
+  State<UserDetailBody> createState() => _UserDetailBodyState();
+}
+
 /// Full detail view for a single user. Admins can edit profile, toggle admin,
 /// manage department memberships, and manage specializations.
-class UserDetailScreen extends StatefulWidget {
+class UserDetailScreen extends StatelessWidget {
   final int userId;
   const UserDetailScreen({super.key, required this.userId});
 
   @override
-  State<UserDetailScreen> createState() => _UserDetailScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: const Text('Στοιχεία Χρήστη'),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: UserDetailBody(userId: userId),
+    );
+  }
 }
 
-class _UserDetailScreenState extends State<UserDetailScreen> {
+class _UserDetailBodyState extends State<UserDetailBody> {
   final _api = ApiClient();
   Map<String, dynamic>? _user;
   List<dynamic> _allDepts = [];
@@ -416,16 +436,10 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     final canManage = context.watch<AuthProvider>().isAdmin;
 
     if (_loading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Λεπτομέρειες Χρήστη'), backgroundColor: Colors.transparent, elevation: 0),
-        body: const Center(child: CircularProgressIndicator()),
-      );
+      return const SafeArea(child: Center(child: CircularProgressIndicator()));
     }
     if (_user == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Λεπτομέρειες Χρήστη'), backgroundColor: Colors.transparent, elevation: 0),
-        body: const Center(child: Text('Χρήστης δεν βρέθηκε')),
-      );
+      return const SafeArea(child: Center(child: Text('Χρήστης δεν βρέθηκε')));
     }
 
     final u = _user!;
@@ -434,22 +448,8 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     final departments = u['departments'] as List<dynamic>? ?? [];
     final specializations = u['specializations'] as List<dynamic>? ?? [];
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: Text(name.isNotEmpty ? name : u['eame'] ?? 'User',
-            style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          if (canManage) ...[
-            IconButton(icon: const Icon(Icons.edit), onPressed: _editProfile, tooltip: 'Επεξεργασία'),
-            IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: _deleteUser, tooltip: 'Διαγραφή'),
-          ],
-        ],
-      ),
-      body: RefreshIndicator(
+    return SafeArea(
+      child: RefreshIndicator(
         onRefresh: _load,
         child: LayoutBuilder(
           builder: (context, constraints) {
