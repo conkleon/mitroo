@@ -163,6 +163,38 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
     if (mounted) setState(() => _busy.remove(itemId));
   }
 
+  Future<void> _handleScan() async {
+    final result = await Navigator.of(context).push<ScanResult>(
+      MaterialPageRoute(builder: (_) => const ScannerScreen()),
+    );
+    if (result == null || !mounted) return;
+
+    final parsedId = int.tryParse(result.value);
+    if (result.isQr || (parsedId != null && result.value == parsedId.toString())) {
+      if (parsedId != null) {
+        Navigator.pop(context);
+        ItemDetailScreen.show(context, parsedId);
+      }
+    } else {
+      setState(() => _searchLoading = true);
+      try {
+        final res = await widget.api.get(
+          '/items/barcode/${Uri.encodeComponent(result.value)}',
+        );
+        if (mounted) {
+          setState(() {
+            _searchResults = res.statusCode == 200
+                ? jsonDecode(res.body) as List<dynamic>
+                : [];
+            _searchLoading = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) setState(() => _searchLoading = false);
+      }
+    }
+  }
+
   // ═══════════════════════════════════════════════
   //  Vehicle methods
   // ═══════════════════════════════════════════════
@@ -509,70 +541,39 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Search bar + scan
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Αναζήτηση με όνομα ή barcode...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 10),
-                ),
-                onChanged: (v) {
-                  _searchQuery = v;
-                  _fetchAvailableItems(v);
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton.filled(
-              onPressed: () async {
-                final choice = await showScanChoiceDialog(context);
-                if (choice == null || !mounted) return;
-                if (choice == ScanChoice.manual) return; // user can type in search field
-                final result =
-                    await Navigator.of(context).push<ScanResult>(
-                  MaterialPageRoute(
-                      builder: (_) => const ScannerScreen()),
-                );
-                if (result == null || !mounted) return;
-                final isQr = choice == ScanChoice.qrCode ? true : choice == ScanChoice.barcode ? false : result.isQr;
-                final parsedId = int.tryParse(result.value);
-                if (isQr || (parsedId != null && result.value == parsedId.toString())) {
-                  if (parsedId != null) {
-                    Navigator.pop(context);
-                    ItemDetailScreen.show(context, parsedId);
-                  }
-                } else {
-                  setState(() => _searchLoading = true);
-                  try {
-                    final res = await widget.api.get(
-                        '/items/barcode/${Uri.encodeComponent(result.value)}');
-                    if (mounted) {
-                      setState(() {
-                        _searchResults = res.statusCode == 200
-                            ? jsonDecode(res.body) as List<dynamic>
-                            : [];
-                        _searchLoading = false;
-                      });
-                    }
-                  } catch (_) {
-                    if (mounted) {
-                      setState(() => _searchLoading = false);
-                    }
-                  }
-                }
-              },
-              icon: const Icon(Icons.qr_code_scanner, size: 20),
-              tooltip: 'Σάρωση',
-              style: IconButton.styleFrom(backgroundColor: cs.primary),
-            ),
-          ],
+        // Search bar
+        TextField(
+          decoration: InputDecoration(
+            hintText: 'Αναζήτηση με όνομα ή barcode...',
+            prefixIcon: const Icon(Icons.search),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10)),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 10),
+          ),
+          onChanged: (v) {
+            _searchQuery = v;
+            _fetchAvailableItems(v);
+          },
+        ),
+        const SizedBox(height: 12),
+
+        // Two separate scan panels
+        _scanPanel(
+          icon: Icons.qr_code,
+          color: const Color(0xFF6366F1),
+          title: 'Σάρωση QR Code',
+          subtitle: 'Σάρωση κωδικού QR με κάμερα',
+          onTap: _handleScan,
+        ),
+        const SizedBox(height: 10),
+        _scanPanel(
+          icon: Icons.barcode_reader,
+          color: const Color(0xFF0D9488),
+          title: 'Σάρωση Barcode',
+          subtitle: 'Σάρωση barcode με κάμερα',
+          onTap: _handleScan,
         ),
         const SizedBox(height: 12),
         if (_searchLoading)
@@ -1057,5 +1058,69 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
       default:
         return type;
     }
+  }
+
+  Widget _scanPanel({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: 64,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: color.withAlpha(15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withAlpha(76)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color.withAlpha(30),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1F2937),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, size: 20, color: color.withAlpha(180)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
