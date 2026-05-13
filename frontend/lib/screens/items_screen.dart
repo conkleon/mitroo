@@ -103,6 +103,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
     final locationCtrl = TextEditingController();
     bool isContainer = false;
     DateTime? expirationDate;
+    int quantity = 1;
     bool autoFilling = false;
     int? selectedCategoryId;
     final depts = context.read<DepartmentProvider>().departments;
@@ -227,6 +228,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 8),
+                TextField(
+                  decoration: const InputDecoration(labelText: 'Ποσότητα'),
+                  keyboardType: TextInputType.number,
+                  onChanged: (v) => quantity = int.tryParse(v) ?? 1,
+                  controller: TextEditingController(text: '1'),
+                ),
               ],
             ),
           ),
@@ -236,7 +244,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
                 if (selectedDeptId == null) return;
-                final data = <String, dynamic>{'name': nameCtrl.text.trim(), 'isContainer': isContainer, 'departmentId': selectedDeptId};
+                final data = <String, dynamic>{'name': nameCtrl.text.trim(), 'isContainer': isContainer, 'quantity': quantity, 'departmentId': selectedDeptId};
                 if (barcodeCtrl.text.isNotEmpty) data['barCode'] = barcodeCtrl.text.trim();
                 if (locationCtrl.text.isNotEmpty) data['location'] = locationCtrl.text.trim();
                 if (descCtrl.text.isNotEmpty) data['description'] = descCtrl.text.trim();
@@ -1076,7 +1084,7 @@ class _ItemRow extends StatelessWidget {
                         ],
                       );
                     }
-                    return const Text('Αδιάθετο',
+                    return const Text('Unassigned',
                         style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)));
                   }),
                 ],

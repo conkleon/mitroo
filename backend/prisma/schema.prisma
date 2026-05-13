@@ -256,6 +256,7 @@ model Item {
   location      String? @db.VarChar(255)
 
   expirationDate         DateTime? @map("expiration_date")
+  quantity               Int      @default(1)
   assignedToId           Int?      @map("assigned_to_id")
   availableForAssignment Boolean   @default(false) @map("available_for_assignment")
   categoryId             Int?      @map("category_id")

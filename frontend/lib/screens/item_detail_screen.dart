@@ -113,45 +113,106 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     if (_item!['expirationDate'] != null) {
       expirationDate = DateTime.tryParse(_item!['expirationDate']);
     }
+    final quantityCtrl = TextEditingController(text: '${_item!['quantity'] ?? 1}');
+
+    const gap = SizedBox(height: 14);
+    final inputBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: BorderSide(color: Colors.grey.shade300),
+    );
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSt) => AlertDialog(
-          title: const Text('Επεξεργασία'),
+          title: null,
+          titlePadding: EdgeInsets.zero,
+          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
           content: SizedBox(
-            width: 400,
+            width: 480,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDC2626).withAlpha(15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFFDC2626)),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Επεξεργασία Αντικειμένου',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
                   TextField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Όνομα', border: OutlineInputBorder()),
+                    decoration: InputDecoration(
+                      labelText: 'Όνομα',
+                      border: inputBorder,
+                      enabledBorder: inputBorder,
+                      focusedBorder: inputBorder.copyWith(
+                        borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  gap,
                   TextField(
                     controller: barcodeCtrl,
-                    decoration: const InputDecoration(labelText: 'Barcode', border: OutlineInputBorder()),
+                    decoration: InputDecoration(
+                      labelText: 'Barcode',
+                      border: inputBorder,
+                      enabledBorder: inputBorder,
+                      focusedBorder: inputBorder.copyWith(
+                        borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  gap,
                   TextField(
                     controller: locationCtrl,
-                    decoration: const InputDecoration(labelText: 'Τοποθεσία', border: OutlineInputBorder()),
+                    decoration: InputDecoration(
+                      labelText: 'Τοποθεσία',
+                      border: inputBorder,
+                      enabledBorder: inputBorder,
+                      focusedBorder: inputBorder.copyWith(
+                        borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  gap,
                   TextField(
                     controller: descCtrl,
-                    decoration: const InputDecoration(labelText: 'Περιγραφή', border: OutlineInputBorder()),
+                    decoration: InputDecoration(
+                      labelText: 'Περιγραφή',
+                      border: inputBorder,
+                      enabledBorder: inputBorder,
+                      focusedBorder: inputBorder.copyWith(
+                        borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                      ),
+                    ),
                     maxLines: 3,
                   ),
-                  const SizedBox(height: 12),
+                  gap,
                   Builder(
                     builder: (_) {
                       final depts = context.read<DepartmentProvider>().departments;
                       return DropdownButtonFormField<int>(
                         value: selectedDeptId,
-                        decoration: const InputDecoration(labelText: 'Τμήμα', border: OutlineInputBorder()),
+                        decoration: InputDecoration(
+                          labelText: 'Τμήμα',
+                          border: inputBorder,
+                          enabledBorder: inputBorder,
+                          focusedBorder: inputBorder.copyWith(
+                            borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                          ),
+                        ),
                         items: depts.map<DropdownMenuItem<int>>((d) => DropdownMenuItem(
                           value: d['id'] as int,
                           child: Text(d['name'] ?? ''),
@@ -160,13 +221,20 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: 12),
+                  gap,
                   Builder(
                     builder: (_) {
                       final cats = context.read<CategoryProvider>().categories;
                       return DropdownButtonFormField<int?>(
                         value: selectedCategoryId,
-                        decoration: const InputDecoration(labelText: 'Κατηγορία', border: OutlineInputBorder()),
+                        decoration: InputDecoration(
+                          labelText: 'Κατηγορία',
+                          border: inputBorder,
+                          enabledBorder: inputBorder,
+                          focusedBorder: inputBorder.copyWith(
+                            borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                          ),
+                        ),
                         items: [
                           const DropdownMenuItem<int?>(value: null, child: Text('Χωρίς κατηγορία')),
                           ...cats.map((c) => DropdownMenuItem<int?>(
@@ -178,29 +246,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: 8),
-                  SwitchListTile(
-                    title: const Text('Κουτί'),
-                    subtitle: const Text('Μπορεί να περιέχει αντικείμενα'),
-                    value: isContainer,
-                    onChanged: (v) => setSt(() => isContainer = v),
-                  ),
-                  SwitchListTile(
-                    title: const Text('Διαθέσιμο για ανάθεση'),
-                    value: availableForAssignment,
-                    onChanged: (v) => setSt(() => availableForAssignment = v),
-                  ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(expirationDate != null
-                        ? 'Expires: ${expirationDate!.day}/${expirationDate!.month}/${expirationDate!.year}'
-                        : 'Χωρίς ημερομηνία λήξης'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.calendar_today, size: 20),
-                          onPressed: () async {
+                  gap,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
                             final picked = await showDatePicker(
                               context: ctx,
                               firstDate: DateTime(2020),
@@ -209,12 +260,85 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             );
                             if (picked != null) setSt(() => expirationDate = picked);
                           },
-                        ),
-                        if (expirationDate != null)
-                          IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () => setSt(() => expirationDate = null),
+                          borderRadius: BorderRadius.circular(10),
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              labelText: 'Ημερομηνία λήξης',
+                              border: inputBorder,
+                              enabledBorder: inputBorder,
+                              focusedBorder: inputBorder.copyWith(
+                                borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                              ),
+                              suffixIcon: expirationDate != null
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear, size: 18),
+                                      onPressed: () => setSt(() => expirationDate = null),
+                                    )
+                                  : const Icon(Icons.calendar_today_outlined, size: 20),
+                            ),
+                            child: Text(
+                              expirationDate != null
+                                  ? '${expirationDate!.day}/${expirationDate!.month}/${expirationDate!.year}'
+                                  : 'Δεν έχει οριστεί',
+                              style: TextStyle(
+                                color: expirationDate != null ? null : Colors.grey.shade500,
+                                fontSize: 15,
+                              ),
+                            ),
                           ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: TextField(
+                          controller: quantityCtrl,
+                          decoration: InputDecoration(
+                            labelText: 'Ποσότητα',
+                            border: inputBorder,
+                            enabledBorder: inputBorder,
+                            focusedBorder: inputBorder.copyWith(
+                              borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
+                  gap,
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.inventory_2, size: 18, color: Colors.grey.shade700),
+                            const SizedBox(width: 10),
+                            const Expanded(child: Text('Κουτί', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
+                            const Text('Μπορεί να περιέχει αντικείμενα', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                            const SizedBox(width: 10),
+                            Switch(
+                              value: isContainer,
+                              onChanged: (v) => setSt(() => isContainer = v),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 20),
+                        Row(
+                          children: [
+                            Icon(Icons.assignment_outlined, size: 18, color: Colors.grey.shade700),
+                            const SizedBox(width: 10),
+                            const Expanded(child: Text('Διαθέσιμο για ανάθεση', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
+                            Switch(
+                              value: availableForAssignment,
+                              onChanged: (v) => setSt(() => availableForAssignment = v),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -235,6 +359,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   'location': locationCtrl.text.isNotEmpty ? locationCtrl.text.trim() : null,
                   'description': descCtrl.text.isNotEmpty ? descCtrl.text.trim() : null,
                   'expirationDate': expirationDate?.toIso8601String(),
+                  'quantity': int.tryParse(quantityCtrl.text) ?? 1,
                   'categoryId': selectedCategoryId,
                   'departmentId': selectedDeptId,
                 };
@@ -1030,29 +1155,31 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   Widget _buildQuickInfoRow(TextTheme tt, ColorScheme cs) {
     final expDate = _item!['expirationDate'];
     final isExpired = expDate != null && DateTime.tryParse(expDate)?.isBefore(DateTime.now()) == true;
+    final qty = _item!['quantity'];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _infoChip(Icons.tag, 'ID: #${_item!['id']}', const Color(0xFF6366F1)),
-          if (_item!['department'] != null)
-            _infoChip(Icons.business_outlined, _item!['department']['name'], const Color(0xFF0D9488)),
-          if (_item!['barCode'] != null)
-            _infoChip(Icons.qr_code, _item!['barCode'], const Color(0xFFDC2626)),
-          if (_item!['location'] != null)
-            _infoChip(Icons.location_on_outlined, _item!['location'], const Color(0xFF0891B2)),
-          if (_item!['category'] != null)
-            _infoChip(Icons.category_outlined, _item!['category']['name'], const Color(0xFF8B5CF6)),
-          if (expDate != null)
-            _infoChip(
-              isExpired ? Icons.warning_amber_rounded : Icons.event,
-              _formatDate(expDate),
-              isExpired ? Colors.red : const Color(0xFFF59E0B),
-            ),
-          _infoChip(Icons.calendar_today, _formatDate(_item!['createdAt']), const Color(0xFF6B7280)),
-        ],
-      ),
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        _infoChip(Icons.tag, 'ID: #${_item!['id']}', const Color(0xFF6366F1)),
+        if (_item!['department'] != null)
+          _infoChip(Icons.business_outlined, _item!['department']['name'], const Color(0xFF0D9488)),
+        if (_item!['barCode'] != null)
+          _infoChip(Icons.qr_code, _item!['barCode'], const Color(0xFFDC2626)),
+        if (_item!['location'] != null)
+          _infoChip(Icons.location_on_outlined, _item!['location'], const Color(0xFF0891B2)),
+        if (_item!['category'] != null)
+          _infoChip(Icons.category_outlined, _item!['category']['name'], const Color(0xFF8B5CF6)),
+        if (qty != null && qty > 1)
+          _infoChip(Icons.inventory, '×$qty', const Color(0xFF059669)),
+        if (expDate != null)
+          _infoChip(
+            isExpired ? Icons.warning_amber_rounded : Icons.event,
+            _formatDate(expDate),
+            isExpired ? Colors.red : const Color(0xFFF59E0B),
+          ),
+        _infoChip(Icons.calendar_today, _formatDate(_item!['createdAt']), const Color(0xFF6B7280)),
+      ],
     );
   }
 
@@ -1079,10 +1206,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   // ── Details card ──
 
   Widget _buildDetailsCard(TextTheme tt, ColorScheme cs) {
-    final desc = _item!['description'];
-    final hasDesc = desc != null && (desc as String).isNotEmpty;
-
-    if (!hasDesc) return const SizedBox.shrink();
+    final qty = _item!['quantity'];
+    final expDate = _item!['expirationDate'];
+    final isExpired = expDate != null && DateTime.tryParse(expDate)?.isBefore(DateTime.now()) == true;
 
     return Card(
       elevation: 0,
@@ -1098,15 +1224,64 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.description_outlined, size: 18, color: cs.primary),
-                const SizedBox(width: 8),
-                Text('Περιγραφή', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1).withAlpha(15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.info_outline, size: 18, color: Color(0xFF6366F1)),
+                ),
+                const SizedBox(width: 10),
+                Text('Λεπτομέρειες', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
               ],
             ),
-            const SizedBox(height: 10),
-            Text(desc, style: tt.bodyMedium?.copyWith(color: const Color(0xFF374151), height: 1.5)),
+            const SizedBox(height: 14),
+            _detailRow(tt, 'Όνομα', _item!['name'] ?? '—'),
+            if (_item!['description'] != null && (_item!['description'] as String).isNotEmpty)
+              _detailRow(tt, 'Περιγραφή', _item!['description'], maxLines: 5),
+            _detailRow(tt, 'Barcode', _item!['barCode'] ?? '—'),
+            _detailRow(tt, 'Τοποθεσία', _item!['location'] ?? '—'),
+            _detailRow(tt, 'Ποσότητα', qty != null ? '$qty' : '1'),
+            if (expDate != null)
+              _detailRow(
+                tt,
+                'Ημερομηνία λήξης',
+                _formatDate(expDate),
+                valueColor: isExpired ? Colors.red : null,
+              ),
+            if (_item!['category'] != null)
+              _detailRow(tt, 'Κατηγορία', _item!['category']['name']),
+            _detailRow(tt, 'Τμήμα', _item!['department']?['name'] ?? '—'),
+            _detailRow(tt, 'Τύπος', _item!['isContainer'] == true ? 'Κουτί' : 'Αντικείμενο'),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _detailRow(TextTheme tt, String label, String value, {Color? valueColor, int maxLines = 2}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(label, style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280), fontSize: 12)),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: tt.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: valueColor ?? const Color(0xFF1F2937),
+              ),
+              maxLines: maxLines,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

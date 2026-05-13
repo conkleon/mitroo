@@ -197,7 +197,7 @@ Builder(builder: (context) {
   }
   return const Padding(
     padding: EdgeInsets.only(top: 4),
-    child: Text('Αδιάθετο',
+    child: Text('Unassigned',
         style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
   );
 }),
@@ -233,7 +233,7 @@ GoRoute(
 cd frontend && flutter run -d chrome
 ```
 
-1. Open Items screen — confirm each card shows either the assigned user name or "Αδιάθετο".
+1. Open Items screen — confirm each card shows either the assigned user name or "Unassigned".
 2. Navigate to `http://localhost:PORT/items?departmentId=1` (use a real dept id from your DB) — confirm the department filter dropdown is pre-selected to that department.
 
 - [ ] **Step 7: Commit**

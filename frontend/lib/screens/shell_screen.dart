@@ -267,7 +267,7 @@ class _DesktopSidebar extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          auth.isAdmin ? 'Διαχειριστής' : 'Μέλος',
+                          auth.isAdmin ? 'Διαχειριστής' : 'Εθελοντής',
                           style: tt.labelSmall?.copyWith(color: const Color(0xFF9CA3AF)),
                         ),
                       ],

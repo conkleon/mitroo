@@ -242,24 +242,32 @@ class ItemProvider extends ChangeNotifier {
 
   // ── CSV export ──
 
-  Future<String?> exportCsv() async {
+  Future<String?> exportCsv({bool template = false}) async {
     try {
-      final res = await _api.get('/items/export/csv');
+      final q = template ? '?template=true' : '';
+      final res = await _api.get('/items/export/csv$q');
       if (res.statusCode == 200) return res.body;
       return null;
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   // ── CSV import ──
 
-  Future<Map<String, dynamic>?> importCsv(List<Map<String, dynamic>> rows) async {
+  Future<Map<String, dynamic>?> importCsv(int departmentId, List<Map<String, dynamic>> rows) async {
     try {
-      final res = await _api.post('/items/import/csv', body: {'rows': rows});
+      final res = await _api.post('/items/import/csv', body: {
+        'departmentId': departmentId,
+        'rows': rows,
+      });
       if (res.statusCode == 200) {
         await fetchItems();
         return jsonDecode(res.body);
       }
       return {'error': jsonDecode(res.body)['error'] ?? 'Failed'};
-    } catch (e) { return {'error': 'Error: $e'}; }
+    } catch (e) {
+      return {'error': 'Error: $e'};
+    }
   }
 }

@@ -57,6 +57,7 @@ const createSchema = z.object({
   isContainer: z.boolean().optional(),
   location: z.string().optional().nullable(),
   expirationDate: z.string().optional().nullable(), // ISO-8601
+  quantity: z.number().int().min(0).optional(),
   availableForAssignment: z.boolean().optional(),
   categoryId: z.number().int().optional().nullable(),
   departmentId: z.number().int(),
@@ -74,46 +75,81 @@ const assignUserSchema = z.object({
 });
 // ── CSV Export / Import (MUST be before /:id routes) ──────────
 
+const CSV_HEADER_FULL =
+  "id,name,description,barCode,location,categoryName,isContainer,availableForAssignment,quantity,containedById,containedByName,assignedToId,assignedToName,expirationDate,departmentId,departmentName";
+
+const CSV_HEADER_TEMPLATE =
+  "name,description,barCode,location,categoryName,isContainer,quantity,expirationDate";
+
+function csvRow(item: any): string {
+  const assignedName = item.assignedTo
+    ? `${item.assignedTo.forename} ${item.assignedTo.surname}`
+    : "";
+  return [
+    item.id,
+    `"${(item.name || "").replace(/"/g, '""')}"`,
+    `"${(item.description || "").replace(/"/g, '""')}"`,
+    `"${item.barCode || ""}"`,
+    `"${(item.location || "").replace(/"/g, '""')}"`,
+    `"${(item.category?.name || "").replace(/"/g, '""')}"`,
+    item.isContainer,
+    item.availableForAssignment,
+    item.quantity,
+    item.containedById || "",
+    `"${item.containedBy?.name || ""}"`,
+    item.assignedToId || "",
+    `"${assignedName}"`,
+    item.expirationDate ? item.expirationDate.toISOString() : "",
+    item.departmentId,
+    `"${item.department?.name || ""}"`,
+  ].join(",");
+}
+
 // GET /api/items/export/csv
+// ?template=true — returns a single example row instead of all items
 router.get("/export/csv", async (req: Request, res: Response) => {
   if (!(await isItemManager(req))) {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }
+
+  const isTemplate = req.query.template === "true";
+
+  if (isTemplate) {
+    const example = [
+      CSV_HEADER_TEMPLATE,
+      '"Παράδειγμα","Περιγραφή","BC-001","Αποθήκη Α","Αναλώσιμα",false,1,',
+    ].join("\n");
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=items_template.csv",
+    );
+    res.send(example);
+    return;
+  }
+
   const items = await prisma.item.findMany({
     include: {
       containedBy: { select: { id: true, name: true } },
       assignedTo: { select: { id: true, forename: true, surname: true } },
       department: { select: { id: true, name: true } },
+      category: { select: { name: true } },
     },
     orderBy: { id: "asc" },
   });
 
-  const header = "id,name,description,barCode,location,isContainer,availableForAssignment,containedById,containedByName,assignedToId,assignedToName,expirationDate,departmentId,departmentName";
-  const rows = items.map((i) => {
-    const assignedName = i.assignedTo ? `${i.assignedTo.forename} ${i.assignedTo.surname}` : "";
-    return [
-      i.id,
-      `"${(i.name || "").replace(/"/g, '""')}"`,
-      `"${(i.description || "").replace(/"/g, '""')}"`,
-      `"${i.barCode || ""}"`,
-      `"${(i.location || "").replace(/"/g, '""')}"`,
-      i.isContainer,
-      i.availableForAssignment,
-      i.containedById || "",
-      `"${i.containedBy?.name || ""}"`,
-      i.assignedToId || "",
-      `"${assignedName}"`,
-      i.expirationDate ? i.expirationDate.toISOString() : "",
-      i.departmentId,
-      `"${i.department?.name || ""}"`,
-    ].join(",");
-  });
-
-  const csv = [header, ...rows].join("\n");
+  const csv = [CSV_HEADER_FULL, ...items.map(csvRow)].join("\n");
   res.setHeader("Content-Type", "text/csv");
   res.setHeader("Content-Disposition", "attachment; filename=items.csv");
   res.send(csv);
+});
+
+const importSchema = z.object({
+  departmentId: z.number().int(),
+  rows: z
+    .array(z.record(z.unknown()))
+    .min(1),
 });
 
 // POST /api/items/import/csv
@@ -122,42 +158,98 @@ router.post("/import/csv", async (req: Request, res: Response) => {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }
-  const { rows } = req.body;
-  if (!Array.isArray(rows) || rows.length === 0) {
-    res.status(400).json({ error: "No rows provided" });
-    return;
+
+  let body: { departmentId: number; rows: Record<string, unknown>[] };
+  try {
+    body = importSchema.parse(req.body);
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res
+        .status(400)
+        .json({ error: "Validation failed", details: err.errors });
+      return;
+    }
+    throw err;
+  }
+
+  const { departmentId, rows } = body;
+
+  // Resolve category cache: name → categoryId for this department
+  const catCache = new Map<string, number>();
+  async function resolveCategory(
+    name: string,
+  ): Promise<number> {
+    const key = name.trim();
+    const cached = catCache.get(key);
+    if (cached !== undefined) return cached;
+
+    let cat = await prisma.itemCategory.findFirst({
+      where: { name: key, departmentId },
+    });
+    if (!cat) {
+      cat = await prisma.itemCategory.create({
+        data: { name: key, departmentId },
+      });
+    }
+    catCache.set(key, cat.id);
+    return cat.id;
   }
 
   let created = 0;
-  let errors: string[] = [];
+  const errors: string[] = [];
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
-    if (!r.name || typeof r.name !== "string" || r.name.trim().length === 0) {
-      errors.push(`Row ${i + 1}: name is required`);
+    const rowNum = i + 1;
+
+    const name =
+      typeof r.name === "string" ? r.name.trim() : "";
+    if (!name) {
+      errors.push(`Row ${rowNum}: name is required`);
       continue;
     }
+
     try {
-      if (!r.departmentId) {
-        errors.push(`Row ${i + 1}: departmentId is required`);
-        continue;
+      let categoryId: number | null = null;
+      if (typeof r.categoryName === "string" && r.categoryName.trim()) {
+        categoryId = await resolveCategory(r.categoryName);
       }
-      await prisma.item.create({
-        data: {
-          name: r.name.trim(),
-          description: r.description?.trim() || null,
-          barCode: r.barCode?.trim() || null,
-          location: r.location?.trim() || null,
-          isContainer: r.isContainer === true || r.isContainer === "true",
-          availableForAssignment: r.availableForAssignment === true || r.availableForAssignment === "true",
-          expirationDate: r.expirationDate ? new Date(r.expirationDate) : null,
-          departmentId: Number(r.departmentId),
-        },
-      });
+
+      const data: any = {
+        name,
+        departmentId,
+        description:
+          typeof r.description === "string" && r.description.trim()
+            ? r.description.trim()
+            : null,
+        barCode:
+          typeof r.barCode === "string" && r.barCode.trim()
+            ? r.barCode.trim()
+            : null,
+        location:
+          typeof r.location === "string" && r.location.trim()
+            ? r.location.trim()
+            : null,
+        categoryId,
+        isContainer: r.isContainer === true || r.isContainer === "true",
+        availableForAssignment:
+          r.availableForAssignment === true ||
+          r.availableForAssignment === "true",
+        quantity:
+          r.quantity !== undefined && r.quantity !== ""
+            ? Number(r.quantity)
+            : 1,
+        expirationDate: r.expirationDate
+          ? new Date(r.expirationDate as string)
+          : null,
+      };
+
+      await prisma.item.create({ data });
       created++;
     } catch (e: any) {
-      errors.push(`Row ${i + 1}: ${e.message}`);
+      errors.push(`Row ${rowNum}: ${e.message}`);
     }
   }
+
   res.json({ created, errors });
 });
 // ── GET /api/items ──────────────────────────────

@@ -108,7 +108,7 @@ File: `frontend/lib/screens/items_screen.dart`
 On each item card/row, add an assigned-user element:
 
 - **Assigned:** `CircleAvatar` (initials, size 16) + assignee name in a grey pill row, positioned below the item name
-- **Unassigned:** muted `Αδιάθετο` label (already present or add if missing)
+- **Unassigned:** muted `Unassigned` label (already present or add if missing)
 
 No data removed. All existing fields (category, department, barcode, container hierarchy, expiration date) remain visible. Assigned user moves from detail-only to list-visible.
 
