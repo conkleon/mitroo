@@ -97,6 +97,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         selectedUserId: _drawerUserId,
         onUserSelected: (id) => setState(() => _drawerUserId = id),
         onBack: () => setState(() => _drawerUserId = null),
+        onDeleted: () {
+          setState(() => _drawerUserId = null);
+          _scaffoldKey.currentState?.closeEndDrawer();
+        },
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -686,6 +690,7 @@ class _UserDrawer extends StatefulWidget {
   final int? selectedUserId;
   final ValueChanged<int> onUserSelected;
   final VoidCallback onBack;
+  final VoidCallback? onDeleted;
 
   const _UserDrawer({
     required this.deptId,
@@ -693,6 +698,7 @@ class _UserDrawer extends StatefulWidget {
     required this.selectedUserId,
     required this.onUserSelected,
     required this.onBack,
+    this.onDeleted,
   });
 
   @override
@@ -808,8 +814,10 @@ class _UserDrawerState extends State<_UserDrawer> {
               child: inDetail
                   ? Navigator(
                       onGenerateRoute: (_) => MaterialPageRoute(
-                        builder: (_) =>
-                            UserDetailBody(userId: widget.selectedUserId!),
+                        builder: (_) => UserDetailBody(
+                          userId: widget.selectedUserId!,
+                          onDeleted: widget.onDeleted,
+                        ),
                       ),
                     )
                   : _buildList(tt, cs),

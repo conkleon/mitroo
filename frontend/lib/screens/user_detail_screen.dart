@@ -8,7 +8,8 @@ import '../services/api_client.dart';
 /// User detail content without a Scaffold — safe to embed in a Drawer.
 class UserDetailBody extends StatefulWidget {
   final int userId;
-  const UserDetailBody({super.key, required this.userId});
+  final VoidCallback? onDeleted;
+  const UserDetailBody({super.key, required this.userId, this.onDeleted});
 
   @override
   State<UserDetailBody> createState() => _UserDetailBodyState();
@@ -199,7 +200,8 @@ class _UserDetailBodyState extends State<UserDetailBody> {
       final res = await _api.delete('/users/${widget.userId}');
       if (!mounted) return;
       if (res.statusCode == 204) {
-        context.pop();
+        widget.onDeleted?.call();
+        if (mounted) context.pop();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Αποτυχία διαγραφής χρήστη')));
       }
