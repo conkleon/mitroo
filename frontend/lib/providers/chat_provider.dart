@@ -30,8 +30,13 @@ class ChatProvider extends ChangeNotifier {
 
   String get _serverUrl {
     final base = ApiConfig.baseUrl;
-    if (base.endsWith('/api')) return base.substring(0, base.length - 4);
-    return base;
+    // Full URL (dev mode, e.g. http://localhost:4000/api)
+    if (base.startsWith('http://') || base.startsWith('https://')) {
+      if (base.endsWith('/api')) return base.substring(0, base.length - 4);
+      return base;
+    }
+    // Relative path (production, e.g. /api) — socket.io connects to same origin
+    return Uri.base.origin;
   }
 
   Future<void> connect() async {
