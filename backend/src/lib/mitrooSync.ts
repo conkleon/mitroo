@@ -312,9 +312,13 @@ export async function writeBackServiceDelete(serviceId: number): Promise<void> {
       externalMissionId: true,
     },
   });
+  if (!service) {
+    console.log(`[mitrooSync] writeBackServiceDelete: skipped — service ${serviceId} not found`);
+    return;
+  }
   const missing: string[] = [];
-  if (!service?.externalShiftId) missing.push("externalShiftId");
-  if (!service?.externalMissionId) missing.push("externalMissionId");
+  if (!service.externalShiftId) missing.push("externalShiftId");
+  if (!service.externalMissionId) missing.push("externalMissionId");
   if (missing.length) {
     console.log(
       `[mitrooSync] writeBackServiceDelete: skipped — service ${serviceId} missing ${missing.join(", ")}`,
@@ -339,6 +343,7 @@ export async function writeBackServiceDelete(serviceId: number): Promise<void> {
       ? `${formatDateTime(startAt)}${endAt ? `-${formatDateTime(endAt)}` : ""}`
       : "";
     // External system expects Greek cancellation messages for mission shift notifications.
+    // Strip control characters and angle brackets to avoid injection in external email messages.
     const safeName = String(service.name ?? "").replace(/[\r\n<>]+/g, " ").trim();
     const emailMessage = window
       ? `Η βάρδια ${safeName} (${window}) έχει ακυρωθεί.`

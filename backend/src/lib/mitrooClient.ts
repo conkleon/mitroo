@@ -55,6 +55,7 @@ const MISSION_SUBMIT_VALUE = "ΔΗΜΙΟΥΡΓΙΑ";
 // Safety cap: prevent infinite pagination if the upstream API never returns a short page.
 const MAX_OPEN_MISSION_PAGES = 200;
 
+// Normalize external mission fields for matching between form inputs and API responses.
 const normalizeDate = (value: string | undefined) =>
   value ? String(value).trim().slice(0, 10) : "";
 
@@ -248,9 +249,6 @@ export class MitrooClient {
     const match = recentMatches.reduce((best, mission) =>
       Number(mission.id) > Number(best.id) ? mission : best,
     );
-    if (!match?.id) {
-      throw new Error(`createMission: could not resolve mission ID for "${params.title}"`);
-    }
     return Number(match.id);
   }
 
