@@ -131,6 +131,11 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
       console.log("[mitrooSync] Sample mission fields:", Object.keys(missions[0]));
     }
 
+    const parseHours = (value: unknown) => {
+      const num = Number(value ?? 0);
+      return Number.isFinite(num) ? num : 0;
+    };
+
     for (const mission of missions) {
       const missionId = Number(mission.id);
       let shifts = [];
@@ -156,6 +161,11 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
           const endAt = shift.shift_end_date
             ? new Date(shift.shift_end_date as string)
             : undefined;
+          const defaultHours = parseHours(shift.hours_sanitary);
+          const defaultHoursVol = parseHours(shift.hours_volunteering);
+          const defaultHoursTraining = parseHours(shift.hours_training);
+          const defaultHoursTrainers = parseHours(shift.hours_retraining);
+          const defaultHoursTEP = parseHours(shift.hours_tep);
 
           const existing = await prisma.service.findFirst({
             where: { externalShiftId },
@@ -165,7 +175,17 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
           if (existing) {
             await prisma.service.update({
               where: { id: existing.id },
-              data: { name, startAt, endAt, externalMissionId: missionId },
+              data: {
+                name,
+                startAt,
+                endAt,
+                externalMissionId: missionId,
+                defaultHours,
+                defaultHoursVol,
+                defaultHoursTraining,
+                defaultHoursTrainers,
+                defaultHoursTEP,
+              },
             });
             result.updated++;
           } else {
@@ -177,6 +197,11 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
                 externalMissionId: missionId,
                 startAt,
                 endAt,
+                defaultHours,
+                defaultHoursVol,
+                defaultHoursTraining,
+                defaultHoursTrainers,
+                defaultHoursTEP,
               },
             });
             result.created++;
@@ -204,10 +229,17 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
     select: {
       id: true,
       name: true,
+      description: true,
+      location: true,
       startAt: true,
       endAt: true,
       departmentId: true,
       externalShiftId: true,
+      defaultHours: true,
+      defaultHoursVol: true,
+      defaultHoursTraining: true,
+      defaultHoursTrainers: true,
+      defaultHoursTEP: true,
     },
   });
   if (!service || service.externalShiftId) return;
@@ -221,19 +253,29 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
   try {
     const client = await getClient(service.departmentId);
 
-    const fmt = (d: Date | null | undefined) =>
+    const fmtDate = (d: Date | null | undefined) =>
+      d ? d.toISOString().slice(0, 10) : "";
+    const fmtDateTime = (d: Date | null | undefined) =>
       d ? d.toISOString().slice(0, 16).replace("T", " ") : "";
+    const endAt = service.endAt ?? service.startAt;
 
-    const missionId = await client.createMission(
-      service.name,
-      fmt(service.startAt),
-      fmt(service.endAt),
-    );
+    const missionId = await client.createMission({
+      title: service.name,
+      start_date: fmtDate(service.startAt),
+      end_date: fmtDate(endAt),
+      location_text: service.location ?? "",
+      comments: service.description ?? "",
+    });
 
     const shiftId = await client.createShift({
       mission_id: missionId,
-      shift_start_date: fmt(service.startAt),
-      shift_end_date: fmt(service.endAt),
+      shift_start_date: fmtDateTime(service.startAt),
+      shift_end_date: fmtDateTime(endAt),
+      hours_sanitary: service.defaultHours ?? 0,
+      hours_volunteering: service.defaultHoursVol ?? 0,
+      hours_training: service.defaultHoursTraining ?? 0,
+      hours_retraining: service.defaultHoursTrainers ?? 0,
+      hours_tep: service.defaultHoursTEP ?? 0,
     });
 
     await prisma.service.update({

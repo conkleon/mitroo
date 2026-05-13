@@ -18,6 +18,8 @@ export interface ExternalMission {
   title?: string;
   start_date?: string;
   end_date?: string;
+  location_text?: string;
+  mission_type_id?: string | number;
   [key: string]: unknown;
 }
 
@@ -28,7 +30,23 @@ export interface ExternalShift {
   shift_end_date?: string;
   total_participants?: number | string;
   title?: string;
+  hours_lifeguard?: number | string;
+  hours_sanitary?: number | string;
+  hours_training?: number | string;
+  hours_retraining?: number | string;
+  hours_tep?: number | string;
+  hours_volunteering?: number | string;
   [key: string]: unknown;
+}
+
+export interface CreateMissionParams {
+  title: string;
+  start_date: string; // "YYYY-MM-DD"
+  end_date: string;
+  location_text?: string;
+  location_url?: string;
+  comments?: string;
+  mission_type_id?: number; // default 16 (observed in HAR)
 }
 
 export interface CreateShiftParams {
@@ -110,6 +128,21 @@ export class MitrooClient {
     }
   }
 
+  async fetchOpenMissions(): Promise<ExternalMission[]> {
+    const res = await this._xhr(
+      "/index.php/ajaxdptadmin/GridGetMissions/open/?$count=true&$skip=0&$top=500",
+    );
+    const text = await res.text();
+    try {
+      const parsed = JSON.parse(text);
+      const rows = Array.isArray(parsed) ? parsed : (parsed.result ?? []);
+      return rows;
+    } catch {
+      console.error("[MitrooClient] fetchOpenMissions: unexpected response:", text.slice(0, 300));
+      throw new Error("fetchOpenMissions: invalid JSON response");
+    }
+  }
+
   async fetchShiftsForMission(missionId: number): Promise<ExternalShift[]> {
     const res = await this._xhr(
       `/index.php/ajaxdptadmin/mission_shifts_by_mission_with_members/${missionId}`,
@@ -130,28 +163,45 @@ export class MitrooClient {
 
   // ── Write-back ────────────────────────────────────────────────────────────
 
-  // ⚠️ HAR GAP: "create mission" endpoint not captured.
-  // Discover by recording a HAR while creating a mission in the original Mitroo admin panel.
-  // Expected path: /ajaxdptadmin/MissionCreate or similar.
-  async createMission(name: string, startDate: string, endDate: string): Promise<number> {
+  async createMission(params: CreateMissionParams): Promise<number> {
     await this._refreshCsrf();
     const body = new URLSearchParams({
-      name,
-      start_date: startDate,
-      end_date: endDate,
+      title: params.title,
+      start_date: params.start_date,
+      end_date: params.end_date,
+      location_text: params.location_text ?? "",
+      location_url: params.location_url ?? "",
+      comments: params.comments ?? "",
+      mission_type_id: String(params.mission_type_id ?? 16),
       rccrmtk: this.csrfToken,
+      submit: "ΔΗΜΙΟΥΡΓΙΑ",
     });
-    // TODO: replace path once discovered from HAR recording
-    const res = await this._post("/ajaxdptadmin/MissionCreate", body);
+    const res = await this._post("/index.php/dptadmin/newmission", body, { xhr: false });
     const text = await res.text();
-    try {
-      const json = JSON.parse(text);
-      const id = json.new_mission_id ?? json.mission_id ?? json.id;
-      if (!id) throw new Error(`createMission: no ID in response: ${text.slice(0, 200)}`);
-      return Number(id);
-    } catch (e) {
-      throw new Error(`createMission failed: ${e}`);
+    if (!res.ok) {
+      throw new Error(`createMission failed (${res.status}): ${text.slice(0, 200)}`);
     }
+
+    const title = params.title.trim();
+    const startDate = params.start_date;
+    const endDate = params.end_date;
+    const missions = await this.fetchOpenMissions();
+    const matches = missions.filter((mission) => {
+      const missionTitle = String(mission.title ?? "").trim();
+      if (!missionTitle || missionTitle !== title) return false;
+      if (startDate && mission.start_date && mission.start_date !== startDate) return false;
+      if (endDate && mission.end_date && mission.end_date !== endDate) return false;
+      if (params.location_text && mission.location_text && mission.location_text !== params.location_text) {
+        return false;
+      }
+      return true;
+    });
+
+    const match = matches.sort((a, b) => Number(b.id) - Number(a.id))[0];
+    if (!match?.id) {
+      throw new Error(`createMission: could not resolve mission ID for "${params.title}"`);
+    }
+    return Number(match.id);
   }
 
   async createShift(params: CreateShiftParams): Promise<number> {
@@ -341,15 +391,16 @@ export class MitrooClient {
   private async _post(
     path: string,
     body: URLSearchParams,
-    opts: { followRedirects?: boolean } = {},
+    opts: { followRedirects?: boolean; xhr?: boolean } = {},
   ): Promise<Response> {
+    const headers: Record<string, string> = {
+      Cookie: this._cookieHeader(),
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    };
+    if (opts.xhr !== false) headers["X-Requested-With"] = "XMLHttpRequest";
     return fetch(`${this.baseUrl}${path}`, {
       method: "POST",
-      headers: {
-        Cookie: this._cookieHeader(),
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "X-Requested-With": "XMLHttpRequest",
-      },
+      headers,
       body: body.toString(),
       redirect: opts.followRedirects === false ? "manual" : "follow",
     });
