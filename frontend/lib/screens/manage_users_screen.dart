@@ -34,6 +34,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
   int _page = 0;
   int _rowsPerPage = 25;
 
+  // Selection
+  bool _selectionMode = false;
+  final Set<int> _selectedIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -161,6 +165,44 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         _sortAsc = field == 'name'; // name ascending, hours descending by default
       }
       _page = 0;
+    });
+  }
+
+  // ── Selection ───────────────────────────────────
+  void _enterSelectionMode(int userId) {
+    setState(() {
+      _selectionMode = true;
+      _selectedIds.add(userId);
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _selectionMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleSelect(int userId) {
+    setState(() {
+      if (_selectedIds.contains(userId)) {
+        _selectedIds.remove(userId);
+        if (_selectedIds.isEmpty) _selectionMode = false;
+      } else {
+        _selectedIds.add(userId);
+      }
+    });
+  }
+
+  void _toggleSelectAll(List<Map<String, dynamic>> pageUsers) {
+    setState(() {
+      final pageIds = pageUsers.map((u) => u['id'] as int).toSet();
+      if (pageIds.every((id) => _selectedIds.contains(id))) {
+        _selectedIds.removeAll(pageIds);
+        if (_selectedIds.isEmpty) _selectionMode = false;
+      } else {
+        _selectedIds.addAll(pageIds);
+      }
     });
   }
 
@@ -397,7 +439,9 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
               label: const Text('Νέος Χρήστης'),
             )
           : null,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          SafeArea(
         child: Column(
           children: [
             // ── Filters ──
@@ -483,6 +527,21 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                             color: const Color(0xFFEEF0F4),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                             child: Row(children: [
+                              if (_selectionMode)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: Checkbox(
+                                    value: pageUsers.isNotEmpty &&
+                                        pageUsers.every((u) =>
+                                            _selectedIds.contains(u['id'] as int)),
+                                    tristate: false,
+                                    onChanged: (_) => _toggleSelectAll(pageUsers),
+                                    visualDensity: VisualDensity.compact,
+                                    activeColor: const Color(0xFF7C3AED),
+                                  ),
+                                )
+                              else
+                                const SizedBox(width: 8),
                               _headerCell('Name', 'name', flex: 3),
                               _headerCell('Total', 'totalHours'),
                               _headerCell('Year', 'yearHours'),
@@ -508,7 +567,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                         ]),
             ),
           ],
+          ),
         ),
+          _buildBulkBar(),
+        ],
       ),
     );
   }
@@ -539,75 +601,106 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
   Widget _buildRow(Map<String, dynamic> user, TextTheme tt, bool even) {
     final name = '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
     final isAdmin = user['isAdmin'] == true;
+    final userId = user['id'] as int;
+    final isSelected = _selectedIds.contains(userId);
 
-    return InkWell(
-      onTap: () async {
-        await context.push('/admin/users/${user['id']}');
-        if (mounted) _fetch();
-      },
-      child: Container(
-        color: even ? Colors.white : const Color(0xFFF9FAFB),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(children: [
-          // Name cell
-          Expanded(
-            flex: 3,
-            child: Row(children: [
-              CircleAvatar(
-                radius: 15,
-                backgroundColor: isAdmin ? Colors.amber.shade100 : const Color(0xFFFEE2E2),
-                child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: isAdmin ? Colors.amber.shade800 : const Color(0xFFDC2626)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Flexible(
-                        child: Text(name.isNotEmpty ? name : user['eame'] ?? '',
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
+    return GestureDetector(
+      onLongPress: () => _enterSelectionMode(userId),
+      child: InkWell(
+        onTap: () {
+          if (_selectionMode) {
+            _toggleSelect(userId);
+          } else {
+            context.push('/admin/users/$userId').then((_) {
+              if (mounted) _fetch();
+            });
+          }
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          color: isSelected
+              ? const Color(0xFFEEF2FF)
+              : even
+                  ? Colors.white
+                  : const Color(0xFFF9FAFB),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 150),
+              child: _selectionMode
+                  ? Checkbox(
+                      key: ValueKey(userId),
+                      value: isSelected,
+                      onChanged: (_) => _toggleSelect(userId),
+                      visualDensity: VisualDensity.compact,
+                      activeColor: const Color(0xFF7C3AED),
+                    )
+                  : CircleAvatar(
+                      key: ValueKey('avatar_$userId'),
+                      radius: 15,
+                      backgroundColor: isAdmin
+                          ? Colors.amber.shade100
+                          : const Color(0xFFFEE2E2),
+                      child: Text(
+                        name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: isAdmin
+                                ? Colors.amber.shade800
+                                : const Color(0xFFDC2626)),
                       ),
-                      if (isAdmin) ...[
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(
-                              color: Colors.amber.withAlpha(30),
-                              borderRadius: BorderRadius.circular(3)),
-                          child: Text('A',
-                              style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.amber.shade800)),
-                        ),
-                      ],
-                    ]),
-                    Text(user['eame'] ?? '',
-                        style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                  ],
-                ),
+                    ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Flexible(
+                      child: Text(name.isNotEmpty ? name : user['eame'] ?? '',
+                          style: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                    if (isAdmin) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                            color: Colors.amber.withAlpha(30),
+                            borderRadius: BorderRadius.circular(3)),
+                        child: Text('A',
+                            style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.amber.shade800)),
+                      ),
+                    ],
+                  ]),
+                  Text(user['eame'] ?? '',
+                      style: const TextStyle(
+                          fontSize: 10, color: Color(0xFF9CA3AF)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                ],
               ),
-            ]),
-          ),
-          // Hours cells
-          _hoursCell(user['totalHours']),
-          _hoursCell(user['yearHours']),
-          _hoursCell(user['yearVolHours']),
-          _hoursCell(user['yearTrainingHours']),
-          _hoursCell(user['yearTrainerHours']),
-          const Icon(Icons.chevron_right, size: 16, color: Color(0xFFD1D5DB)),
-        ]),
+            ),
+            _hoursCell(user['totalHours']),
+            _hoursCell(user['yearHours']),
+            _hoursCell(user['yearVolHours']),
+            _hoursCell(user['yearTrainingHours']),
+            _hoursCell(user['yearTrainerHours']),
+            _selectionMode
+                ? const SizedBox(width: 16)
+                : const Icon(Icons.chevron_right,
+                    size: 16, color: Color(0xFFD1D5DB)),
+          ]),
+        ),
       ),
     );
   }
@@ -677,6 +770,325 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     );
   }
 
+  Widget _buildBulkBar() {
+    return AnimatedSlide(
+      offset: _selectionMode ? Offset.zero : const Offset(0, 1),
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      child: AnimatedOpacity(
+        opacity: _selectionMode ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 200),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1B4B),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withAlpha(60),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4)),
+              ],
+            ),
+            child: Row(children: [
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                onPressed: _exitSelectionMode,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints:
+                    const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${_selectedIds.length} επιλεγμένοι',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13),
+              ),
+              const Spacer(),
+              _BulkAction(
+                icon: Icons.school_outlined,
+                label: 'Ειδίκευση',
+                onTap: _showSpecializationDialog,
+              ),
+              _BulkAction(
+                icon: Icons.assignment_outlined,
+                label: 'Υπηρεσία',
+                onTap: _showServiceDialog,
+              ),
+              if (_deptFilter != null)
+                _BulkAction(
+                  icon: Icons.manage_accounts_outlined,
+                  label: 'Ρόλος',
+                  onTap: _showRoleDialog,
+                ),
+              _BulkAction(
+                icon: Icons.delete_outline,
+                label: 'Διαγραφή',
+                color: const Color(0xFFEF4444),
+                onTap: _showDeleteDialog,
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showSpecializationDialog() async {
+    int? selectedSpecId;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          title: Text('Ανάθεση ειδίκευσης σε ${_selectedIds.length} χρήστες'),
+          content: SizedBox(
+            width: 320,
+            child: DropdownButtonFormField<int>(
+              decoration: const InputDecoration(
+                  labelText: 'Ειδίκευση', border: OutlineInputBorder()),
+              items: _allSpecs
+                  .map((s) => DropdownMenuItem<int>(
+                        value: s['id'] as int,
+                        child: Text(s['name']?.toString() ?? ''),
+                      ))
+                  .toList(),
+              onChanged: (v) => setDlg(() => selectedSpecId = v),
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Άκυρο')),
+            FilledButton(
+                onPressed: selectedSpecId != null
+                    ? () => Navigator.pop(ctx, true)
+                    : null,
+                child: const Text('Ανάθεση')),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || selectedSpecId == null || !mounted) return;
+
+    int ok = 0;
+    int fail = 0;
+    await Future.wait(_selectedIds.map((uid) async {
+      try {
+        final res = await _api.post('/users/$uid/specializations',
+            body: {'specializationId': selectedSpecId});
+        res.statusCode == 201 ? ok++ : fail++;
+      } catch (_) {
+        fail++;
+      }
+    }));
+    if (!mounted) return;
+    _exitSelectionMode();
+    _fetch();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(fail == 0
+          ? '$ok χρήστες ενημερώθηκαν'
+          : '$ok ενημερώθηκαν, $fail αποτυχίες'),
+    ));
+  }
+
+  Future<void> _showServiceDialog() async {
+    if (_deptFilter == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Επιλέξτε τμήμα για να αναθέσετε χρήστες σε υπηρεσία')),
+      );
+      return;
+    }
+
+    List<dynamic> services = [];
+    try {
+      final res = await _api
+          .get('/services?departmentId=$_deptFilter&includeEnrollments=false');
+      if (res.statusCode == 200) services = jsonDecode(res.body);
+    } catch (_) {}
+
+    final now = DateTime.now();
+    final active = services.where((s) {
+      final end = DateTime.tryParse(s['endAt'] ?? '');
+      return end == null || end.isAfter(now);
+    }).toList();
+
+    if (!mounted) return;
+    if (active.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Δεν υπάρχουν ενεργές υπηρεσίες')),
+      );
+      return;
+    }
+
+    int? selectedServiceId;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          title: Text('Ανάθεση ${_selectedIds.length} χρηστών σε υπηρεσία'),
+          content: SizedBox(
+            width: 360,
+            child: DropdownButtonFormField<int>(
+              decoration: const InputDecoration(
+                  labelText: 'Υπηρεσία', border: OutlineInputBorder()),
+              isExpanded: true,
+              items: active
+                  .map((s) => DropdownMenuItem<int>(
+                        value: s['id'] as int,
+                        child: Text(s['name']?.toString() ?? '',
+                            overflow: TextOverflow.ellipsis),
+                      ))
+                  .toList(),
+              onChanged: (v) => setDlg(() => selectedServiceId = v),
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Άκυρο')),
+            FilledButton(
+                onPressed: selectedServiceId != null
+                    ? () => Navigator.pop(ctx, true)
+                    : null,
+                child: const Text('Ανάθεση')),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || selectedServiceId == null || !mounted) return;
+
+    int ok = 0;
+    int fail = 0;
+    await Future.wait(_selectedIds.map((uid) async {
+      try {
+        final res = await _api.post('/services/$selectedServiceId/enroll',
+            body: {'userId': uid, 'status': 'accepted'});
+        (res.statusCode == 201 || res.statusCode == 409) ? ok++ : fail++;
+      } catch (_) {
+        fail++;
+      }
+    }));
+    if (!mounted) return;
+    _exitSelectionMode();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(fail == 0
+          ? '$ok χρήστες εγγράφηκαν'
+          : '$ok εγγράφηκαν, $fail αποτυχίες'),
+    ));
+  }
+
+  Future<void> _showRoleDialog() async {
+    if (_deptFilter == null) return;
+    String selectedRole = 'volunteer';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          title: Text('Αλλαγή ρόλου για ${_selectedIds.length} χρήστες'),
+          content: SizedBox(
+            width: 320,
+            child: DropdownButtonFormField<String>(
+              value: selectedRole,
+              decoration: const InputDecoration(
+                  labelText: 'Ρόλος', border: OutlineInputBorder()),
+              items: const [
+                DropdownMenuItem(
+                    value: 'volunteer', child: Text('Εθελοντής')),
+                DropdownMenuItem(
+                    value: 'missionAdmin', child: Text('Δ. Αποστολών')),
+                DropdownMenuItem(
+                    value: 'itemAdmin', child: Text('Δ. Υλικού')),
+              ],
+              onChanged: (v) =>
+                  setDlg(() => selectedRole = v ?? 'volunteer'),
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Άκυρο')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Εφαρμογή')),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    int ok = 0;
+    int fail = 0;
+    await Future.wait(_selectedIds.map((uid) async {
+      try {
+        final res = await _api.patch(
+            '/departments/$_deptFilter/members/$uid',
+            body: {'role': selectedRole});
+        res.statusCode == 200 ? ok++ : fail++;
+      } catch (_) {
+        fail++;
+      }
+    }));
+    if (!mounted) return;
+    _exitSelectionMode();
+    _fetch();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(fail == 0
+          ? '$ok χρήστες ενημερώθηκαν'
+          : '$ok ενημερώθηκαν, $fail αποτυχίες'),
+    ));
+  }
+
+  Future<void> _showDeleteDialog() async {
+    final count = _selectedIds.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Διαγραφή Χρηστών'),
+        content: Text(
+            'Διαγραφή $count χρηστών; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Διαγραφή'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    int ok = 0;
+    int fail = 0;
+    await Future.wait(_selectedIds.map((uid) async {
+      try {
+        final res = await _api.delete('/users/$uid');
+        res.statusCode == 204 ? ok++ : fail++;
+      } catch (_) {
+        fail++;
+      }
+    }));
+    if (!mounted) return;
+    _exitSelectionMode();
+    _fetch();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(fail == 0
+          ? '$ok χρήστες διαγράφηκαν'
+          : '$ok διαγράφηκαν, $fail αποτυχίες'),
+    ));
+  }
+
   Widget _buildDeptFilter() {
     final depts = _filterableDepts;
     final auth = context.read<AuthProvider>();
@@ -708,6 +1120,40 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           ],
           onChanged: (v) => setState(() { _deptFilter = v; _page = 0; }),
         ),
+      ),
+    );
+  }
+}
+
+class _BulkAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _BulkAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color = Colors.white,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 2),
+          Text(label,
+              style: TextStyle(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600)),
+        ]),
       ),
     );
   }
