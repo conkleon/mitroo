@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
 import '../services/api_client.dart';
 
@@ -444,7 +443,6 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
     final filtered = _filtered;
     final specs = _allSpecs;
 
@@ -625,7 +623,6 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     final id = svc['id'] as int;
     final name = svc['name'] ?? '';
     final location = svc['location'] ?? '';
-    final carrier = svc['carrier'] ?? '';
     final status = _statusLabel(svc);
     final sColor = _statusColor(status);
     final enrolledCount = (svc['_count']?['userServices'] ?? 0) as int;
@@ -1124,36 +1121,11 @@ class _EnrollBadge extends StatelessWidget {
   }
 }
 
-class _HourLabel extends StatelessWidget {
-  final String label;
-  final dynamic value;
-
-  const _HourLabel(this.label, this.value);
-
-  @override
-  Widget build(BuildContext context) {
-    final v = value is int ? value : 0;
-    return Padding(
-      padding: const EdgeInsets.only(left: 8),
-      child: Column(children: [
-        Text('$v',
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: v > 0 ? const Color(0xFF374151) : Colors.grey.shade400)),
-        Text(label,
-            style: const TextStyle(fontSize: 9, color: Color(0xFF9CA3AF))),
-      ]),
-    );
-  }
-}
-
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
   final bool filled;
-  final bool compact;
   final VoidCallback onTap;
 
   const _ActionButton({
@@ -1162,7 +1134,6 @@ class _ActionButton extends StatelessWidget {
     required this.color,
     required this.onTap,
     this.filled = false,
-    this.compact = false,
   });
 
   @override
@@ -1174,8 +1145,7 @@ class _ActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         onTap: onTap,
         child: Container(
-          padding: EdgeInsets.symmetric(
-              horizontal: compact ? 6 : 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             border: filled ? null : Border.all(color: color.withAlpha(80)),
