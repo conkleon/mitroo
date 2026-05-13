@@ -98,12 +98,21 @@ async function canReadUserByScope(scope: UserAccessScope, currentUserId: number,
 router.get("/", async (req: Request, res: Response) => {
   const scope = await getAccessScope(req);
 
-  const where =
+  let where: any =
     scope.kind === "admin"
-      ? undefined
+      ? {}
       : scope.kind === "self"
         ? { id: req.user!.userId }
         : { departments: { some: { departmentId: { in: scope.departmentIds } } } };
+
+  const deptFilter = req.query.departmentId ? Number(req.query.departmentId) : undefined;
+  if (deptFilter && Number.isFinite(deptFilter)) {
+    if (scope.kind === "self" || (scope.kind === "missionAdmin" && !scope.departmentIds.includes(deptFilter))) {
+      res.status(403).json({ error: "Not authorized to view this department's users" });
+      return;
+    }
+    where = { ...where, departments: { some: { departmentId: deptFilter } } };
+  }
 
   const users = await prisma.user.findMany({
     where,

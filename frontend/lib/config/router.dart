@@ -23,6 +23,9 @@ import '../screens/items_screen.dart';
 import '../screens/items_csv_screen.dart';
 import '../screens/vehicles_screen.dart';
 import '../screens/chat_screen.dart';
+import '../screens/chat_detail_screen.dart';
+import '../screens/create_chat_screen.dart';
+import '../screens/chat_settings_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/shell_screen.dart';
 
@@ -82,6 +85,12 @@ GoRouter appRouter(AuthProvider auth) {
       GoRoute(
         path: '/profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      // Full-screen: no shell/nav-rail — must be before ShellRoute
+      // so /chat/:id doesn't capture /chat/create
+      GoRoute(
+        path: '/chat/create',
+        builder: (context, state) => const CreateChatScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) => ShellScreen(child: child),
@@ -211,7 +220,21 @@ GoRouter appRouter(AuthProvider auth) {
           ),
           GoRoute(
             path: '/chat',
-            builder: (context, state) => const ChatScreen(),
+            builder: (context, state) => const ChatListScreen(),
+          ),
+          GoRoute(
+            path: '/chat/:id',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+              return ChatDetailScreen(chatId: id);
+            },
+          ),
+          GoRoute(
+            path: '/chat/:id/settings',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+              return ChatSettingsScreen(chatId: id);
+            },
           ),
         ],
       ),

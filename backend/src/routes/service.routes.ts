@@ -4,6 +4,7 @@ import prisma from "../lib/prisma";
 import { authenticate, isMissionAdminInDepartment } from "../middleware/auth";
 import { sendServiceEnrollmentEmail, sendServiceStatusEmail } from "../lib/email";
 import { sendPushToUser } from "../lib/webpush";
+import { getIO } from "../socket";
 import {
   writeBackNewService,
   writeBackAssignment,
@@ -11,6 +12,23 @@ import {
   writeBackHoursUpdate,
   writeBackServiceDelete,
 } from "../lib/mitrooSync";
+
+async function removeFromMissionChat(serviceId: number, userId: number): Promise<void> {
+  const missionChat = await prisma.chat.findFirst({
+    where: { type: "mission", serviceId },
+    select: { id: true },
+  });
+  if (!missionChat) return;
+
+  await prisma.chatMember.deleteMany({
+    where: { chatId: missionChat.id, userId },
+  });
+
+  getIO().to(`user:${userId}`).emit("chat:member-left", {
+    chatId: missionChat.id,
+    userId,
+  });
+}
 
 const router = Router();
 router.use(authenticate);
@@ -380,6 +398,8 @@ router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
       writeBackAssignment(sid, uid).catch((e) => console.error("[service] writeBackAssignment error:", e));
     } else if (status === "rejected") {
       writeBackRejection(sid, uid).catch((e) => console.error("[service] writeBackRejection error:", e));
+      // Remove user from the mission chat for this service
+      removeFromMissionChat(sid, uid).catch((e) => console.error("[service] removeFromMissionChat error:", e));
     }
 
     // Fire-and-forget: notify the enrolled user on accept/reject

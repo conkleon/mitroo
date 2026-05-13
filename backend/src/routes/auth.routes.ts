@@ -110,35 +110,37 @@ async function loginViaExternalMitroo(
     return null;
   }
 
-  if (emailOwner && (!existing || emailOwner.id !== existing.id)) {
-    debugExternal("email conflict", {
+  if (emailOwner && emailOwner.id !== existing.id) {
+    // Email belongs to a different local user — clear it from the old
+    // owner so the external-Mitroo-verified user can claim it.
+    debugExternal("reassigning email from conflicting user", {
       email: normalizedEmail,
-      existingUserId: existing?.id ?? null,
+      eame: resolvedEame,
+      existingUserId: existing.id,
       emailOwnerId: emailOwner.id,
     });
-    return { user: null, emailConflict: true };
+    await prisma.user.update({
+      where: { id: emailOwner.id },
+      data: { email: `unused_${Date.now()}_${emailOwner.email}` },
+    });
   }
 
   const hashed = await bcrypt.hash(password, 12);
-  if (existing) {
-    debugExternal("updating local user", { userId: existing.id, eame: resolvedEame });
-    const updated = await prisma.user.update({
-      where: { id: existing.id },
-      data: {
-        password: hashed,
-        ...(forename ? { forename } : {}),
-        ...(surname ? { surname } : {}),
-        email: normalizedEmail,
-        ...(Number.isFinite(externalId ?? NaN) && (externalId ?? 0) > 0
-          ? { externalId }
-          : {}),
-      },
-      select: selectAuthUser,
-    });
-    return { user: updated, emailConflict: false };
-  }
-
-  return null;
+  debugExternal("updating local user", { userId: existing.id, eame: resolvedEame });
+  const updated = await prisma.user.update({
+    where: { id: existing.id },
+    data: {
+      password: hashed,
+      ...(forename ? { forename } : {}),
+      ...(surname ? { surname } : {}),
+      email: normalizedEmail,
+      ...(Number.isFinite(externalId ?? NaN) && (externalId ?? 0) > 0
+        ? { externalId }
+        : {}),
+    },
+    select: selectAuthUser,
+  });
+  return { user: updated, emailConflict: false };
 }
 
 // ── POST /api/auth/register ─────────────────────

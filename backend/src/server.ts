@@ -14,11 +14,20 @@ if (process.env.NODE_ENV !== "production") {
   }
 }
 
+import { createServer } from "http";
 import app from "./app";
+import { initSocket } from "./socket";
+import { cleanupExpiredChats } from "./lib/chatCleanup";
 
 const PORT = parseInt(process.env.APP_PORT || "4000", 10);
 
-app.listen(PORT, () => {
+const httpServer = createServer(app);
+initSocket(httpServer);
+
+// Run cleanup every 15 minutes
+setInterval(cleanupExpiredChats, 15 * 60 * 1000);
+
+httpServer.listen(PORT, () => {
   console.log(`🚀 Mitroo API running on http://localhost:${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV}`);
 });
