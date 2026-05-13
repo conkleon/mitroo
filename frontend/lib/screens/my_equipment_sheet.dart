@@ -558,21 +558,11 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
           },
         ),
         const SizedBox(height: 12),
-
-        // Two separate scan panels
-        _scanPanel(
-          icon: Icons.qr_code,
-          color: const Color(0xFF6366F1),
-          title: 'Σάρωση QR Code',
-          subtitle: 'Σάρωση κωδικού QR με κάμερα',
-          onTap: _handleScan,
-        ),
-        const SizedBox(height: 10),
         _scanPanel(
           icon: Icons.barcode_reader,
           color: const Color(0xFF0D9488),
-          title: 'Σάρωση Barcode',
-          subtitle: 'Σάρωση barcode με κάμερα',
+          title: 'Σάρωση ',
+          subtitle: 'Σάρωση με κάμερα',
           onTap: _handleScan,
         ),
         const SizedBox(height: 12),
