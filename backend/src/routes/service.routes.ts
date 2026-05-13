@@ -248,8 +248,11 @@ router.delete("/:id", async (req: Request, res: Response) => {
   const service = await prisma.service.findUnique({ where: { id: Number(req.params.id) }, select: { departmentId: true } });
   if (!service) { res.status(404).json({ error: "Service not found" }); return; }
   if (!await requireServiceAdmin(req, res, service.departmentId)) return;
-  writeBackServiceDelete(Number(req.params.id))
-    .catch((e) => console.error("[service] writeBackServiceDelete error:", e));
+  try {
+    await writeBackServiceDelete(Number(req.params.id));
+  } catch (e) {
+    console.error("[service] writeBackServiceDelete error:", e);
+  }
   await prisma.service.delete({ where: { id: Number(req.params.id) } });
   res.status(204).end();
 });

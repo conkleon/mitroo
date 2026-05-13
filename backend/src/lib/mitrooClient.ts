@@ -49,7 +49,11 @@ export interface CreateMissionParams {
   mission_type_id?: number; // default 16 (observed in HAR)
 }
 
+// Expected submit button value from the external Mitroo mission creation form.
 const MISSION_SUBMIT_VALUE = "ΔΗΜΙΟΥΡΓΙΑ";
+
+// Safety cap: prevent infinite pagination if the upstream API never returns a short page.
+const MAX_OPEN_MISSION_PAGES = 200;
 
 export interface CreateShiftParams {
   mission_id: number;
@@ -133,8 +137,7 @@ export class MitrooClient {
   async fetchOpenMissions(): Promise<ExternalMission[]> {
     const pageSize = 200;
     const all: ExternalMission[] = [];
-    const maxPages = 200;
-    for (let page = 0; page < maxPages; page += 1) {
+    for (let page = 0; page < MAX_OPEN_MISSION_PAGES; page += 1) {
       const skip = page * pageSize;
       const res = await this._xhr(
         `/index.php/ajaxdptadmin/GridGetMissions/open/?$count=true&$skip=${skip}&$top=${pageSize}`,
@@ -157,7 +160,7 @@ export class MitrooClient {
     }
     console.warn("[MitrooClient] fetchOpenMissions: reached pagination safety limit", {
       pageSize,
-      maxPages,
+      maxPages: MAX_OPEN_MISSION_PAGES,
       total: all.length,
     });
     return all;
@@ -184,6 +187,7 @@ export class MitrooClient {
   // ── Write-back ────────────────────────────────────────────────────────────
 
   async createMission(params: CreateMissionParams): Promise<number> {
+    // Fetch before/after snapshots to detect the newly created mission without an explicit ID response.
     const beforeMissions = await this.fetchOpenMissions();
     const existingIds = new Set(beforeMissions.map((mission) => String(mission.id)));
     await this._refreshCsrf();

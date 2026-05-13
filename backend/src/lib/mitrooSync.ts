@@ -312,7 +312,10 @@ export async function writeBackServiceDelete(serviceId: number): Promise<void> {
       externalMissionId: true,
     },
   });
-  if (!service?.externalShiftId) return;
+  if (!service?.externalShiftId) {
+    console.log(`[mitrooSync] writeBackServiceDelete: skipped — service ${serviceId} has no externalShiftId`);
+    return;
+  }
 
   const config = await prisma.departmentSyncConfig.findUnique({
     where: { departmentId: service.departmentId },
