@@ -143,13 +143,14 @@ export class MitrooClient {
         const rows = Array.isArray(parsed) ? parsed : (parsed.result ?? []);
         all.push(...rows);
         if (rows.length < pageSize) break;
-      } catch {
+      } catch (error) {
         console.error("[MitrooClient] fetchOpenMissions: failed to parse JSON response:", {
           skip,
           pageSize,
           snippet: text.slice(0, 300),
+          error,
         });
-        throw new Error("fetchOpenMissions: invalid JSON response");
+        throw new Error(`fetchOpenMissions: invalid JSON response (${error})`);
       }
     }
     return all;
@@ -212,9 +213,9 @@ export class MitrooClient {
       ) {
         return false;
       }
-      if (params.location_text && mission.location_text && mission.location_text !== params.location_text) {
-        return false;
-      }
+      const expectedLocation = params.location_text?.trim();
+      const missionLocation = String(mission.location_text ?? "").trim();
+      if (expectedLocation && missionLocation !== expectedLocation) return false;
       return true;
     });
 

@@ -42,6 +42,7 @@ async function setSyncStatus(
   });
 }
 
+/** Safely convert external hour values to finite numbers, defaulting to 0. */
 const parseHours = (value: unknown) => {
   const num = Number(value ?? 0);
   return Number.isFinite(num) ? num : 0;
