@@ -81,7 +81,11 @@ GoRouter appRouter(AuthProvider auth) {
           ),
           GoRoute(
             path: '/items',
-            builder: (context, state) => const ItemsScreen(),
+            builder: (context, state) {
+              final deptId =
+                  int.tryParse(state.uri.queryParameters['departmentId'] ?? '');
+              return ItemsScreen(initialDepartmentId: deptId);
+            },
           ),
           GoRoute(
             path: '/items/csv',

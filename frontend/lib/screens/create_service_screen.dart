@@ -40,6 +40,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
   final _hoursTrainingCtrl = TextEditingController(text: '0');
   final _hoursTrainersCtrl = TextEditingController(text: '0');
   final _hoursTEPCtrl = TextEditingController(text: '0');
+  final _maxParticipantsCtrl = TextEditingController(text: '100');
 
   DateTime? _startAt;
   DateTime? _endAt;
@@ -104,6 +105,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
           _hoursTrainingCtrl.text = '${svc['defaultHoursTraining'] ?? 0}';
           _hoursTrainersCtrl.text = '${svc['defaultHoursTrainers'] ?? 0}';
           _hoursTEPCtrl.text = '${svc['defaultHoursTEP'] ?? 0}';
+          _maxParticipantsCtrl.text = '${svc['maxParticipants'] ?? 100}';
           if (svc['startAt'] != null) _startAt = DateTime.tryParse(svc['startAt']);
           if (svc['endAt'] != null) _endAt = DateTime.tryParse(svc['endAt']);
           _selectedDeptId = svc['departmentId'] as int?;
@@ -134,6 +136,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
     _hoursTrainingCtrl.dispose();
     _hoursTrainersCtrl.dispose();
     _hoursTEPCtrl.dispose();
+    _maxParticipantsCtrl.dispose();
     super.dispose();
   }
 
@@ -188,6 +191,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
     data['defaultHoursTraining'] = int.tryParse(_hoursTrainingCtrl.text) ?? 0;
     data['defaultHoursTrainers'] = int.tryParse(_hoursTrainersCtrl.text) ?? 0;
     data['defaultHoursTEP'] = int.tryParse(_hoursTEPCtrl.text) ?? 0;
+    data['maxParticipants'] = int.tryParse(_maxParticipantsCtrl.text) ?? 100;
     if (_startAt != null) data['startAt'] = _startAt!.toUtc().toIso8601String();
     if (_endAt != null) data['endAt'] = _endAt!.toUtc().toIso8601String();
 
@@ -439,6 +443,22 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 20),
+
+              Text('Μέγιστοι Εθελοντές', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: 200,
+                child: TextFormField(
+                  controller: _maxParticipantsCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Μέγιστος αριθμός',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
 

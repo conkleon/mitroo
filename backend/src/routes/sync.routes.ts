@@ -3,7 +3,7 @@ import { z } from "zod";
 import prisma from "../lib/prisma";
 import { authenticate, isMissionAdminInDepartment } from "../middleware/auth";
 import { encrypt } from "../lib/encryption";
-import { syncUsers, syncServices } from "../lib/mitrooSync";
+import { syncUsers, syncServices, syncShiftApplications } from "../lib/mitrooSync";
 
 const router = Router();
 router.use(authenticate);
@@ -107,6 +107,15 @@ router.post("/:id/sync/services", async (req: Request, res: Response) => {
   if (!await requireSyncAdmin(req, res, deptId)) return;
 
   const result = await syncServices(deptId);
+  res.json(result);
+});
+
+// ── POST /api/departments/:id/sync/applications ──
+router.post("/:id/sync/applications", async (req: Request, res: Response) => {
+  const deptId = Number(req.params.id);
+  if (!await requireSyncAdmin(req, res, deptId)) return;
+
+  const result = await syncShiftApplications(deptId);
   res.json(result);
 });
 
