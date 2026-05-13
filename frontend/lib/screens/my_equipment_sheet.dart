@@ -578,11 +578,39 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         const SizedBox(height: 12),
         if (_searchLoading)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
+            padding: EdgeInsets.symmetric(vertical: 40),
             child: Center(child: CircularProgressIndicator()),
+          ),
+        if (_searchResults.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.search_off, size: 40, color: Colors.grey.shade400),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Δεν βρέθηκαν διαθέσιμα αντικείμενα',
+                  style: tt.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Δοκιμάστε διαφορετικό όρο αναζήτησης ή σαρώστε έναν κωδικό',
+                  style: tt.bodySmall?.copyWith(color: Color(0xFF6B7280)),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           )
-        else if (_searchResults.isEmpty)
-          _emptyState(Icons.search_off, 'Δεν βρέθηκαν διαθέσιμα αντικείμενα', tt)
         else
           _constrainedList(
             itemCount: _searchResults.length,
