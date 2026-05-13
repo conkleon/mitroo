@@ -30,6 +30,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   String _search = '';
   int? _selectedSpecId;
   final Set<int> _expandedCards = {};
+  List<dynamic> _deptMembers = [];
 
   @override
   void initState() {
@@ -48,10 +49,15 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
-      final res = await _api.get(
-          '/services?departmentId=${widget.departmentId}&includeEnrollments=true');
-      if (res.statusCode == 200 && mounted) {
-        _services = jsonDecode(res.body);
+      final results = await Future.wait([
+        _api.get('/services?departmentId=${widget.departmentId}&includeEnrollments=true'),
+        _api.get('/departments/${widget.departmentId}/members'),
+      ]);
+      if (results[0].statusCode == 200 && mounted) {
+        _services = jsonDecode(results[0].body);
+      }
+      if (results[1].statusCode == 200 && mounted) {
+        _deptMembers = jsonDecode(results[1].body);
       }
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
@@ -298,6 +304,114 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
             const SnackBar(content: Text('Σφάλμα αφαίρεσης εγγραφής')));
       }
     }
+  }
+
+  Future<void> _directEnroll(int serviceId, int userId) async {
+    try {
+      final res = await _api.post(
+        '/services/$serviceId/enroll',
+        body: {'userId': userId, 'status': 'accepted'},
+      );
+      if (res.statusCode == 201) {
+        _load();
+      } else if (mounted) {
+        final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία εγγραφής';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Σφάλμα εγγραφής')));
+      }
+    }
+  }
+
+  Widget _buildDirectEnrollField(Map<String, dynamic> svc, List<dynamic> userServices) {
+    final serviceId = svc['id'] as int;
+    final enrolledIds = userServices
+        .map((us) => ((us['userId'] ?? us['user']?['id']) as int?) ?? 0)
+        .toSet();
+    final available = _deptMembers.where((m) {
+      final uid = m['user']?['id'] as int? ?? 0;
+      return uid != 0 && !enrolledIds.contains(uid);
+    }).toList();
+
+    return Autocomplete<Map<String, dynamic>>(
+      displayStringForOption: (m) {
+        final u = m['user'] as Map<String, dynamic>;
+        return '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim();
+      },
+      optionsBuilder: (TextEditingValue value) {
+        if (available.isEmpty) return const [];
+        if (value.text.isEmpty) return available.cast<Map<String, dynamic>>();
+        final q = value.text.toLowerCase();
+        return available.where((m) {
+          final u = m['user'] as Map<String, dynamic>;
+          final name =
+              '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim().toLowerCase();
+          final eame = (u['eame'] ?? '').toString().toLowerCase();
+          return name.contains(q) || eame.contains(q);
+        }).cast<Map<String, dynamic>>();
+      },
+      onSelected: (m) {
+        final uid = m['user']['id'] as int;
+        _directEnroll(serviceId, uid);
+      },
+      fieldViewBuilder: (context, controller, focusNode, _) => TextField(
+        controller: controller,
+        focusNode: focusNode,
+        decoration: InputDecoration(
+          hintText: 'Προσθήκη μέλους...',
+          prefixIcon: const Icon(Icons.person_add_outlined, size: 18),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          isDense: true,
+        ),
+      ),
+      optionsViewBuilder: (context, onSelected, options) => Align(
+        alignment: Alignment.topLeft,
+        child: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(8),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 200, maxWidth: 320),
+            child: ListView.builder(
+              padding: EdgeInsets.zero,
+              shrinkWrap: true,
+              itemCount: options.length,
+              itemBuilder: (context, i) {
+                final m = options.elementAt(i);
+                final u = m['user'] as Map<String, dynamic>;
+                final name =
+                    '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim();
+                final eame = (u['eame'] ?? '').toString();
+                return ListTile(
+                  dense: true,
+                  leading: CircleAvatar(
+                    radius: 14,
+                    backgroundColor: const Color(0xFFF5F3FF),
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF6D28D9),
+                          fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  title: Text(name, style: const TextStyle(fontSize: 13)),
+                  subtitle: eame.isNotEmpty
+                      ? Text('@$eame', style: const TextStyle(fontSize: 11))
+                      : null,
+                  onTap: () => onSelected(m),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _openDetail(Map<String, dynamic> svc) =>
@@ -627,18 +741,20 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                       fontWeight: FontWeight.w600,
                                       color: Color(0xFFDC2626))),
                               if (requestedCount > 0) ...[
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 6),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 5, vertical: 1),
+                                      horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF59E0B),
+                                    color: const Color(0xFFFEF3C7),
                                     borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: const Color(0xFFF59E0B)),
                                   ),
-                                  child: Text('+$requestedCount',
+                                  child: Text('$requestedCount εκκρεμείς',
                                       style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 9,
+                                          color: Color(0xFFB45309),
+                                          fontSize: 10,
                                           fontWeight: FontWeight.w700)),
                                 ),
                               ],
@@ -812,7 +928,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
           ]),
           const SizedBox(height: 8),
 
-          // User rows
+          // User rows (existing + direct enroll field at end)
           ...sorted.map((us) {
             final user = us['user'] as Map<String, dynamic>?;
             final userId = us['userId'] as int? ?? user?['id'] as int? ?? 0;
@@ -824,129 +940,157 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
             final stColor = _enrollColor(st);
             final serviceId = svc['id'] as int;
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: st == 'requested'
-                    ? const Color(0xFFFFFBEB)
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
                     color: st == 'requested'
                         ? const Color(0xFFFDE68A)
                         : Colors.grey.shade200,
-                    width: st == 'requested' ? 1.5 : 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Top: user info + status ──
-                  Row(children: [
-                    // Avatar
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: stColor.withAlpha(30),
-                      child: Text(
-                        uName.isNotEmpty ? uName[0].toUpperCase() : '?',
-                        style: TextStyle(
-                            color: stColor,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(uName,
-                              style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
-                          if (eame.isNotEmpty)
-                            Text('@$eame',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade500)),
-                        ],
-                      ),
-                    ),
-                    // Status badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: stColor.withAlpha(20),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: stColor.withAlpha(60)),
-                      ),
-                      child: Text(
-                        st.substring(0, 1).toUpperCase() + st.substring(1),
-                        style: TextStyle(
-                            color: stColor,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-                  // ── Bottom: action buttons ──
-                  Row(children: [
-                    if (st != 'accepted')
+                    width: st == 'requested' ? 1.5 : 1,
+                  ),
+                ),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (st == 'requested')
+                        Container(width: 4, color: const Color(0xFFF59E0B)),
                       Expanded(
-                        child: _ActionButton(
-                          icon: Icons.check_circle_outline,
-                          label: 'Αποδοχή',
-                          color: const Color(0xFF059669),
-                          filled: true,
-                          onTap: () => _updateEnrollmentStatus(
-                              serviceId, userId, 'accepted'),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          color: st == 'requested'
+                              ? const Color(0xFFFFFBEB)
+                              : Colors.white,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // ── Top: user info + status ──
+                              Row(children: [
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: stColor.withAlpha(30),
+                                  child: Text(
+                                    uName.isNotEmpty
+                                        ? uName[0].toUpperCase()
+                                        : '?',
+                                    style: TextStyle(
+                                        color: stColor,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(uName,
+                                          style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                      if (eame.isNotEmpty)
+                                        Text('@$eame',
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey.shade500)),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: stColor.withAlpha(20),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: stColor.withAlpha(60)),
+                                  ),
+                                  child: Text(
+                                    st.substring(0, 1).toUpperCase() +
+                                        st.substring(1),
+                                    style: TextStyle(
+                                        color: stColor,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ]),
+                              const SizedBox(height: 10),
+                              // ── Action row ──
+                              Row(children: [
+                                if (st != 'accepted') ...[
+                                  Expanded(
+                                    child: _ActionButton(
+                                      icon: Icons.check_circle_outline,
+                                      label: 'Αποδοχή',
+                                      color: const Color(0xFF059669),
+                                      filled: true,
+                                      onTap: () => _updateEnrollmentStatus(
+                                          serviceId, userId, 'accepted'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                if (st != 'rejected') ...[
+                                  Expanded(
+                                    child: _ActionButton(
+                                      icon: Icons.cancel_outlined,
+                                      label: 'Απόρριψη',
+                                      color: const Color(0xFFDC2626),
+                                      filled: false,
+                                      onTap: () => _updateEnrollmentStatus(
+                                          serviceId, userId, 'rejected'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                if (st != 'requested') ...[
+                                  Expanded(
+                                    child: _ActionButton(
+                                      icon: Icons.schedule,
+                                      label: 'Ώρες',
+                                      color: const Color(0xFF6B7280),
+                                      filled: false,
+                                      onTap: () => _updateEnrollmentHours(
+                                          serviceId, userId, us),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                IconButton(
+                                  icon: Icon(Icons.person_remove_outlined,
+                                      size: 18, color: Colors.grey.shade400),
+                                  onPressed: () =>
+                                      _removeEnrollment(serviceId, userId, uName),
+                                  tooltip: 'Αφαίρεση',
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                      minWidth: 32, minHeight: 32),
+                                ),
+                              ]),
+                            ],
+                          ),
                         ),
                       ),
-                    if (st != 'accepted') const SizedBox(width: 8),
-                    if (st != 'rejected')
-                      Expanded(
-                        child: _ActionButton(
-                          icon: Icons.cancel_outlined,
-                          label: 'Απόρριψη',
-                          color: const Color(0xFFDC2626),
-                          filled: false,
-                          onTap: () => _updateEnrollmentStatus(
-                              serviceId, userId, 'rejected'),
-                        ),
-                      ),
-                    if (st != 'rejected') const SizedBox(width: 8),
-                    Expanded(
-                      child: _ActionButton(
-                        icon: Icons.schedule,
-                        label: 'Ώρες',
-                        color: const Color(0xFFDC2626),
-                        filled: false,
-                        onTap: () => _updateEnrollmentHours(
-                            serviceId, userId, us),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 40,
-                      child: _ActionButton(
-                        icon: Icons.person_remove_outlined,
-                        label: '',
-                        color: Colors.grey.shade400,
-                        filled: false,
-                        compact: true,
-                        onTap: () => _removeEnrollment(
-                            serviceId, userId, uName),
-                      ),
-                    ),
-                  ]),
-                ],
+                    ],
+                  ),
+                ),
               ),
             );
           }),
+          // ── Direct enroll field ──
+          const SizedBox(height: 10),
+          Divider(color: Colors.grey.shade200, height: 1),
+          const SizedBox(height: 10),
+          _buildDirectEnrollField(svc, userServices),
         ],
       ),
     );
