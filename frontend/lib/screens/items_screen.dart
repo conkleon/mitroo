@@ -33,7 +33,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
     super.initState();
     Future.microtask(() {
       if (widget.initialDepartmentId != null) {
-        _selectedDepartmentId = widget.initialDepartmentId;
+        setState(() => _selectedDepartmentId = widget.initialDepartmentId);
       }
       final auth = context.read<AuthProvider>();
       final canManage = auth.isAdmin || auth.isItemAdmin;
@@ -82,10 +82,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
         api: _api,
         onChanged: () {
           _loadMyEquipment();
-          // Also refresh the items list
-          final auth = context.read<AuthProvider>();
-          final canManage = auth.isAdmin || auth.isItemAdmin;
-          context.read<ItemProvider>().fetchItems(available: canManage ? null : true);
+          _fetchWithFilters();
         },
       ),
     );
