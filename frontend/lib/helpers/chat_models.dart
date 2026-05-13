@@ -29,8 +29,8 @@ class ChatSummary {
 
   factory ChatSummary.fromJson(Map<String, dynamic> json) {
     return ChatSummary(
-      id: json['id'] as int,
-      type: json['type'] as String,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      type: json['type'] as String? ?? 'custom',
       name: json['name'] as String? ?? 'Chat',
       departmentId: json['departmentId'] as int?,
       serviceId: json['serviceId'] as int?,
@@ -41,8 +41,8 @@ class ChatSummary {
       lastMessage: json['lastMessage'] != null
           ? LastMessage.fromJson(json['lastMessage'] as Map<String, dynamic>)
           : null,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
     );
   }
 }
@@ -62,10 +62,10 @@ class LastMessage {
 
   factory LastMessage.fromJson(Map<String, dynamic> json) {
     return LastMessage(
-      id: json['id'] as int,
-      text: json['text'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      user: LastMessageUser.fromJson(json['user'] as Map<String, dynamic>),
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      text: json['text'] as String? ?? '',
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      user: LastMessageUser.fromJson((json['user'] as Map<String, dynamic>?) ?? {}),
     );
   }
 }
@@ -83,7 +83,7 @@ class LastMessageUser {
 
   factory LastMessageUser.fromJson(Map<String, dynamic> json) {
     return LastMessageUser(
-      id: json['id'] as int,
+      id: (json['id'] as num?)?.toInt() ?? 0,
       forename: json['forename'] as String? ?? '',
       surname: json['surname'] as String? ?? '',
     );
@@ -111,12 +111,12 @@ class ChatMessage {
 
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
-      id: json['id'] as int,
-      chatId: json['chatId'] as int,
-      userId: json['userId'] as int,
-      text: json['text'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      user: ChatUser.fromJson(json['user'] as Map<String, dynamic>),
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      chatId: (json['chatId'] as num?)?.toInt() ?? 0,
+      userId: (json['userId'] as num?)?.toInt() ?? 0,
+      text: json['text'] as String? ?? '',
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      user: ChatUser.fromJson((json['user'] as Map<String, dynamic>?) ?? {}),
       attachments: (json['attachments'] as List<dynamic>?)
               ?.map((a) => ChatAttachment.fromJson(a as Map<String, dynamic>))
               .toList() ??
@@ -140,7 +140,7 @@ class ChatUser {
 
   factory ChatUser.fromJson(Map<String, dynamic> json) {
     return ChatUser(
-      id: json['id'] as int,
+      id: (json['id'] as num?)?.toInt() ?? 0,
       forename: json['forename'] as String? ?? '',
       surname: json['surname'] as String? ?? '',
       imagePath: json['imagePath'] as String?,
@@ -165,9 +165,9 @@ class ChatAttachment {
 
   factory ChatAttachment.fromJson(Map<String, dynamic> json) {
     return ChatAttachment(
-      id: json['id'] as int,
-      fileName: json['fileName'] as String,
-      filePath: json['filePath'] as String,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      fileName: json['fileName'] as String? ?? '',
+      filePath: json['filePath'] as String? ?? '',
       mimeType: json['mimeType'] as String?,
       fileSize: json['fileSize'] as int?,
     );
