@@ -297,6 +297,75 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
   }
 }
 
+// ── Write-back: deleted service → cancel shift/mission ───────────────────────
+
+export async function writeBackServiceDelete(serviceId: number): Promise<void> {
+  const service = await prisma.service.findUnique({
+    where: { id: serviceId },
+    select: {
+      id: true,
+      name: true,
+      startAt: true,
+      endAt: true,
+      departmentId: true,
+      externalShiftId: true,
+      externalMissionId: true,
+    },
+  });
+  if (!service?.externalShiftId) return;
+
+  const config = await prisma.departmentSyncConfig.findUnique({
+    where: { departmentId: service.departmentId },
+    select: { syncEnabled: true },
+  });
+  if (!config?.syncEnabled) return;
+
+  if (!service.externalMissionId) {
+    console.warn(
+      `[mitrooSync] writeBackServiceDelete: skipped — service ${serviceId} missing externalMissionId`,
+    );
+    return;
+  }
+
+  try {
+    const client = await getClient(service.departmentId);
+
+    const formatDateTime = (d: Date | null | undefined) =>
+      d ? d.toISOString().slice(0, 16).replace("T", " ") : "";
+    const startAt = service.startAt ?? service.endAt;
+    const endAt = service.endAt ?? service.startAt;
+    const window = startAt
+      ? `${formatDateTime(startAt)}${endAt ? `-${formatDateTime(endAt)}` : ""}`
+      : "";
+    const emailMessage = window
+      ? `Η βάρδια ${service.name} (${window}) έχει ακυρωθεί.`
+      : `Η βάρδια ${service.name} έχει ακυρωθεί.`;
+
+    await client.cancelShift({
+      missionId: service.externalMissionId,
+      shiftId: Number(service.externalShiftId),
+      emailMessage,
+    });
+
+    const otherServices = await prisma.service.count({
+      where: {
+        externalMissionId: service.externalMissionId,
+        id: { not: serviceId },
+      },
+    });
+
+    if (otherServices === 0) {
+      await client.cancelMission(service.externalMissionId);
+    }
+
+    console.log(
+      `[mitrooSync] writeBackServiceDelete: cancelled shift ${service.externalShiftId} (mission ${service.externalMissionId})`,
+    );
+  } catch (e) {
+    console.error(`[mitrooSync] writeBackServiceDelete failed for service ${serviceId}:`, e);
+  }
+}
+
 // ── Write-back: user assignment → approve shift application ────────────────
 
 export async function writeBackAssignment(serviceId: number, userId: number): Promise<void> {

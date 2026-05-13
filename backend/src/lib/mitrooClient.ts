@@ -276,6 +276,39 @@ export class MitrooClient {
     }
   }
 
+  async cancelShift(params: {
+    missionId: number;
+    shiftId: number;
+    emailMessage?: string;
+  }): Promise<void> {
+    await this._refreshCsrf();
+    const body = new URLSearchParams({
+      mission_id: String(params.missionId),
+      shift_id: String(params.shiftId),
+      email_message: params.emailMessage ?? "",
+      rccrmtk: this.csrfToken,
+    });
+    const res = await this._post("/ajaxdptadmin/MissionCancelShift", body);
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`cancelShift failed (${res.status}): ${text.slice(0, 200)}`);
+    }
+  }
+
+  async cancelMission(missionId: number): Promise<void> {
+    await this._refreshCsrf();
+    const body = new URLSearchParams({
+      mission_id: String(missionId),
+      new_status_id: "7",
+      rccrmtk: this.csrfToken,
+    });
+    const res = await this._post("/ajaxdptadmin/MissionCancel", body);
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`cancelMission failed (${res.status}): ${text.slice(0, 200)}`);
+    }
+  }
+
   async findApplicationIdForMember(shiftId: number, memberId: number): Promise<number | null> {
     // grid_get_shiftapplications returns { count, result: [{ id, mission_shift_id, member_id, ... }] }
     // Fetch a generous page — departments rarely have more than a few hundred pending applications
