@@ -42,10 +42,30 @@ async function setSyncStatus(
   });
 }
 
-/** Safely convert external hour values to finite numbers, defaulting to 0. */
+/** Safely convert external hour values to finite integers, defaulting to 0. */
 const parseHours = (value: unknown) => {
-  const num = Number(value ?? 0);
-  return Number.isFinite(num) ? num : 0;
+  if (value == null) return 0;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? Math.trunc(value) : 0;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return 0;
+    const timeMatch = trimmed.match(/^(\d+)\s*:\s*(\d{1,2})$/);
+    if (timeMatch) {
+      const hours = Number(timeMatch[1]);
+      const minutes = Number(timeMatch[2]);
+      if (Number.isFinite(hours) && Number.isFinite(minutes)) {
+        return Math.trunc(hours + minutes / 60);
+      }
+      return 0;
+    }
+    const normalized = trimmed.replace(",", ".").replace(/[^\d.\-]/g, "");
+    const num = Number(normalized);
+    return Number.isFinite(num) ? Math.trunc(num) : 0;
+  }
+  const num = Number(value);
+  return Number.isFinite(num) ? Math.trunc(num) : 0;
 };
 
 // ── Sync volunteers → Users ────────────────────────────────────────────────
