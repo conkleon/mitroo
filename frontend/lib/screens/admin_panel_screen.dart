@@ -701,6 +701,7 @@ class _UserDrawer extends StatefulWidget {
 
 class _UserDrawerState extends State<_UserDrawer> {
   final _api = ApiClient();
+  final _searchCtrl = TextEditingController();
   List<Map<String, dynamic>> _users = [];
   bool _loading = false;
   String _search = '';
@@ -723,6 +724,8 @@ class _UserDrawerState extends State<_UserDrawer> {
   Future<void> _loadUsers() async {
     final deptId = widget.deptId;
     if (deptId == null) return;
+    _search = '';
+    _searchCtrl.clear();
     setState(() => _loading = true);
     try {
       final res = await _api.get('/users/stats');
@@ -749,6 +752,12 @@ class _UserDrawerState extends State<_UserDrawer> {
       final eame = (u['eame'] ?? '').toString().toLowerCase();
       return name.contains(q) || eame.contains(q);
     }).toList();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -812,11 +821,15 @@ class _UserDrawerState extends State<_UserDrawer> {
   }
 
   Widget _buildList(TextTheme tt, ColorScheme cs) {
+    if (widget.deptId == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
           child: TextField(
+            controller: _searchCtrl,
             decoration: const InputDecoration(
               hintText: 'Αναζήτηση...',
               prefixIcon: Icon(Icons.search, size: 20),
