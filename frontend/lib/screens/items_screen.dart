@@ -12,7 +12,8 @@ import 'my_equipment_sheet.dart';
 import 'item_detail_screen.dart';
 
 class ItemsScreen extends StatefulWidget {
-  const ItemsScreen({super.key});
+  final int? initialDepartmentId;
+  const ItemsScreen({super.key, this.initialDepartmentId});
 
   @override
   State<ItemsScreen> createState() => _ItemsScreenState();
@@ -31,10 +32,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
+      if (widget.initialDepartmentId != null) {
+        _selectedDepartmentId = widget.initialDepartmentId;
+      }
       final auth = context.read<AuthProvider>();
       final canManage = auth.isAdmin || auth.isItemAdmin;
       // Regular users only see available (unassigned) items
-      context.read<ItemProvider>().fetchItems(available: canManage ? null : true);
+      context.read<ItemProvider>().fetchItems(available: canManage ? null : true, departmentId: _selectedDepartmentId);
       context.read<CategoryProvider>().fetchCategories();
       context.read<DepartmentProvider>().fetchDepartments();
     });
@@ -1043,14 +1047,10 @@ class _ItemRow extends StatelessWidget {
                       ],
                     ],
                   ),
-                  if (infoParts.isNotEmpty || assignedTo != null) ...[
+                  if (infoParts.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
-                      [
-                        ...infoParts,
-                        if (assignedTo != null)
-                          '${assignedTo['forename'] ?? ''} ${assignedTo['surname'] ?? ''}'.trim(),
-                      ].join(' · '),
+                      infoParts.join(' · '),
                       style: tt.bodySmall?.copyWith(
                         color: const Color(0xFF6B7280),
                         fontSize: 11,
@@ -1059,6 +1059,29 @@ class _ItemRow extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
+                  const SizedBox(height: 4),
+                  Builder(builder: (context) {
+                    final assignedUser = assignedTo as Map<String, dynamic>?;
+                    if (assignedUser != null) {
+                      final name = '${assignedUser['forename'] ?? ''} ${assignedUser['surname'] ?? ''}'.trim();
+                      final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+                      return Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 8,
+                            backgroundColor: const Color(0xFFE5E7EB),
+                            child: Text(initial,
+                                style: const TextStyle(fontSize: 9, color: Color(0xFF374151))),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(name,
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                        ],
+                      );
+                    }
+                    return const Text('Αδιάθετο',
+                        style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)));
+                  }),
                 ],
               ),
             ),
