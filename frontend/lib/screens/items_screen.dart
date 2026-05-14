@@ -846,7 +846,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       Text(
                         'Αντικείμενα',
                         style: GoogleFonts.literata(
-                          fontSize: 26,
+                          fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF1A1C1E),
                           letterSpacing: -0.5,

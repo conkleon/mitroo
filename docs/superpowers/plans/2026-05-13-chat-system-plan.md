@@ -1560,7 +1560,23 @@ class _ChatListScreenState extends State<ChatListScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('Συνομιλίες'),
+        title:  Container(
+                        width: 4, height: 22,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC62828),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Οχήματα',
+                        style: GoogleFonts.literata(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A1C1E),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
       ),

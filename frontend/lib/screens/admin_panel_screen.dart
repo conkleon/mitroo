@@ -133,7 +133,6 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                           _SectionHeader(
                               icon: Icons.settings,
                               label: 'Διαχείρηση Συστήματος'),
-                          const SizedBox(height: 12),
                           _ResponsiveTileGrid(
                             isWide: isWide,
                             isCompact: isCompact,

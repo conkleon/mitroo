@@ -154,7 +154,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                       Text(
                         'Οχήματα',
                         style: GoogleFonts.literata(
-                          fontSize: 26,
+                          fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF1A1C1E),
                           letterSpacing: -0.5,

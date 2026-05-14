@@ -56,7 +56,10 @@
       "PowerShell(Start-Process \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-512.png\")",
       "PowerShell(Get-Content \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend\\\\src\\\\routes\\\\service.routes.ts\" | Select-Object -Skip 446 -First 5 | ForEach-Object { $_.Replace\\(\"`t\", \"[TAB]\"\\) })",
       "Bash(Select-Object -First 30)",
-      "PowerShell(npx tsc --noEmit 2>&1)"
+      "PowerShell(npx tsc --noEmit 2>&1)",
+      "Bash(Select-String \"0\\\\\\)\")",
+      "WebSearch",
+      "mcp__plugin_context7_context7__resolve-library-id"
     ]
   }
 }
