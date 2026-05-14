@@ -281,7 +281,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                   ? '${expirationDate!.day}/${expirationDate!.month}/${expirationDate!.year}'
                                   : 'Δεν έχει οριστεί',
                               style: TextStyle(
-                                color: expirationDate != null ? null : Color(0xFFF9FAFB)0,
+                                color: expirationDate != null ? null : Color(0xFF6B7280),
                                 fontSize: 15,
                               ),
                             ),
@@ -1397,7 +1397,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     children: [
                       Icon(Icons.person_off_outlined, color: Color(0xFF9CA3AF), size: 28),
                       const SizedBox(height: 6),
-                      Text('Κανένας χρήστης', style: TextStyle(color: Color(0xFFF9FAFB)0, fontSize: 13)),
+                      Text('Κανένας χρήστης', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                     ],
                   ),
                 ),
@@ -1496,7 +1496,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     children: [
                       Icon(Icons.inbox_outlined, color: Color(0xFF9CA3AF), size: 28),
                       const SizedBox(height: 6),
-                      Text('Δεν υπάρχουν αναθέσεις', style: tt.bodySmall?.copyWith(color: Color(0xFFF9FAFB)0)),
+                      Text('Δεν υπάρχουν αναθέσεις', style: tt.bodySmall?.copyWith(color: Color(0xFF6B7280))),
                     ],
                   ),
                 ),
@@ -1609,7 +1609,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     children: [
                       Icon(Icons.inbox_outlined, color: Color(0xFF9CA3AF), size: 28),
                       const SizedBox(height: 6),
-                      Text('Άδειο κουτί', style: TextStyle(color: Color(0xFFF9FAFB)0, fontSize: 13)),
+                      Text('Άδειο κουτί', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                     ],
                   ),
                 ),
@@ -1772,7 +1772,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     children: [
                       Icon(Icons.chat_bubble_outline, color: Color(0xFF9CA3AF), size: 28),
                       const SizedBox(height: 6),
-                      Text('Δεν υπάρχουν σχόλια', style: TextStyle(color: Color(0xFFF9FAFB)0, fontSize: 13)),
+                      Text('Δεν υπάρχουν σχόλια', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                     ],
                   ),
                 ),
@@ -1966,7 +1966,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     children: [
                       Icon(Icons.all_inbox_outlined, color: Color(0xFF9CA3AF), size: 28),
                       const SizedBox(height: 6),
-                      Text('Δεν βρίσκεται σε κουτί', style: TextStyle(color: Color(0xFFF9FAFB)0, fontSize: 13)),
+                      Text('Δεν βρίσκεται σε κουτί', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                     ],
                   ),
                 ),
