@@ -73,6 +73,12 @@ class _ManageSpecializationsScreenState
     final eamePrefixCtrl = TextEditingController();
     int? selectedRoot;
 
+    final allCategories = [
+      'trainer', 'training', 'tep', 'volunteer',
+      'sanitary_general', 'sanitary_lifeguard',
+    ];
+    final selectedCategories = <String>{};
+
     final roots = _specs.where((s) => s['rootId'] == null).toList();
 
     showDialog(
@@ -148,6 +154,29 @@ class _ManageSpecializationsScreenState
                     ],
                     onChanged: (v) => setS(() => selectedRoot = v),
                   ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: allCategories.map((cat) {
+                      final selected = selectedCategories.contains(cat);
+                      return FilterChip(
+                        label: Text(_categoryLabel(cat)),
+                        selected: selected,
+                        onSelected: (v) {
+                          setS(() {
+                            if (v) {
+                              selectedCategories.add(cat);
+                            } else {
+                              selectedCategories.remove(cat);
+                            }
+                          });
+                        },
+                        selectedColor: const Color(0xFFEDE9FE),
+                        checkmarkColor: const Color(0xFF7C3AED),
+                      );
+                    }).toList(),
+                  ),
                 ],
               ),
             ),
@@ -177,6 +206,7 @@ class _ManageSpecializationsScreenState
                   body['hoursTEP'] = int.tryParse(hoursTepCtrl.text) ?? 0;
                 }
                 body['eamePrefix'] = eamePrefixCtrl.text.trim();
+                body['missionCategories'] = selectedCategories.toList();
                 if (selectedRoot != null) body['rootId'] = selectedRoot;
                 final res =
                     await _api.post('/specializations', body: body);
@@ -490,6 +520,16 @@ class _MiniLabel extends StatelessWidget {
     ]);
   }
 }
+
+String _categoryLabel(String cat) => switch (cat) {
+  'trainer' => 'Εκπαιδευτικές',
+  'training' => 'Εκπαίδευση',
+  'tep' => 'ΤΕΠ',
+  'volunteer' => 'Εθελοντικές',
+  'sanitary_general' => 'Υγειονομικές Γενικές',
+  'sanitary_lifeguard' => 'Υγειονομικές Ναυαγοσωστικές',
+  _ => cat,
+};
 
 class _MiniStat extends StatelessWidget {
   final String label;
