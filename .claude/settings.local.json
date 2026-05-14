@@ -66,7 +66,9 @@
       "Bash(Copy-Item -Path \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-192.png\" -Destination \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\build\\\\web\\\\icons\\\\Icon-192.png\" -Force)",
       "Bash(Copy-Item -Path \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-512.png\" -Destination \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\build\\\\web\\\\icons\\\\Icon-512.png\" -Force)",
       "Bash(Copy-Item -Path \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-maskable-192.png\" -Destination \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\build\\\\web\\\\icons\\\\Icon-maskable-192.png\" -Force)",
-      "Bash(Copy-Item -Path \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-maskable-512.png\" -Destination \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\build\\\\web\\\\icons\\\\Icon-maskable-512.png\" -Force)"
+      "Bash(Copy-Item -Path \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-maskable-512.png\" -Destination \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\build\\\\web\\\\icons\\\\Icon-maskable-512.png\" -Force)",
+      "Bash(Select-Object -Last 10)",
+      "PowerShell(flutter analyze *)"
     ]
   }
 }

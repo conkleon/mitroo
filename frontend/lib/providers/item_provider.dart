@@ -23,16 +23,18 @@ class ItemProvider extends ChangeNotifier {
 
   // ── Fetch all items (with optional filters) ──
 
-  Future<void> fetchItems({int? containerId, String? search, bool? available, int? categoryId, int? departmentId, int page = 1, int limit = 20}) async {
+  Future<void> fetchItems({int? containerId, String? search, bool? available, int? categoryId, int? departmentId, int page = 1, int limit = 20, String? sortField, String? sortOrder}) async {
     _loading = true;
     notifyListeners();
     try {
       final params = <String>[];
       if (containerId != null) params.add('containerId=$containerId');
-      if (search != null && search.isNotEmpty) params.add('search=$search');
+      if (search != null && search.isNotEmpty) params.add('search=${Uri.encodeComponent(search)}');
       if (available == true) params.add('available=true');
       if (categoryId != null) params.add('categoryId=$categoryId');
       if (departmentId != null) params.add('departmentId=$departmentId');
+      if (sortField != null) params.add('sortField=${Uri.encodeComponent(sortField)}');
+      if (sortOrder != null) params.add('sortOrder=${Uri.encodeComponent(sortOrder)}');
       params.add('page=$page');
       params.add('limit=$limit');
       final q = '?${params.join('&')}';

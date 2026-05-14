@@ -114,8 +114,8 @@ class _ServicesScreenState extends State<ServicesScreen>
     if (mounted) setState(() => _equipmentLoading = false);
   }
 
-  void _showMyEquipmentSheet() {
-    showModalBottomSheet(
+  Future<void> _showMyEquipmentSheet() async {
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -124,11 +124,12 @@ class _ServicesScreenState extends State<ServicesScreen>
       builder: (ctx) => MyEquipmentSheet(
         equipment: _myEquipment,
         api: _api,
-        onChanged: () {
-          _loadMyEquipment();
-        },
+        onChanged: () {}, // refresh happens after dismiss below
       ),
     );
+    if (mounted) {
+      await _loadMyEquipment();
+    }
   }
 
   // ── Filter: by specialization visibility ────────

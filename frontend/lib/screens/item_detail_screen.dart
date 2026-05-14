@@ -54,7 +54,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       final results = await Future.wait([
         _api.get('/items/${widget.itemId}'),
         _api.get('/users'),
-        _api.get('/items?'), // all items for container picker
+        _api.get('/items?limit=10000'), // all items for container picker
         _api.get('/items/${widget.itemId}/comments'),
         _api.get('/services'),
       ]);
@@ -65,8 +65,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         _allUsers = jsonDecode(results[1].body);
       }
       if (results[2].statusCode == 200) {
-        final all = jsonDecode(results[2].body) as List;
-        _allContainers = all.where((i) => i['isContainer'] == true && i['id'] != widget.itemId).toList();
+        final parsed = jsonDecode(results[2].body);
+        final all = (parsed['data'] ?? parsed) as List;
+        _allContainers = all.cast<Map<String, dynamic>>().where((i) => i['isContainer'] == true && i['id'] != widget.itemId).toList();
       }
       if (results[3].statusCode == 200) {
         _comments = jsonDecode(results[3].body) as List;

@@ -472,23 +472,26 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   ),
                 ]),
                 const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(children: [
-                    _chip('Όλοι (${_users.length})', null),
-                    const SizedBox(width: 6),
-                    ..._allSpecs.map((s) {
-                      final specId = s['id'] as int;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: _chip(
-                          '${s['name']} (${_countSpec(specId)})',
-                          specId,
-                          color: const Color(0xFF7C3AED),
-                        ),
-                      );
-                    }),
-                  ]),
+                SizedBox(
+                  height: 34,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _chip('Όλοι (${_users.length})', null),
+                      const SizedBox(width: 6),
+                      ..._allSpecs.map((s) {
+                        final specId = s['id'] as int;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: _chip(
+                            '${s['name']} (${_countSpec(specId)})',
+                            specId,
+                            color: const Color(0xFF7C3AED),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
                 ),
               ]),
             ),

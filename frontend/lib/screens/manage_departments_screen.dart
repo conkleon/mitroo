@@ -1,10 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/department_provider.dart';
-import '../services/api_client.dart';
 
 /// Professional department list with search, stats, grid/list layout.
 class ManageDepartmentsScreen extends StatefulWidget {

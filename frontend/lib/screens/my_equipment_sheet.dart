@@ -67,6 +67,21 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
   //  Equipment methods
   // ═══════════════════════════════════════════════
 
+  Future<void> _reloadEquipment() async {
+    try {
+      final res = await widget.api.get('/auth/me/profile');
+      if (res.statusCode == 200 && mounted) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        setState(() {
+          _items = (data['equipment'] as List<dynamic>?)
+                  ?.map((e) => Map<String, dynamic>.from(e as Map))
+                  .toList() ??
+              [];
+        });
+      }
+    } catch (_) {}
+  }
+
   Future<void> _returnItem(Map<String, dynamic> item) async {
     final itemId = item['id'] as int;
     final confirmed = await showDialog<bool>(
@@ -92,7 +107,9 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
     try {
       final res = await widget.api.post('/items/$itemId/self-unassign');
       if (res.statusCode == 200) {
-        setState(() => _items.removeWhere((i) => i['id'] == itemId));
+        // Reload from API to get accurate state (recursive unassign may
+        // have affected nested items we can't track locally)
+        await _reloadEquipment();
         widget.onChanged?.call();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -142,10 +159,10 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
       final res =
           await widget.api.post('/items/$itemId/self-assign', body: {});
       if (res.statusCode == 200 && mounted) {
+        await _reloadEquipment();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('"$name" ανατέθηκε σε εσάς')),
         );
-        setState(() => _items.add(item));
         widget.onChanged?.call();
         _fetchAvailableItems(_searchQuery);
       } else if (mounted) {
