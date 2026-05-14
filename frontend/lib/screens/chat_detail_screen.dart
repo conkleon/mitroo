@@ -117,12 +117,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             icon: const Icon(Icons.people),
             onPressed: () => _showParticipants(context),
           ),
-          if (chat?.type == 'custom')
+          if (chat?.type == 'custom') ...[
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () =>
                   context.push('/chat/${widget.chatId}/settings'),
             ),
+            IconButton(
+              icon: const Icon(Icons.exit_to_app, color: Colors.red),
+              onPressed: () => _confirmLeaveChat(context),
+            ),
+          ],
         ],
       ),
       body: Column(
@@ -164,6 +169,37 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             onSend: _send,
             onAttach: _attachFile,
             canSend: canSend,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmLeaveChat(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Αποχώρηση από συνομιλία'),
+        content: const Text(
+            'Είστε σίγουροι ότι θέλετε να αποχωρήσετε από αυτή τη συνομιλία;'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Ακύρωση'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              final chatProv = context.read<ChatProvider>();
+              chatProv.leaveChat(widget.chatId).then((_) {
+                if (mounted) {
+                  chatProv.setActiveChat(null);
+                  context.pop();
+                }
+              });
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Αποχώρηση'),
           ),
         ],
       ),

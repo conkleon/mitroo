@@ -114,6 +114,19 @@ router.get("/", async (req: Request, res: Response) => {
     where = { ...where, departments: { some: { departmentId: deptFilter } } };
   }
 
+  const search = req.query.search as string | undefined;
+  if (search?.trim()) {
+    const term = search.trim();
+    where = {
+      ...where,
+      OR: [
+        { forename: { contains: term, mode: "insensitive" } },
+        { surname: { contains: term, mode: "insensitive" } },
+        { eame: { contains: term, mode: "insensitive" } },
+      ],
+    };
+  }
+
   const users = await prisma.user.findMany({
     where,
     select: { ...USER_SELECT, departments: { include: { department: { select: { id: true, name: true } } } } },

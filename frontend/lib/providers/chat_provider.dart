@@ -218,6 +218,22 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> leaveChat(int chatId) async {
+    try {
+      final res = await _api.delete('/chats/$chatId/leave');
+      if (res.statusCode == 204) {
+        _chats.removeWhere((c) => c.id == chatId);
+        _messages.remove(chatId);
+        _members.remove(chatId);
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error leaving chat: $e');
+    }
+    return false;
+  }
+
   Future<bool> updateChatSettings(
     int chatId, {
     String? name,

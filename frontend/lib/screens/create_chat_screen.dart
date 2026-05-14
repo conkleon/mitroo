@@ -16,6 +16,7 @@ class CreateChatScreen extends StatefulWidget {
 
 class _CreateChatScreenState extends State<CreateChatScreen> {
   final _nameCtrl = TextEditingController();
+  final _userSearchCtrl = TextEditingController();
   int? _selectedDeptId;
   final _selectedUserIds = <int>{};
   bool _itemAdminsCanSend = false;
@@ -25,6 +26,17 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
 
   List<Map<String, dynamic>> _deptUsers = [];
   bool _loadingUsers = false;
+  String _userSearchQuery = '';
+
+  List<Map<String, dynamic>> get _filteredUsers {
+    if (_userSearchQuery.isEmpty) return _deptUsers;
+    final q = _userSearchQuery.toLowerCase();
+    return _deptUsers.where((u) {
+      final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
+      final eame = (u['eame'] as String? ?? '').toLowerCase();
+      return name.contains(q) || eame.contains(q);
+    }).toList();
+  }
 
   @override
   void initState() {
@@ -37,6 +49,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _userSearchCtrl.dispose();
     super.dispose();
   }
 
@@ -135,12 +148,36 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
           const SizedBox(height: 24),
           Text('Επιλογή Μελών', style: tt.titleSmall),
           const SizedBox(height: 8),
+          if (_deptUsers.isNotEmpty && _selectedDeptId != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TextField(
+                controller: _userSearchCtrl,
+                decoration: InputDecoration(
+                  hintText: 'Αναζήτηση χρηστών...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 10),
+                ),
+                onChanged: (v) =>
+                    setState(() => _userSearchQuery = v.trim().toLowerCase()),
+              ),
+            ),
           if (_loadingUsers)
             const Center(child: CircularProgressIndicator())
           else if (_deptUsers.isEmpty && _selectedDeptId != null)
             Text('Δεν βρέθηκαν χρήστες', style: tt.bodySmall)
+          else if (_filteredUsers.isEmpty && _userSearchQuery.isNotEmpty)
+            Text('Δεν βρέθηκαν χρήστες για "$_userSearchQuery"',
+                style: tt.bodySmall)
           else
-            ...(_deptUsers.map((u) => CheckboxListTile(
+            ...(_filteredUsers.map((u) => CheckboxListTile(
                   title: Text(
                       '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim()),
                   subtitle:
