@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_client.dart';
+import '../utils/specialization_labels.dart';
 
 /// Professional specialization list with search, hierarchy indicator,
 /// stats, and grid/list layout.
@@ -161,7 +162,7 @@ class _ManageSpecializationsScreenState
                     children: allCategories.map((cat) {
                       final selected = selectedCategories.contains(cat);
                       return FilterChip(
-                        label: Text(_categoryLabel(cat)),
+                        label: Text(missionCategoryLabel(cat)),
                         selected: selected,
                         onSelected: (v) {
                           setS(() {
@@ -521,15 +522,6 @@ class _MiniLabel extends StatelessWidget {
   }
 }
 
-String _categoryLabel(String cat) => switch (cat) {
-  'trainer' => 'Εκπαιδευτικές',
-  'training' => 'Εκπαίδευση',
-  'tep' => 'ΤΕΠ',
-  'volunteer' => 'Εθελοντικές',
-  'sanitary_general' => 'Υγειονομικές Γενικές',
-  'sanitary_lifeguard' => 'Υγειονομικές Ναυαγοσωστικές',
-  _ => cat,
-};
 
 class _MiniStat extends StatelessWidget {
   final String label;

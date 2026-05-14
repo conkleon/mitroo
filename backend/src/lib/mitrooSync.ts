@@ -171,6 +171,8 @@ const remapDefaultHoursByMissionType = (
   return hours;
 };
 
+// array_contains on Json generates PostgreSQL JSONB @> operator.
+// This is PostgreSQL-specific and not portable to SQLite/MySQL.
 async function syncServiceVisibility(
   serviceId: number,
   missionTypeId: unknown,

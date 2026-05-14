@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_client.dart';
+import '../utils/specialization_labels.dart';
 
 /// Full detail view for a single specialization.
 /// Shows info, parent/children hierarchy, assigned users, edit/delete.
@@ -165,7 +166,7 @@ class _SpecializationDetailScreenState
                     children: allCategories.map((cat) {
                       final selected = selectedCategories.contains(cat);
                       return FilterChip(
-                        label: Text(_specCategoryLabel(cat)),
+                        label: Text(missionCategoryLabel(cat)),
                         selected: selected,
                         onSelected: (v) {
                           setS(() {
@@ -567,7 +568,7 @@ class _SpecializationDetailScreenState
                   spacing: 6,
                   runSpacing: 4,
                   children: cats.map((c) => Chip(
-                    label: Text(_specCategoryLabel(c),
+                    label: Text(missionCategoryLabel(c),
                         style: const TextStyle(fontSize: 11)),
                     backgroundColor: const Color(0xFFEDE9FE),
                     side: BorderSide.none,
@@ -745,12 +746,3 @@ class _SpecializationDetailScreenState
   }
 }
 
-String _specCategoryLabel(String cat) => switch (cat) {
-  'trainer' => 'Εκπαιδευτικές',
-  'training' => 'Εκπαίδευση',
-  'tep' => 'ΤΕΠ',
-  'volunteer' => 'Εθελοντικές',
-  'sanitary_general' => 'Υγειονομικές Γενικές',
-  'sanitary_lifeguard' => 'Υγειονομικές Ναυαγοσωστικές',
-  _ => cat,
-};
