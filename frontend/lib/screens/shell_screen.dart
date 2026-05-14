@@ -350,7 +350,7 @@ class _DesktopSidebar extends StatelessWidget {
       // Check if this department's services page is currently active
       final isActive = currentUri.contains('departmentId=$deptId');
 
-      return _SidebarItem(
+      return _BrandSidebarItem(
         icon: Icons.folder_outlined,
         selectedIcon: Icons.folder,
         label: deptName,
@@ -359,110 +359,6 @@ class _DesktopSidebar extends StatelessWidget {
         indent: true,
       );
     }).toList();
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// Sidebar helper widgets
-// ═══════════════════════════════════════════════════════════
-
-class _SidebarSectionLabel extends StatelessWidget {
-  final String label;
-  const _SidebarSectionLabel(this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      child: Text(
-        label.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
-          color: Color(0xFF9CA3AF),
-        ),
-      ),
-    );
-  }
-}
-
-class _SidebarItem extends StatefulWidget {
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool indent;
-
-  const _SidebarItem({
-    required this.icon,
-    required this.selectedIcon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.indent = false,
-  });
-
-  @override
-  State<_SidebarItem> createState() => _SidebarItemState();
-}
-
-class _SidebarItemState extends State<_SidebarItem> {
-  bool _hovering = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final selected = widget.selected;
-    const activeColor = Color(0xFFDC2626);
-    final bgColor = selected
-        ? activeColor.withAlpha(20)
-        : _hovering
-            ? const Color(0xFFEEF0F4)
-            : Colors.transparent;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovering = true),
-      onExit: (_) => setState(() => _hovering = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          margin: EdgeInsets.only(
-            bottom: 2,
-            left: widget.indent ? 12 : 0,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                selected ? widget.selectedIcon : widget.icon,
-                size: widget.indent ? 18 : 20,
-                color: selected ? activeColor : const Color(0xFF6B7280),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  widget.label,
-                  style: TextStyle(
-                    fontSize: widget.indent ? 13 : 14,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: selected ? activeColor : const Color(0xFF374151),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 
