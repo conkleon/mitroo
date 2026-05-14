@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/item_provider.dart';
@@ -705,7 +706,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
     final canManage = auth.isAdmin || auth.isItemAdmin;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -829,17 +829,35 @@ class _ItemsScreenState extends State<ItemsScreen> {
               SliverToBoxAdapter(
                 child: _buildCategoryChips(cs),
               ),
-              // ── Section header with See Assigned button ──
+              // ── Section header ──
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                   child: Row(
                     children: [
-                      Icon(Icons.inventory_2, size: 20, color: cs.primary),
-                      const SizedBox(width: 8),
-                      Text('Αντικείμενα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      Container(
+                        width: 4, height: 22,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC62828),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Αντικείμενα',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A1C1E),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
                       const Spacer(),
-                      Text('${prov.totalItems} σύνολο', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                      Text('${prov.totalItems} σύνολο',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 13, color: const Color(0xFF6B7280),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -868,8 +886,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       elevation: 0,
                       margin: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(14),
+                        side: BorderSide(color: const Color(0xFFE5E7EB)),
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: Column(

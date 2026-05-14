@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
@@ -236,7 +237,6 @@ class _ServicesScreenState extends State<ServicesScreen>
     final filtered = _filteredServices;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       floatingActionButton: (auth.isAdmin || auth.isMissionAdmin)
           ? FloatingActionButton(
               onPressed: () => context.push('/admin/services/create'),
@@ -249,6 +249,34 @@ class _ServicesScreenState extends State<ServicesScreen>
           onRefresh: () => svcProv.fetchMyServices(),
           child: CustomScrollView(
             slivers: [
+              // ── Brand page title ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 4, height: 22,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC62828),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Υπηρεσίες',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A1C1E),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               // ── Top bar ──────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(

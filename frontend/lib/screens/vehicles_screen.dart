@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/vehicle_provider.dart';
@@ -106,7 +107,6 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
     final name = auth.displayName.isNotEmpty ? auth.displayName : (auth.user?['eame'] ?? 'User');
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => prov.fetchVehicles(),
@@ -144,15 +144,22 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        width: 4, height: 22,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD97706).withAlpha(25),
-                          borderRadius: BorderRadius.circular(10),
+                          color: const Color(0xFFC62828),
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                        child: const Icon(Icons.directions_car, size: 18, color: Color(0xFFD97706)),
                       ),
                       const SizedBox(width: 10),
-                      Text('Οχήματα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      Text(
+                        'Οχήματα',
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A1C1E),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -162,7 +169,9 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                         ),
                         child: Text(
                           '${prov.vehicles.length} σύνολο',
-                          style: tt.bodySmall?.copyWith(color: const Color(0xFFD97706), fontWeight: FontWeight.w600),
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 12, color: const Color(0xFFD97706), fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
