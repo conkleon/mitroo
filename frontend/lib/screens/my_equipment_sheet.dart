@@ -80,7 +80,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Επιστροφή'),
           ),
         ],
@@ -393,7 +393,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               }
             },
             style:
-                FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+                FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Επιστροφή'),
           ),
         ],
@@ -580,10 +580,10 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
+                    color: Color(0xFFF3F4F6),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.search_off, size: 40, color: Colors.grey.shade400),
+                  child: Icon(Icons.search_off, size: 40, color: Color(0xFF9CA3AF)),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -703,9 +703,9 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isExpired ? Colors.red.shade50 : Colors.white,
+            color: isExpired ? Color(0xFFFEF2F2) : Colors.white,
             border: Border.all(
-              color: isExpired ? Colors.red.shade200 : const Color(0xFFE5E7EB),
+              color: isExpired ? Color(0xFFFECACA) : const Color(0xFFE5E7EB),
             ),
             borderRadius: BorderRadius.circular(12),
           ),
@@ -762,14 +762,14 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
+                      color: Color(0xFFFEF2F2),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.shade200),
+                      border: Border.all(color: Color(0xFFFECACA)),
                     ),
                     child: Text(
                       'Έληξε',
                       style: TextStyle(
-                        color: Colors.red.shade700,
+                        color: Color(0xFFB91C1C),
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -793,7 +793,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2))
                     : Icon(Icons.assignment_return,
-                        size: 18, color: Colors.red.shade600),
+                        size: 18, color: Color(0xFFDC2626)),
                 tooltip: 'Επιστροφή',
                 onPressed: isBusy ? null : () => _returnItem(item),
                 visualDensity: VisualDensity.compact,
@@ -997,7 +997,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                 label:
                     const Text('Επιστροφή', style: TextStyle(fontSize: 12)),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red.shade600,
+                  backgroundColor: Color(0xFFDC2626),
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
                   minimumSize: Size.zero,
@@ -1020,7 +1020,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          Icon(icon, size: 48, color: Colors.grey.shade300),
+          Icon(icon, size: 48, color: Color(0xFFD1D5DB)),
           const SizedBox(height: 8),
           Text(text,
               style: tt.bodyMedium

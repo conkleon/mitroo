@@ -54,7 +54,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: const Text('Συνομιλίες'),
         backgroundColor: Colors.white,

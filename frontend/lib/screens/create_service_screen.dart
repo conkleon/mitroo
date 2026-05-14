@@ -273,7 +273,6 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
 
     if (_initialLoading) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
         appBar: AppBar(
           title: Text(title, style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
           centerTitle: true,
@@ -285,7 +284,6 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Text(title, style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
         centerTitle: true,
@@ -389,7 +387,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                   style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
               const SizedBox(height: 8),
               if (_allSpecs.isEmpty)
-                const Text('Φόρτωση ειδικεύσεων...', style: TextStyle(color: Colors.grey))
+                const Text('Φόρτωση ειδικεύσεων...', style: TextStyle(color: Color(0xFF6B7280)))
               else
                 Wrap(
                   spacing: 8,
@@ -418,7 +416,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
               if (_selectedSpecIds.isEmpty) ...[
                 const SizedBox(height: 4),
                 Text('Καμία ειδίκευση — η υπηρεσία είναι ορατή σε όλα τα μέλη',
-                    style: tt.bodySmall?.copyWith(color: Colors.orange.shade700, fontStyle: FontStyle.italic)),
+                    style: tt.bodySmall?.copyWith(color: Color(0xFFC2410C), fontStyle: FontStyle.italic)),
               ],
               const SizedBox(height: 20),
 

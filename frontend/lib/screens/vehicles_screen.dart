@@ -188,9 +188,9 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 40),
                       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
+                        color: Color(0xFFF9FAFB),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.all(color: Color(0xFFE5E7EB)),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -198,15 +198,15 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
+                              color: Color(0xFFF3F4F6),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(Icons.directions_car_outlined, size: 32, color: Colors.grey.shade400),
+                            child: Icon(Icons.directions_car_outlined, size: 32, color: Color(0xFF9CA3AF)),
                           ),
                           const SizedBox(height: 16),
                           Text('Δεν υπάρχουν οχήματα', style: tt.bodyLarge?.copyWith(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600)),
                           const SizedBox(height: 6),
-                          Text('Πατήστε το + για να προσθέσετε', style: tt.bodySmall?.copyWith(color: Colors.grey.shade400)),
+                          Text('Πατήστε το + για να προσθέσετε', style: tt.bodySmall?.copyWith(color: Color(0xFF9CA3AF))),
                         ],
                       ),
                     ),
@@ -237,7 +237,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                             color: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(color: Colors.grey.shade200),
+                              side: BorderSide(color: Color(0xFFE5E7EB)),
                             ),
                             clipBehavior: Clip.antiAlias,
                             child: InkWell(
@@ -303,7 +303,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                                           ),
                                         ),
                                         const SizedBox(width: 4),
-                                        Icon(Icons.chevron_right, size: 20, color: Colors.grey.shade300),
+                                        Icon(Icons.chevron_right, size: 20, color: Color(0xFFD1D5DB)),
                                       ],
                                     ),
                                     const SizedBox(height: 12),

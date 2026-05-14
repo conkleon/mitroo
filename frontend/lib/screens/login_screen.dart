@@ -229,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen>
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text('ή',
                               style: TextStyle(
-                                  fontSize: 12, color: Colors.grey.shade400)),
+                                  fontSize: 12, color: Color(0xFF9CA3AF))),
                         ),
                         const Expanded(child: Divider()),
                       ]),

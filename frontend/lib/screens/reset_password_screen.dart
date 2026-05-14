@@ -71,7 +71,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.check_circle_outline, size: 64, color: Colors.green.shade600),
+        Icon(Icons.check_circle_outline, size: 64, color: Color(0xFF059669)),
         const SizedBox(height: 16),
         Text('Ο κωδικός άλλαξε!', style: GoogleFonts.playfairDisplay(fontSize: 28, fontWeight: FontWeight.w700, color: const Color(0xFF1A1C1E))),
         const SizedBox(height: 8),

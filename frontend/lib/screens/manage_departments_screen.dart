@@ -111,7 +111,6 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Text('Διαχείριση Τμημάτων',
             style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
@@ -196,11 +195,11 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
                                 children: [
                                   Icon(Icons.business,
                                       size: 64,
-                                      color: Colors.grey.shade300),
+                                      color: Color(0xFFD1D5DB)),
                                   const SizedBox(height: 12),
                                   Text('Δεν βρέθηκαν τμήματα',
                                       style: tt.bodyLarge?.copyWith(
-                                          color: Colors.grey.shade500)),
+                                          color: Color(0xFF6B7280))),
                                 ],
                               ),
                             )
@@ -321,7 +320,7 @@ class _DeptCard extends StatelessWidget {
                 ),
               ),
               Icon(Icons.chevron_right,
-                  color: Colors.grey.shade400, size: 20),
+                  color: Color(0xFF9CA3AF), size: 20),
             ],
           ),
         ),

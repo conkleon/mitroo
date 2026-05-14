@@ -90,7 +90,6 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFFF5F7FA),
       endDrawer: _UserDrawer(
         deptId: _drawerDeptId,
         deptName: _drawerDeptName,
@@ -448,7 +447,7 @@ class _AdminTileCardState extends State<_AdminTileCard> {
                   ),
                   const SizedBox(width: 8),
                   Icon(Icons.chevron_right,
-                      color: Colors.grey.shade400, size: 20),
+                      color: Color(0xFF9CA3AF), size: 20),
                 ],
               ),
             ),
@@ -474,7 +473,7 @@ class _EmptyCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(color: Colors.grey)),
+                  ?.copyWith(color: Color(0xFF6B7280))),
         ),
       ),
     );
@@ -553,7 +552,7 @@ class _DeptAdminCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -673,7 +672,7 @@ class _CompactTileRowState extends State<_CompactTileRow> {
                 ),
               ),
               Icon(Icons.chevron_right,
-                  color: Colors.grey.shade400, size: 18),
+                  color: Color(0xFF9CA3AF), size: 18),
             ],
           ),
         ),
@@ -856,7 +855,7 @@ class _UserDrawerState extends State<_UserDrawer> {
                   ? Center(
                       child: Text('Κανένα αποτέλεσμα',
                           style: tt.bodyMedium
-                              ?.copyWith(color: Colors.grey)),
+                              ?.copyWith(color: Color(0xFF6B7280))),
                     )
                   : ListView.separated(
                       itemCount: _filtered.length,

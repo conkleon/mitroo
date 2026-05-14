@@ -126,7 +126,6 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     final filtered = _filtered;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Text('Παλαιότερες Υπηρεσίες — ${widget.departmentName}',
             style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
@@ -193,7 +192,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                           side: BorderSide(
                               color: selected
                                   ? const Color(0xFFDDD6FE)
-                                  : Colors.grey.shade300),
+                                  : const Color(0xFFD1D5DB)),
                           visualDensity: VisualDensity.compact,
                           labelStyle: TextStyle(
                             fontSize: 12,
@@ -256,7 +255,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                         label: const Text('Καθαρισμός',
                             style: TextStyle(fontSize: 12)),
                         style: TextButton.styleFrom(
-                          foregroundColor: Colors.grey.shade600,
+                          foregroundColor: Color(0xFF4B5563),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           visualDensity: VisualDensity.compact,
@@ -272,7 +271,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                   _loading
                       ? 'Φόρτωση...'
                       : 'Βρέθηκαν ${filtered.length} υπηρεσίες',
-                  style: tt.bodySmall?.copyWith(color: Colors.grey.shade500),
+                  style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
                 ),
               ),
               const SizedBox(height: 4),
@@ -288,15 +287,15 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                                 children: [
                                   Icon(Icons.history,
                                       size: 64,
-                                      color: Colors.grey.shade300),
+                                      color: Color(0xFFD1D5DB)),
                                   const SizedBox(height: 12),
                                   Text('Δεν βρέθηκαν παλαιότερες',
                                       style: tt.bodyLarge?.copyWith(
-                                          color: Colors.grey.shade500)),
+                                          color: const Color(0xFF6B7280))),
                                   const SizedBox(height: 4),
                                   Text('Δοκιμάστε διαφορετικά φίλτρα',
                                       style: tt.bodySmall?.copyWith(
-                                          color: Colors.grey.shade400)),
+                                          color: const Color(0xFF9CA3AF))),
                                 ]))
                         : RefreshIndicator(
                             onRefresh: _load,
@@ -330,7 +329,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
           border: Border.all(
             color: isSet
                 ? const Color(0xFF7C3AED)
-                : Colors.grey.shade300,
+                : const Color(0xFFD1D5DB),
           ),
         ),
         child: Row(
@@ -340,7 +339,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                 size: 14,
                 color: isSet
                     ? const Color(0xFF7C3AED)
-                    : Colors.grey.shade500),
+                    : const Color(0xFF6B7280)),
             const SizedBox(width: 6),
             Text(label,
                 style: TextStyle(
@@ -404,7 +403,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -496,7 +495,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                       const Color(0xFF2563EB)),
                 const Spacer(),
                 Icon(Icons.chevron_right,
-                    size: 18, color: Colors.grey.shade400),
+                    size: 18, color: Color(0xFF9CA3AF)),
               ]),
             ],
           ),

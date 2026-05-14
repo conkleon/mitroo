@@ -163,7 +163,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Διαγραφή'),
           ),
         ],
@@ -278,7 +278,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Αφαίρεση'),
           ),
         ],
@@ -494,7 +494,6 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     final specs = _allSpecs;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Text(widget.departmentName,
             style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
@@ -581,7 +580,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                   side: BorderSide(
                                       color: selected
                                           ? const Color(0xFFDDD6FE)
-                                          : Colors.grey.shade300),
+                                          : Color(0xFFD1D5DB)),
                                   visualDensity: VisualDensity.compact,
                                   labelStyle: TextStyle(
                                     fontSize: 12,
@@ -612,7 +611,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                 side: BorderSide(
                                     color: selected
                                         ? const Color(0xFFDDD6FE)
-                                        : Colors.grey.shade300),
+                                        : Color(0xFFD1D5DB)),
                                 visualDensity: VisualDensity.compact,
                                 labelStyle: TextStyle(
                                   fontSize: 12,
@@ -639,11 +638,11 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                   children: [
                                     Icon(Icons.inbox,
                                         size: 64,
-                                        color: Colors.grey.shade300),
+                                        color: Color(0xFFD1D5DB)),
                                     const SizedBox(height: 12),
                                     Text('Δεν βρέθηκαν υπηρεσίες',
                                         style: tt.bodyLarge?.copyWith(
-                                            color: Colors.grey.shade500)),
+                                            color: Color(0xFF6B7280))),
                                   ]))
                           : RefreshIndicator(
                               onRefresh: _load,
@@ -686,7 +685,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       shadowColor: Colors.black.withAlpha(12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -754,25 +753,25 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                               if (location.isNotEmpty) ...[
                                 Icon(Icons.location_on,
                                     size: 12,
-                                    color: Colors.grey.shade500),
+                                    color: Color(0xFF6B7280)),
                                 const SizedBox(width: 3),
                                 Flexible(
                                   child: Text(location,
                                       style: TextStyle(
                                           fontSize: 11,
-                                          color: Colors.grey.shade600),
+                                          color: Color(0xFF4B5563)),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis),
                                 ),
                                 const SizedBox(width: 10),
                               ],
                               Icon(Icons.calendar_today,
-                                  size: 12, color: Colors.grey.shade500),
+                                  size: 12, color: Color(0xFF6B7280)),
                               const SizedBox(width: 3),
                               Text(_fmtDate(svc['startAt']),
                                   style: TextStyle(
                                       fontSize: 11,
-                                      color: Colors.grey.shade600)),
+                                      color: Color(0xFF4B5563))),
                               const SizedBox(width: 10),
                               // Members badge
                               const Icon(Icons.people,
@@ -893,7 +892,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                       ),
                       IconButton(
                         icon: Icon(Icons.delete_outline,
-                            size: 18, color: Colors.red.shade400),
+                            size: 18, color: Color(0xFFF87171)),
                         onPressed: () => _deleteService(id, name),
                         visualDensity: VisualDensity.compact,
                         tooltip: 'Διαγραφή',
@@ -931,7 +930,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
         borderRadius:
             const BorderRadius.vertical(bottom: Radius.circular(16)),
       ),
@@ -941,7 +940,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
         children: [
           // Header
           Row(children: [
-            Icon(Icons.people, size: 14, color: Colors.grey.shade600),
+            Icon(Icons.people, size: 14, color: Color(0xFF4B5563)),
             const SizedBox(width: 6),
             Text('Εγγραφές (${userServices.length})',
                 style: tt.labelSmall?.copyWith(
@@ -993,7 +992,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                   border: Border.all(
                     color: st == 'requested'
                         ? const Color(0xFFFDE68A)
-                        : Colors.grey.shade200,
+                        : Color(0xFFE5E7EB),
                     width: st == 'requested' ? 1.5 : 1,
                   ),
                 ),
@@ -1043,7 +1042,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                         Text('@$eame',
                                             style: TextStyle(
                                                 fontSize: 11,
-                                                color: Colors.grey.shade500)),
+                                                color: Color(0xFF6B7280))),
                                     ],
                                   ),
                                 ),
@@ -1110,7 +1109,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                 ],
                                 IconButton(
                                   icon: Icon(Icons.person_remove_outlined,
-                                      size: 18, color: Colors.grey.shade400),
+                                      size: 18, color: Color(0xFF9CA3AF)),
                                   onPressed: () =>
                                       _removeEnrollment(serviceId, userId, uName),
                                   tooltip: 'Αφαίρεση',
@@ -1132,7 +1131,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
           }),
           // ── Direct enroll field ──
           const SizedBox(height: 10),
-          Divider(color: Colors.grey.shade200, height: 1),
+          Divider(color: Color(0xFFE5E7EB), height: 1),
           const SizedBox(height: 10),
           _buildDirectEnrollField(svc, userServices),
         ],

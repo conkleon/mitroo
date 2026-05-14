@@ -92,7 +92,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final bool canSend = _canSend(chat, auth);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -124,7 +123,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   context.push('/chat/${widget.chatId}/settings'),
             ),
             IconButton(
-              icon: const Icon(Icons.exit_to_app, color: Colors.red),
+              icon: const Icon(Icons.exit_to_app, color: Color(0xFFDC2626)),
               onPressed: () => _confirmLeaveChat(context),
             ),
           ],
@@ -198,7 +197,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 }
               });
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: Color(0xFFDC2626)),
             child: const Text('Αποχώρηση'),
           ),
         ],
@@ -441,7 +440,7 @@ class _MessageBubble extends StatelessWidget {
               Navigator.of(ctx).pop();
               onDelete?.call();
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: Color(0xFFDC2626)),
             child: const Text('Διαγραφή'),
           ),
         ],

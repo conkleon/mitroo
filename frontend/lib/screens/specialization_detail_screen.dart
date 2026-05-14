@@ -209,7 +209,7 @@ class _SpecializationDetailScreenState
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Άκυρο')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             onPressed: () async {
               await _api
                   .delete('/specializations/${widget.specializationId}');
@@ -381,7 +381,6 @@ class _SpecializationDetailScreenState
     final tt = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Text(_spec?['name'] ?? 'Ειδίκευση',
             style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
@@ -394,7 +393,7 @@ class _SpecializationDetailScreenState
               onPressed: _edit,
               tooltip: 'Επεξεργασία'),
           IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: const Icon(Icons.delete, color: Color(0xFFDC2626)),
               onPressed: _delete,
               tooltip: 'Διαγραφή'),
         ],
@@ -671,7 +670,7 @@ class _SpecializationDetailScreenState
                       ),
                       IconButton(
                         icon: const Icon(Icons.remove_circle_outline,
-                            color: Colors.red, size: 20),
+                            color: Color(0xFFDC2626), size: 20),
                         onPressed: () => _removeUser(uid),
                         tooltip: 'Αφαίρεση',
                       ),

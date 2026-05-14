@@ -194,12 +194,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   shadowColor: Colors.black.withAlpha(15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(color: Colors.grey.shade100),
+                    side: BorderSide(color: Color(0xFFF3F4F6)),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Center(
-                      child: Text('Δεν υπάρχουν υπηρεσίες', style: tt.bodyMedium?.copyWith(color: Colors.grey)),
+                      child: Text('Δεν υπάρχουν υπηρεσίες', style: tt.bodyMedium?.copyWith(color: Color(0xFF6B7280))),
                     ),
                   ),
                 )
@@ -214,7 +214,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       shadowColor: Colors.black.withAlpha(15),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
-                        side: BorderSide(color: Colors.grey.shade100),
+                        side: BorderSide(color: Color(0xFFF3F4F6)),
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -231,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           '${dept?['name'] ?? ''} · $enrolled μέλη',
                           style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
                         ),
-                        trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400),
+                        trailing: Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
                       ),
                     ),
                   );
@@ -268,7 +268,7 @@ class _StatCard extends StatelessWidget {
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(color: Color(0xFFF3F4F6)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),

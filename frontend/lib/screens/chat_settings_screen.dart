@@ -128,7 +128,6 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
 
     if (_loading) {
       return const Scaffold(
-        backgroundColor: Color(0xFFF5F7FA),
         body: Center(child: CircularProgressIndicator()),
       );
     }
@@ -142,7 +141,6 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
         detail['deleteAfter24h'] as bool? ?? false;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: const Text('Ρυθμίσεις Συνομιλίας'),
         backgroundColor: Colors.white,
@@ -171,7 +169,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                 title: Text(userName),
                 trailing: IconButton(
                   icon: const Icon(Icons.remove_circle_outline,
-                      color: Colors.red),
+                      color: Color(0xFFDC2626)),
                   onPressed: () => _kickUser(m['userId'] as int),
                 ),
               ),

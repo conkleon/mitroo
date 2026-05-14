@@ -348,7 +348,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Η αρχική ειδίκευση μπορεί να είναι μόνο ριζική. Αν το EAME μείνει κενό, δημιουργείται αυτόματα από αυτήν.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 12, color: Color(0xFF4B5563)),
                   ),
                 ],
               ),
@@ -423,7 +423,6 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     final pageUsers = processed.sublist(pageStart, pageEnd);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Text('Διαχείριση Χρηστών', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
         centerTitle: true,
@@ -473,7 +472,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   child: Row(children: [
                     _chip('Όλοι (${_users.length})', 'all'),
                     const SizedBox(width: 6),
-                    _chip('Admins (${_countRole('admin')})', 'admin', color: Colors.amber.shade700),
+                    _chip('Admins (${_countRole('admin')})', 'admin', color: Color(0xFFF59E0B)),
                     const SizedBox(width: 6),
                     _chip('Δ. Αποστολών (${_countRole('missionAdmin')})', 'missionAdmin', color: const Color(0xFF059669)),
                     const SizedBox(width: 6),
@@ -492,9 +491,9 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   : processed.isEmpty
                       ? Center(
                           child: Column(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.person_off, size: 64, color: Colors.grey.shade300),
+                            Icon(Icons.person_off, size: 64, color: Color(0xFFD1D5DB)),
                             const SizedBox(height: 12),
-                            Text('Δεν βρέθηκαν χρήστες', style: tt.bodyLarge?.copyWith(color: Colors.grey.shade500)),
+                            Text('Δεν βρέθηκαν χρήστες', style: tt.bodyLarge?.copyWith(color: Color(0xFF6B7280))),
                           ]),
                         )
                       : Column(children: [
@@ -640,7 +639,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                       key: ValueKey('avatar_$userId'),
                       radius: 15,
                       backgroundColor: isAdmin
-                          ? Colors.amber.shade100
+                          ? Color(0xFFFEF3C7)
                           : const Color(0xFFFEE2E2),
                       child: Text(
                         name.isNotEmpty ? name[0].toUpperCase() : 'U',
@@ -648,7 +647,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: isAdmin
-                                ? Colors.amber.shade800
+                                ? Color(0xFFD97706)
                                 : const Color(0xFFDC2626)),
                       ),
                     ),
@@ -679,7 +678,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                             style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.amber.shade800)),
+                                color: Color(0xFFD97706))),
                       ),
                     ],
                   ]),
@@ -1064,7 +1063,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Διαγραφή'),
           ),
         ],

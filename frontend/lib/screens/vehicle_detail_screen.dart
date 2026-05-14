@@ -181,10 +181,10 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: Color(0xFFFEF2F2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.delete_outline, size: 32, color: Colors.red.shade400),
+              child: Icon(Icons.delete_outline, size: 32, color: Color(0xFFF87171)),
             ),
             const SizedBox(height: 16),
             Text(
@@ -194,7 +194,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
             const SizedBox(height: 6),
             Text(
               'Θα χαθούν όλα τα αρχεία καταγραφής.',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              style: TextStyle(color: Color(0xFF4B5563), fontSize: 13),
             ),
           ],
         ),
@@ -202,7 +202,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Διαγραφή'),
           ),
         ],
@@ -247,16 +247,16 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: Color(0xFFF9FAFB),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, size: 16, color: Colors.grey.shade600),
+                    Icon(Icons.info_outline, size: 16, color: Color(0xFF4B5563)),
                     const SizedBox(width: 8),
                     Text(
                       'Τρέχων μετρητής: $currentMeter $suffix',
-                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(color: Color(0xFF374151), fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -427,7 +427,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 }
                 Navigator.pop(ctx, {'meterEnd': val, 'destination': destCtrl.text.trim()});
               },
-              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+              style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
               child: const Text('Επιστροφή'),
             ),
           ],
@@ -485,7 +485,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Διαγραφή'),
           ),
         ],
@@ -538,9 +538,9 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 40),
         padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50,
+          color: Color(0xFFF9FAFB),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: Color(0xFFE5E7EB)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -548,15 +548,15 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: Color(0xFFF3F4F6),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.directions_car_outlined, size: 32, color: Colors.grey.shade400),
+              child: Icon(Icons.directions_car_outlined, size: 32, color: Color(0xFF9CA3AF)),
             ),
             const SizedBox(height: 16),
             Text('Το όχημα δεν βρέθηκε', style: tt.bodyLarge?.copyWith(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
-            Text('Μπορεί να έχει διαγραφεί', style: tt.bodySmall?.copyWith(color: Colors.grey.shade400)),
+            Text('Μπορεί να έχει διαγραφεί', style: tt.bodySmall?.copyWith(color: Color(0xFF9CA3AF))),
           ],
         ),
       ),
@@ -617,7 +617,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 onPressed: _busy ? null : _returnVehicle,
                 icon: _busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.assignment_return),
                 label: Text(_busy ? 'Παρακαλώ περιμένετε...' : 'Επιστροφή Οχήματος'),
-                style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+                style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
               ),
             ),
           const SizedBox(height: 16),
@@ -815,7 +815,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       if (i < entries.length - 1) {
         rows.add(Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: Divider(height: 1, color: Colors.grey.shade100),
+          child: Divider(height: 1, color: Color(0xFFF3F4F6)),
         ));
       }
     }
@@ -825,7 +825,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -862,7 +862,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -900,13 +900,13 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
             if (logs.isEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
-                decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: Color(0xFFF9FAFB), borderRadius: BorderRadius.circular(12)),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.history, color: Colors.grey.shade400, size: 28),
+                      Icon(Icons.history, color: Color(0xFF9CA3AF), size: 28),
                       const SizedBox(height: 6),
-                      Text('Δεν υπάρχουν αρχεία', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                      Text('Δεν υπάρχουν αρχεία', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                     ],
                   ),
                 ),
@@ -946,7 +946,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                               Expanded(
                                 child: Container(
                                   width: 2,
-                                  color: Colors.grey.shade200,
+                                  color: Color(0xFFE5E7EB),
                                 ),
                               ),
                           ],
@@ -960,7 +960,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: isOpen ? const Color(0xFFFEF3C7) : Colors.grey.shade50,
+                              color: isOpen ? const Color(0xFFFEF3C7) : Color(0xFFF9FAFB),
                               borderRadius: BorderRadius.circular(12),
                               border: isOpen ? Border.all(color: const Color(0xFFD97706).withAlpha(60)) : null,
                             ),
@@ -1004,7 +1004,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    Icon(Icons.speed, size: 14, color: Colors.grey.shade600),
+                                    Icon(Icons.speed, size: 14, color: Color(0xFF4B5563)),
                                     const SizedBox(width: 4),
                                     Text('$meterStart → $meterEnd $meterUnit', style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
                                   ],
@@ -1013,7 +1013,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      Icon(Icons.place, size: 14, color: Colors.grey.shade600),
+                                      Icon(Icons.place, size: 14, color: Color(0xFF4B5563)),
                                       const SizedBox(width: 4),
                                       Expanded(child: Text(destination, style: tt.bodySmall)),
                                     ],
@@ -1023,7 +1023,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      Icon(Icons.medical_services_outlined, size: 14, color: Colors.grey.shade600),
+                                      Icon(Icons.medical_services_outlined, size: 14, color: Color(0xFF4B5563)),
                                       const SizedBox(width: 4),
                                       Expanded(child: Text(service['name'] ?? '', style: tt.bodySmall)),
                                     ],
@@ -1034,7 +1034,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                   Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Icon(Icons.notes, size: 14, color: Colors.grey.shade600),
+                                      Icon(Icons.notes, size: 14, color: Color(0xFF4B5563)),
                                       const SizedBox(width: 4),
                                       Expanded(child: Text(comment, style: tt.bodySmall)),
                                     ],
@@ -1063,7 +1063,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1101,13 +1101,13 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
             if (_comments.isEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
-                decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: Color(0xFFF9FAFB), borderRadius: BorderRadius.circular(12)),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.chat_bubble_outline, color: Colors.grey.shade400, size: 28),
+                      Icon(Icons.chat_bubble_outline, color: Color(0xFF9CA3AF), size: 28),
                       const SizedBox(height: 6),
-                      Text('Δεν υπάρχουν σχόλια', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                      Text('Δεν υπάρχουν σχόλια', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                     ],
                   ),
                 ),
@@ -1121,7 +1121,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: Color(0xFFF9FAFB), borderRadius: BorderRadius.circular(12)),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1151,7 +1151,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                                 borderRadius: BorderRadius.circular(6),
                                 child: Padding(
                                   padding: const EdgeInsets.all(4),
-                                  child: Icon(Icons.close, size: 16, color: Colors.grey.shade400),
+                                  child: Icon(Icons.close, size: 16, color: Color(0xFF9CA3AF)),
                                 ),
                               ),
                           ],
@@ -1166,7 +1166,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(color: Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(14)),
               child: Row(
                 children: [
                   const SizedBox(width: 10),

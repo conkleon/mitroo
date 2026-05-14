@@ -764,12 +764,12 @@ class _ItemsScreenState extends State<ItemsScreen> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.directions_car, size: 12, color: Colors.orange.shade800),
+                                        Icon(Icons.directions_car, size: 12, color: Color(0xFF9A3412)),
                                         const SizedBox(width: 3),
                                         Text(
                                           '$_myVehiclesCount',
                                           style: TextStyle(
-                                              fontSize: 11, fontWeight: FontWeight.w700, color: Colors.orange.shade800),
+                                              fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF9A3412)),
                                         ),
                                       ],
                                     ),
@@ -871,9 +871,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey.shade300),
+                        Icon(Icons.inventory_2_outlined, size: 64, color: Color(0xFFD1D5DB)),
                         const SizedBox(height: 12),
-                        Text('Δεν βρέθηκαν αντικείμενα', style: tt.bodyLarge?.copyWith(color: Colors.grey)),
+                        Text('Δεν βρέθηκαν αντικείμενα', style: tt.bodyLarge?.copyWith(color: Color(0xFF6B7280))),
                       ],
                     ),
                   ),
@@ -894,7 +894,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         children: List.generate(prov.items.length, (i) {
                           return Column(
                             children: [
-                              if (i > 0) Divider(height: 1, thickness: 1, color: Colors.grey.shade100),
+                              if (i > 0) Divider(height: 1, thickness: 1, color: Color(0xFFF3F4F6)),
                               _ItemRow(
                                 item: prov.items[i],
                                 canManage: canManage,

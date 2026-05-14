@@ -188,7 +188,7 @@ class _UserDetailBodyState extends State<UserDetailBody> {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Διαγραφή'),
           ),
         ],
@@ -517,10 +517,10 @@ class _UserDetailBodyState extends State<UserDetailBody> {
           children: [
             CircleAvatar(
               radius: 40,
-              backgroundColor: isAdmin ? Colors.amber.shade100 : const Color(0xFFFEE2E2),
+              backgroundColor: isAdmin ? Color(0xFFFEF3C7) : const Color(0xFFFEE2E2),
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: isAdmin ? Colors.amber.shade800 : const Color(0xFFDC2626)),
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: isAdmin ? Color(0xFFD97706) : const Color(0xFFDC2626)),
               ),
             ),
             const SizedBox(height: 16),
@@ -532,7 +532,7 @@ class _UserDetailBodyState extends State<UserDetailBody> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(color: Colors.amber.withAlpha(25), borderRadius: BorderRadius.circular(8)),
-                child: Text('Διαχειριστής Συστήματος', style: tt.labelMedium?.copyWith(color: Colors.amber.shade800, fontWeight: FontWeight.w600)),
+                child: Text('Διαχειριστής Συστήματος', style: tt.labelMedium?.copyWith(color: Color(0xFFD97706), fontWeight: FontWeight.w600)),
               ),
             ],
             const SizedBox(height: 20),
@@ -623,7 +623,7 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                             if (role != 'itemAdmin')
                               const PopupMenuItem(value: 'itemAdmin', child: Text('Ορισμός Διαχειριστή Υλικού')),
                             const PopupMenuDivider(),
-                            const PopupMenuItem(value: 'remove', child: Text('Αφαίρεση', style: TextStyle(color: Colors.red))),
+                            const PopupMenuItem(value: 'remove', child: Text('Αφαίρεση', style: TextStyle(color: Color(0xFFDC2626)))),
                           ],
                         )
                       : null,
@@ -968,8 +968,8 @@ class _UserDetailBodyState extends State<UserDetailBody> {
     Color statusColor;
     switch (status) {
       case 'accepted': statusColor = const Color(0xFF059669); break;
-      case 'rejected': statusColor = Colors.red; break;
-      default: statusColor = Colors.amber.shade700;
+      case 'rejected': statusColor = Color(0xFFDC2626); break;
+      default: statusColor = Color(0xFFF59E0B);
     }
 
     return Container(
