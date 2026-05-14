@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_client.dart';
@@ -50,7 +51,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final tt = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
@@ -67,13 +67,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.mark_email_read_outlined, size: 64, color: cs.primary),
+        Icon(Icons.mark_email_read_outlined, size: 64, color: const Color(0xFF059669)),
         const SizedBox(height: 16),
-        Text('Ελέγξτε το email σας', style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+        Text('Ελέγξτε το email σας', style: GoogleFonts.playfairDisplay(fontSize: 28, fontWeight: FontWeight.w700, color: const Color(0xFF1A1C1E))),
         const SizedBox(height: 8),
         Text(
           'Αν υπάρχει λογαριασμός με αυτό το email, θα λάβετε οδηγίες επαναφοράς κωδικού.',
-          style: tt.bodyMedium?.copyWith(color: const Color(0xFF6B7280)),
+          style: GoogleFonts.spaceGrotesk(fontSize: 13, color: const Color(0xFF6B7280)),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -91,13 +91,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.lock_reset, size: 56, color: cs.primary),
-          const SizedBox(height: 12),
-          Text('Επαναφορά Κωδικού', style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
+          Text('Επαναφορά Κωδικού',
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 30,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1A1C1E),
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 6),
           Text(
             'Εισάγετε το email του λογαριασμού σας.',
-            style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 13,
+              color: const Color(0xFF6B7280),
+            ),
           ),
           const SizedBox(height: 28),
           if (_error != null)
@@ -106,11 +114,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: const Color(0xFFFEF2F2),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.shade200),
+                border: Border.all(color: const Color(0xFFFECACA)),
               ),
-              child: Text(_error!, style: TextStyle(color: Colors.red.shade700, fontSize: 13)),
+              child: Text(_error!, style: TextStyle(color: const Color(0xFFDC2626), fontSize: 13)),
             ),
           TextFormField(
             controller: _emailCtrl,
