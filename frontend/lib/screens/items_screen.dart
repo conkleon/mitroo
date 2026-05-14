@@ -845,7 +845,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       const SizedBox(width: 10),
                       Text(
                         'Αντικείμενα',
-                        style: GoogleFonts.playfairDisplay(
+                        style: GoogleFonts.literata(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF1A1C1E),
@@ -854,7 +854,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       ),
                       const Spacer(),
                       Text('${prov.totalItems} σύνολο',
-                        style: GoogleFonts.spaceGrotesk(
+                        style: GoogleFonts.inter(
                           fontSize: 13, color: const Color(0xFF6B7280),
                         ),
                       ),

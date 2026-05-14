@@ -265,7 +265,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                       const SizedBox(width: 10),
                       Text(
                         'Υπηρεσίες',
-                        style: GoogleFonts.playfairDisplay(
+                        style: GoogleFonts.literata(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF1A1C1E),
@@ -276,7 +276,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
               // ── Top bar ──────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(

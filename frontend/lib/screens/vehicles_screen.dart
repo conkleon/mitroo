@@ -153,7 +153,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                       const SizedBox(width: 10),
                       Text(
                         'Οχήματα',
-                        style: GoogleFonts.playfairDisplay(
+                        style: GoogleFonts.literata(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF1A1C1E),
@@ -169,7 +169,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                         ),
                         child: Text(
                           '${prov.vehicles.length} σύνολο',
-                          style: GoogleFonts.spaceGrotesk(
+                          style: GoogleFonts.inter(
                             fontSize: 12, color: const Color(0xFFD97706), fontWeight: FontWeight.w600,
                           ),
                         ),

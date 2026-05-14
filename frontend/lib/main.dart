@@ -34,7 +34,7 @@ class MitrooApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseTextTheme = GoogleFonts.spaceGroteskTextTheme();
+    final baseTextTheme = GoogleFonts.interTextTheme();
 
     return MultiProvider(
       providers: [
@@ -80,7 +80,7 @@ class MitrooApp extends StatelessWidget {
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 centerTitle: false,
-                titleTextStyle: GoogleFonts.playfairDisplay(
+                titleTextStyle: GoogleFonts.literata(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF1A1C1E),

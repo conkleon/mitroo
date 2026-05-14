@@ -161,7 +161,7 @@ class _DesktopSidebar extends StatelessWidget {
                     const SizedBox(width: 10),
                     Text(
                       'R.C.D.',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.inter(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -290,7 +290,7 @@ class _DesktopSidebar extends StatelessWidget {
                             children: [
                               Text(
                                 auth.displayName.isNotEmpty ? auth.displayName : 'Χρήστης',
-                                style: GoogleFonts.spaceGrotesk(
+                                style: GoogleFonts.inter(
                                   color: Colors.white,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
@@ -300,7 +300,7 @@ class _DesktopSidebar extends StatelessWidget {
                               ),
                               Text(
                                 auth.isAdmin ? 'Διαχειριστής' : 'Εθελοντής',
-                                style: GoogleFonts.spaceGrotesk(
+                                style: GoogleFonts.inter(
                                   color: Colors.white.withAlpha(150),
                                   fontSize: 11,
                                 ),
@@ -376,7 +376,7 @@ class _SidebarBrandSectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 8, 12, 4),
       child: Text(
         label.toUpperCase(),
-        style: GoogleFonts.spaceGrotesk(
+        style: GoogleFonts.inter(
           fontSize: 10,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.5,
@@ -448,7 +448,7 @@ class _BrandSidebarItemState extends State<_BrandSidebarItem> {
               Expanded(
                 child: Text(
                   widget.label,
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.inter(
                     fontSize: widget.indent ? 13 : 14,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                     color: selected ? Colors.white : Colors.white.withAlpha(200),

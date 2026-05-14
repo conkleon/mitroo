@@ -82,7 +82,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Image.asset('assets/logo.png', height: 24),
                         const SizedBox(width: 8),
                         Text('R.C.D.',
-                          style: GoogleFonts.spaceGrotesk(
+                          style: GoogleFonts.inter(
                             color: Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -109,14 +109,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 24),
 
               // ── Greeting ──
-              Text(_greeting(), style: GoogleFonts.spaceGrotesk(
+              Text(_greeting(), style: GoogleFonts.inter(
                 fontSize: 14, color: const Color(0xFF6B7280),
               )),
               const SizedBox(height: 2),
               Row(
                 children: [
                   Expanded(
-                    child: Text(name, style: GoogleFonts.playfairDisplay(
+                    child: Text(name, style: GoogleFonts.literata(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF1A1C1E),

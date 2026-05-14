@@ -69,11 +69,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       children: [
         Icon(Icons.mark_email_read_outlined, size: 64, color: const Color(0xFF059669)),
         const SizedBox(height: 16),
-        Text('Ελέγξτε το email σας', style: GoogleFonts.playfairDisplay(fontSize: 28, fontWeight: FontWeight.w700, color: const Color(0xFF1A1C1E))),
+        Text('Ελέγξτε το email σας', style: GoogleFonts.literata(fontSize: 28, fontWeight: FontWeight.w700, color: const Color(0xFF1A1C1E))),
         const SizedBox(height: 8),
         Text(
           'Αν υπάρχει λογαριασμός με αυτό το email, θα λάβετε οδηγίες επαναφοράς κωδικού.',
-          style: GoogleFonts.spaceGrotesk(fontSize: 13, color: const Color(0xFF6B7280)),
+          style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF6B7280)),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -92,7 +92,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('Επαναφορά Κωδικού',
-            style: GoogleFonts.playfairDisplay(
+            style: GoogleFonts.literata(
               fontSize: 30,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF1A1C1E),
@@ -102,7 +102,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           const SizedBox(height: 6),
           Text(
             'Εισάγετε το email του λογαριασμού σας.',
-            style: GoogleFonts.spaceGrotesk(
+            style: GoogleFonts.inter(
               fontSize: 13,
               color: const Color(0xFF6B7280),
             ),
