@@ -155,6 +155,7 @@ router.get("/stats", async (req: Request, res: Response) => {
     select: {
       ...USER_SELECT,
       departments: { include: { department: { select: { id: true, name: true } } } },
+      specializations: { include: { specialization: { select: { id: true, name: true } } } },
       services: {
         where: { status: "accepted" },
         select: {

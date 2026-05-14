@@ -183,14 +183,14 @@ async function syncServiceVisibility(
   const categories = getCategoriesForMissionType(id);
   if (!categories.length) return;
 
-  const specs = await prisma.specialization.findMany({
-    where: {
-      OR: categories.map((cat) => ({
-        missionCategories: { array_contains: cat },
-      })),
-    },
-    select: { id: true },
-  });
+  const orClauses = categories
+    .map((_, i) => `mission_categories @> $${i + 1}::jsonb`)
+    .join(" OR ");
+  const values = categories.map((c) => JSON.stringify([c]));
+  const specs = await prisma.$queryRawUnsafe<{ id: number }[]>(
+    `SELECT id FROM specializations WHERE ${orClauses}`,
+    ...values,
+  );
 
   await prisma.serviceVisibility.deleteMany({ where: { serviceId } });
 
