@@ -243,10 +243,6 @@ router.get("/:id", async (req: Request, res: Response) => {
 router.post("/", requireAdminOrMissionAdminForDept((req) => Number(req.body?.departmentId)), async (req: Request, res: Response) => {
   try {
     const data = createUserSchema.parse(req.body);
-    if (!req.user!.isAdmin) {
-      // Mission admins cannot set isAdmin on new users
-      (data as any).isAdmin = false;
-    }
     const providedEame = data.eame?.trim();
 
     const existingEmail = await prisma.user.findUnique({ where: { email: data.email } });
