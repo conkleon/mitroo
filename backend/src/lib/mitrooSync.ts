@@ -13,6 +13,14 @@ const TEP_MISSION_TYPE_IDS = new Set([85]);
 const VOLUNTEER_MISSION_TYPE_IDS = new Set([56, 57]);
 const SANITARY_MISSION_TYPE_IDS = new Set([60, 16]); //60 IS LIFEGUARD MISSION, 16 IS GENERAL SANITARY MISSION
 
+// Strip "Σαβ 16-05-2026 11:00-16:00, " prefix embedded in service names from original Mitroo
+const SERVICE_NAME_TIMESTAMP_RE =
+  /^(Δευ|Τρι|Τετ|Πεμ|Παρ|Σαβ|Κυρ)\s+\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}-\d{2}:\d{2},\s*/;
+
+function cleanServiceName(raw: string): string {
+  return raw.replace(SERVICE_NAME_TIMESTAMP_RE, "").trim();
+}
+
 const MISSION_CATEGORY_MAP: Record<string, Set<number>> = {
   trainer:           new Set([71, 36, 86, 33, 83]),
   training:          new Set([81]),
@@ -249,6 +257,7 @@ export async function syncUsers(departmentId: number): Promise<SyncResult> {
     }
 
     const updates: Array<ReturnType<typeof prisma.user.update>> = [];
+    const updatedUserIds: number[] = [];
     const createData: Array<{
       externalId: number;
       email: string;
@@ -285,6 +294,7 @@ export async function syncUsers(departmentId: number): Promise<SyncResult> {
               },
             }),
           );
+          updatedUserIds.push(existing.id);
           result.updated++;
         } else {
           const rawPassword = crypto.randomBytes(15).toString("base64url");
@@ -306,6 +316,19 @@ export async function syncUsers(departmentId: number): Promise<SyncResult> {
     const batchSize = 200;
     for (let i = 0; i < updates.length; i += batchSize) {
       await prisma.$transaction(updates.slice(i, i + batchSize));
+    }
+
+    // Ensure all updated users are linked to this department
+    for (let i = 0; i < updatedUserIds.length; i += batchSize) {
+      const batch = updatedUserIds.slice(i, i + batchSize);
+      const upserts = batch.map((uid) =>
+        prisma.userDepartment.upsert({
+          where: { userId_departmentId: { userId: uid, departmentId } },
+          update: {},
+          create: { userId: uid, departmentId, role: "volunteer" },
+        }),
+      );
+      await prisma.$transaction(upserts);
     }
 
     for (let i = 0; i < createData.length; i += batchSize) {
@@ -368,11 +391,12 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
       for (const shift of shifts) {
         try {
           const externalShiftId = Number(shift.id);
-          const name =
+          const rawName =
             (shift.name as string) ??
             (shift.title as string) ??
             (mission.title as string) ??
             `Shift ${externalShiftId}`;
+          const name = cleanServiceName(rawName);
 
           const startAt = shift.shift_start_date
             ? new Date(shift.shift_start_date as string)
@@ -982,7 +1006,7 @@ export async function writeBackRejection(serviceId: number, userId: number): Pro
       return;
     }
 
-    await client.cancelShiftApplication(applicationId);
+    await client.cancelMemberShiftApplication(applicationId);
     console.log(`[mitrooSync] writeBackRejection: cancelled application ${applicationId} for user ${userId}`);
   } catch (e) {
     console.error(`[mitrooSync] writeBackRejection failed for service ${serviceId}, user ${userId}:`, e);
@@ -1042,7 +1066,7 @@ export async function writeBackEnrollmentRequest(serviceId: number, userId: numb
 // ── Write-back: unenroll → cancel member shift application ────────────────
 
 export async function writeBackUnenroll(serviceId: number, userId: number): Promise<void> {
-  const [userService, service] = await Promise.all([
+  const [userService, service, user] = await Promise.all([
     prisma.userService.findUnique({
       where: { userId_serviceId: { userId, serviceId } },
       select: { externalApplicationId: true },
@@ -1050,6 +1074,10 @@ export async function writeBackUnenroll(serviceId: number, userId: number): Prom
     prisma.service.findUnique({
       where: { id: serviceId },
       select: { externalShiftId: true, departmentId: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { externalId: true },
     }),
   ]);
 
@@ -1064,14 +1092,23 @@ export async function writeBackUnenroll(serviceId: number, userId: number): Prom
   });
   if (!config?.syncEnabled) return;
 
-  const applicationId = userService?.externalApplicationId;
-  if (!applicationId) {
-    console.log(`[mitrooSync] writeBackUnenroll: skipped — no externalApplicationId for user ${userId}`);
-    return;
-  }
-
   try {
     const client = await getClient(service.departmentId);
+
+    let applicationId = userService?.externalApplicationId ?? null;
+
+    if (!applicationId && user?.externalId) {
+      applicationId = await client.findApplicationIdForMember(
+        service.externalShiftId,
+        user.externalId,
+      );
+    }
+
+    if (!applicationId) {
+      console.log(`[mitrooSync] writeBackUnenroll: no application found for user ${userId} — skipping`);
+      return;
+    }
+
     await client.cancelMemberShiftApplication(applicationId);
     console.log(
       `[mitrooSync] writeBackUnenroll: cancelled application ${applicationId} for user ${userId}`,

@@ -30,16 +30,18 @@ String _dayLabel(DateTime dt) {
 
 /// "2/3 19:30 → 11/3 22:30" — shown as subtitle on each card
 /// Shows dates when start and end are on different days; time-only when same day.
-String _timeRange(Map<String, dynamic> svc) {
-  final start = DateTime.tryParse(svc['startAt'] ?? '');
-  final end   = DateTime.tryParse(svc['endAt']   ?? '');
-  if (start == null) return '';
+String _timeRange(Map<String, dynamic> svc, {bool timeOnly = false}) {
+  final startUtc = DateTime.tryParse(svc['startAt'] ?? '');
+  final endUtc   = DateTime.tryParse(svc['endAt']   ?? '');
+  if (startUtc == null) return '';
 
+  final start = startUtc.toLocal();
   final sTime = '${_pad2(start.hour)}:${_pad2(start.minute)}';
   final sDate = '${start.day}/${start.month}';
 
-  if (end == null) return '$sDate $sTime';
+  if (endUtc == null) return timeOnly ? sTime : '$sDate $sTime';
 
+  final end = endUtc.toLocal();
   final eTime = '${_pad2(end.hour)}:${_pad2(end.minute)}';
   final eDate = '${end.day}/${end.month}';
   final sameDay = start.year == end.year &&
@@ -47,6 +49,7 @@ String _timeRange(Map<String, dynamic> svc) {
       start.day == end.day;
 
   if (sameDay) return '$sTime → $eTime';
+  if (timeOnly) return '$sTime → $eTime';
   return '$sDate $sTime → $eDate $eTime';
 }
 
@@ -1812,7 +1815,7 @@ class _CalendarServiceCard extends StatelessWidget {
     final carrier = (svc['carrier'] as String? ?? '').isNotEmpty
         ? svc['carrier'] as String
         : (svc['name'] as String? ?? 'Υπηρεσία');
-    final timeRange = _timeRange(svc);
+    final timeRange = _timeRange(svc, timeOnly: true);
     final location = svc['location'] as String? ?? '';
     final enrollCount = ((svc['_count'] as Map?)?['userServices'] ?? 0) as int;
 
@@ -1905,13 +1908,12 @@ class _CalendarServiceCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 4),
-                          // Time & location row
-                          Row(
-                            children: [
-                              if (timeRange.isNotEmpty) ...[
-                                Icon(Icons.schedule, size: 13, color: Color(0xFF6B7280)),
-                                const SizedBox(width: 4),
+                          if (timeRange.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Icon(Icons.schedule, size: 12, color: Color(0xFF6B7280)),
+                                const SizedBox(width: 3),
                                 Text(
                                   timeRange,
                                   style: tt.bodySmall?.copyWith(
@@ -1920,18 +1922,12 @@ class _CalendarServiceCard extends StatelessWidget {
                                   ),
                                 ),
                               ],
-                              if (timeRange.isNotEmpty && location.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Container(
-                                    width: 3, height: 3,
-                                    decoration: BoxDecoration(
-                                      color: Color(0xFF9CA3AF),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                              if (location.isNotEmpty) ...[
+                            ),
+                          ],
+                          if (location.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
                                 Icon(Icons.location_on_outlined, size: 13, color: Color(0xFF6B7280)),
                                 const SizedBox(width: 2),
                                 Flexible(
@@ -1945,8 +1941,8 @@ class _CalendarServiceCard extends StatelessWidget {
                                   ),
                                 ),
                               ],
-                            ],
-                          ),
+                            ),
+                          ],
                           // Enrollment info & apply button
                           if (showEnrollmentNeed || onApply != null) ...[
                             const SizedBox(height: 8),

@@ -406,13 +406,15 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       fieldViewBuilder: (context, controller, focusNode, _) => TextField(
         controller: controller,
         focusNode: focusNode,
+        style: const TextStyle(fontSize: 12),
         decoration: InputDecoration(
           hintText: 'Προσθήκη μέλους...',
-          prefixIcon: const Icon(Icons.person_add_outlined, size: 18),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          hintStyle: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+          prefixIcon: const Icon(Icons.person_add_outlined, size: 16),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           isDense: true,
         ),
       ),
@@ -462,6 +464,152 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
 
   void _openDetail(Map<String, dynamic> svc) =>
       context.push('/admin/services/${svc['id']}');
+
+  void _localSetResponsible(int serviceId, Map<String, dynamic>? user) {
+    setState(() {
+      for (final svc in _services) {
+        if ((svc['id'] as int?) == serviceId) {
+          if (user == null) {
+            svc.remove('responsibleUser');
+          } else {
+            svc['responsibleUser'] = user;
+          }
+          break;
+        }
+      }
+    });
+  }
+
+  Future<void> _assignResponsible(int serviceId, int? userId) async {
+    final err = await context.read<ServiceProvider>().setResponsibleUser(serviceId, userId);
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+    }
+  }
+
+  void _showResponsiblePicker(Map<String, dynamic> svc) {
+    final serviceId = svc['id'] as int;
+    final current = svc['responsibleUser'] as Map<String, dynamic>?;
+    final cs = Theme.of(context).colorScheme;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 36, height: 4,
+                decoration: BoxDecoration(
+                  color: Color(0xFFD1D5DB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('Υπεύθυνος Υπηρεσίας',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(svc['name'] ?? '',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Color(0xFF6B7280))),
+            const SizedBox(height: 12),
+            if (current != null) ...[
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: cs.primary.withAlpha(20),
+                    child: Text(
+                      '${current['forename'] ?? ''} ${current['surname'] ?? ''}'.trim().isNotEmpty
+                          ? '${current['forename'] ?? ''} ${current['surname'] ?? ''}'.trim()[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(color: cs.primary, fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '${current['forename'] ?? ''} ${current['surname'] ?? ''}'.trim(),
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () {
+                      _assignResponsible(serviceId, null);
+                      _localSetResponsible(serviceId, null);
+                      Navigator.pop(ctx);
+                    },
+                    icon: const Icon(Icons.close, size: 16, color: Color(0xFFDC2626)),
+                    label: const Text('Αφαίρεση', style: TextStyle(color: Color(0xFFDC2626))),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 8),
+            ],
+            Builder(builder: (ctx) {
+              // Only accepted users on this service
+              final userServices = svc['userServices'] as List<dynamic>? ?? [];
+              final acceptedUsers = userServices
+                  .where((us) => us['status'] == 'accepted' && us['user'] != null)
+                  .map((us) => us['user'] as Map<String, dynamic>)
+                  .toList();
+
+              if (acceptedUsers.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text('Δεν υπάρχουν εγκεκριμένα μέλη σε αυτή την υπηρεσία',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Color(0xFF9CA3AF))),
+                );
+              }
+
+              return Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: acceptedUsers.map((u) {
+                    final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim();
+                    final isCurrent = current != null && current['id'] == u['id'];
+                    return ListTile(
+                      dense: true,
+                      leading: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: isCurrent ? const Color(0xFF7C3AED) : cs.primary.withAlpha(20),
+                        child: Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : '?',
+                          style: TextStyle(
+                            color: isCurrent ? Colors.white : cs.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      trailing: isCurrent
+                          ? const Icon(Icons.check_circle, size: 20, color: Color(0xFF7C3AED))
+                          : null,
+                      onTap: () {
+                        final userId = u['id'] as int;
+                        _assignResponsible(serviceId, userId);
+                        _localSetResponsible(serviceId, u);
+                        Navigator.pop(ctx);
+                      },
+                    );
+                  }).toList(),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _editService(Map<String, dynamic> svc) async {
     final id = svc['id'] as int;
@@ -692,216 +840,274 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           InkWell(
-            onTap: () => _openDetail(svc),
+            onTap: () => setState(() {
+              isExpanded
+                  ? _expandedCards.remove(id)
+                  : _expandedCards.add(id);
+            }),
             child: Container(
               color: Colors.white,
-              child: Row(
-                children: [
-                  // Status accent bar
-                  Container(
-                    width: 4,
-                    height: 80,
-                    color: sColor,
-                  ),
-                  const SizedBox(width: 14),
+              padding: const EdgeInsets.fromLTRB(0, 8, 4, 8),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Status accent bar
+                    Container(
+                      width: 4,
+                      color: sColor,
+                    ),
+                  const SizedBox(width: 12),
                   // Main content
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Title row
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(name,
-                                    style: tt.titleSmall?.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Title row
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(name,
+                                  style: tt.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis),
+                            ),
+                          ],
+                        ),
+                        if (description.isNotEmpty) ...[
+                          const SizedBox(height: 1),
+                          Text(description,
+                              style: tt.bodySmall?.copyWith(
+                                  color: const Color(0xFF9CA3AF),
+                                  fontSize: 11),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                        ],
+                        const SizedBox(height: 4),
+                        // Info row — compact single line
+                        Row(
+                          children: [
+                            if (location.isNotEmpty) ...[
+                              Icon(Icons.location_on,
+                                  size: 11,
+                                  color: Color(0xFF6B7280)),
+                              const SizedBox(width: 2),
+                              Flexible(
+                                child: Text(location,
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        color: Color(0xFF4B5563)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis),
                               ),
+                              const SizedBox(width: 8),
+                            ],
+                            Icon(Icons.calendar_today,
+                                size: 11, color: Color(0xFF6B7280)),
+                            const SizedBox(width: 2),
+                            Text(_fmtDate(svc['startAt']),
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: Color(0xFF4B5563))),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.people,
+                                size: 11,
+                                color: Color(0xFFDC2626)),
+                            const SizedBox(width: 2),
+                            Text('$enrolledCount',
+                                style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFFDC2626))),
+                            if (requestedCount > 0) ...[
+                              const SizedBox(width: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 3),
+                                    horizontal: 6, vertical: 1),
                                 decoration: BoxDecoration(
-                                  color: sColor.withAlpha(20),
-                                  borderRadius: BorderRadius.circular(10),
+                                  color: const Color(0xFFFEF3C7),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                      color: const Color(0xFFF59E0B)),
                                 ),
-                                child: Text(status,
-                                    style: TextStyle(
-                                        color: sColor,
-                                        fontSize: 11,
+                                child: Text('$requestedCount εκκρ.',
+                                    style: const TextStyle(
+                                        color: Color(0xFFB45309),
+                                        fontSize: 9,
                                         fontWeight: FontWeight.w700)),
                               ),
                             ],
-                          ),
-                          if (description.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(description,
-                                style: tt.bodySmall?.copyWith(
-                                    color: const Color(0xFF9CA3AF),
-                                    fontSize: 12),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis),
-                          ],
-                          const SizedBox(height: 6),
-                          // Info row
-                          Row(
-                            children: [
-                              if (location.isNotEmpty) ...[
-                                Icon(Icons.location_on,
-                                    size: 12,
-                                    color: Color(0xFF6B7280)),
-                                const SizedBox(width: 3),
-                                Flexible(
-                                  child: Text(location,
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: Color(0xFF4B5563)),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis),
-                                ),
-                                const SizedBox(width: 10),
-                              ],
-                              Icon(Icons.calendar_today,
-                                  size: 12, color: Color(0xFF6B7280)),
-                              const SizedBox(width: 3),
-                              Text(_fmtDate(svc['startAt']),
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF4B5563))),
-                              const SizedBox(width: 10),
-                              // Members badge
-                              const Icon(Icons.people,
-                                  size: 12,
-                                  color: Color(0xFFDC2626)),
-                              const SizedBox(width: 3),
-                              Text('$enrolledCount',
-                                  style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFFDC2626))),
-                              if (requestedCount > 0) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFEF3C7),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                        color: const Color(0xFFF59E0B)),
-                                  ),
-                                  child: Text('$requestedCount εκκρεμείς',
-                                      style: const TextStyle(
-                                          color: Color(0xFFB45309),
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700)),
-                                ),
-                              ],
-                              // Specialization chips inline
-                              if (visSpecs.isNotEmpty) ...[
-                                const SizedBox(width: 10),
-                                ...visSpecs.take(2).map((v) => Padding(
-                                      padding: const EdgeInsets.only(right: 4),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFF5F3FF),
-                                          borderRadius:
-                                              BorderRadius.circular(6),
-                                          border: Border.all(
-                                              color:
-                                                  const Color(0xFFDDD6FE)),
-                                        ),
-                                        child: Text(
-                                            v['specialization']?['name'] ?? '',
-                                            style: const TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                                color: Color(0xFF6D28D9))),
+                            if (visSpecs.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              ...visSpecs.take(2).map((v) => Padding(
+                                    padding: const EdgeInsets.only(right: 3),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF5F3FF),
+                                        borderRadius:
+                                            BorderRadius.circular(4),
+                                        border: Border.all(
+                                            color:
+                                                const Color(0xFFDDD6FE)),
                                       ),
-                                    )),
-                                if (visSpecs.length > 2)
-                                  Text('+${visSpecs.length - 2}',
-                                      style: const TextStyle(
-                                          fontSize: 10,
-                                          color: Color(0xFF6D28D9))),
-                              ],
+                                      child: Text(
+                                          v['specialization']?['name'] ?? '',
+                                          style: const TextStyle(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF6D28D9))),
+                                    ),
+                                  )),
+                              if (visSpecs.length > 2)
+                                Text('+${visSpecs.length - 2}',
+                                    style: const TextStyle(
+                                        fontSize: 9,
+                                        color: Color(0xFF6D28D9))),
                             ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Action buttons
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Expand toggle
-                      if (enrolledCount > 0)
-                        Material(
-                          color: isExpanded
-                              ? const Color(0xFFDC2626).withAlpha(20)
-                              : const Color(0xFFFEF2F2),
-                          borderRadius: BorderRadius.circular(10),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(10),
-                            onTap: () => setState(() {
-                              isExpanded
-                                  ? _expandedCards.remove(id)
-                                  : _expandedCards.add(id);
-                            }),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 6),
+                          ],
+                        ),
+                        // Responsible user indicator
+                        Builder(builder: (_) {
+                          final resp = svc['responsibleUser'] as Map<String, dynamic>?;
+                          final rName = resp != null
+                              ? '${resp['forename'] ?? ''} ${resp['surname'] ?? ''}'.trim()
+                              : '';
+                          return GestureDetector(
+                            onTap: () => _showResponsiblePicker(svc),
+                            child: Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: resp != null
+                                    ? const Color(0xFF7C3AED).withAlpha(15)
+                                    : const Color(0xFFF3F4F6),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: resp != null
+                                      ? const Color(0xFF7C3AED).withAlpha(60)
+                                      : const Color(0xFFD1D5DB),
+                                ),
+                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.people_outline,
-                                      size: 16,
-                                      color: const Color(0xFFDC2626)),
-                                  const SizedBox(width: 5),
-                                  Text('$enrolledCount',
-                                      style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFFDC2626))),
                                   Icon(
-                                    isExpanded
-                                        ? Icons.expand_less
-                                        : Icons.expand_more,
-                                    size: 20,
-                                    color: const Color(0xFFDC2626),
+                                    resp != null ? Icons.star_rounded : Icons.star_outline_rounded,
+                                    size: 11,
+                                    color: resp != null ? const Color(0xFF7C3AED) : const Color(0xFF9CA3AF),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Flexible(
+                                    child: Text(
+                                      resp != null ? rName : 'Υπεύθυνος',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w600,
+                                        color: resp != null ? const Color(0xFF7C3AED) : const Color(0xFF9CA3AF),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  // Action buttons — compact column
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Expand toggle
+                      InkWell(
+                          borderRadius: BorderRadius.circular(6),
+                          onTap: () => setState(() {
+                            isExpanded
+                                ? _expandedCards.remove(id)
+                                : _expandedCards.add(id);
+                          }),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isExpanded
+                                  ? const Color(0xFFDC2626).withAlpha(20)
+                                  : const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.people_outline,
+                                    size: 14,
+                                    color: const Color(0xFFDC2626)),
+                                const SizedBox(width: 3),
+                                Text('$enrolledCount',
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFFDC2626))),
+                                Icon(
+                                  isExpanded
+                                      ? Icons.expand_less
+                                      : Icons.expand_more,
+                                  size: 16,
+                                  color: const Color(0xFFDC2626),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined,
-                            size: 18, color: Color(0xFF059669)),
-                        onPressed: () => _editService(svc),
-                        visualDensity: VisualDensity.compact,
-                        tooltip: 'Επεξεργασία',
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete_outline,
-                            size: 18, color: Color(0xFFF87171)),
-                        onPressed: () => _deleteService(id, name),
-                        visualDensity: VisualDensity.compact,
-                        tooltip: 'Διαγραφή',
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.open_in_new,
+                                size: 15, color: Color(0xFF6B7280)),
+                            onPressed: () => _openDetail(svc),
+                            visualDensity: VisualDensity.compact,
+                            tooltip: 'Λεπτομέρειες',
+                            constraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 28),
+                            padding: EdgeInsets.zero,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined,
+                                size: 16, color: Color(0xFF059669)),
+                            onPressed: () => _editService(svc),
+                            visualDensity: VisualDensity.compact,
+                            tooltip: 'Επεξεργασία',
+                            constraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 28),
+                            padding: EdgeInsets.zero,
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete_outline,
+                                size: 16, color: Color(0xFFF87171)),
+                            onPressed: () => _deleteService(id, name),
+                            visualDensity: VisualDensity.compact,
+                            tooltip: 'Διαγραφή',
+                            constraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 28),
+                            padding: EdgeInsets.zero,
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(width: 4),
                 ],
               ),
+            ),
             ),
           ),
 
@@ -909,7 +1115,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
           AnimatedSize(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOut,
-            child: isExpanded && userServices.isNotEmpty
+            child: isExpanded
                 ? _buildEnrollmentPanel(svc, userServices, tt)
                 : const SizedBox.shrink(),
           ),
@@ -926,213 +1132,142 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     sorted.sort(
         (a, b) => (order[a['status']] ?? 3).compareTo(order[b['status']] ?? 3));
 
+    final acceptedCount = userServices.where((u) => u['status'] == 'accepted').length;
+    final requestedCount = userServices.where((u) => u['status'] == 'requested').length;
+    final rejectedCount = userServices.where((u) => u['status'] == 'rejected').length;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
         borderRadius:
-            const BorderRadius.vertical(bottom: Radius.circular(16)),
+            const BorderRadius.vertical(bottom: Radius.circular(12)),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Header
+          // Compact header
           Row(children: [
-            Icon(Icons.people, size: 14, color: Color(0xFF4B5563)),
-            const SizedBox(width: 6),
+            Icon(Icons.people, size: 13, color: Color(0xFF4B5563)),
+            const SizedBox(width: 4),
             Text('Εγγραφές (${userServices.length})',
                 style: tt.labelSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF374151))),
+                    color: const Color(0xFF374151),
+                    fontSize: 11)),
             const Spacer(),
-            // Quick counts
-            _EnrollBadge(
-                'Εγκρ.',
-                userServices
-                    .where((u) => u['status'] == 'accepted')
-                    .length,
-                const Color(0xFF059669)),
-            const SizedBox(width: 6),
-            _EnrollBadge(
-                'Εκκρ.',
-                userServices
-                    .where((u) => u['status'] == 'requested')
-                    .length,
-                const Color(0xFFF59E0B)),
-            const SizedBox(width: 6),
-            _EnrollBadge(
-                'Απορ.',
-                userServices
-                    .where((u) => u['status'] == 'rejected')
-                    .length,
-                const Color(0xFFDC2626)),
+            _EnrollBadge('Εγκρ.', acceptedCount, const Color(0xFF059669)),
+            const SizedBox(width: 4),
+            _EnrollBadge('Εκκρ.', requestedCount, const Color(0xFFF59E0B)),
+            const SizedBox(width: 4),
+            _EnrollBadge('Απορ.', rejectedCount, const Color(0xFFDC2626)),
           ]),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
 
-          // User rows (existing + direct enroll field at end)
+          // User rows — compact single-line
           ...sorted.map((us) {
             final user = us['user'] as Map<String, dynamic>?;
             final userId = us['userId'] as int? ?? user?['id'] as int? ?? 0;
             final uName = user != null
                 ? '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim()
                 : 'Unknown';
-            final eame = user?['eame'] ?? '';
             final st = (us['status'] ?? 'requested') as String;
             final stColor = _enrollColor(st);
             final serviceId = svc['id'] as int;
 
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 6),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: st == 'requested'
-                        ? const Color(0xFFFDE68A)
-                        : Color(0xFFE5E7EB),
-                    width: st == 'requested' ? 1.5 : 1,
-                  ),
+            return Container(
+              margin: const EdgeInsets.only(bottom: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: st == 'requested' ? const Color(0xFFFFFBEB) : Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: st == 'requested'
+                      ? const Color(0xFFFDE68A)
+                      : const Color(0xFFE5E7EB),
                 ),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (st == 'requested')
-                        Container(width: 4, color: const Color(0xFFF59E0B)),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          color: st == 'requested'
-                              ? const Color(0xFFFFFBEB)
-                              : Colors.white,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // ── Top: user info + status ──
-                              Row(children: [
-                                CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor: stColor.withAlpha(30),
-                                  child: Text(
-                                    uName.isNotEmpty
-                                        ? uName[0].toUpperCase()
-                                        : '?',
-                                    style: TextStyle(
-                                        color: stColor,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(uName,
-                                          style: const TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis),
-                                      if (eame.isNotEmpty)
-                                        Text('@$eame',
-                                            style: TextStyle(
-                                                fontSize: 11,
-                                                color: Color(0xFF6B7280))),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: stColor.withAlpha(20),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                        color: stColor.withAlpha(60)),
-                                  ),
-                                  child: Text(
-                                    st.substring(0, 1).toUpperCase() +
-                                        st.substring(1),
-                                    style: TextStyle(
-                                        color: stColor,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                              ]),
-                              const SizedBox(height: 10),
-                              // ── Action row ──
-                              Row(children: [
-                                if (st != 'accepted') ...[
-                                  Expanded(
-                                    child: _ActionButton(
-                                      icon: Icons.check_circle_outline,
-                                      label: 'Αποδοχή',
-                                      color: const Color(0xFF059669),
-                                      filled: true,
-                                      onTap: () => _updateEnrollmentStatus(
-                                          serviceId, userId, 'accepted'),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                ],
-                                if (st != 'rejected') ...[
-                                  Expanded(
-                                    child: _ActionButton(
-                                      icon: Icons.cancel_outlined,
-                                      label: 'Απόρριψη',
-                                      color: const Color(0xFFDC2626),
-                                      filled: false,
-                                      onTap: () => _updateEnrollmentStatus(
-                                          serviceId, userId, 'rejected'),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                ],
-                                if (st != 'requested') ...[
-                                  Expanded(
-                                    child: _ActionButton(
-                                      icon: Icons.schedule,
-                                      label: 'Ώρες',
-                                      color: const Color(0xFF6B7280),
-                                      filled: false,
-                                      onTap: () => _updateEnrollmentHours(
-                                          serviceId, userId, us),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                ],
-                                IconButton(
-                                  icon: Icon(Icons.person_remove_outlined,
-                                      size: 18, color: Color(0xFF9CA3AF)),
-                                  onPressed: () =>
-                                      _removeEnrollment(serviceId, userId, uName),
-                                  tooltip: 'Αφαίρεση',
-                                  visualDensity: VisualDensity.compact,
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(
-                                      minWidth: 32, minHeight: 32),
-                                ),
-                              ]),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+              ),
+              child: Row(
+                children: [
+                  if (st == 'requested')
+                    Container(width: 3, height: 28, color: const Color(0xFFF59E0B)),
+                  if (st == 'requested') const SizedBox(width: 6),
+                  CircleAvatar(
+                    radius: 11,
+                    backgroundColor: stColor.withAlpha(30),
+                    child: Text(
+                      uName.isNotEmpty ? uName[0].toUpperCase() : '?',
+                      style: TextStyle(
+                          color: stColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(uName,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: stColor.withAlpha(20),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      st == 'accepted' ? 'Εγκρ.' : st == 'rejected' ? 'Απορ.' : 'Εκκρ.',
+                      style: TextStyle(
+                          color: stColor,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  // Compact icon-only actions
+                  if (st != 'accepted')
+                    _CompactIconBtn(
+                      icon: Icons.check, color: const Color(0xFF059669),
+                      tooltip: 'Αποδοχή',
+                      onTap: () => _updateEnrollmentStatus(
+                          serviceId, userId, 'accepted'),
+                    ),
+                  if (st != 'rejected')
+                    _CompactIconBtn(
+                      icon: Icons.close, color: const Color(0xFFDC2626),
+                      tooltip: 'Απόρριψη',
+                      onTap: () => _updateEnrollmentStatus(
+                          serviceId, userId, 'rejected'),
+                    ),
+                  if (st != 'requested')
+                    _CompactIconBtn(
+                      icon: Icons.schedule, color: const Color(0xFF6B7280),
+                      tooltip: 'Ώρες',
+                      onTap: () => _updateEnrollmentHours(
+                          serviceId, userId, us),
+                    ),
+                  _CompactIconBtn(
+                    icon: Icons.person_remove_outlined,
+                    color: const Color(0xFF9CA3AF),
+                    tooltip: 'Αφαίρεση',
+                    onTap: () => _removeEnrollment(serviceId, userId, uName),
+                  ),
+                ],
               ),
             );
           }),
           // ── Direct enroll field ──
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Divider(color: Color(0xFFE5E7EB), height: 1),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           _buildDirectEnrollField(svc, userServices),
         ],
       ),
@@ -1167,51 +1302,35 @@ class _EnrollBadge extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
+class _CompactIconBtn extends StatelessWidget {
   final IconData icon;
-  final String label;
   final Color color;
-  final bool filled;
+  final String tooltip;
   final VoidCallback onTap;
 
-  const _ActionButton({
+  const _CompactIconBtn({
     required this.icon,
-    required this.label,
     required this.color,
+    required this.tooltip,
     required this.onTap,
-    this.filled = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: filled ? color : Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
+    return Tooltip(
+      message: tooltip,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.all(8),
+          margin: const EdgeInsets.only(left: 3),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: filled ? null : Border.all(color: color.withAlpha(80)),
+            color: color.withAlpha(15),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: color.withAlpha(40)),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon,
-                  size: 16, color: filled ? Colors.white : color),
-              if (label.isNotEmpty) ...[
-                const SizedBox(width: 4),
-                Text(label,
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: filled ? Colors.white : color)),
-              ],
-            ],
-          ),
+          child: Icon(icon, size: 18, color: color),
         ),
       ),
     );
