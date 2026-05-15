@@ -42,7 +42,6 @@ async function main() {
     create: { name: "Τμήμα Αθήνας", description: "Health / Medical services", location: "HQ" },
   });
 
-
   // ── Department memberships ────────────────────
   await prisma.userDepartment.upsert({
     where: { userId_departmentId: { userId: admin.id, departmentId: ops.id } },
@@ -50,8 +49,7 @@ async function main() {
     create: { userId: admin.id, departmentId: ops.id, role: DepartmentRole.missionAdmin },
   });
 
-
-  // ── Role types (reference) ────────────────────
+  // ── Role types ────────────────────────────────
   for (const rt of [
     { name: "missionAdmin", description: "Can create & assign users to services" },
     { name: "itemAdmin", description: "Can manage items" },
@@ -60,81 +58,172 @@ async function main() {
     await prisma.roleType.upsert({ where: { name: rt.name }, update: {}, create: rt });
   }
 
+  // ── Service types (11 types from old Mitroo) ──
+  const serviceTypes = [
+    { name: "BLS “ΒΑΣΙΚΗ ΥΠΟΣΤΗΡΙΞΗ ΖΩΗΣ’’", externalMissionTypeId: 71, isDefaultVisible: false },
+    { name: "ΔΡΑΣΗ ΠΡΟΛΗΨΗΣ", externalMissionTypeId: 56, isDefaultVisible: false },
+    { name: "ΕΘΕΛΟΝΤΙΚΗ ΔΡΑΣΤΗΡΙΟΤΗΤΑ", externalMissionTypeId: 57, isDefaultVisible: false },
+    { name: "ΕΚΠΑΙΔΕΥΣΗ Α΄ ΒΟΗΘΕΙΩΝ ΣΕ ΠΟΛΙΤΕΣ", externalMissionTypeId: 36, isDefaultVisible: false },
+    { name: "ΕΚΠΑΙΔΕΥΣΗ Α' ΒΟΗΘΕΙΕΣ ΓΙΑ ΣΚΥΛΟΥΣ", externalMissionTypeId: 86, isDefaultVisible: false },
+    { name: "ΕΚΠΑΙΔΕΥΣΗ ΔΟΚΙΜΩΝ ΣΑΜΑΡΕΙΤΩΝ", externalMissionTypeId: 33, isDefaultVisible: false },
+    { name: "ΕΚΠΑΙΔΕΥΣΗ ΕΝΕΡΓΟΠΟΙΗΣΗΣ ΑΝΕΝΕΡΓΩΝ ΕΘΕΛΟΝΤΩΝ", externalMissionTypeId: 83, isDefaultVisible: false },
+    { name: "ΝΑΥΑΓΟΣΩΣΤΙΚΗ ΚΑΛΥΨΗ", externalMissionTypeId: 60, isDefaultVisible: false },
+    { name: "Τ.Ε.Π. ΔΟΚΙΜΩΝ", externalMissionTypeId: 85, isDefaultVisible: false },
+    { name: "ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ", externalMissionTypeId: 16, isDefaultVisible: false },
+    { name: "ΥΠΟΧΡΕΩΤΙΚΗ ΕΤΗΣΙΑ ΕΚΠΑΙΔΕΥΣΗ ΕΘΕΛΟΝΤΗ", externalMissionTypeId: 81, isDefaultVisible: false },
+  ];
+
+  const createdTypes: Record<string, number> = {};
+  for (const st of serviceTypes) {
+    const created = await prisma.serviceType.upsert({
+      where: { name: st.name },
+      update: { externalMissionTypeId: st.externalMissionTypeId, isDefaultVisible: st.isDefaultVisible },
+      create: st,
+    });
+    createdTypes[st.name] = created.id;
+  }
 
   // ── Specializations ───────────────────────────
-  const BASE_CATEGORIES = ["training", "volunteer", "sanitary_general"];
+  const specsToCreate = [
+    { name: "Δόκιμος Σαμαρείτης", description: "Δόκιμος Σαμαρείτης" },
+    { name: "Δόκιμος Ναυαγοσώστης", description: "Δόκιμος Ναυαγοσώστης" },
+    { name: "Σαμαρείτης", description: "Σαμαρείτης" },
+    { name: "Ναυαγοσώστης", description: "Ναυαγοσώστης" },
+    { name: "Εκπαιδευτής Α' Βοηθειών", description: "Εκπαιδευτής Πρώτων Βοηθειών" },
+    { name: "Εκπαιδευτής Ναυαγοσωστικής", description: "Εκπαιδευτής Ναυαγοσωστικής" },
+  ];
 
-  const dokimosSamaritis = await prisma.specialization.upsert({
-    where: { name: "Δόκιμος Σαμαρείτης" },
-    update: { missionCategories: [...BASE_CATEGORIES, "tep"] },
-    create: {
-      name: "Δόκιμος Σαμαρείτης",
-      description: "Δόκιμος Σαμαρείτης",
-      missionCategories: [...BASE_CATEGORIES, "tep"],
-    },
-  });
+  const createdSpecs: Record<string, number> = {};
+  for (const spec of specsToCreate) {
+    const created = await prisma.specialization.upsert({
+      where: { name: spec.name },
+      update: { description: spec.description },
+      create: spec,
+    });
+    createdSpecs[spec.name] = created.id;
+  }
 
-  const dokimosNavagosostis = await prisma.specialization.upsert({
-    where: { name: "Δόκιμος Ναυαγοσώστης" },
-    update: { missionCategories: [...BASE_CATEGORIES, "tep"] },
-    create: {
-      name: "Δόκιμος Ναυαγοσώστης",
-      description: "Δόκιμος Ναυαγοσώστης",
-      missionCategories: [...BASE_CATEGORIES, "tep"],
-    },
-  });
+  // ── Specialization ↔ ServiceType assignments ──
+  const defaultVisibleTypeNames = [
+    "BLS “ΒΑΣΙΚΗ ΥΠΟΣΤΗΡΙΞΗ ΖΩΗΣ’’",
+    "ΔΡΑΣΗ ΠΡΟΛΗΨΗΣ",
+    "ΕΘΕΛΟΝΤΙΚΗ ΔΡΑΣΤΗΡΙΟΤΗΤΑ",
+    "ΕΚΠΑΙΔΕΥΣΗ Α΄ ΒΟΗΘΕΙΩΝ ΣΕ ΠΟΛΙΤΕΣ",
+    "ΕΚΠΑΙΔΕΥΣΗ Α' ΒΟΗΘΕΙΕΣ ΓΙΑ ΣΚΥΛΟΥΣ",
+    "ΕΚΠΑΙΔΕΥΣΗ ΔΟΚΙΜΩΝ ΣΑΜΑΡΕΙΤΩΝ",
+    "ΕΚΠΑΙΔΕΥΣΗ ΕΝΕΡΓΟΠΟΙΗΣΗΣ ΑΝΕΝΕΡΓΩΝ ΕΘΕΛΟΝΤΩΝ",
+    "ΥΠΟΧΡΕΩΤΙΚΗ ΕΤΗΣΙΑ ΕΚΠΑΙΔΕΥΣΗ ΕΘΕΛΟΝΤΗ",
+  ];
 
-  const samaritis = await prisma.specialization.upsert({
-    where: { name: "Σαμαρείτης" },
-    update: { missionCategories: BASE_CATEGORIES },
-    create: {
-      name: "Σαμαρείτης",
-      description: "Σαμαρείτης",
-      missionCategories: BASE_CATEGORIES,
-    },
-  });
+  for (const specName of Object.keys(createdSpecs)) {
+    for (const typeName of defaultVisibleTypeNames) {
+      if (createdTypes[typeName] && createdSpecs[specName]) {
+        await prisma.specializationServiceType.upsert({
+          where: {
+            specializationId_serviceTypeId: {
+              specializationId: createdSpecs[specName],
+              serviceTypeId: createdTypes[typeName],
+            },
+          },
+          update: {},
+          create: {
+            specializationId: createdSpecs[specName],
+            serviceTypeId: createdTypes[typeName],
+          },
+        });
+      }
+    }
+  }
 
-  const navagosostis = await prisma.specialization.upsert({
-    where: { name: "Ναυαγοσώστης" },
-    update: { missionCategories: [...BASE_CATEGORIES, "sanitary_lifeguard"] },
-    create: {
-      name: "Ναυαγοσώστης",
-      description: "Ναυαγοσώστης",
-      missionCategories: [...BASE_CATEGORIES, "sanitary_lifeguard"],
-    },
-  });
+  // Σαμαρείτης + Δόκιμος Σαμαρείτης see sanitary coverage + TEP
+  for (const specName of ["Σαμαρείτης", "Δόκιμος Σαμαρείτης"]) {
+    for (const typeName of ["ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ", "Τ.Ε.Π. ΔΟΚΙΜΩΝ"]) {
+      if (createdTypes[typeName] && createdSpecs[specName]) {
+        await prisma.specializationServiceType.upsert({
+          where: {
+            specializationId_serviceTypeId: {
+              specializationId: createdSpecs[specName],
+              serviceTypeId: createdTypes[typeName],
+            },
+          },
+          update: {},
+          create: {
+            specializationId: createdSpecs[specName],
+            serviceTypeId: createdTypes[typeName],
+          },
+        });
+      }
+    }
+  }
 
-  const ekpaidytisAB = await prisma.specialization.upsert({
-    where: { name: "Εκπαιδευτής Α' Βοηθειών" },
-    update: { missionCategories: [...BASE_CATEGORIES, "trainer"] },
-    create: {
-      name: "Εκπαιδευτής Α' Βοηθειών",
-      description: "Εκπαιδευτής Πρώτων Βοηθειών",
-      missionCategories: [...BASE_CATEGORIES, "trainer"],
-    },
-  });
+  // Ναυαγοσώστης + Δόκιμος Ναυαγοσώστης see lifeguard + sanitary + TEP
+  for (const specName of ["Ναυαγοσώστης", "Δόκιμος Ναυαγοσώστης"]) {
+    for (const typeName of ["ΝΑΥΑΓΟΣΩΣΤΙΚΗ ΚΑΛΥΨΗ", "ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ", "Τ.Ε.Π. ΔΟΚΙΜΩΝ"]) {
+      if (createdTypes[typeName] && createdSpecs[specName]) {
+        await prisma.specializationServiceType.upsert({
+          where: {
+            specializationId_serviceTypeId: {
+              specializationId: createdSpecs[specName],
+              serviceTypeId: createdTypes[typeName],
+            },
+          },
+          update: {},
+          create: {
+            specializationId: createdSpecs[specName],
+            serviceTypeId: createdTypes[typeName],
+          },
+        });
+      }
+    }
+  }
 
-  const ekpaidytisNav = await prisma.specialization.upsert({
-    where: { name: "Εκπαιδευτής Ναυαγοσωστικής" },
-    update: { missionCategories: [...BASE_CATEGORIES, "trainer", "sanitary_lifeguard"] },
-    create: {
-      name: "Εκπαιδευτής Ναυαγοσωστικής",
-      description: "Εκπαιδευτής Ναυαγοσωστικής",
-      missionCategories: [...BASE_CATEGORIES, "trainer", "sanitary_lifeguard"],
-    },
-  });
+  // Εκπαιδευτής Α' Βοηθειών sees sanitary coverage + TEP
+  for (const typeName of ["ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ", "Τ.Ε.Π. ΔΟΚΙΜΩΝ"]) {
+    if (createdTypes[typeName] && createdSpecs["Εκπαιδευτής Α' Βοηθειών"]) {
+      await prisma.specializationServiceType.upsert({
+        where: {
+          specializationId_serviceTypeId: {
+            specializationId: createdSpecs["Εκπαιδευτής Α' Βοηθειών"],
+            serviceTypeId: createdTypes[typeName],
+          },
+        },
+        update: {},
+        create: {
+          specializationId: createdSpecs["Εκπαιδευτής Α' Βοηθειών"],
+          serviceTypeId: createdTypes[typeName],
+        },
+      });
+    }
+  }
+
+  // Εκπαιδευτής Ναυαγοσωστικής sees lifeguard + sanitary + TEP
+  for (const typeName of ["ΝΑΥΑΓΟΣΩΣΤΙΚΗ ΚΑΛΥΨΗ", "ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ", "Τ.Ε.Π. ΔΟΚΙΜΩΝ"]) {
+    if (createdTypes[typeName] && createdSpecs["Εκπαιδευτής Ναυαγοσωστικής"]) {
+      await prisma.specializationServiceType.upsert({
+        where: {
+          specializationId_serviceTypeId: {
+            specializationId: createdSpecs["Εκπαιδευτής Ναυαγοσωστικής"],
+            serviceTypeId: createdTypes[typeName],
+          },
+        },
+        update: {},
+        create: {
+          specializationId: createdSpecs["Εκπαιδευτής Ναυαγοσωστικής"],
+          serviceTypeId: createdTypes[typeName],
+        },
+      });
+    }
+  }
 
   // ── User ↔ Specialization assignments ─────────
-  // Admin has Σαμαρείτης, Εκπαιδευτής Α' Βοηθειών, Εκπαιδευτής Ναυαγοσωστικής
-  for (const specId of [samaritis.id, ekpaidytisAB.id, ekpaidytisNav.id]) {
+  for (const specId of [createdSpecs["Σαμαρείτης"], createdSpecs["Εκπαιδευτής Α' Βοηθειών"], createdSpecs["Εκπαιδευτής Ναυαγοσωστικής"]]) {
     await prisma.userSpecialization.upsert({
       where: { userId_specializationId: { userId: admin.id, specializationId: specId } },
       update: {},
       create: { userId: admin.id, specializationId: specId },
     });
   }
-  // Volunteer has Δόκιμος Σαμαρείτης, Σαμαρείτης
-  for (const specId of [dokimosSamaritis.id, samaritis.id]) {
+  for (const specId of [createdSpecs["Δόκιμος Σαμαρείτης"], createdSpecs["Σαμαρείτης"]]) {
     await prisma.userSpecialization.upsert({
       where: { userId_specializationId: { userId: volunteer.id, specializationId: specId } },
       update: {},
@@ -161,15 +250,12 @@ async function main() {
     });
   }
 
-
   // ── Item categories ────────────────────────────
   const catMedical = await prisma.itemCategory.upsert({
     where: { name_departmentId: { name: "Ιατρικά", departmentId: ops.id } },
     update: {},
     create: { name: "Ιατρικά", departmentId: ops.id },
   });
-
-
 
   // ── Vehicles ──────────────────────────────────
   await prisma.vehicle.upsert({
