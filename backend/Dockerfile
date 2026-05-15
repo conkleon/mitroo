@@ -19,7 +19,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=builder /app/package.json /app/package-lock.json* ./
-RUN npm ci --omit=dev && npm install prisma ts-node typescript
+RUN npm ci
 
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
