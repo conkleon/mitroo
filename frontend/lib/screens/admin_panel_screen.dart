@@ -165,6 +165,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                                 onTap: () =>
                                     context.push('/admin/specializations'),
                               ),
+                              _AdminTileData(
+                                icon: Icons.category,
+                                iconColor: const Color(0xFF0891B2),
+                                bgColor: const Color(0xFFECFEFF),
+                                title: 'Τύποι Υπηρεσιών',
+                                subtitle:
+                                    'Διαχείριση τύπων υπηρεσιών & ορατότητας',
+                                onTap: () =>
+                                    context.push('/admin/service-types'),
+                              ),
                             ],
                           ),
                           SizedBox(height: isCompact ? 20 : 28),

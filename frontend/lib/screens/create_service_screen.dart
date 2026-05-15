@@ -51,11 +51,9 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
   String? _selectedDeptName;
   List<Map<String, dynamic>> _departments = [];
 
-  // Specialization selection
-  List<dynamic> _allSpecs = [];
-  final Set<int> _selectedSpecIds = {};
-  // Original spec IDs when editing (to diff removals)
-  Set<int> _originalSpecIds = {};
+  // Service type selection
+  List<dynamic> _serviceTypes = [];
+  int? _selectedServiceTypeId;
 
   bool _initialLoading = true;
 
@@ -82,11 +80,11 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
       _departments = auth.missionAdminDepartments;
     }
 
-    // Load all specializations
+    // Load all service types
     try {
-      final res = await _api.get('/specializations');
+      final res = await _api.get('/service-types');
       if (res.statusCode == 200 && mounted) {
-        _allSpecs = jsonDecode(res.body);
+        _serviceTypes = jsonDecode(res.body);
       }
     } catch (_) {}
 
@@ -111,13 +109,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
           _selectedDeptId = svc['departmentId'] as int?;
           final dept = svc['department'] as Map<String, dynamic>?;
           if (dept != null) _selectedDeptName = dept['name'] as String?;
-          // Pre-select existing visibility specializations
-          final vis = svc['visibility'] as List<dynamic>? ?? [];
-          for (final v in vis) {
-            final specId = v['specializationId'] as int?;
-            if (specId != null) _selectedSpecIds.add(specId);
-          }
-          _originalSpecIds = Set<int>.from(_selectedSpecIds);
+          _selectedServiceTypeId = svc['serviceTypeId'] as int?;
         }
       } catch (_) {}
     }
@@ -195,6 +187,8 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
     if (_startAt != null) data['startAt'] = _startAt!.toUtc().toIso8601String();
     if (_endAt != null) data['endAt'] = _endAt!.toUtc().toIso8601String();
 
+    if (_selectedServiceTypeId != null) data['serviceTypeId'] = _selectedServiceTypeId;
+
     if (widget.isEditing) {
       // ── Update existing service ──
       final err = await context.read<ServiceProvider>().update(widget.editServiceId!, data);
@@ -203,25 +197,6 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
         return;
-      }
-
-      final sid = widget.editServiceId!;
-
-      // Remove specs that were deselected
-      final toRemove = _originalSpecIds.difference(_selectedSpecIds);
-      for (final specId in toRemove) {
-        try {
-          await _api.delete('/services/$sid/visibility/$specId');
-        } catch (_) {}
-      }
-
-      // Add newly selected specs
-      final toAdd = _selectedSpecIds.difference(_originalSpecIds);
-      for (final specId in toAdd) {
-        try {
-          await _api.post('/services/$sid/visibility',
-              body: {'specializationId': specId});
-        } catch (_) {}
       }
 
       if (!mounted) return;
@@ -240,18 +215,6 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
         return;
-      }
-
-      final serviceId = result as int?;
-
-      // Assign specialization visibility requirements
-      if (serviceId != null && _selectedSpecIds.isNotEmpty) {
-        for (final specId in _selectedSpecIds) {
-          try {
-            await _api.post('/services/$serviceId/visibility',
-                body: {'specializationId': specId});
-          } catch (_) {}
-        }
       }
 
       if (!mounted) return;
@@ -380,42 +343,36 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ── Specialization requirements ──
-              Text('Απαιτούμενες Ειδικεύσεις', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              // ── Service type dropdown ──
+              Text('Τύπος Υπηρεσίας', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 4),
-              Text('Μόνο χρήστες με αυτές τις ειδικεύσεις θα βλέπουν αυτή την υπηρεσία',
+              Text('Επιλέξτε τον τύπο της υπηρεσίας',
                   style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
               const SizedBox(height: 8),
-              if (_allSpecs.isEmpty)
-                const Text('Φόρτωση ειδικεύσεων...', style: TextStyle(color: Color(0xFF6B7280)))
+              if (_serviceTypes.isEmpty)
+                const Text('Φόρτωση τύπων...', style: TextStyle(color: Color(0xFF6B7280)))
               else
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: _allSpecs.map((s) {
-                    final specId = s['id'] as int;
-                    final selected = _selectedSpecIds.contains(specId);
-                    return FilterChip(
-                      label: Text(s['name'] ?? ''),
-                      selected: selected,
-                      onSelected: (val) {
-                        setState(() {
-                          if (val) {
-                            _selectedSpecIds.add(specId);
-                          } else {
-                            _selectedSpecIds.remove(specId);
-                          }
-                        });
-                      },
-                      selectedColor: cs.primary.withAlpha(30),
-                      checkmarkColor: cs.primary,
-                      avatar: selected ? null : const Icon(Icons.school, size: 16),
-                    );
-                  }).toList(),
+                DropdownButtonFormField<int>(
+                  value: _selectedServiceTypeId,
+                  decoration: const InputDecoration(
+                    labelText: 'Τύπος Υπηρεσίας',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    const DropdownMenuItem<int>(
+                      value: null,
+                      child: Text('— Κανένας (ορατό σε όλους) —'),
+                    ),
+                    ..._serviceTypes.map((t) => DropdownMenuItem<int>(
+                      value: t['id'] as int,
+                      child: Text(t['name'] ?? ''),
+                    )),
+                  ],
+                  onChanged: (v) => setState(() => _selectedServiceTypeId = v),
                 ),
-              if (_selectedSpecIds.isEmpty) ...[
+              if (_selectedServiceTypeId == null) ...[
                 const SizedBox(height: 4),
-                Text('Καμία ειδίκευση — η υπηρεσία είναι ορατή σε όλα τα μέλη',
+                Text('Χωρίς τύπο — η υπηρεσία είναι ορατή σε όλα τα μέλη',
                     style: tt.bodySmall?.copyWith(color: Color(0xFFC2410C), fontStyle: FontStyle.italic)),
               ],
               const SizedBox(height: 20),

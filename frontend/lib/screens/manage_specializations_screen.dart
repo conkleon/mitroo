@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_client.dart';
-import '../utils/specialization_labels.dart';
-
 /// Professional specialization list with search, hierarchy indicator,
 /// stats, and grid/list layout.
 class ManageSpecializationsScreen extends StatefulWidget {
@@ -75,8 +73,7 @@ class _ManageSpecializationsScreenState
     final eamePrefixCtrl = TextEditingController();
     int? selectedRoot;
 
-    final allCategories = ['trainer', 'tep', 'sanitary_lifeguard'];
-    final selectedCategories = <String>{};
+    final Map<int, bool> selectedTypeIds = {};
 
     final roots = _specs.where((s) => s['rootId'] == null).toList();
 
@@ -154,27 +151,38 @@ class _ManageSpecializationsScreenState
                     onChanged: (v) => setS(() => selectedRoot = v),
                   ),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: allCategories.map((cat) {
-                      final selected = selectedCategories.contains(cat);
-                      return FilterChip(
-                        label: Text(missionCategoryLabel(cat)),
-                        selected: selected,
-                        onSelected: (v) {
-                          setS(() {
-                            if (v) {
-                              selectedCategories.add(cat);
-                            } else {
-                              selectedCategories.remove(cat);
-                            }
-                          });
-                        },
-                        selectedColor: const Color(0xFFEDE9FE),
-                        checkmarkColor: const Color(0xFF7C3AED),
+                  Text('Τύποι Υπηρεσιών',
+                      style: Theme.of(ctx).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  FutureBuilder(
+                    future: _api.get('/service-types'),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const Text('Φόρτωση...');
+                      final res = snapshot.data!;
+                      if (res.statusCode != 200) return const Text('Σφάλμα');
+                      final types = (jsonDecode(res.body) as List<dynamic>)
+                          .map((t) => Map<String, dynamic>.from(t as Map))
+                          .toList();
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: types.map((t) {
+                          final typeId = t['id'] as int;
+                          final selected = selectedTypeIds[typeId] == true;
+                          return FilterChip(
+                            label: Text(t['name'] ?? ''),
+                            selected: selected,
+                            onSelected: (v) {
+                              setS(() {
+                                selectedTypeIds[typeId] = v;
+                              });
+                            },
+                            selectedColor: const Color(0xFFEDE9FE),
+                            checkmarkColor: const Color(0xFF7C3AED),
+                          );
+                        }).toList(),
                       );
-                    }).toList(),
+                    },
                   ),
                 ],
               ),
@@ -205,7 +213,6 @@ class _ManageSpecializationsScreenState
                   body['hoursTEP'] = int.tryParse(hoursTepCtrl.text) ?? 0;
                 }
                 body['eamePrefix'] = eamePrefixCtrl.text.trim();
-                body['missionCategories'] = selectedCategories.toList();
                 if (selectedRoot != null) body['rootId'] = selectedRoot;
                 final res =
                     await _api.post('/specializations', body: body);
