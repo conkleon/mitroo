@@ -77,15 +77,17 @@ model Service {
   externalShiftId   Int? @map("external_shift_id")
   externalMissionId Int? @map("external_mission_id")
 
+  serviceTypeId Int? @map("service_type_id")
+  serviceType   ServiceType? @relation(fields: [serviceTypeId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  department      Department          @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  responsibleUser User?               @relation("ResponsibleServices", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+  department      Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  responsibleUser User?          @relation("ResponsibleServices", fields: [responsibleUserId], references: [id], onDelete: SetNull)
   userServices    UserService[]
   itemServices    ItemService[]
   vehicleLogs     VehicleLog[]
-  visibility      ServiceVisibility[]
   attachments     FileAttachment[]
   chats            Chat[]
 
@@ -336,6 +338,33 @@ model ItemService {
 }
 
 // ──────────────────────────────────────────────
+// Service types (replaces missionCategories)
+// ──────────────────────────────────────────────
+
+model ServiceType {
+  id                    Int     @id @default(autoincrement())
+  name                  String  @unique @db.VarChar(255)
+  externalMissionTypeId Int?    @unique @map("external_mission_type_id")
+  isDefaultVisible      Boolean @default(false) @map("is_default_visible")
+
+  services        Service[]
+  specializations SpecializationServiceType[]
+
+  @@map("service_types")
+}
+
+model SpecializationServiceType {
+  specializationId Int @map("specialization_id")
+  serviceTypeId    Int @map("service_type_id")
+
+  specialization Specialization @relation(fields: [specializationId], references: [id], onDelete: Cascade)
+  serviceType    ServiceType    @relation(fields: [serviceTypeId], references: [id], onDelete: Cascade)
+
+  @@id([specializationId, serviceTypeId])
+  @@map("specialization_service_types")
+}
+
+// ──────────────────────────────────────────────
 // Specializations (hierarchical)
 // ──────────────────────────────────────────────
 
@@ -348,14 +377,13 @@ model Specialization {
   hoursTraining       Int     @default(0) @map("hours_training")
   hoursTEP            Int     @default(0) @map("hours_tep")
   eamePrefix          String? @map("eame_prefix") @db.VarChar(8)
-  missionCategories   Json    @default("[]") @map("mission_categories")
   rootId              Int?    @map("root_id")
 
   root     Specialization?  @relation("SpecTree", fields: [rootId], references: [id], onDelete: SetNull)
   children Specialization[] @relation("SpecTree")
 
   users                UserSpecialization[]
-  serviceVisibility    ServiceVisibility[]
+  serviceTypes         SpecializationServiceType[]
   trainingApplications TrainingApplication[]
 
   @@map("specializations")
@@ -371,21 +399,6 @@ model UserSpecialization {
 
   @@id([userId, specializationId])
   @@map("user_specializations")
-}
-
-// ──────────────────────────────────────────────
-// Service visibility (by specialization)
-// ──────────────────────────────────────────────
-
-model ServiceVisibility {
-  serviceId        Int @map("service_id")
-  specializationId Int @map("specialization_id")
-
-  service        Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  specialization Specialization @relation(fields: [specializationId], references: [id], onDelete: Cascade)
-
-  @@id([serviceId, specializationId])
-  @@map("service_visibility")
 }
 
 // ──────────────────────────────────────────────
