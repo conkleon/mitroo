@@ -75,10 +75,7 @@ class _ManageSpecializationsScreenState
     final eamePrefixCtrl = TextEditingController();
     int? selectedRoot;
 
-    final allCategories = [
-      'trainer', 'training', 'tep', 'volunteer',
-      'sanitary_general', 'sanitary_lifeguard',
-    ];
+    final allCategories = ['trainer', 'tep', 'sanitary_lifeguard'];
     final selectedCategories = <String>{};
 
     final roots = _specs.where((s) => s['rootId'] == null).toList();

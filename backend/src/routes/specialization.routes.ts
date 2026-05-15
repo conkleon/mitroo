@@ -39,11 +39,22 @@ router.get("/", async (_req: Request, res: Response) => {
   res.json(specs);
 });
 
+function toPrismaData(data: z.infer<typeof createSchema>): any {
+  const { rootId, ...rest } = data;
+  const result: any = { ...rest };
+  if (rootId !== undefined) {
+    result.root = rootId === null
+      ? { disconnect: true }
+      : { connect: { id: rootId } };
+  }
+  return result;
+}
+
 // ── POST /api/specializations ───────────────────
 router.post("/", async (req: Request, res: Response) => {
   try {
     const data = createSchema.parse(req.body);
-    const spec = await prisma.specialization.create({ data });
+    const spec = await prisma.specialization.create({ data: toPrismaData(data) });
     res.status(201).json(spec);
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
@@ -71,7 +82,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 router.patch("/:id", async (req: Request, res: Response) => {
   try {
     const data = createSchema.partial().parse(req.body);
-    const spec = await prisma.specialization.update({ where: { id: Number(req.params.id) }, data });
+    const spec = await prisma.specialization.update({ where: { id: Number(req.params.id) }, data: toPrismaData(data) });
     res.json(spec);
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }

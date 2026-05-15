@@ -191,10 +191,15 @@ async function syncServiceVisibility(
   const categories = getCategoriesForMissionType(id);
   if (!categories.length) return;
 
-  const orClauses = categories
+  // Base categories are public — only special categories gate visibility.
+  const BASE_CATEGORIES = new Set(["training", "volunteer", "sanitary_general"]);
+  const restricted = categories.filter((c) => !BASE_CATEGORIES.has(c));
+  if (!restricted.length) return;
+
+  const orClauses = restricted
     .map((_, i) => `mission_categories @> $${i + 1}::jsonb`)
     .join(" OR ");
-  const values = categories.map((c) => JSON.stringify([c]));
+  const values = restricted.map((c) => JSON.stringify([c]));
   const specs = await prisma.$queryRawUnsafe<{ id: number }[]>(
     `SELECT id FROM specializations WHERE ${orClauses}`,
     ...values,

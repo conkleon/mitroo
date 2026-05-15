@@ -75,10 +75,7 @@ class _SpecializationDetailScreenState
     final eamePrefixCtrl = TextEditingController(
       text: (_spec!['eamePrefix'] ?? '').toString());
     int? selectedRoot = _spec!['rootId'] as int?;
-    final allCategories = [
-      'trainer', 'training', 'tep', 'volunteer',
-      'sanitary_general', 'sanitary_lifeguard',
-    ];
+    final allCategories = ['trainer', 'tep', 'sanitary_lifeguard'];
     final existingCats = (_spec!['missionCategories'] as List<dynamic>?)
         ?.map((c) => c.toString())
         .toSet() ?? <String>{};

@@ -1,5 +1,5 @@
 String missionCategoryLabel(String cat) => switch (cat) {
-  'trainer' => 'Εκπαιδευτικές',
+  'trainer' => 'Εκπαιδευτών',
   'training' => 'Εκπαίδευση',
   'tep' => 'ΤΕΠ',
   'volunteer' => 'Εθελοντικές',
