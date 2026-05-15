@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import prisma from "../lib/prisma";
-import { authenticate, getMissionAdminDepartmentIds, requireAdmin } from "../middleware/auth";
+import { authenticate, getMissionAdminDepartmentIds, requireAdmin, requireAdminOrMissionAdminForDept } from "../middleware/auth";
 import { sendInviteEmail } from "../lib/email";
 import { formatGeneratedEame, getNextGeneratedEameSequence } from "../lib/eame";
 
@@ -240,9 +240,13 @@ router.get("/:id", async (req: Request, res: Response) => {
 
 // ── POST /api/users ─────────────────────────────
 // Admin creates a user: random password generated, invite email sent
-router.post("/", requireAdmin, async (req: Request, res: Response) => {
+router.post("/", requireAdminOrMissionAdminForDept((req) => Number(req.body?.departmentId)), async (req: Request, res: Response) => {
   try {
     const data = createUserSchema.parse(req.body);
+    if (!req.user!.isAdmin) {
+      // Mission admins cannot set isAdmin on new users
+      (data as any).isAdmin = false;
+    }
     const providedEame = data.eame?.trim();
 
     const existingEmail = await prisma.user.findUnique({ where: { email: data.email } });
