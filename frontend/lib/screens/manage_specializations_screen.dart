@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/api_client.dart';
+import '../utils/specialization_labels.dart';
 
 /// Professional specialization list with search, hierarchy indicator,
 /// stats, and grid/list layout.
@@ -72,6 +74,12 @@ class _ManageSpecializationsScreenState
     final hoursTepCtrl = TextEditingController();
     final eamePrefixCtrl = TextEditingController();
     int? selectedRoot;
+
+    final allCategories = [
+      'trainer', 'training', 'tep', 'volunteer',
+      'sanitary_general', 'sanitary_lifeguard',
+    ];
+    final selectedCategories = <String>{};
 
     final roots = _specs.where((s) => s['rootId'] == null).toList();
 
@@ -148,6 +156,29 @@ class _ManageSpecializationsScreenState
                     ],
                     onChanged: (v) => setS(() => selectedRoot = v),
                   ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: allCategories.map((cat) {
+                      final selected = selectedCategories.contains(cat);
+                      return FilterChip(
+                        label: Text(missionCategoryLabel(cat)),
+                        selected: selected,
+                        onSelected: (v) {
+                          setS(() {
+                            if (v) {
+                              selectedCategories.add(cat);
+                            } else {
+                              selectedCategories.remove(cat);
+                            }
+                          });
+                        },
+                        selectedColor: const Color(0xFFEDE9FE),
+                        checkmarkColor: const Color(0xFF7C3AED),
+                      );
+                    }).toList(),
+                  ),
                 ],
               ),
             ),
@@ -177,6 +208,7 @@ class _ManageSpecializationsScreenState
                   body['hoursTEP'] = int.tryParse(hoursTepCtrl.text) ?? 0;
                 }
                 body['eamePrefix'] = eamePrefixCtrl.text.trim();
+                body['missionCategories'] = selectedCategories.toList();
                 if (selectedRoot != null) body['rootId'] = selectedRoot;
                 final res =
                     await _api.post('/specializations', body: body);
@@ -226,6 +258,32 @@ class _ManageSpecializationsScreenState
           final hPad = isWide ? 32.0 : 16.0;
 
           return Column(children: [
+            // ── Section header ──
+            Padding(
+              padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 4, height: 22,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7C3AED),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Ειδικεύσεις',
+                    style: GoogleFonts.literata(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1A1C1E),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             // ── Search ──
             Padding(
               padding:
@@ -292,16 +350,39 @@ class _ManageSpecializationsScreenState
                   ? const Center(child: CircularProgressIndicator())
                   : filtered.isEmpty
                       ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.school,
-                                  size: 64, color: Color(0xFFD1D5DB)),
-                              const SizedBox(height: 12),
-                              Text('Δεν βρέθηκαν ειδικεύσεις',
-                                  style: tt.bodyLarge?.copyWith(
-                                      color: Color(0xFF6B7280))),
-                            ],
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 40),
+                            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF9FAFB),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFFE5E7EB)),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF3F4F6),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.school, size: 32, color: Color(0xFF9CA3AF)),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _search.isNotEmpty ? 'Δεν βρέθηκαν ειδικεύσεις' : 'Δεν υπάρχουν ειδικεύσεις',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14, color: const Color(0xFF6B7280), fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  _search.isNotEmpty ? 'Δοκιμάστε άλλη αναζήτηση' : 'Πατήστε το + για να προσθέσετε',
+                                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF9CA3AF)),
+                                ),
+                              ],
+                            ),
                           ),
                         )
                       : RefreshIndicator(
@@ -395,19 +476,22 @@ class _SpecCard extends StatelessWidget {
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
-                color: isRoot
-                    ? const Color(0xFFEDE9FE)
-                    : const Color(0xFFFEE2E2),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isRoot
+                      ? const [Color(0xFF7C3AED), Color(0xFF5B21B6)]
+                      : const [Color(0xFFDC2626), Color(0xFF991B1B)],
+                ),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                   isRoot ? Icons.school : Icons.subdirectory_arrow_right,
-                  color: isRoot
-                      ? const Color(0xFF7C3AED)
-                      : const Color(0xFFDC2626),
-                  size: 24),
+                  color: Colors.white,
+                  size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -485,11 +569,12 @@ class _MiniLabel extends StatelessWidget {
       Icon(icon, size: 14, color: color),
       const SizedBox(width: 3),
       Text(text,
-          style: TextStyle(
+          style: GoogleFonts.inter(
               fontSize: 12, fontWeight: FontWeight.w600, color: color)),
     ]);
   }
 }
+
 
 class _MiniStat extends StatelessWidget {
   final String label;
@@ -520,13 +605,13 @@ class _MiniStat extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(value,
-                    style: TextStyle(
+                    style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                         color: color)),
                 Text(label,
-                    style: const TextStyle(
-                        fontSize: 11, color: Color(0xFF6B7280))),
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: const Color(0xFF6B7280))),
               ]),
         ]),
       ),

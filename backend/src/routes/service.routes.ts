@@ -11,6 +11,8 @@ import {
   writeBackRejection,
   writeBackHoursUpdate,
   writeBackServiceDelete,
+  writeBackEnrollmentRequest,
+  writeBackUnenroll,
 } from "../lib/mitrooSync";
 
 async function addToMissionChat(serviceId: number, userId: number): Promise<void> {
@@ -295,7 +297,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
 });
 
 // ── POST /api/services/:id/enroll ───────────────
-// User requests to join (or admin directly accepts)
+// Admin-only: enroll a user in a service
 router.post("/:id/enroll", async (req: Request, res: Response) => {
   try {
     const requesterId = req.user!.userId;
@@ -308,25 +310,14 @@ router.post("/:id/enroll", async (req: Request, res: Response) => {
     if (!service) { res.status(404).json({ error: "Service not found" }); return; }
 
     const isServiceAdmin = req.user!.isAdmin || await isMissionAdminInDepartment(requesterId, service.departmentId);
-
-    let targetUserId: number;
-    let status: "requested" | "accepted" | "rejected";
-
-    if (isServiceAdmin) {
-      const data = enrollSchema.parse(req.body);
-      targetUserId = data.userId ?? requesterId;
-      status = data.status ?? "requested";
-    } else {
-      targetUserId = requesterId;
-      status = "requested";
-      const membership = await prisma.userDepartment.count({
-        where: { userId: requesterId, departmentId: service.departmentId },
-      });
-      if (!membership) {
-        res.status(403).json({ error: "Δεν ανήκετε σε αυτό το τμήμα" });
-        return;
-      }
+    if (!isServiceAdmin) {
+      res.status(403).json({ error: "Δεν έχετε δικαίωμα" });
+      return;
     }
+
+    const data = enrollSchema.parse(req.body);
+    const targetUserId = data.userId ?? requesterId;
+    const status = data.status ?? "requested";
 
     const record = await prisma.userService.create({
       data: {
@@ -345,6 +336,13 @@ router.post("/:id/enroll", async (req: Request, res: Response) => {
     });
 
     res.status(201).json(record);
+
+    // Fire-and-forget: sync enrollment to original Mitroo
+    if (status === "requested") {
+      writeBackEnrollmentRequest(serviceId, targetUserId).catch((e) =>
+        console.error("[service] writeBackEnrollmentRequest error:", e),
+      );
+    }
 
     // Fire-and-forget: sync accepted admin enrollment to original Mitroo
     if (status === "accepted") {
@@ -390,6 +388,7 @@ router.delete("/:id/unenroll", async (req: Request, res: Response) => {
     res.status(409).json({ error: "Η αίτηση έχει ήδη διεκπεραιωθεί" });
     return;
   }
+  writeBackUnenroll(serviceId, userId).catch((e) => console.error("[service] writeBackUnenroll error:", e));
   await prisma.userService.delete({ where: { userId_serviceId: { userId, serviceId } } });
   res.status(204).end();
 });

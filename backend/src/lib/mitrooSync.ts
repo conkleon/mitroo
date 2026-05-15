@@ -11,7 +11,22 @@ const TRAINER_MISSION_TYPE_IDS = new Set([71, 36, 86, 33, 83]);
 const TRAINING_MISSION_TYPE_IDS = new Set([81]);
 const TEP_MISSION_TYPE_IDS = new Set([85]);
 const VOLUNTEER_MISSION_TYPE_IDS = new Set([56, 57]);
-const SANITARY_MISSION_TYPE_IDS = new Set([60, 16]);
+const SANITARY_MISSION_TYPE_IDS = new Set([60, 16]); //60 IS LIFEGUARD MISSION, 16 IS GENERAL SANITARY MISSION
+
+const MISSION_CATEGORY_MAP: Record<string, Set<number>> = {
+  trainer:           new Set([71, 36, 86, 33, 83]),
+  training:          new Set([81]),
+  tep:               new Set([85]),
+  volunteer:         new Set([56, 57]),
+  sanitary_general:  new Set([16]),
+  sanitary_lifeguard: new Set([60]),
+};
+
+function getCategoriesForMissionType(missionTypeId: number): string[] {
+  return Object.entries(MISSION_CATEGORY_MAP)
+    .filter(([, ids]) => ids.has(missionTypeId))
+    .map(([cat]) => cat);
+}
 
 export interface SyncResult {
   created: number;
@@ -155,6 +170,36 @@ const remapDefaultHoursByMissionType = (
 
   return hours;
 };
+
+// array_contains on Json generates PostgreSQL JSONB @> operator.
+// This is PostgreSQL-specific and not portable to SQLite/MySQL.
+async function syncServiceVisibility(
+  serviceId: number,
+  missionTypeId: unknown,
+): Promise<void> {
+  const id = Number(missionTypeId);
+  if (!Number.isFinite(id)) return;
+
+  const categories = getCategoriesForMissionType(id);
+  if (!categories.length) return;
+
+  const orClauses = categories
+    .map((_, i) => `mission_categories @> $${i + 1}::jsonb`)
+    .join(" OR ");
+  const values = categories.map((c) => JSON.stringify([c]));
+  const specs = await prisma.$queryRawUnsafe<{ id: number }[]>(
+    `SELECT id FROM specializations WHERE ${orClauses}`,
+    ...values,
+  );
+
+  await prisma.serviceVisibility.deleteMany({ where: { serviceId } });
+
+  if (specs.length) {
+    await prisma.serviceVisibility.createMany({
+      data: specs.map((s) => ({ serviceId, specializationId: s.id })),
+    });
+  }
+}
 
 // ── Sync volunteers → Users ────────────────────────────────────────────────
 
@@ -375,8 +420,9 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
               },
             });
             result.updated++;
+            await syncServiceVisibility(existing.id, mission.mission_type_id);
           } else {
-            await prisma.service.create({
+            const newService = await prisma.service.create({
               data: {
                 departmentId,
                 name,
@@ -392,6 +438,7 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
               },
             });
             result.created++;
+            await syncServiceVisibility(newService.id, mission.mission_type_id);
           }
         } catch (e: unknown) {
           result.errors.push(`shift_id=${shift.id}: ${e}`);
@@ -940,4 +987,266 @@ export async function writeBackRejection(serviceId: number, userId: number): Pro
   } catch (e) {
     console.error(`[mitrooSync] writeBackRejection failed for service ${serviceId}, user ${userId}:`, e);
   }
+}
+
+// ── Write-back: enrollment request → create shift application ─────────────
+
+export async function writeBackEnrollmentRequest(serviceId: number, userId: number): Promise<void> {
+  const [service, user] = await Promise.all([
+    prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { externalShiftId: true, departmentId: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { externalId: true },
+    }),
+  ]);
+
+  if (!service?.externalShiftId) {
+    console.log(`[mitrooSync] writeBackEnrollmentRequest: skipped — service has no externalShiftId`);
+    return;
+  }
+  if (!user?.externalId) {
+    console.log(`[mitrooSync] writeBackEnrollmentRequest: skipped — user has no externalId`);
+    return;
+  }
+
+  const config = await prisma.departmentSyncConfig.findUnique({
+    where: { departmentId: service.departmentId },
+    select: { syncEnabled: true },
+  });
+  if (!config?.syncEnabled) return;
+
+  try {
+    const client = await getClient(service.departmentId);
+
+    const applicationId = await client.addUserToShift(service.externalShiftId, user.externalId);
+    if (applicationId) {
+      await prisma.userService.update({
+        where: { userId_serviceId: { userId, serviceId } },
+        data: { externalApplicationId: applicationId },
+      });
+      console.log(
+        `[mitrooSync] writeBackEnrollmentRequest: created application ${applicationId} for user ${userId} in shift ${service.externalShiftId}`,
+      );
+    }
+  } catch (e) {
+    console.error(
+      `[mitrooSync] writeBackEnrollmentRequest failed for service ${serviceId}, user ${userId}:`,
+      e,
+    );
+  }
+}
+
+// ── Write-back: unenroll → cancel member shift application ────────────────
+
+export async function writeBackUnenroll(serviceId: number, userId: number): Promise<void> {
+  const [userService, service] = await Promise.all([
+    prisma.userService.findUnique({
+      where: { userId_serviceId: { userId, serviceId } },
+      select: { externalApplicationId: true },
+    }),
+    prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { externalShiftId: true, departmentId: true },
+    }),
+  ]);
+
+  if (!service?.externalShiftId) {
+    console.log(`[mitrooSync] writeBackUnenroll: skipped — service has no externalShiftId`);
+    return;
+  }
+
+  const config = await prisma.departmentSyncConfig.findUnique({
+    where: { departmentId: service.departmentId },
+    select: { syncEnabled: true },
+  });
+  if (!config?.syncEnabled) return;
+
+  const applicationId = userService?.externalApplicationId;
+  if (!applicationId) {
+    console.log(`[mitrooSync] writeBackUnenroll: skipped — no externalApplicationId for user ${userId}`);
+    return;
+  }
+
+  try {
+    const client = await getClient(service.departmentId);
+    await client.cancelMemberShiftApplication(applicationId);
+    console.log(
+      `[mitrooSync] writeBackUnenroll: cancelled application ${applicationId} for user ${userId}`,
+    );
+  } catch (e) {
+    console.error(
+      `[mitrooSync] writeBackUnenroll failed for service ${serviceId}, user ${userId}:`,
+      e,
+    );
+  }
+}
+
+// ── Per-user sync: pull applications from original Mitroo ─────────────────
+
+export async function syncUserApplications(userId: number): Promise<SyncResult> {
+  const result: SyncResult = { created: 0, updated: 0, errors: [] };
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { externalId: true, departments: { select: { departmentId: true } } },
+  });
+  if (!user?.externalId) {
+    console.log(`[mitrooSync] syncUserApplications: skipped — user ${userId} has no externalId`);
+    return result;
+  }
+
+  const departmentIds = user.departments.map((d) => d.departmentId);
+  if (!departmentIds.length) return result;
+
+  const configs = await prisma.departmentSyncConfig.findMany({
+    where: { departmentId: { in: departmentIds }, syncEnabled: true },
+    select: { departmentId: true },
+  });
+  if (!configs.length) return result;
+
+  for (const config of configs) {
+    try {
+      const client = await getClient(config.departmentId);
+      const applications = await client.fetchShiftApplications();
+
+      const userApps = applications.filter(
+        (app) => Number(app.member_id) === user.externalId,
+      );
+
+      for (const app of userApps) {
+        try {
+          const externalShiftId = Number(app.mission_shift_id);
+          const externalApplicationId = Number(app.id);
+          if (!externalShiftId || !externalApplicationId) continue;
+
+          const service = await prisma.service.findFirst({
+            where: { departmentId: config.departmentId, externalShiftId },
+            select: { id: true },
+          });
+          if (!service) continue;
+
+          const status = mapApplicationStatus(app.application_status_id);
+
+          const existing = await prisma.userService.findUnique({
+            where: { userId_serviceId: { userId, serviceId: service.id } },
+            select: { userId: true },
+          });
+
+          if (existing) {
+            await prisma.userService.update({
+              where: { userId_serviceId: { userId, serviceId: service.id } },
+              data: {
+                status,
+                hours: parseHours(app.hours_sanitary),
+                hoursVol: parseHours(app.hours_volunteering),
+                hoursTraining: parseHours(app.hours_training),
+                hoursTrainers: parseHours(app.hours_retraining),
+                hoursTEP: parseHours(app.hours_tep),
+                externalApplicationId,
+              },
+            });
+            result.updated++;
+          } else {
+            await prisma.userService.create({
+              data: {
+                userId,
+                serviceId: service.id,
+                status,
+                hours: parseHours(app.hours_sanitary),
+                hoursVol: parseHours(app.hours_volunteering),
+                hoursTraining: parseHours(app.hours_training),
+                hoursTrainers: parseHours(app.hours_retraining),
+                hoursTEP: parseHours(app.hours_tep),
+                externalApplicationId,
+              },
+            });
+            result.created++;
+          }
+        } catch (e: unknown) {
+          result.errors.push(`application_id=${app.id}: ${e}`);
+        }
+      }
+    } catch (e: unknown) {
+      result.errors.push(`dept=${config.departmentId}: ${e}`);
+    }
+  }
+
+  if (result.created || result.updated || result.errors.length) {
+    console.log(
+      `[mitrooSync] syncUserApplications: user ${userId} — created=${result.created} updated=${result.updated} errors=${result.errors.length}`,
+    );
+  }
+  return result;
+}
+
+// ── Per-user sync: ensure department membership from original Mitroo ───────
+
+export async function syncUserDepartments(userId: number): Promise<SyncResult> {
+  const result: SyncResult = { created: 0, updated: 0, errors: [] };
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { externalId: true, departments: { select: { departmentId: true } } },
+  });
+  if (!user?.externalId) return result;
+
+  const configs = await prisma.departmentSyncConfig.findMany({
+    where: { syncEnabled: true },
+    select: { departmentId: true },
+  });
+  if (!configs.length) return result;
+
+  const existingDeptIds = new Set(user.departments.map((d) => d.departmentId));
+
+  for (const config of configs) {
+    try {
+      const client = await getClient(config.departmentId);
+      const volunteers = await client.fetchVolunteers();
+
+      const match = volunteers.find((v) => Number(v.id) === user.externalId);
+      if (!match) continue;
+
+      const deptName = (match.member_department as string | undefined)?.trim();
+      if (!deptName) continue;
+
+      let localDept = await prisma.department.findFirst({
+        where: { name: { equals: deptName, mode: "insensitive" } },
+        select: { id: true },
+      });
+      if (!localDept) {
+        localDept = await prisma.department.create({
+          data: { name: deptName },
+          select: { id: true },
+        });
+        console.log(
+          `[mitrooSync] syncUserDepartments: auto-created department "${deptName}" (id=${localDept.id})`,
+        );
+      }
+
+      if (existingDeptIds.has(localDept.id)) {
+        // Already linked; skip
+        continue;
+      }
+
+      await prisma.userDepartment.upsert({
+        where: { userId_departmentId: { userId, departmentId: localDept.id } },
+        update: {},
+        create: { userId, departmentId: localDept.id, role: "volunteer" },
+      });
+      result.created++;
+      existingDeptIds.add(localDept.id);
+    } catch (e: unknown) {
+      result.errors.push(`dept=${config.departmentId}: ${e}`);
+    }
+  }
+
+  if (result.created || result.errors.length) {
+    console.log(
+      `[mitrooSync] syncUserDepartments: user ${userId} — created=${result.created} errors=${result.errors.length}`,
+    );
+  }
+  return result;
 }

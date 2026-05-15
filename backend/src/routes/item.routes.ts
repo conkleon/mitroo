@@ -17,6 +17,24 @@ async function isItemManager(req: Request): Promise<boolean> {
   return count > 0;
 }
 
+/** Recursively collect all descendant item IDs inside a container (BFS). */
+async function getAllContainedItemIds(containerId: number): Promise<number[]> {
+  const ids: number[] = [];
+  const queue = [containerId];
+  while (queue.length > 0) {
+    const parentId = queue.shift()!;
+    const children = await prisma.item.findMany({
+      where: { containedById: parentId },
+      select: { id: true, isContainer: true },
+    });
+    for (const child of children) {
+      ids.push(child.id);
+      if (child.isContainer) queue.push(child.id);
+    }
+  }
+  return ids;
+}
+
 // Shared include used when returning a single item with full relations.
 const ITEM_DETAIL_INCLUDE = {
   department: { select: { id: true, name: true } },
@@ -254,7 +272,7 @@ router.post("/import/csv", async (req: Request, res: Response) => {
 });
 // ── GET /api/items ──────────────────────────────
 router.get("/", async (req: Request, res: Response) => {
-  const { containerId, search, barCode, available, categoryId, departmentId, page, limit } = req.query;
+  const { containerId, search, barCode, available, categoryId, departmentId, page, limit, sortField, sortOrder } = req.query;
   const where: any = {};
   if (containerId) where.containedById = Number(containerId);
   if (search) where.name = { contains: String(search), mode: "insensitive" };
@@ -267,7 +285,7 @@ router.get("/", async (req: Request, res: Response) => {
   }
 
   const pageNum = Math.max(1, parseInt(String(page || "1"), 10) || 1);
-  const pageSize = Math.min(100, Math.max(1, parseInt(String(limit || "20"), 10) || 20));
+  const pageSize = Math.min(10000, Math.max(1, parseInt(String(limit || "20"), 10) || 20));
 
   const include = {
     department: { select: { id: true, name: true } },
@@ -287,7 +305,14 @@ router.get("/", async (req: Request, res: Response) => {
     prisma.item.findMany({
       where,
       include,
-      orderBy: { name: "asc" },
+      orderBy: (() => {
+        const validSortFields = ["name", "createdAt", "updatedAt", "quantity", "location", "departmentId", "categoryId", "availableForAssignment"];
+        const field = String(sortField || "name");
+        if (validSortFields.includes(field)) {
+          return { [field]: sortOrder === "desc" ? "desc" : "asc" };
+        }
+        return { name: "asc" as const };
+      })(),
       skip: (pageNum - 1) * pageSize,
       take: pageSize,
     }),
@@ -408,10 +433,22 @@ router.post("/:id/self-assign", async (req: Request, res: Response) => {
     res.status(400).json({ error: "Item is already assigned to someone" }); return;
   }
 
-  const updated = await prisma.item.update({
-    where: { id: itemId },
-    data: { assignedToId: userId },
-    include: ITEM_DETAIL_INCLUDE,
+  const updated = await prisma.$transaction(async (tx) => {
+    const result = await tx.item.update({
+      where: { id: itemId },
+      data: { assignedToId: userId },
+      include: ITEM_DETAIL_INCLUDE,
+    });
+    if (item.isContainer) {
+      const containedIds = await getAllContainedItemIds(itemId);
+      if (containedIds.length > 0) {
+        await tx.item.updateMany({
+          where: { id: { in: containedIds } },
+          data: { assignedToId: userId },
+        });
+      }
+    }
+    return result;
   });
   res.json(updated);
 });
@@ -429,6 +466,16 @@ router.post("/:id/self-unassign", async (req: Request, res: Response) => {
 
   const updated = await prisma.$transaction(async (tx) => {
     await tx.itemService.deleteMany({ where: { itemId, userId } });
+    if (item.isContainer) {
+      const containedIds = await getAllContainedItemIds(itemId);
+      if (containedIds.length > 0) {
+        await tx.itemService.deleteMany({ where: { itemId: { in: containedIds }, userId } });
+        await tx.item.updateMany({
+          where: { id: { in: containedIds } },
+          data: { assignedToId: null },
+        });
+      }
+    }
     return tx.item.update({
       where: { id: itemId },
       data: { assignedToId: null },
@@ -454,10 +501,22 @@ router.post("/:id/assign-user", async (req: Request, res: Response) => {
     ]);
     if (!existingItem) { res.status(404).json({ error: "Item not found" }); return; }
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
-    const item = await prisma.item.update({
-      where: { id: Number(req.params.id) },
-      data: { assignedToId: userId },
-      include: ITEM_DETAIL_INCLUDE,
+    const item = await prisma.$transaction(async (tx) => {
+      const result = await tx.item.update({
+        where: { id: Number(req.params.id) },
+        data: { assignedToId: userId },
+        include: ITEM_DETAIL_INCLUDE,
+      });
+      if (existingItem.isContainer) {
+        const containedIds = await getAllContainedItemIds(Number(req.params.id));
+        if (containedIds.length > 0) {
+          await tx.item.updateMany({
+            where: { id: { in: containedIds } },
+            data: { assignedToId: userId },
+          });
+        }
+      }
+      return result;
     });
     res.json(item);
   } catch (err: any) {
@@ -476,8 +535,21 @@ router.delete("/:id/assign-user", async (req: Request, res: Response) => {
   const existing = await prisma.item.findUnique({ where: { id: itemId } });
   if (!existing) { res.status(404).json({ error: "Item not found" }); return; }
   const item = await prisma.$transaction(async (tx) => {
-    if (existing.assignedToId) {
-      await tx.itemService.deleteMany({ where: { itemId, userId: existing.assignedToId } });
+    const assignedUserId = existing.assignedToId;
+    if (assignedUserId) {
+      await tx.itemService.deleteMany({ where: { itemId, userId: assignedUserId } });
+    }
+    if (existing.isContainer) {
+      const containedIds = await getAllContainedItemIds(itemId);
+      if (containedIds.length > 0) {
+        if (assignedUserId) {
+          await tx.itemService.deleteMany({ where: { itemId: { in: containedIds }, userId: assignedUserId } });
+        }
+        await tx.item.updateMany({
+          where: { id: { in: containedIds } },
+          data: { assignedToId: null },
+        });
+      }
     }
     return tx.item.update({
       where: { id: itemId },

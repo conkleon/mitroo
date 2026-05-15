@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
 import '../services/api_client.dart';
@@ -23,8 +24,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
 
   // Filters
   String _search = '';
-  String _roleFilter = 'all';
   int? _deptFilter;
+  int? _specFilter;
   bool _deptInitialized = false;
 
   // Sorting
@@ -98,13 +99,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       }).toList();
     }
 
-    // Role filter
-    if (_roleFilter == 'admin') {
-      list = list.where((u) => u['isAdmin'] == true).toList();
-    } else if (_roleFilter != 'all') {
+    // Specialization filter
+    if (_specFilter != null) {
       list = list.where((u) {
-        final depts = u['departments'] as List<dynamic>? ?? [];
-        return depts.any((d) => d['role'] == _roleFilter);
+        final specs = u['specializations'] as List<dynamic>? ?? [];
+        return specs.any((s) => s['specialization']?['id'] == _specFilter);
       }).toList();
     }
 
@@ -149,11 +148,17 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     return list;
   }
 
-  int _countRole(String role) {
-    if (role == 'admin') return _users.where((u) => u['isAdmin'] == true).length;
-    return _users.where((u) {
-      final depts = u['departments'] as List<dynamic>? ?? [];
-      return depts.any((d) => d['role'] == role);
+  int _countSpec(int specId) {
+    var users = List<Map<String, dynamic>>.from(_users);
+    if (_deptFilter != null) {
+      users = users.where((u) {
+        final depts = u['departments'] as List<dynamic>? ?? [];
+        return depts.any((d) => d['department']?['id'] == _deptFilter);
+      }).toList();
+    }
+    return users.where((u) {
+      final specs = u['specializations'] as List<dynamic>? ?? [];
+      return specs.any((s) => s['specialization']?['id'] == specId);
     }).length;
   }
 
@@ -432,7 +437,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           IconButton(icon: const Icon(Icons.refresh), onPressed: _fetch, tooltip: 'Ανανέωση'),
         ],
       ),
-      floatingActionButton: auth.isAdmin
+      floatingActionButton: auth.isAdmin && !_selectionMode
           ? FloatingActionButton.extended(
               onPressed: _showCreateDialog,
               icon: const Icon(Icons.person_add),
@@ -467,19 +472,26 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   ),
                 ]),
                 const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(children: [
-                    _chip('Όλοι (${_users.length})', 'all'),
-                    const SizedBox(width: 6),
-                    _chip('Admins (${_countRole('admin')})', 'admin', color: Color(0xFFF59E0B)),
-                    const SizedBox(width: 6),
-                    _chip('Δ. Αποστολών (${_countRole('missionAdmin')})', 'missionAdmin', color: const Color(0xFF059669)),
-                    const SizedBox(width: 6),
-                    _chip('Δ. Υλικού (${_countRole('itemAdmin')})', 'itemAdmin', color: const Color(0xFF7C3AED)),
-                    const SizedBox(width: 6),
-                    _chip('Εθελοντές (${_countRole('volunteer')})', 'volunteer', color: const Color(0xFFDC2626)),
-                  ]),
+                SizedBox(
+                  height: 34,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _chip('Όλοι (${_users.length})', null),
+                      const SizedBox(width: 6),
+                      ..._allSpecs.map((s) {
+                        final specId = s['id'] as int;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: _chip(
+                            '${s['name']} (${_countSpec(specId)})',
+                            specId,
+                            color: const Color(0xFF7C3AED),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
                 ),
               ]),
             ),
@@ -543,6 +555,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                               else
                                 const SizedBox(width: 8),
                               _headerCell('Name', 'name', flex: 3),
+                              _headerCell('Phone', 'phone', flex: 2),
+                              _headerCell('Email', 'email', flex: 2),
                               _headerCell('Total', 'totalHours'),
                               _headerCell('Year', 'yearHours'),
                               _headerCell('Vol', 'yearVolHours'),
@@ -690,6 +704,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                 ],
               ),
             ),
+            _editFieldCell(user, 'phonePrimary', 'Τηλέφωνο', flex: 2),
+            _editFieldCell(user, 'email', 'Email', flex: 2),
             _hoursCell(user['totalHours']),
             _hoursCell(user['yearHours']),
             _hoursCell(user['yearVolHours']),
@@ -720,6 +736,117 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     );
   }
 
+  Widget _editFieldCell(Map<String, dynamic> user, String field, String label, {int flex = 1}) {
+    final value = (user[field] ?? '').toString();
+    final userId = user['id'] as int;
+    final canEdit = !_selectionMode;
+    final isPhone = field == 'phonePrimary';
+
+    return Expanded(
+      flex: flex,
+      child: GestureDetector(
+        onTap: canEdit ? () => _showEditFieldDialog(userId, field, label, value) : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isPhone && canEdit && value.isNotEmpty)
+                GestureDetector(
+                  onTap: () => launchUrl(Uri(scheme: 'tel', path: value)),
+                  child: const Padding(
+                    padding: EdgeInsets.only(right: 4),
+                    child: Icon(Icons.call, size: 12, color: Color(0xFF7C3AED)),
+                  ),
+                ),
+              Flexible(
+                child: Text(
+                  value.isNotEmpty ? value : '—',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: value.isNotEmpty ? FontWeight.w500 : FontWeight.w400,
+                    color: value.isNotEmpty ? const Color(0xFF111827) : const Color(0xFFD1D5DB),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (canEdit)
+                GestureDetector(
+                  onTap: () => _showEditFieldDialog(userId, field, label, value),
+                  child: const Padding(
+                    padding: EdgeInsets.only(left: 2),
+                    child: Icon(Icons.edit, size: 12, color: Color(0xFF9CA3AF)),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showEditFieldDialog(int userId, String field, String label, String currentValue) async {
+    final ctrl = TextEditingController(text: currentValue);
+    final isEmail = field == 'email';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Επεξεργασία $label'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.phone,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Άκυρο'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Αποθήκευση'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final newValue = ctrl.text.trim();
+    if (newValue == currentValue) return;
+
+    try {
+      final res = await _api.patch('/users/$userId', body: {field: newValue});
+      if (res.statusCode == 200) {
+        _fetch();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Το $label ενημερώθηκε')),
+          );
+        }
+      } else {
+        final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(err)),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Σφάλμα: $e')),
+        );
+      }
+    }
+  }
+
   Widget _pageDropdown() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -748,11 +875,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     );
   }
 
-  Widget _chip(String label, String key, {Color? color}) {
-    final selected = _roleFilter == key;
+  Widget _chip(String label, int? key, {Color? color}) {
+    final selected = _specFilter == key;
     final c = color ?? Theme.of(context).colorScheme.primary;
     return GestureDetector(
-      onTap: () => setState(() { _roleFilter = key; _page = 0; }),
+      onTap: () => setState(() { _specFilter = key; _page = 0; }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

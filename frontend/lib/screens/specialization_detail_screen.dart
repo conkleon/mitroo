@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_client.dart';
+import '../utils/specialization_labels.dart';
 
 /// Full detail view for a single specialization.
 /// Shows info, parent/children hierarchy, assigned users, edit/delete.
@@ -74,6 +75,14 @@ class _SpecializationDetailScreenState
     final eamePrefixCtrl = TextEditingController(
       text: (_spec!['eamePrefix'] ?? '').toString());
     int? selectedRoot = _spec!['rootId'] as int?;
+    final allCategories = [
+      'trainer', 'training', 'tep', 'volunteer',
+      'sanitary_general', 'sanitary_lifeguard',
+    ];
+    final existingCats = (_spec!['missionCategories'] as List<dynamic>?)
+        ?.map((c) => c.toString())
+        .toSet() ?? <String>{};
+    final selectedCategories = <String>{...existingCats};
 
     final roots =
         _allSpecs.where((s) => s['rootId'] == null && s['id'] != widget.specializationId).toList();
@@ -150,6 +159,29 @@ class _SpecializationDetailScreenState
                     ],
                     onChanged: (v) => setS(() => selectedRoot = v),
                   ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: allCategories.map((cat) {
+                      final selected = selectedCategories.contains(cat);
+                      return FilterChip(
+                        label: Text(missionCategoryLabel(cat)),
+                        selected: selected,
+                        onSelected: (v) {
+                          setS(() {
+                            if (v) {
+                              selectedCategories.add(cat);
+                            } else {
+                              selectedCategories.remove(cat);
+                            }
+                          });
+                        },
+                        selectedColor: const Color(0xFFEDE9FE),
+                        checkmarkColor: const Color(0xFF7C3AED),
+                      );
+                    }).toList(),
+                  ),
                 ],
               ),
             ),
@@ -182,6 +214,7 @@ class _SpecializationDetailScreenState
                       int.tryParse(hoursTepCtrl.text) ?? 0;
                 }
                 body['eamePrefix'] = eamePrefixCtrl.text.trim();
+                body['missionCategories'] = selectedCategories.toList();
                 await _api.patch(
                     '/specializations/${widget.specializationId}',
                     body: body);
@@ -514,6 +547,36 @@ class _SpecializationDetailScreenState
                   '${_users.length}'),
               _infoRow(Icons.account_tree, 'Υπο-ειδικεύσεις',
                   '${_children.length}'),
+              const Divider(height: 24),
+              Row(children: [
+                const Icon(Icons.visibility, size: 18, color: Color(0xFF6B7280)),
+                const SizedBox(width: 10),
+                const Expanded(
+                    child: Text('Ορατότητα Αποστολών',
+                        style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)))),
+              ]),
+              const SizedBox(height: 8),
+              Builder(builder: (_) {
+                final cats = (_spec!['missionCategories'] as List<dynamic>?)
+                    ?.map((c) => c.toString())
+                    .toList() ?? [];
+                if (cats.isEmpty) {
+                  return const Text('—',
+                      style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)));
+                }
+                return Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: cats.map((c) => Chip(
+                    label: Text(missionCategoryLabel(c),
+                        style: const TextStyle(fontSize: 11)),
+                    backgroundColor: const Color(0xFFEDE9FE),
+                    side: BorderSide.none,
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  )).toList(),
+                );
+              }),
             ]),
       ),
     );
@@ -682,3 +745,4 @@ class _SpecializationDetailScreenState
     );
   }
 }
+

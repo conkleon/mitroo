@@ -6,20 +6,12 @@ import { z } from "zod";
 import prisma from "../lib/prisma";
 import { authenticate, getMissionAdminDepartmentIds } from "../middleware/auth";
 import { sendPasswordResetEmail } from "../lib/email";
-import { syncServices } from "../lib/mitrooSync";
+import { syncServices, syncUserApplications, syncUserDepartments } from "../lib/mitrooSync";
 import { MitrooClient } from "../lib/mitrooClient";
 
 const router = Router();
 
 // ── Validation schemas ──────────────────────────
-const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  forename: z.string().min(1),
-  surname: z.string().min(1),
-  eame: z.string().min(2).max(50),
-});
-
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
@@ -57,6 +49,27 @@ const selectAuthUser = {
   imagePath: true,
 };
 
+async function linkUserToDepartment(userId: number, memberDepartment?: string): Promise<void> {
+  if (!memberDepartment) return;
+  let dept = await prisma.department.findFirst({
+    where: { name: { equals: memberDepartment, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (!dept) {
+    dept = await prisma.department.create({
+      data: { name: memberDepartment },
+      select: { id: true },
+    });
+    debugExternal("auto-created department", { name: memberDepartment, id: dept.id });
+  }
+  await prisma.userDepartment.upsert({
+    where: { userId_departmentId: { userId, departmentId: dept.id } },
+    update: {},
+    create: { userId, departmentId: dept.id, role: "volunteer" },
+  });
+  debugExternal("linked user to department", { userId, departmentId: dept.id, memberDepartment });
+}
+
 async function loginViaExternalMitroo(
   email: string,
   password: string,
@@ -77,6 +90,7 @@ async function loginViaExternalMitroo(
   const match = await client.findVolunteerByEmail(email);
   const eame = (match?.registration_code as string | undefined)?.trim();
   const externalId = match ? Number(match.id) : null;
+  const memberDepartment = (match?.member_department as string | undefined)?.trim();
   let forename = match ? (match.first_name as string) ?? "" : "";
   let surname = match ? (match.last_name as string) ?? "" : "";
   const normalizedEmail = email.trim().toLowerCase();
@@ -105,9 +119,42 @@ async function loginViaExternalMitroo(
     : null;
 
   const existing = await prisma.user.findUnique({ where: { eame: resolvedEame } });
+
   if (!existing) {
-    debugExternal("no local user for eame", { eame: resolvedEame, email: normalizedEmail });
-    return null;
+    if (emailOwner && emailOwner.eame !== resolvedEame) {
+      await prisma.user.update({
+        where: { id: emailOwner.id },
+        data: { email: `unused_${Date.now()}_${emailOwner.email}` },
+      });
+    }
+
+    const hashed = await bcrypt.hash(password, 12);
+    const createData: {
+      eame: string;
+      email: string;
+      password: string;
+      forename: string;
+      surname: string;
+      externalId?: number;
+    } = {
+      eame: resolvedEame,
+      email: normalizedEmail,
+      password: hashed,
+      forename: forename || "",
+      surname: surname || "",
+    };
+    if (Number.isFinite(externalId ?? NaN) && (externalId ?? 0) > 0) {
+      createData.externalId = externalId as number;
+    }
+    const created = await prisma.user.create({
+      data: createData,
+      select: selectAuthUser,
+    });
+    debugExternal("created local user from external auth", { userId: created.id, eame: resolvedEame });
+    linkUserToDepartment(created.id, memberDepartment).catch((e) =>
+      console.error("[auth] linkUserToDepartment error:", e),
+    );
+    return { user: created, emailConflict: false };
   }
 
   if (emailOwner && emailOwner.id !== existing.id) {
@@ -140,47 +187,11 @@ async function loginViaExternalMitroo(
     },
     select: selectAuthUser,
   });
+  linkUserToDepartment(updated.id, memberDepartment).catch((e) =>
+    console.error("[auth] linkUserToDepartment error:", e),
+  );
   return { user: updated, emailConflict: false };
 }
-
-// ── POST /api/auth/register ─────────────────────
-router.post("/register", async (req: Request, res: Response) => {
-  try {
-    const data = registerSchema.parse(req.body);
-
-    const existing = await prisma.user.findUnique({ where: { email: data.email } });
-    if (existing) {
-      res.status(409).json({ error: "Email already registered" });
-      return;
-    }
-
-    const hashed = await bcrypt.hash(data.password, 12);
-    const user = await prisma.user.create({
-      data: {
-        eame: data.eame,
-        password: hashed,
-        forename: data.forename,
-        surname: data.surname,
-        email: data.email,
-      },
-      select: { id: true, eame: true, forename: true, surname: true, email: true, rank: true, isAdmin: true },
-    });
-
-    const token = jwt.sign(
-      { userId: user.id, isAdmin: user.isAdmin },
-      process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" } as jwt.SignOptions,
-    );
-
-    res.status(201).json({ user, token });
-  } catch (err: any) {
-    if (err instanceof z.ZodError) {
-      res.status(400).json({ error: "Validation failed", details: err.errors });
-      return;
-    }
-    throw err;
-  }
-});
 
 // ── POST /api/auth/login ────────────────────────
 router.post("/login", async (req: Request, res: Response) => {
@@ -208,6 +219,14 @@ router.post("/login", async (req: Request, res: Response) => {
       );
 
       res.json({ user: externalResult.user, token });
+
+      // Fire-and-forget: sync user's data from original Mitroo
+      syncUserApplications(externalResult.user!.id).catch((e) =>
+        console.error("[auth] syncUserApplications error:", e),
+      );
+      syncUserDepartments(externalResult.user!.id).catch((e) =>
+        console.error("[auth] syncUserDepartments error:", e),
+      );
       return;
     }
 
@@ -231,7 +250,13 @@ router.post("/login", async (req: Request, res: Response) => {
       token,
     });
 
-    // Fire-and-forget: auto-sync services for admins on login
+    // Fire-and-forget: sync user applications & department services on login
+    syncUserApplications(user.id).catch((e) =>
+      console.error("[auth] syncUserApplications error:", e),
+    );
+    syncUserDepartments(user.id).catch((e) =>
+      console.error("[auth] syncUserDepartments error:", e),
+    );
     (async () => {
       const configs = user.isAdmin
         ? await prisma.departmentSyncConfig.findMany({
@@ -389,9 +414,9 @@ const forgotPasswordSchema = z.object({
 router.post("/forgot-password", async (req: Request, res: Response) => {
   try {
     const { email } = forgotPasswordSchema.parse(req.body);
+    const normalizedEmail = email.trim().toLowerCase();
 
-    // Always return success to avoid leaking whether an email exists
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (user) {
       const token = crypto.randomBytes(32).toString("hex");
       const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
@@ -406,8 +431,18 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
       } catch (emailErr) {
         console.error("Failed to send password reset email:", emailErr);
       }
+    } else {
+      // No local user — forward to original Mitroo's forgot-password flow
+      try {
+        const client = new MitrooClient(EXTERNAL_BASE_URL);
+        await client.forgotPassword(email);
+        debugExternal("forgot-password proxied to external", { email: normalizedEmail });
+      } catch (extErr) {
+        console.error("Failed to proxy forgot-password to external Mitroo:", extErr);
+      }
     }
 
+    // Always return the same message to avoid leaking whether an email exists
     res.json({ message: "Αν υπάρχει λογαριασμός με αυτό το email, θα λάβεις οδηγίες επαναφοράς." });
   } catch (err: any) {
     if (err instanceof z.ZodError) {
