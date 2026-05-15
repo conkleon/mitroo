@@ -11,7 +11,7 @@ const TRAINER_MISSION_TYPE_IDS = new Set([71, 36, 86, 33, 83]);
 const TRAINING_MISSION_TYPE_IDS = new Set([81]);
 const TEP_MISSION_TYPE_IDS = new Set([85]);
 const VOLUNTEER_MISSION_TYPE_IDS = new Set([56, 57]);
-const SANITARY_MISSION_TYPE_IDS = new Set([60, 16]); //60 IS LIFEGUARD MISSION, 16 IS GENERAL SANITARY MISSION
+const SANITARY_MISSION_TYPE_IDS = new Set([60, 16]);
 
 // Strip "Σαβ 16-05-2026 11:00-16:00, " prefix embedded in service names from original Mitroo
 const SERVICE_NAME_TIMESTAMP_RE =
@@ -21,19 +21,27 @@ function cleanServiceName(raw: string): string {
   return raw.replace(SERVICE_NAME_TIMESTAMP_RE, "").trim();
 }
 
-const MISSION_CATEGORY_MAP: Record<string, Set<number>> = {
-  trainer:           new Set([71, 36, 86, 33, 83]),
-  training:          new Set([81]),
-  tep:               new Set([85]),
-  volunteer:         new Set([56, 57]),
-  sanitary_general:  new Set([16]),
-  sanitary_lifeguard: new Set([60]),
-};
+let _serviceTypeIdMap: Map<number, number> | null = null;
 
-function getCategoriesForMissionType(missionTypeId: number): string[] {
-  return Object.entries(MISSION_CATEGORY_MAP)
-    .filter(([, ids]) => ids.has(missionTypeId))
-    .map(([cat]) => cat);
+async function getServiceTypeIdMap(): Promise<Map<number, number>> {
+  if (_serviceTypeIdMap) return _serviceTypeIdMap;
+  const types = await prisma.serviceType.findMany({
+    where: { externalMissionTypeId: { not: null } },
+    select: { id: true, externalMissionTypeId: true },
+  });
+  _serviceTypeIdMap = new Map();
+  for (const t of types) {
+    if (t.externalMissionTypeId != null) {
+      _serviceTypeIdMap.set(t.externalMissionTypeId, t.id);
+    }
+  }
+  return _serviceTypeIdMap;
+}
+
+function lookupServiceTypeId(map: Map<number, number>, missionTypeId: unknown): number | null {
+  const id = Number(missionTypeId);
+  if (!Number.isFinite(id)) return null;
+  return map.get(id) ?? null;
 }
 
 export interface SyncResult {
@@ -178,41 +186,6 @@ const remapDefaultHoursByMissionType = (
 
   return hours;
 };
-
-// array_contains on Json generates PostgreSQL JSONB @> operator.
-// This is PostgreSQL-specific and not portable to SQLite/MySQL.
-async function syncServiceVisibility(
-  serviceId: number,
-  missionTypeId: unknown,
-): Promise<void> {
-  const id = Number(missionTypeId);
-  if (!Number.isFinite(id)) return;
-
-  const categories = getCategoriesForMissionType(id);
-  if (!categories.length) return;
-
-  // Base categories are public — only special categories gate visibility.
-  const BASE_CATEGORIES = new Set(["training", "volunteer", "sanitary_general"]);
-  const restricted = categories.filter((c) => !BASE_CATEGORIES.has(c));
-  if (!restricted.length) return;
-
-  const orClauses = restricted
-    .map((_, i) => `mission_categories @> $${i + 1}::jsonb`)
-    .join(" OR ");
-  const values = restricted.map((c) => JSON.stringify([c]));
-  const specs = await prisma.$queryRawUnsafe<{ id: number }[]>(
-    `SELECT id FROM specializations WHERE ${orClauses}`,
-    ...values,
-  );
-
-  await prisma.serviceVisibility.deleteMany({ where: { serviceId } });
-
-  if (specs.length) {
-    await prisma.serviceVisibility.createMany({
-      data: specs.map((s) => ({ serviceId, specializationId: s.id })),
-    });
-  }
-}
 
 // ── Sync volunteers → Users ────────────────────────────────────────────────
 
@@ -383,6 +356,8 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
       console.log("[mitrooSync] Sample mission fields:", Object.keys(missions[0]));
     }
 
+    const typeIdMap = await getServiceTypeIdMap();
+
     for (const mission of missions) {
       const missionId = Number(mission.id);
       let shifts = [];
@@ -434,6 +409,7 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
           });
 
           if (existing) {
+            const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
             await prisma.service.update({
               where: { id: existing.id },
               data: {
@@ -446,11 +422,12 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
                 defaultHoursTraining,
                 defaultHoursTrainers,
                 defaultHoursTEP,
+                serviceTypeId,
               },
             });
             result.updated++;
-            await syncServiceVisibility(existing.id, mission.mission_type_id);
           } else {
+            const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
             const newService = await prisma.service.create({
               data: {
                 departmentId,
@@ -464,10 +441,10 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
                 defaultHoursTraining,
                 defaultHoursTrainers,
                 defaultHoursTEP,
+                serviceTypeId,
               },
             });
             result.created++;
-            await syncServiceVisibility(newService.id, mission.mission_type_id);
           }
         } catch (e: unknown) {
           result.errors.push(`shift_id=${shift.id}: ${e}`);
