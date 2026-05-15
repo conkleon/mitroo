@@ -6,15 +6,6 @@ import { authenticate } from "../middleware/auth";
 const router = Router();
 router.use(authenticate);
 
-const MISSION_CATEGORIES = [
-  "trainer",
-  "training",
-  "tep",
-  "volunteer",
-  "sanitary_general",
-  "sanitary_lifeguard",
-] as const;
-
 const createSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().optional(),
@@ -24,7 +15,6 @@ const createSchema = z.object({
   hoursTEP: z.number().int().min(0).optional(),
   eamePrefix: z.string().max(8).optional().nullable(),
   rootId: z.number().int().optional().nullable(),
-  missionCategories: z.array(z.enum(MISSION_CATEGORIES)).optional(),
 });
 
 // ── GET /api/specializations ────────────────────
@@ -32,6 +22,7 @@ router.get("/", async (_req: Request, res: Response) => {
   const specs = await prisma.specialization.findMany({
     include: {
       root: { select: { id: true, name: true } },
+      serviceTypes: { include: { serviceType: { select: { id: true, name: true } } } },
       _count: { select: { children: true, users: true } },
     },
     orderBy: { name: "asc" },
@@ -69,6 +60,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     include: {
       root: { select: { id: true, name: true } },
       children: { select: { id: true, name: true } },
+      serviceTypes: { include: { serviceType: { select: { id: true, name: true } } } },
       users: {
         include: { user: { select: { id: true, eame: true, forename: true, surname: true } } },
       },
