@@ -62,48 +62,79 @@ async function main() {
 
 
   // ── Specializations ───────────────────────────
-  const firstAid = await prisma.specialization.upsert({
-    where: { name: "First Aid" },
-    update: { hoursTEP: 0, eamePrefix: "" },
-    create: { name: "First Aid", description: "Basic first-aid certification", hoursTraining: 16, hoursTEP: 0, eamePrefix: "" },
-  });
+  const BASE_CATEGORIES = ["training", "volunteer", "sanitary_general"];
 
-  const als = await prisma.specialization.upsert({
-    where: { name: "Advanced Life Support" },
-    update: { hoursTEP: 0, eamePrefix: "" },
+  const dokimosSamaritis = await prisma.specialization.upsert({
+    where: { name: "Δόκιμος Σαμαρείτης" },
+    update: { missionCategories: [...BASE_CATEGORIES, "tep"] },
     create: {
-      name: "Advanced Life Support",
-      description: "ALS certification",
-      hoursTraining: 40,
-      hoursTEP: 0,
-      eamePrefix: "",
-      rootId: firstAid.id,
+      name: "Δόκιμος Σαμαρείτης",
+      description: "Δόκιμος Σαμαρείτης",
+      missionCategories: [...BASE_CATEGORIES, "tep"],
     },
   });
 
-  const lifeguard = await prisma.specialization.upsert({
-    where: { name: "Lifeguard" },
-    update: { hoursTEP: 0, eamePrefix: "ΝΕ" },
-    create: { name: "Lifeguard", description: "Ναυαγοσωστική πιστοποίηση", hoursTraining: 24, hoursTEP: 0, eamePrefix: "ΝΕ" },
+  const dokimosNavagosostis = await prisma.specialization.upsert({
+    where: { name: "Δόκιμος Ναυαγοσώστης" },
+    update: { missionCategories: [...BASE_CATEGORIES, "tep"] },
+    create: {
+      name: "Δόκιμος Ναυαγοσώστης",
+      description: "Δόκιμος Ναυαγοσώστης",
+      missionCategories: [...BASE_CATEGORIES, "tep"],
+    },
   });
 
-  const blsAed = await prisma.specialization.upsert({
-    where: { name: "BLS/AED Instructor" },
-    update: { hoursTEP: 0, eamePrefix: "Π" },
-    create: { name: "BLS/AED Instructor", description: "BLS/AED εκπαιδευτής", hoursTraining: 20, hoursTEP: 0, eamePrefix: "Π" },
+  const samaritis = await prisma.specialization.upsert({
+    where: { name: "Σαμαρείτης" },
+    update: { missionCategories: BASE_CATEGORIES },
+    create: {
+      name: "Σαμαρείτης",
+      description: "Σαμαρείτης",
+      missionCategories: BASE_CATEGORIES,
+    },
+  });
+
+  const navagosostis = await prisma.specialization.upsert({
+    where: { name: "Ναυαγοσώστης" },
+    update: { missionCategories: [...BASE_CATEGORIES, "sanitary_lifeguard"] },
+    create: {
+      name: "Ναυαγοσώστης",
+      description: "Ναυαγοσώστης",
+      missionCategories: [...BASE_CATEGORIES, "sanitary_lifeguard"],
+    },
+  });
+
+  const ekpaidytisAB = await prisma.specialization.upsert({
+    where: { name: "Εκπαιδευτής Α' Βοηθειών" },
+    update: { missionCategories: [...BASE_CATEGORIES, "trainer"] },
+    create: {
+      name: "Εκπαιδευτής Α' Βοηθειών",
+      description: "Εκπαιδευτής Πρώτων Βοηθειών",
+      missionCategories: [...BASE_CATEGORIES, "trainer"],
+    },
+  });
+
+  const ekpaidytisNav = await prisma.specialization.upsert({
+    where: { name: "Εκπαιδευτής Ναυαγοσωστικής" },
+    update: { missionCategories: [...BASE_CATEGORIES, "trainer", "sanitary_lifeguard"] },
+    create: {
+      name: "Εκπαιδευτής Ναυαγοσωστικής",
+      description: "Εκπαιδευτής Ναυαγοσωστικής",
+      missionCategories: [...BASE_CATEGORIES, "trainer", "sanitary_lifeguard"],
+    },
   });
 
   // ── User ↔ Specialization assignments ─────────
-  // Admin has First Aid + ALS + BLS/AED Instructor
-  for (const specId of [firstAid.id, als.id, blsAed.id]) {
+  // Admin has Σαμαρείτης, Εκπαιδευτής Α' Βοηθειών, Εκπαιδευτής Ναυαγοσωστικής
+  for (const specId of [samaritis.id, ekpaidytisAB.id, ekpaidytisNav.id]) {
     await prisma.userSpecialization.upsert({
       where: { userId_specializationId: { userId: admin.id, specializationId: specId } },
       update: {},
       create: { userId: admin.id, specializationId: specId },
     });
   }
-  // Volunteer has First Aid + Lifeguard
-  for (const specId of [firstAid.id, lifeguard.id]) {
+  // Volunteer has Δόκιμος Σαμαρείτης, Σαμαρείτης
+  for (const specId of [dokimosSamaritis.id, samaritis.id]) {
     await prisma.userSpecialization.upsert({
       where: { userId_specializationId: { userId: volunteer.id, specializationId: specId } },
       update: {},
@@ -130,35 +161,6 @@ async function main() {
     });
   }
 
-  // ── Service visibility (specialization requirements) ──
-  // Health-coverage games require First Aid (services 1 & 2)
-  for (const svcId of [1, 2]) {
-    await prisma.serviceVisibility.upsert({
-      where: { serviceId_specializationId: { serviceId: svcId, specializationId: firstAid.id } },
-      update: {},
-      create: { serviceId: svcId, specializationId: firstAid.id },
-    });
-  }
-  // Lifeguard service requires Lifeguard specialization (service 3)
-  await prisma.serviceVisibility.upsert({
-    where: { serviceId_specializationId: { serviceId: 3, specializationId: lifeguard.id } },
-    update: {},
-    create: { serviceId: 3, specializationId: lifeguard.id },
-  });
-  // First-aid training requires First Aid spec (service 4)
-  await prisma.serviceVisibility.upsert({
-    where: { serviceId_specializationId: { serviceId: 4, specializationId: firstAid.id } },
-    update: {},
-    create: { serviceId: 4, specializationId: firstAid.id },
-  });
-  // BLS/AED sessions require BLS/AED Instructor spec (services 5–16)
-  for (let svcId = 5; svcId <= 16; svcId++) {
-    await prisma.serviceVisibility.upsert({
-      where: { serviceId_specializationId: { serviceId: svcId, specializationId: blsAed.id } },
-      update: {},
-      create: { serviceId: svcId, specializationId: blsAed.id },
-    });
-  }
 
   // ── Item categories ────────────────────────────
   const catMedical = await prisma.itemCategory.upsert({

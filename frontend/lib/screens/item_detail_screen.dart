@@ -54,7 +54,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       final results = await Future.wait([
         _api.get('/items/${widget.itemId}'),
         _api.get('/users'),
-        _api.get('/items?'), // all items for container picker
+        _api.get('/items?limit=10000'), // all items for container picker
         _api.get('/items/${widget.itemId}/comments'),
         _api.get('/services'),
       ]);
@@ -65,8 +65,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         _allUsers = jsonDecode(results[1].body);
       }
       if (results[2].statusCode == 200) {
-        final all = jsonDecode(results[2].body) as List;
-        _allContainers = all.where((i) => i['isContainer'] == true && i['id'] != widget.itemId).toList();
+        final parsed = jsonDecode(results[2].body);
+        final all = (parsed['data'] ?? parsed) as List;
+        _allContainers = all.cast<Map<String, dynamic>>().where((i) => i['isContainer'] == true && i['id'] != widget.itemId).toList();
       }
       if (results[3].statusCode == 200) {
         _comments = jsonDecode(results[3].body) as List;
@@ -118,7 +119,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     const gap = SizedBox(height: 14);
     final inputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: Colors.grey.shade300),
+      borderSide: BorderSide(color: Color(0xFFD1D5DB)),
     );
 
     showDialog(
@@ -281,7 +282,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                   ? '${expirationDate!.day}/${expirationDate!.month}/${expirationDate!.year}'
                                   : 'Δεν έχει οριστεί',
                               style: TextStyle(
-                                color: expirationDate != null ? null : Colors.grey.shade500,
+                                color: expirationDate != null ? null : Color(0xFF6B7280),
                                 fontSize: 15,
                               ),
                             ),
@@ -310,13 +311,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(color: Color(0xFFD1D5DB)),
                     ),
                     child: Column(
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.inventory_2, size: 18, color: Colors.grey.shade700),
+                            Icon(Icons.inventory_2, size: 18, color: Color(0xFF374151)),
                             const SizedBox(width: 10),
                             const Expanded(child: Text('Κουτί', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
                             const Text('Μπορεί να περιέχει αντικείμενα', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
@@ -330,7 +331,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         const Divider(height: 20),
                         Row(
                           children: [
-                            Icon(Icons.assignment_outlined, size: 18, color: Colors.grey.shade700),
+                            Icon(Icons.assignment_outlined, size: 18, color: Color(0xFF374151)),
                             const SizedBox(width: 10),
                             const Expanded(child: Text('Διαθέσιμο για ανάθεση', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
                             Switch(
@@ -390,7 +391,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             onPressed: () async {
               final err = await context.read<ItemProvider>().deleteItem(widget.itemId);
               if (ctx.mounted) Navigator.pop(ctx);
@@ -491,7 +492,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     }
                   }
                 },
-                child: const Text('Αφαίρεση', style: TextStyle(color: Colors.red)),
+                child: const Text('Αφαίρεση', style: TextStyle(color: Color(0xFFDC2626))),
               ),
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
             FilledButton(
@@ -593,7 +594,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     }
                   }
                 },
-                child: const Text('Αφαίρεση από κουτί', style: TextStyle(color: Colors.red)),
+                child: const Text('Αφαίρεση από κουτί', style: TextStyle(color: Color(0xFFDC2626))),
               ),
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
             FilledButton(
@@ -661,7 +662,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Επιστροφή'),
           ),
         ],
@@ -778,7 +779,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Αφαίρεση'),
           ),
         ],
@@ -957,7 +958,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
+                            Icon(Icons.error_outline, size: 48, color: Color(0xFF9CA3AF)),
                             const SizedBox(height: 12),
                             const Text('Αντικείμενο δεν βρέθηκε'),
                           ],
@@ -1176,7 +1177,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           _infoChip(
             isExpired ? Icons.warning_amber_rounded : Icons.event,
             _formatDate(expDate),
-            isExpired ? Colors.red : const Color(0xFFF59E0B),
+            isExpired ? Color(0xFFDC2626) : const Color(0xFFF59E0B),
           ),
         _infoChip(Icons.calendar_today, _formatDate(_item!['createdAt']), const Color(0xFF6B7280)),
       ],
@@ -1215,7 +1216,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1248,7 +1249,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 tt,
                 'Ημερομηνία λήξης',
                 _formatDate(expDate),
-                valueColor: isExpired ? Colors.red : null,
+                valueColor: isExpired ? Color(0xFFDC2626) : null,
               ),
             if (_item!['category'] != null)
               _detailRow(tt, 'Κατηγορία', _item!['category']['name']),
@@ -1301,7 +1302,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1375,8 +1376,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         icon: const Icon(Icons.assignment_return, size: 16),
                         label: const Text('Επιστροφή', style: TextStyle(fontSize: 12)),
                         style: FilledButton.styleFrom(
-                          backgroundColor: Colors.red.shade50,
-                          foregroundColor: Colors.red.shade700,
+                          backgroundColor: Color(0xFFFEF2F2),
+                          foregroundColor: Color(0xFFB91C1C),
                           visualDensity: VisualDensity.compact,
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         ),
@@ -1388,16 +1389,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: Color(0xFFF9FAFB),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200, style: BorderStyle.solid),
+                  border: Border.all(color: Color(0xFFE5E7EB), style: BorderStyle.solid),
                 ),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.person_off_outlined, color: Colors.grey.shade400, size: 28),
+                      Icon(Icons.person_off_outlined, color: Color(0xFF9CA3AF), size: 28),
                       const SizedBox(height: 6),
-                      Text('Κανένας χρήστης', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                      Text('Κανένας χρήστης', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                     ],
                   ),
                 ),
@@ -1459,7 +1460,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1487,16 +1488,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: Color(0xFFF9FAFB),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: Color(0xFFE5E7EB)),
                 ),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.inbox_outlined, color: Colors.grey.shade400, size: 28),
+                      Icon(Icons.inbox_outlined, color: Color(0xFF9CA3AF), size: 28),
                       const SizedBox(height: 6),
-                      Text('Δεν υπάρχουν αναθέσεις', style: tt.bodySmall?.copyWith(color: Colors.grey.shade500)),
+                      Text('Δεν υπάρχουν αναθέσεις', style: tt.bodySmall?.copyWith(color: Color(0xFF6B7280))),
                     ],
                   ),
                 ),
@@ -1528,7 +1529,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             if (a['assignedAt'] != null)
                               Text(
                                 _formatDate(a['assignedAt'] as String?),
-                                style: tt.labelSmall?.copyWith(color: Colors.grey.shade400),
+                                style: tt.labelSmall?.copyWith(color: Color(0xFF9CA3AF)),
                               ),
                             if ((a['comment'] as String?)?.isNotEmpty == true) ...[
                               const SizedBox(height: 4),
@@ -1539,7 +1540,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       ),
                       if (canManage)
                         IconButton(
-                          icon: Icon(Icons.close, size: 18, color: Colors.red.shade400),
+                          icon: Icon(Icons.close, size: 18, color: Color(0xFFF87171)),
                           onPressed: () => _removeServiceAssignment(a['id'] as int),
                           tooltip: 'Αφαίρεση',
                         ),
@@ -1563,7 +1564,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1601,15 +1602,15 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: Color(0xFFF9FAFB),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.inbox_outlined, color: Colors.grey.shade400, size: 28),
+                      Icon(Icons.inbox_outlined, color: Color(0xFF9CA3AF), size: 28),
                       const SizedBox(height: 6),
-                      Text('Άδειο κουτί', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                      Text('Άδειο κουτί', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                     ],
                   ),
                 ),
@@ -1672,7 +1673,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 ],
                               ),
                             ),
-                            Icon(Icons.chevron_right, size: 18, color: Colors.grey.shade400),
+                            Icon(Icons.chevron_right, size: 18, color: Color(0xFF9CA3AF)),
                           ],
                         ),
                       ),
@@ -1725,7 +1726,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1764,15 +1765,15 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: Color(0xFFF9FAFB),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.chat_bubble_outline, color: Colors.grey.shade400, size: 28),
+                      Icon(Icons.chat_bubble_outline, color: Color(0xFF9CA3AF), size: 28),
                       const SizedBox(height: 6),
-                      Text('Δεν υπάρχουν σχόλια', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                      Text('Δεν υπάρχουν σχόλια', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                     ],
                   ),
                 ),
@@ -1787,7 +1788,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
+                      color: Color(0xFFF9FAFB),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -1819,7 +1820,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 borderRadius: BorderRadius.circular(6),
                                 child: Padding(
                                   padding: const EdgeInsets.all(4),
-                                  child: Icon(Icons.close, size: 16, color: Colors.grey.shade400),
+                                  child: Icon(Icons.close, size: 16, color: Color(0xFF9CA3AF)),
                                 ),
                               ),
                           ],
@@ -1836,7 +1837,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: Color(0xFFF3F4F6),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
@@ -1891,7 +1892,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1948,7 +1949,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         Expanded(
                           child: Text(parent['name'] ?? '', style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                         ),
-                        Icon(Icons.chevron_right, size: 18, color: Colors.grey.shade400),
+                        Icon(Icons.chevron_right, size: 18, color: Color(0xFF9CA3AF)),
                       ],
                     ),
                   ),
@@ -1958,15 +1959,15 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: Color(0xFFF9FAFB),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.all_inbox_outlined, color: Colors.grey.shade400, size: 28),
+                      Icon(Icons.all_inbox_outlined, color: Color(0xFF9CA3AF), size: 28),
                       const SizedBox(height: 6),
-                      Text('Δεν βρίσκεται σε κουτί', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                      Text('Δεν βρίσκεται σε κουτί', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                     ],
                   ),
                 ),

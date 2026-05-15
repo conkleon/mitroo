@@ -6,6 +6,15 @@ import { authenticate } from "../middleware/auth";
 const router = Router();
 router.use(authenticate);
 
+const MISSION_CATEGORIES = [
+  "trainer",
+  "training",
+  "tep",
+  "volunteer",
+  "sanitary_general",
+  "sanitary_lifeguard",
+] as const;
+
 const createSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().optional(),
@@ -15,6 +24,7 @@ const createSchema = z.object({
   hoursTEP: z.number().int().min(0).optional(),
   eamePrefix: z.string().max(8).optional().nullable(),
   rootId: z.number().int().optional().nullable(),
+  missionCategories: z.array(z.enum(MISSION_CATEGORIES)).optional(),
 });
 
 // ── GET /api/specializations ────────────────────

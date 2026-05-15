@@ -348,6 +348,7 @@ model Specialization {
   hoursTraining       Int     @default(0) @map("hours_training")
   hoursTEP            Int     @default(0) @map("hours_tep")
   eamePrefix          String? @map("eame_prefix") @db.VarChar(8)
+  missionCategories   Json    @default("[]") @map("mission_categories")
   rootId              Int?    @map("root_id")
 
   root     Specialization?  @relation("SpecTree", fields: [rootId], references: [id], onDelete: SetNull)

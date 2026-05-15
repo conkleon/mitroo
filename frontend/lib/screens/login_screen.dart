@@ -229,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen>
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text('ή',
                               style: TextStyle(
-                                  fontSize: 12, color: Colors.grey.shade400)),
+                                  fontSize: 12, color: Color(0xFF9CA3AF))),
                         ),
                         const Expanded(child: Divider()),
                       ]),
@@ -297,7 +297,7 @@ class _BrandPanel extends StatelessWidget {
                     const SizedBox(width: 12),
                     Text(
                       'R.C.D.',
-                      style: GoogleFonts.spaceGrotesk(
+                      style: GoogleFonts.inter(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -319,7 +319,7 @@ class _BrandPanel extends StatelessWidget {
                   ),
                   child: Text(
                     'ΕΛΛΗΝΙΚΟΣ ΕΡΥΘΡΟΣ ΣΤΑΥΡΟΣ',
-                    style: GoogleFonts.spaceGrotesk(
+                    style: GoogleFonts.inter(
                       color: Colors.white.withAlpha(200),
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
@@ -331,7 +331,7 @@ class _BrandPanel extends StatelessWidget {
                 // Main headline
                 Text(
                   'Red Cross\nDispatcher',
-                  style: GoogleFonts.playfairDisplay(
+                  style: GoogleFonts.literata(
                     color: Colors.white,
                     fontSize: 52,
                     fontWeight: FontWeight.w700,
@@ -351,7 +351,7 @@ class _BrandPanel extends StatelessWidget {
                 const SizedBox(height: 18),
                 Text(
                   'Σύστημα διαχείρισης πόρων\nκαι αποστολών έκτακτης ανάγκης.',
-                  style: GoogleFonts.spaceGrotesk(
+                  style: GoogleFonts.inter(
                     color: Colors.white.withAlpha(190),
                     fontSize: 15,
                     height: 1.65,
@@ -410,7 +410,7 @@ class _CompactBrandHeader extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'R.C.D.',
-              style: GoogleFonts.spaceGrotesk(
+              style: GoogleFonts.inter(
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -421,7 +421,7 @@ class _CompactBrandHeader extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'Red Cross Dispatcher',
-            style: GoogleFonts.playfairDisplay(
+            style: GoogleFonts.literata(
               color: Colors.white.withAlpha(220),
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -444,7 +444,7 @@ class _FormHeader extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
         isRegister ? 'Νέος Λογαριασμός' : 'Καλώς ήρθατε',
-        style: GoogleFonts.playfairDisplay(
+        style: GoogleFonts.literata(
           fontSize: 30,
           fontWeight: FontWeight.w700,
           color: const Color(0xFF1A1C1E),
@@ -457,7 +457,7 @@ class _FormHeader extends StatelessWidget {
         isRegister
             ? 'Συμπληρώστε τα στοιχεία σας για εγγραφή'
             : 'Συνδεθείτε με τα διαπιστευτήριά σας',
-        style: GoogleFonts.spaceGrotesk(
+        style: GoogleFonts.inter(
           fontSize: 13,
           color: const Color(0xFF6B7280),
           fontWeight: FontWeight.w400,
@@ -559,7 +559,7 @@ class _SubmitButton extends StatelessWidget {
                     strokeWidth: 2, color: Colors.white))
             : Text(
                 isRegister ? 'Δημιουργία Λογαριασμού' : 'Σύνδεση',
-                style: GoogleFonts.spaceGrotesk(
+                style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.3,

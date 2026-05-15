@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_client.dart';
@@ -54,7 +55,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     final tt = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
@@ -71,13 +71,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.check_circle_outline, size: 64, color: Colors.green.shade600),
+        Icon(Icons.check_circle_outline, size: 64, color: Color(0xFF059669)),
         const SizedBox(height: 16),
-        Text('Ο κωδικός άλλαξε!', style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+        Text('Ο κωδικός άλλαξε!', style: GoogleFonts.literata(fontSize: 28, fontWeight: FontWeight.w700, color: const Color(0xFF1A1C1E))),
         const SizedBox(height: 8),
         Text(
           'Μπορείτε τώρα να συνδεθείτε με τον νέο κωδικό σας.',
-          style: tt.bodyMedium?.copyWith(color: const Color(0xFF6B7280)),
+          style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF6B7280)),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -99,13 +99,21 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.lock_reset, size: 56, color: cs.primary),
-          const SizedBox(height: 12),
-          Text('Νέος Κωδικός', style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
+          Text('Νέος Κωδικός',
+            style: GoogleFonts.literata(
+              fontSize: 30,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1A1C1E),
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 6),
           Text(
             'Εισάγετε τον νέο κωδικό πρόσβασής σας.',
-            style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: const Color(0xFF6B7280),
+            ),
           ),
           const SizedBox(height: 28),
           if (_error != null)
@@ -114,11 +122,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: const Color(0xFFFEF2F2),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.shade200),
+                border: Border.all(color: const Color(0xFFFECACA)),
               ),
-              child: Text(_error!, style: TextStyle(color: Colors.red.shade700, fontSize: 13)),
+              child: Text(_error!, style: TextStyle(color: const Color(0xFFDC2626), fontSize: 13)),
             ),
           TextFormField(
             controller: _passwordCtrl,

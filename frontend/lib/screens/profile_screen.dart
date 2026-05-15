@@ -85,7 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (dialogError != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(dialogError!, style: TextStyle(color: Colors.red.shade700, fontSize: 13)),
+                    child: Text(dialogError!, style: TextStyle(color: Color(0xFFB91C1C), fontSize: 13)),
                   ),
                 TextFormField(
                   controller: currentCtrl,
@@ -187,7 +187,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final currentYear = DateTime.now().year;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -254,7 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (_loading)
                     const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
                   else if (_error != null)
-                    Center(child: Text(_error!, style: TextStyle(color: Colors.red.shade600)))
+                    Center(child: Text(_error!, style: TextStyle(color: Color(0xFFDC2626))))
                   else ...[
                     // Total hours (all time)
                     _HoursHighlight(label: 'Συνολικές Ώρες', hours: _totalHours, color: cs.primary),
@@ -378,8 +377,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: const Icon(Icons.logout, size: 18),
               label: const Text('Αποσύνδεση'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red.shade600,
-                side: BorderSide(color: Colors.red.shade300),
+                foregroundColor: Color(0xFFDC2626),
+                side: BorderSide(color: Color(0xFFFCA5A5)),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),

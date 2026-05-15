@@ -72,7 +72,7 @@ class _TrainingApplicationsReviewScreenState extends State<TrainingApplicationsR
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Απόρριψη'),
           ),
@@ -116,7 +116,6 @@ class _TrainingApplicationsReviewScreenState extends State<TrainingApplicationsR
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
         appBar: AppBar(
           title: const Text('Αιτήσεις Εκπαίδευσης'),
           centerTitle: true,

@@ -109,7 +109,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Αφαίρεση'),
           ),
         ],
@@ -143,7 +143,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Επιστροφή'),
           ),
         ],
@@ -283,7 +283,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               child: const Text('Όχι')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Απόσυρση'),
           ),
         ],
@@ -408,7 +408,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               if (currentId != null)
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, -1), // sentinel for "clear"
-                  child: const Text('Καθαρισμός', style: TextStyle(color: Colors.red)),
+                  child: const Text('Καθαρισμός', style: TextStyle(color: Color(0xFFDC2626))),
                 ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, null),
@@ -497,11 +497,10 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         us['user']?['id'] == currentUserId && us['status'] == 'requested');
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       floatingActionButton: !canManage && !isAcceptedMember
           ? FloatingActionButton.extended(
               onPressed: isPending ? _unenrollSelf : _enrollSelf,
-              backgroundColor: isPending ? Colors.orange.shade600 : sColor,
+              backgroundColor: isPending ? Color(0xFFEA580C) : sColor,
               foregroundColor: Colors.white,
               icon: Icon(isPending ? Icons.cancel_outlined : Icons.how_to_reg),
               label: Text(isPending ? 'Ακύρωση Αίτησης' : 'Εγγραφή'),
@@ -797,7 +796,7 @@ class _ResponsibleUserCard extends StatelessWidget {
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(color: Color(0xFFF3F4F6)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -878,11 +877,11 @@ class _ResponsibleUserCard extends StatelessWidget {
                 child: Column(
                   children: [
                     Icon(Icons.person_off,
-                        size: 32, color: Colors.grey.shade300),
+                        size: 32, color: Color(0xFFD1D5DB)),
                     const SizedBox(height: 6),
                     Text('Δεν έχει οριστεί υπεύθυνος',
                         style: tt.bodySmall
-                            ?.copyWith(color: Colors.grey.shade500)),
+                            ?.copyWith(color: Color(0xFF6B7280))),
                   ],
                 ),
               ),
@@ -913,7 +912,7 @@ class _ServiceInfoCard extends StatelessWidget {
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(color: Color(0xFFF3F4F6)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1007,7 +1006,7 @@ class _HoursDefaultCard extends StatelessWidget {
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(color: Color(0xFFF3F4F6)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1100,7 +1099,7 @@ class _VisibilityCard extends StatelessWidget {
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(color: Color(0xFFF3F4F6)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1174,7 +1173,7 @@ class _PeopleSection extends StatelessWidget {
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(color: Color(0xFFF3F4F6)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1257,7 +1256,7 @@ class _PeopleSection extends StatelessWidget {
               _PeopleGroupHeader(
                 label: 'Απορριφθέντες',
                 count: rejected.length,
-                color: Colors.red,
+                color: Color(0xFFDC2626),
                 icon: Icons.cancel,
               ),
               const SizedBox(height: 8),
@@ -1282,11 +1281,11 @@ class _PeopleSection extends StatelessWidget {
                   child: Column(
                     children: [
                       Icon(Icons.people_outline,
-                          size: 48, color: Colors.grey.shade300),
+                          size: 48, color: Color(0xFFD1D5DB)),
                       const SizedBox(height: 8),
                       Text('Κανένα μέλος',
                           style: tt.bodyMedium
-                              ?.copyWith(color: Colors.grey.shade500)),
+                              ?.copyWith(color: Color(0xFF6B7280))),
                     ],
                   ),
                 ),
@@ -1403,7 +1402,7 @@ class _PendingUserTile extends StatelessWidget {
             ),
             IconButton(
               onPressed: onReject,
-              icon: const Icon(Icons.cancel, color: Colors.red),
+              icon: const Icon(Icons.cancel, color: Color(0xFFDC2626)),
               iconSize: 22,
               tooltip: 'Απόρριψη',
               visualDensity: VisualDensity.compact,
@@ -1499,7 +1498,7 @@ class _AcceptedUserTile extends StatelessWidget {
                   IconButton(
                     onPressed: onRemove,
                     icon: Icon(Icons.person_remove,
-                        color: Colors.red.shade400, size: 20),
+                        color: Color(0xFFF87171), size: 20),
                     tooltip: 'Αφαίρεση',
                     visualDensity: VisualDensity.compact,
                   ),
@@ -1562,7 +1561,7 @@ class _RejectedUserTile extends StatelessWidget {
         dense: true,
         leading: CircleAvatar(
           radius: 18,
-          backgroundColor: Colors.red.shade400,
+          backgroundColor: Color(0xFFF87171),
           child: Text(
               name.isNotEmpty ? name[0].toUpperCase() : '?',
               style: const TextStyle(
@@ -1595,7 +1594,7 @@ class _RejectedUserTile extends StatelessWidget {
             ),
             IconButton(
               onPressed: onRemove,
-              icon: Icon(Icons.delete, color: Colors.red.shade400, size: 20),
+              icon: Icon(Icons.delete, color: Color(0xFFF87171), size: 20),
               tooltip: 'Αφαίρεση',
               visualDensity: VisualDensity.compact,
             ),
@@ -1650,7 +1649,7 @@ class _MemberEquipmentCard extends StatelessWidget {
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(color: Color(0xFFF3F4F6)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1697,16 +1696,16 @@ class _MemberEquipmentCard extends StatelessWidget {
                   child: Column(
                     children: [
                       Icon(Icons.inventory_2_outlined,
-                          size: 40, color: Colors.grey.shade300),
+                          size: 40, color: Color(0xFFD1D5DB)),
                       const SizedBox(height: 8),
                       Text('Κανένα αντικείμενο',
                           style: tt.bodySmall
-                              ?.copyWith(color: Colors.grey.shade400)),
+                              ?.copyWith(color: Color(0xFF9CA3AF))),
                       const SizedBox(height: 4),
                       Text(
                           'Τα μέλη μπορούν να πάρουν εξοπλισμό από τα Αντικείμενα',
                           style: tt.bodySmall?.copyWith(
-                              color: Colors.grey.shade400, fontSize: 11)),
+                              color: Color(0xFF9CA3AF), fontSize: 11)),
                     ],
                   ),
                 ),
@@ -1762,7 +1761,7 @@ class _MemberEquipmentCard extends StatelessWidget {
                           icon: const Icon(Icons.undo, size: 16),
                           label: const Text('Επιστροφή', style: TextStyle(fontSize: 12)),
                           style: TextButton.styleFrom(
-                            foregroundColor: Colors.red.shade600,
+                            foregroundColor: Color(0xFFDC2626),
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1796,7 +1795,7 @@ class _VehicleLogsCard extends StatelessWidget {
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade100),
+        side: BorderSide(color: Color(0xFFF3F4F6)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1823,7 +1822,7 @@ class _VehicleLogsCard extends StatelessWidget {
                 child: Center(
                   child: Text('Κανένα αρχείο οχήματος',
                       style: tt.bodySmall
-                          ?.copyWith(color: Colors.grey.shade400)),
+                          ?.copyWith(color: Color(0xFF9CA3AF))),
                 ),
               )
             else ...[
@@ -1835,7 +1834,7 @@ class _VehicleLogsCard extends StatelessWidget {
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(Icons.directions_car,
-                      size: 20, color: Colors.grey.shade600),
+                      size: 20, color: Color(0xFF4B5563)),
                   title: Text(vehicle['name'] ?? '',
                       style: const TextStyle(fontSize: 14)),
                   subtitle: Text(

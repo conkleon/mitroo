@@ -15,6 +15,24 @@ import {
   writeBackUnenroll,
 } from "../lib/mitrooSync";
 
+async function addToMissionChat(serviceId: number, userId: number): Promise<void> {
+  const missionChat = await prisma.chat.findFirst({
+    where: { type: "mission", serviceId },
+    select: { id: true },
+  });
+  if (!missionChat) return;
+
+  await prisma.chatMember.createMany({
+    data: { chatId: missionChat.id, userId },
+    skipDuplicates: true,
+  });
+
+  getIO().to(`user:${userId}`).emit("chat:member-joined", {
+    chatId: missionChat.id,
+    userId,
+  });
+}
+
 async function removeFromMissionChat(serviceId: number, userId: number): Promise<void> {
   const missionChat = await prisma.chat.findFirst({
     where: { type: "mission", serviceId },
@@ -395,6 +413,7 @@ router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
     // Fire-and-forget: approve shift application in original Mitroo when accepted
     if (status === "accepted") {
       writeBackAssignment(sid, uid).catch((e) => console.error("[service] writeBackAssignment error:", e));
+      addToMissionChat(sid, uid).catch((e) => console.error("[service] addToMissionChat error:", e));
     } else if (status === "rejected") {
       writeBackRejection(sid, uid).catch((e) => console.error("[service] writeBackRejection error:", e));
       // Remove user from the mission chat for this service

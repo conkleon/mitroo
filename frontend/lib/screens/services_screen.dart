@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
@@ -113,8 +114,8 @@ class _ServicesScreenState extends State<ServicesScreen>
     if (mounted) setState(() => _equipmentLoading = false);
   }
 
-  void _showMyEquipmentSheet() {
-    showModalBottomSheet(
+  Future<void> _showMyEquipmentSheet() async {
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -123,11 +124,12 @@ class _ServicesScreenState extends State<ServicesScreen>
       builder: (ctx) => MyEquipmentSheet(
         equipment: _myEquipment,
         api: _api,
-        onChanged: () {
-          _loadMyEquipment();
-        },
+        onChanged: () {}, // refresh happens after dismiss below
       ),
     );
+    if (mounted) {
+      await _loadMyEquipment();
+    }
   }
 
   // ── Filter: by specialization visibility ────────
@@ -171,7 +173,7 @@ class _ServicesScreenState extends State<ServicesScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(err ?? 'Η αίτηση υποβλήθηκε επιτυχώς!'),
-        backgroundColor: err != null ? Colors.red.shade700 : const Color(0xFF059669),
+        backgroundColor: err != null ? Color(0xFFB91C1C) : const Color(0xFF059669),
       ),
     );
   }
@@ -187,7 +189,7 @@ class _ServicesScreenState extends State<ServicesScreen>
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Όχι')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             child: const Text('Ακύρωση αίτησης'),
           ),
         ],
@@ -200,7 +202,7 @@ class _ServicesScreenState extends State<ServicesScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(err ?? 'Η αίτηση ακυρώθηκε'),
-        backgroundColor: err != null ? Colors.red.shade700 : const Color(0xFF059669),
+        backgroundColor: err != null ? Color(0xFFB91C1C) : const Color(0xFF059669),
       ),
     );
   }
@@ -236,7 +238,6 @@ class _ServicesScreenState extends State<ServicesScreen>
     final filtered = _filteredServices;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       floatingActionButton: (auth.isAdmin || auth.isMissionAdmin)
           ? FloatingActionButton(
               onPressed: () => context.push('/admin/services/create'),
@@ -249,6 +250,34 @@ class _ServicesScreenState extends State<ServicesScreen>
           onRefresh: () => svcProv.fetchMyServices(),
           child: CustomScrollView(
             slivers: [
+              // ── Brand page title ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 4, height: 22,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFC62828),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Υπηρεσίες',
+                        style: GoogleFonts.literata(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A1C1E),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
               // ── Top bar ──────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
@@ -296,7 +325,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                               child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.shade600,
+                                  color: Color(0xFFDC2626),
                                   shape: BoxShape.circle,
                                 ),
                                 constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
@@ -314,7 +343,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.orange.shade700,
+                                  color: Color(0xFFC2410C),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 constraints: const BoxConstraints(minWidth: 18, minHeight: 16),
@@ -474,11 +503,11 @@ class _ServicesScreenState extends State<ServicesScreen>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.event_busy,
-                              size: 64, color: Colors.grey.shade300),
+                              size: 64, color: Color(0xFFD1D5DB)),
                           const SizedBox(height: 12),
                           Text('Δεν υπάρχουν υπηρεσίες',
                               style: tt.bodyLarge
-                                  ?.copyWith(color: Colors.grey)),
+                                  ?.copyWith(color: Color(0xFF6B7280))),
                         ],
                       ),
                     ),
@@ -600,7 +629,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                 child: Container(
                   width: 40, height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: Color(0xFFD1D5DB),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -638,10 +667,10 @@ class _ServicesScreenState extends State<ServicesScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.event_available, size: 48, color: Colors.grey.shade300),
+                      Icon(Icons.event_available, size: 48, color: Color(0xFFD1D5DB)),
                       const SizedBox(height: 12),
                       Text('Δεν έχετε εγκεκριμένες υπηρεσίες',
-                          style: tt.bodyMedium?.copyWith(color: Colors.grey)),
+                          style: tt.bodyMedium?.copyWith(color: Color(0xFF6B7280))),
                     ],
                   ),
                 ),
@@ -931,11 +960,11 @@ class _ServicesScreenState extends State<ServicesScreen>
                 ),
                 child: Column(
                   children: [
-                    Icon(Icons.event_available, size: 32, color: Colors.grey.shade300),
+                    Icon(Icons.event_available, size: 32, color: Color(0xFFD1D5DB)),
                     const SizedBox(height: 8),
                     Text(
                       'Δεν υπάρχουν υπηρεσίες αυτή την ημέρα',
-                      style: tt.bodySmall?.copyWith(color: Colors.grey),
+                      style: tt.bodySmall?.copyWith(color: Color(0xFF6B7280)),
                     ),
                   ],
                 ),
@@ -993,7 +1022,7 @@ class _ServicesScreenState extends State<ServicesScreen>
               ),
               child: Text(
                 'Δεν υπάρχουν προτεινόμενες υπηρεσίες',
-                style: tt.bodySmall?.copyWith(color: Colors.grey),
+                style: tt.bodySmall?.copyWith(color: Color(0xFF6B7280)),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -1069,7 +1098,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                   width: 40, height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: Color(0xFFD1D5DB),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1143,7 +1172,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                     _sheetHourChip('ΤΕΠ', defaultHoursTEP, const Color(0xFF0891B2)),
                   if (defaultHours == 0 && defaultHoursVol == 0 &&
                       defaultHoursTraining == 0 && defaultHoursTrainers == 0 && defaultHoursTEP == 0)
-                    _sheetHourChip('Κάλυψη', 0, Colors.grey),
+                    _sheetHourChip('Κάλυψη', 0, Color(0xFF6B7280)),
                 ],
               ),
 
@@ -1453,7 +1482,7 @@ class _ServiceAccordion extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Divider(color: Colors.grey.shade200, height: 1),
+                    Divider(color: Color(0xFFE5E7EB), height: 1),
                     const SizedBox(height: 14),
 
                     // Responsible user
@@ -1525,7 +1554,7 @@ class _ServiceAccordion extends StatelessWidget {
                           _HourChip(label: 'Ώρες ΤΕΠ', hours: defaultHoursTEP, color: const Color(0xFF0891B2)),
                         if (defaultHours == 0 && defaultHoursVol == 0 &&
                             defaultHoursTraining == 0 && defaultHoursTrainers == 0 && defaultHoursTEP == 0)
-                          _HourChip(label: 'Ώρες Κάλυψης', hours: 0, color: Colors.grey),
+                          _HourChip(label: 'Ώρες Κάλυψης', hours: 0, color: Color(0xFF6B7280)),
                       ],
                     ),
 
@@ -1881,7 +1910,7 @@ class _CalendarServiceCard extends StatelessWidget {
                           Row(
                             children: [
                               if (timeRange.isNotEmpty) ...[
-                                Icon(Icons.schedule, size: 13, color: Colors.grey.shade500),
+                                Icon(Icons.schedule, size: 13, color: Color(0xFF6B7280)),
                                 const SizedBox(width: 4),
                                 Text(
                                   timeRange,
@@ -1897,13 +1926,13 @@ class _CalendarServiceCard extends StatelessWidget {
                                   child: Container(
                                     width: 3, height: 3,
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade400,
+                                      color: Color(0xFF9CA3AF),
                                       shape: BoxShape.circle,
                                     ),
                                   ),
                                 ),
                               if (location.isNotEmpty) ...[
-                                Icon(Icons.location_on_outlined, size: 13, color: Colors.grey.shade500),
+                                Icon(Icons.location_on_outlined, size: 13, color: Color(0xFF6B7280)),
                                 const SizedBox(width: 2),
                                 Flexible(
                                   child: Text(

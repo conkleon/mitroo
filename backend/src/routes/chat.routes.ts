@@ -354,6 +354,34 @@ router.delete("/:id/members/:userId", async (req: Request, res: Response) => {
   res.status(204).end();
 });
 
+// ── DELETE /api/chats/:id/leave ──────────────────
+router.delete("/:id/leave", async (req: Request, res: Response) => {
+  const chatId = Number(req.params.id);
+  const userId = req.user!.userId;
+
+  const chat = await prisma.chat.findUnique({
+    where: { id: chatId },
+    select: { type: true },
+  });
+  if (!chat) {
+    res.status(404).json({ error: "Chat not found" });
+    return;
+  }
+  if (chat.type !== "custom") {
+    res.status(400).json({ error: "Cannot leave department or mission chats" });
+    return;
+  }
+
+  await prisma.chatMember.deleteMany({
+    where: { chatId, userId },
+  });
+
+  const io = getIO();
+  io.to(`user:${userId}`).emit("chat:member-left", { chatId, userId });
+
+  res.status(204).end();
+});
+
 // ── PATCH /api/chats/:id ─────────────────────────
 const updateChatSchema = z.object({
   name: z.string().min(1).max(255).optional(),

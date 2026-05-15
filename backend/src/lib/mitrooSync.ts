@@ -11,7 +11,22 @@ const TRAINER_MISSION_TYPE_IDS = new Set([71, 36, 86, 33, 83]);
 const TRAINING_MISSION_TYPE_IDS = new Set([81]);
 const TEP_MISSION_TYPE_IDS = new Set([85]);
 const VOLUNTEER_MISSION_TYPE_IDS = new Set([56, 57]);
-const SANITARY_MISSION_TYPE_IDS = new Set([60, 16]);
+const SANITARY_MISSION_TYPE_IDS = new Set([60, 16]); //60 IS LIFEGUARD MISSION, 16 IS GENERAL SANITARY MISSION
+
+const MISSION_CATEGORY_MAP: Record<string, Set<number>> = {
+  trainer:           new Set([71, 36, 86, 33, 83]),
+  training:          new Set([81]),
+  tep:               new Set([85]),
+  volunteer:         new Set([56, 57]),
+  sanitary_general:  new Set([16]),
+  sanitary_lifeguard: new Set([60]),
+};
+
+function getCategoriesForMissionType(missionTypeId: number): string[] {
+  return Object.entries(MISSION_CATEGORY_MAP)
+    .filter(([, ids]) => ids.has(missionTypeId))
+    .map(([cat]) => cat);
+}
 
 export interface SyncResult {
   created: number;
@@ -155,6 +170,36 @@ const remapDefaultHoursByMissionType = (
 
   return hours;
 };
+
+// array_contains on Json generates PostgreSQL JSONB @> operator.
+// This is PostgreSQL-specific and not portable to SQLite/MySQL.
+async function syncServiceVisibility(
+  serviceId: number,
+  missionTypeId: unknown,
+): Promise<void> {
+  const id = Number(missionTypeId);
+  if (!Number.isFinite(id)) return;
+
+  const categories = getCategoriesForMissionType(id);
+  if (!categories.length) return;
+
+  const orClauses = categories
+    .map((_, i) => `mission_categories @> $${i + 1}::jsonb`)
+    .join(" OR ");
+  const values = categories.map((c) => JSON.stringify([c]));
+  const specs = await prisma.$queryRawUnsafe<{ id: number }[]>(
+    `SELECT id FROM specializations WHERE ${orClauses}`,
+    ...values,
+  );
+
+  await prisma.serviceVisibility.deleteMany({ where: { serviceId } });
+
+  if (specs.length) {
+    await prisma.serviceVisibility.createMany({
+      data: specs.map((s) => ({ serviceId, specializationId: s.id })),
+    });
+  }
+}
 
 // ── Sync volunteers → Users ────────────────────────────────────────────────
 
@@ -375,8 +420,9 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
               },
             });
             result.updated++;
+            await syncServiceVisibility(existing.id, mission.mission_type_id);
           } else {
-            await prisma.service.create({
+            const newService = await prisma.service.create({
               data: {
                 departmentId,
                 name,
@@ -392,6 +438,7 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
               },
             });
             result.created++;
+            await syncServiceVisibility(newService.id, mission.mission_type_id);
           }
         } catch (e: unknown) {
           result.errors.push(`shift_id=${shift.id}: ${e}`);

@@ -132,7 +132,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Άκυρο')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             onPressed: () async {
               await _api.delete('/departments/${widget.departmentId}');
               if (ctx.mounted) Navigator.pop(ctx);
@@ -340,7 +340,6 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
     final tt = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Text(_dept?['name'] ?? 'Τμήμα',
             style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
@@ -353,7 +352,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
               onPressed: _editDepartment,
               tooltip: 'Επεξεργασία'),
           IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: const Icon(Icons.delete, color: Color(0xFFDC2626)),
               onPressed: _deleteDepartment,
               tooltip: 'Διαγραφή'),
         ],
@@ -585,7 +584,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                           const PopupMenuItem(
                             value: '__remove__',
                             child: Text('Αφαίρεση',
-                                style: TextStyle(color: Colors.red)),
+                                style: TextStyle(color: Color(0xFFDC2626))),
                           ),
                         ],
                         child: Container(
@@ -718,7 +717,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
       case 'completed':
         return const Color(0xFFDC2626);
       case 'cancelled':
-        return Colors.red;
+        return const Color(0xFFDC2626);
       default:
         return const Color(0xFF6B7280);
     }

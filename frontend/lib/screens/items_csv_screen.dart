@@ -212,7 +212,6 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
     final depts = context.watch<DepartmentProvider>().departments;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(title: const Text('Ρυθμίσεις Αντικειμένων')),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -238,7 +237,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -301,7 +300,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
               Container(
                 constraints: const BoxConstraints(maxHeight: 200),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: Color(0xFFF3F4F6),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: SingleChildScrollView(
@@ -341,7 +340,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -376,7 +375,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderSide: BorderSide(color: Color(0xFFD1D5DB)),
                 ),
               ),
               items: depts
@@ -405,12 +404,12 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
             // Divider with "or paste"
             Row(
               children: [
-                Expanded(child: Divider(color: Colors.grey.shade300)),
+                Expanded(child: Divider(color: Color(0xFFD1D5DB))),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text('ή επικόλλησε', style: tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF))),
                 ),
-                Expanded(child: Divider(color: Colors.grey.shade300)),
+                Expanded(child: Divider(color: Color(0xFFD1D5DB))),
               ],
             ),
             const SizedBox(height: 14),
@@ -421,7 +420,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                 hintText: 'name,description,barCode,location,categoryName,isContainer,quantity,expirationDate\n'
                     '"Παράδειγμα","Περιγραφή","BC-001","Αποθήκη Α","Αναλώσιμα",false,1,2026-12-31',
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: Color(0xFFF3F4F6),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -481,15 +480,15 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.warning_amber, color: Colors.red, size: 20),
+                          Icon(Icons.warning_amber, color: Color(0xFFDC2626), size: 20),
                           SizedBox(width: 8),
-                          Text('Σφάλματα:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
+                          Text('Σφάλματα:', style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w500)),
                         ],
                       ),
                       const SizedBox(height: 4),
                       ...(_importResult!['errors'] as List).map((e) => Padding(
                             padding: const EdgeInsets.only(top: 4),
-                            child: Text('• $e', style: const TextStyle(color: Colors.red, fontSize: 12)),
+                            child: Text('• $e', style: const TextStyle(color: Color(0xFFDC2626), fontSize: 12)),
                           )),
                     ],
                   ),
@@ -504,12 +503,12 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                      const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           '${_importResult!['error']}',
-                          style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+                          style: const TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w500),
                         ),
                       ),
                     ],
@@ -532,7 +531,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -606,7 +605,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                           visualDensity: VisualDensity.compact,
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                          icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFDC2626)),
                           onPressed: () => _confirmDeleteCategory(cat),
                           tooltip: 'Διαγραφή',
                           visualDensity: VisualDensity.compact,
@@ -715,7 +714,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
             onPressed: () async {
               Navigator.pop(ctx);
               final err = await context.read<CategoryProvider>().deleteCategory(cat['id'] as int);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/vehicle_provider.dart';
@@ -106,7 +107,6 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
     final name = auth.displayName.isNotEmpty ? auth.displayName : (auth.user?['eame'] ?? 'User');
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => prov.fetchVehicles(),
@@ -144,15 +144,22 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        width: 4, height: 22,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD97706).withAlpha(25),
-                          borderRadius: BorderRadius.circular(10),
+                          color: const Color(0xFFC62828),
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                        child: const Icon(Icons.directions_car, size: 18, color: Color(0xFFD97706)),
                       ),
                       const SizedBox(width: 10),
-                      Text('Οχήματα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      Text(
+                        'Οχήματα',
+                        style: GoogleFonts.literata(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1A1C1E),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -162,7 +169,9 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                         ),
                         child: Text(
                           '${prov.vehicles.length} σύνολο',
-                          style: tt.bodySmall?.copyWith(color: const Color(0xFFD97706), fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(
+                            fontSize: 12, color: const Color(0xFFD97706), fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -179,9 +188,9 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 40),
                       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
+                        color: Color(0xFFF9FAFB),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.all(color: Color(0xFFE5E7EB)),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -189,15 +198,15 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
+                              color: Color(0xFFF3F4F6),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(Icons.directions_car_outlined, size: 32, color: Colors.grey.shade400),
+                            child: Icon(Icons.directions_car_outlined, size: 32, color: Color(0xFF9CA3AF)),
                           ),
                           const SizedBox(height: 16),
                           Text('Δεν υπάρχουν οχήματα', style: tt.bodyLarge?.copyWith(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600)),
                           const SizedBox(height: 6),
-                          Text('Πατήστε το + για να προσθέσετε', style: tt.bodySmall?.copyWith(color: Colors.grey.shade400)),
+                          Text('Πατήστε το + για να προσθέσετε', style: tt.bodySmall?.copyWith(color: Color(0xFF9CA3AF))),
                         ],
                       ),
                     ),
@@ -228,7 +237,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                             color: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(color: Colors.grey.shade200),
+                              side: BorderSide(color: Color(0xFFE5E7EB)),
                             ),
                             clipBehavior: Clip.antiAlias,
                             child: InkWell(
@@ -294,7 +303,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                                           ),
                                         ),
                                         const SizedBox(width: 4),
-                                        Icon(Icons.chevron_right, size: 20, color: Colors.grey.shade300),
+                                        Icon(Icons.chevron_right, size: 20, color: Color(0xFFD1D5DB)),
                                       ],
                                     ),
                                     const SizedBox(height: 12),

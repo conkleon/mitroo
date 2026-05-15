@@ -30,7 +30,7 @@ Future<ScanChoice?> showScanChoiceDialog(BuildContext context) {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: Color(0xFFD1D5DB),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -361,7 +361,7 @@ class _ScanOverlay extends StatelessWidget {
                       width: scanArea,
                       height: scanArea,
                       decoration: BoxDecoration(
-                        color: Colors.red, // any opaque color for cutout
+                        color: Color(0xFFDC2626), // any opaque color for cutout
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),

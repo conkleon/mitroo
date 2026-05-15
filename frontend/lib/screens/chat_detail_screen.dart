@@ -92,7 +92,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final bool canSend = _canSend(chat, auth);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -117,12 +116,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             icon: const Icon(Icons.people),
             onPressed: () => _showParticipants(context),
           ),
-          if (chat?.type == 'custom')
+          if (chat?.type == 'custom') ...[
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () =>
                   context.push('/chat/${widget.chatId}/settings'),
             ),
+            IconButton(
+              icon: const Icon(Icons.exit_to_app, color: Color(0xFFDC2626)),
+              onPressed: () => _confirmLeaveChat(context),
+            ),
+          ],
         ],
       ),
       body: Column(
@@ -164,6 +168,37 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             onSend: _send,
             onAttach: _attachFile,
             canSend: canSend,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmLeaveChat(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Αποχώρηση από συνομιλία'),
+        content: const Text(
+            'Είστε σίγουροι ότι θέλετε να αποχωρήσετε από αυτή τη συνομιλία;'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Ακύρωση'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              final chatProv = context.read<ChatProvider>();
+              chatProv.leaveChat(widget.chatId).then((_) {
+                if (mounted) {
+                  chatProv.setActiveChat(null);
+                  context.pop();
+                }
+              });
+            },
+            style: TextButton.styleFrom(foregroundColor: Color(0xFFDC2626)),
+            child: const Text('Αποχώρηση'),
           ),
         ],
       ),
@@ -405,7 +440,7 @@ class _MessageBubble extends StatelessWidget {
               Navigator.of(ctx).pop();
               onDelete?.call();
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: Color(0xFFDC2626)),
             child: const Text('Διαγραφή'),
           ),
         ],
