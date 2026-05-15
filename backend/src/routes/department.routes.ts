@@ -113,14 +113,19 @@ router.post("/:id/members", requireAdminOrMissionAdminForDept((req) => Number(re
 
 // ── PATCH /api/departments/:deptId/members/:userId
 router.patch("/:deptId/members/:userId", requireAdminOrMissionAdminForDept((req) => Number(req.params.deptId)), async (req: Request, res: Response) => {
-  const { role } = req.body;
-  const record = await prisma.userDepartment.update({
-    where: {
-      userId_departmentId: { userId: Number(req.params.userId), departmentId: Number(req.params.deptId) },
-    },
-    data: { role },
-  });
-  res.json(record);
+  try {
+    const { role } = z.object({ role: z.enum(["missionAdmin", "itemAdmin", "volunteer"]) }).parse(req.body);
+    const record = await prisma.userDepartment.update({
+      where: {
+        userId_departmentId: { userId: Number(req.params.userId), departmentId: Number(req.params.deptId) },
+      },
+      data: { role },
+    });
+    res.json(record);
+  } catch (err: any) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
+    throw err;
+  }
 });
 
 // ── DELETE /api/departments/:deptId/members/:userId
