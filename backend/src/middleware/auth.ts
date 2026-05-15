@@ -69,3 +69,30 @@ export async function isMissionAdminInDepartment(userId: number, departmentId: n
 
   return count > 0;
 }
+
+/** Require system-admin OR mission-admin over the department returned by getDeptId. */
+export function requireAdminOrMissionAdminForDept(
+  getDeptId: (req: Request) => number,
+): (req: Request, res: Response, next: NextFunction) => Promise<void> {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+    if (req.user.isAdmin) {
+      next();
+      return;
+    }
+    const deptId = getDeptId(req);
+    if (Number.isNaN(deptId)) {
+      res.status(400).json({ error: "Invalid department id" });
+      return;
+    }
+    const allowed = await isMissionAdminInDepartment(req.user.userId, deptId);
+    if (!allowed) {
+      res.status(403).json({ error: "Admin access required for this department" });
+      return;
+    }
+    next();
+  };
+}
