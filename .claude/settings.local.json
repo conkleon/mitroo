@@ -56,7 +56,10 @@
       "PowerShell(Start-Process \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-512.png\")",
       "PowerShell(Get-Content \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend\\\\src\\\\routes\\\\service.routes.ts\" | Select-Object -Skip 446 -First 5 | ForEach-Object { $_.Replace\\(\"`t\", \"[TAB]\"\\) })",
       "Bash(Select-Object -First 30)",
-      "PowerShell(npx tsc --noEmit 2>&1)"
+      "PowerShell(npx tsc --noEmit 2>&1)",
+      "Bash(Select-Object FullName, Length, LastWriteTime)",
+      "Bash(node *)",
+      "PowerShell($har = Get-Content \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\har.har\" -Raw | ConvertFrom-Json; for \\($i = 0; $i -lt $har.log.entries.Count; $i++\\) { $e = $har.log.entries[$i]; Write-Output \"$i $\\($e.request.method\\) $\\($e.request.url.Substring\\(0, [Math]::Min\\(200, $e.request.url.Length\\)\\)\\)\" })"
     ]
   }
 }

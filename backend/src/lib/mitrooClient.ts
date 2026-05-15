@@ -136,6 +136,28 @@ export class MitrooClient {
     }
   }
 
+  async forgotPassword(email: string): Promise<void> {
+    // Step 1: GET forgot-password page to extract CSRF token + acquire session cookies
+    const pageRes = await this._get("/index.php/auth/forgot_password");
+    const html = await pageRes.text();
+    this._extractCookies(pageRes.headers);
+    const csrfMatch = html.match(/name="rccrmtk"\s+value="([^"]+)"/);
+    const csrfToken = csrfMatch?.[1] ?? this.csrfToken;
+    if (!csrfToken) throw new Error("Could not extract CSRF token from forgot-password page");
+
+    // Step 2: POST the identity to trigger password reset email in original Mitroo
+    const body = new URLSearchParams({
+      identity: email,
+      rccrmtk: csrfToken,
+      submit: "Υποβολή",
+    });
+    const res = await this._post("/index.php/auth/forgot_password", body, { xhr: false });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`forgotPassword failed (${res.status}): ${text.slice(0, 200)}`);
+    }
+  }
+
   // ── Fetch helpers ─────────────────────────────────────────────────────────
 
   async fetchVolunteers(): Promise<ExternalVolunteer[]> {
@@ -175,7 +197,15 @@ export class MitrooClient {
           debugExternal("findVolunteerByEmail match", { email: normalized, skip });
           return match;
         }
-        if (rows.length < pageSize) return null;
+        if (rows.length < pageSize) {
+          debugExternal("findVolunteerByEmail: exhausted pages without match", {
+            email: normalized,
+            totalPages: page + 1,
+            sampleKeys: rows.length > 0 ? Object.keys(rows[0]).slice(0, 20) : [],
+            sampleRow: rows.length > 0 ? JSON.stringify(rows[0]).slice(0, 300) : "empty",
+          });
+          return null;
+        }
       } catch (error) {
         console.error("[MitrooClient] findVolunteerByEmail: invalid JSON response:", {
           skip,
@@ -198,7 +228,7 @@ export class MitrooClient {
     const html = await res.text();
     const emailMatch = html.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
     // Match eame: first char can be ASCII A-Z or Greek uppercase (Α-Ω, U+0391–U+03A9)
-    const eameMatch = html.match(/[A-ZΑ-Ω]\d{5}\/\d{2}\/\d{2}/);
+    const eameMatch = html.match(/[A-ZΑ-Ω]\d{5}\/\d{1,2}\/\d{2}/);
     const identity: { eame?: string; email?: string; forename?: string; surname?: string } = {};
     if (emailMatch?.[0]) identity.email = emailMatch[0].trim().toLowerCase();
     if (eameMatch?.[0]) identity.eame = eameMatch[0].trim();
@@ -213,8 +243,11 @@ export class MitrooClient {
       }
     }
 
-    if (!identity.eame && !identity.email) {
-      debugExternal("fetchProfileIdentity: no match", { snippet: html.slice(0, 300) });
+    if (!identity.eame) {
+      debugExternal("fetchProfileIdentity: eame not found", {
+        hasEmail: Boolean(identity.email),
+        snippet: html.slice(0, 500),
+      });
     }
     return identity;
   }
@@ -655,6 +688,26 @@ export class MitrooClient {
     } catch (e) {
       if (!res.ok) {
         throw new Error(`cancelShiftApplication failed (${res.status}): ${text.slice(0, 200)}`);
+      }
+    }
+  }
+
+  async cancelMemberShiftApplication(applicationId: number): Promise<void> {
+    await this._refreshCsrf();
+    const body = new URLSearchParams({
+      shift_application_id: String(applicationId),
+      rccrmtk: this.csrfToken,
+    });
+    const res = await this._post("/ajaxcommon/member_shift_application_cancel", body);
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      if (json.status !== 1) {
+        throw new Error(`cancelMemberShiftApplication: server returned status ${json.status}`);
+      }
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error(`cancelMemberShiftApplication failed (${res.status}): ${text.slice(0, 200)}`);
       }
     }
   }
