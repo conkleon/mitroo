@@ -37,6 +37,61 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
     _fetch();
   }
 
+  void _showCreateDialog() {
+    final nameCtrl = TextEditingController();
+    final extIdCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Νέος Τύπος Υπηρεσίας'),
+        content: SizedBox(
+          width: 400,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Όνομα *',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: extIdCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'External Mission Type ID',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Άκυρο'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final body = <String, dynamic>{'name': nameCtrl.text.trim()};
+              final extIdParsed = int.tryParse(extIdCtrl.text.trim());
+              if (extIdParsed != null) body['externalMissionTypeId'] = extIdParsed;
+              await _api.post('/service-types', body: body);
+              if (ctx.mounted) Navigator.pop(ctx);
+              _fetch();
+            },
+            child: const Text('Δημιουργία'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showEditSheet(Map<String, dynamic> type) async {
     final typeId = type['id'] as int;
 
@@ -178,44 +233,86 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
         title: Text('Τύποι Υπηρεσιών', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetch,
+            tooltip: 'Ανανέωση',
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showCreateDialog,
+        child: const Icon(Icons.add),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: _types.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, i) {
-                final t = _types[i];
-                final name = t['name'] ?? '';
-                final defaultVisible = t['isDefaultVisible'] == true;
-                final specCount = (t['_count']?['specializations'] ?? 0) as int;
-                final serviceCount = (t['_count']?['services'] ?? 0) as int;
-
-                return Card(
-                  child: ListTile(
-                    title: Text(name, style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
-                    subtitle: Text('$specCount ειδικεύσεις • $serviceCount υπηρεσίες'),
-                    trailing: Row(
+          : _types.isEmpty
+              ? Center(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 40),
+                    padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF9FAFB),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                    ),
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        FilterChip(
-                          label: Text(defaultVisible ? 'Προεπιλογή' : 'Περιορισμένο',
-                              style: TextStyle(fontSize: 11)),
-                          selected: defaultVisible,
-                          onSelected: (_) => _toggleDefaultVisible(t['id'], defaultVisible),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3F4F6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.category, size: 32, color: Color(0xFF9CA3AF)),
                         ),
-                        const SizedBox(width: 4),
-                        IconButton(
-                          icon: const Icon(Icons.edit, size: 20),
-                          onPressed: () => _showEditSheet(Map<String, dynamic>.from(t as Map)),
-                        ),
+                        const SizedBox(height: 16),
+                        Text('Δεν υπάρχουν τύποι υπηρεσιών',
+                            style: tt.bodyLarge?.copyWith(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 6),
+                        Text('Πατήστε το + για να δημιουργήσετε',
+                            style: tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF))),
                       ],
                     ),
                   ),
-                );
-              },
-            ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                  itemCount: _types.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, i) {
+                    final t = _types[i];
+                    final name = t['name'] ?? '';
+                    final defaultVisible = t['isDefaultVisible'] == true;
+                    final specCount = (t['_count']?['specializations'] ?? 0) as int;
+                    final serviceCount = (t['_count']?['services'] ?? 0) as int;
+
+                    return Card(
+                      child: ListTile(
+                        title: Text(name, style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                        subtitle: Text('$specCount ειδικεύσεις • $serviceCount υπηρεσίες'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FilterChip(
+                              label: Text(defaultVisible ? 'Προεπιλογή' : 'Περιορισμένο',
+                                  style: TextStyle(fontSize: 11)),
+                              selected: defaultVisible,
+                              onSelected: (_) => _toggleDefaultVisible(t['id'], defaultVisible),
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: const Icon(Icons.edit, size: 20),
+                              onPressed: () => _showEditSheet(Map<String, dynamic>.from(t as Map)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }

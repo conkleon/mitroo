@@ -18,8 +18,12 @@ const memberSchema = z.object({
 });
 
 // ── GET /api/departments ────────────────────────
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
+  const where = req.user!.isAdmin ? {} : {
+    userDepartments: { some: { userId: req.user!.userId } },
+  };
   const departments = await prisma.department.findMany({
+    where,
     include: {
       _count: { select: { services: true, userDepartments: true, vehicles: true } },
     },
@@ -42,8 +46,17 @@ router.post("/", requireAdmin, async (req: Request, res: Response) => {
 
 // ── GET /api/departments/:id ────────────────────
 router.get("/:id", async (req: Request, res: Response) => {
+  const departmentId = Number(req.params.id);
+
+  if (!req.user!.isAdmin) {
+    const membership = await prisma.userDepartment.findUnique({
+      where: { userId_departmentId: { userId: req.user!.userId, departmentId } },
+    });
+    if (!membership) { res.status(404).json({ error: "Department not found" }); return; }
+  }
+
   const dept = await prisma.department.findUnique({
-    where: { id: Number(req.params.id) },
+    where: { id: departmentId },
     include: {
       services: { orderBy: { startAt: "desc" }, take: 20 },
       userDepartments: {
