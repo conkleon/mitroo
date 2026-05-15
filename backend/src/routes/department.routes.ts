@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
-import { authenticate, isMissionAdminInDepartment, requireAdmin } from "../middleware/auth";
+import { authenticate, isMissionAdminInDepartment, requireAdmin, requireAdminOrMissionAdminForDept } from "../middleware/auth";
 
 const router = Router();
 router.use(authenticate);
@@ -57,9 +57,13 @@ router.get("/:id", async (req: Request, res: Response) => {
 });
 
 // ── PATCH /api/departments/:id ──────────────────
-router.patch("/:id", async (req: Request, res: Response) => {
+router.patch("/:id", requireAdminOrMissionAdminForDept((req) => Number(req.params.id)), async (req: Request, res: Response) => {
   try {
-    const data = createSchema.partial().parse(req.body);
+    const rawData = createSchema.partial().parse(req.body);
+
+    // Mission admins cannot change department name — silently drop it
+    const data = req.user!.isAdmin ? rawData : { ...rawData, name: undefined };
+
     const dept = await prisma.department.update({ where: { id: Number(req.params.id) }, data });
     res.json(dept);
   } catch (err: any) {
@@ -93,7 +97,7 @@ router.get("/:id/members", async (req: Request, res: Response) => {
 });
 
 // ── POST /api/departments/:id/members ───────────
-router.post("/:id/members", requireAdmin, async (req: Request, res: Response) => {
+router.post("/:id/members", requireAdminOrMissionAdminForDept((req) => Number(req.params.id)), async (req: Request, res: Response) => {
   try {
     const data = memberSchema.parse(req.body);
     const member = await prisma.userDepartment.create({
@@ -108,7 +112,7 @@ router.post("/:id/members", requireAdmin, async (req: Request, res: Response) =>
 });
 
 // ── PATCH /api/departments/:deptId/members/:userId
-router.patch("/:deptId/members/:userId", requireAdmin, async (req: Request, res: Response) => {
+router.patch("/:deptId/members/:userId", requireAdminOrMissionAdminForDept((req) => Number(req.params.deptId)), async (req: Request, res: Response) => {
   const { role } = req.body;
   const record = await prisma.userDepartment.update({
     where: {
@@ -120,7 +124,7 @@ router.patch("/:deptId/members/:userId", requireAdmin, async (req: Request, res:
 });
 
 // ── DELETE /api/departments/:deptId/members/:userId
-router.delete("/:deptId/members/:userId", requireAdmin, async (req: Request, res: Response) => {
+router.delete("/:deptId/members/:userId", requireAdminOrMissionAdminForDept((req) => Number(req.params.deptId)), async (req: Request, res: Response) => {
   await prisma.userDepartment.delete({
     where: {
       userId_departmentId: { userId: Number(req.params.userId), departmentId: Number(req.params.deptId) },
