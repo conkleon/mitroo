@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import prisma from "../lib/prisma";
-import { authenticate, getMissionAdminDepartmentIds, requireAdmin, requireAdminOrMissionAdminForDept } from "../middleware/auth";
+import { authenticate, getMissionAdminDepartmentIds, requireAdmin } from "../middleware/auth";
 import { sendInviteEmail } from "../lib/email";
 import { formatGeneratedEame, getNextGeneratedEameSequence } from "../lib/eame";
 
@@ -99,14 +99,15 @@ async function canWriteUserByScope(scope: UserAccessScope, targetUserId: number)
     return true;
   }
   if (scope.kind === "self") {
-    return false; // self cannot write other users
+    return false;
   }
-  const targetDepts = await prisma.userDepartment.findMany({
-    where: { userId: targetUserId },
-    select: { departmentId: true },
+  const count = await prisma.userDepartment.count({
+    where: {
+      userId: targetUserId,
+      departmentId: { in: scope.departmentIds },
+    },
   });
-  const targetDeptIds = targetDepts.map((d) => d.departmentId);
-  return targetDeptIds.some((id) => scope.departmentIds.includes(id));
+  return count > 0;
 }
 
 // ── GET /api/users ──────────────────────────────
