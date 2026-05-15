@@ -310,7 +310,8 @@ router.delete("/:id", async (req: Request, res: Response) => {
 });
 
 // ── POST /api/services/:id/enroll ───────────────
-// Admin-only: enroll a user in a service
+// Self-enroll with "requested" is open to all authenticated users.
+// Enrolling others or setting accepted/rejected requires admin/missionAdmin.
 router.post("/:id/enroll", async (req: Request, res: Response) => {
   try {
     const requesterId = req.user!.userId;
@@ -322,15 +323,18 @@ router.post("/:id/enroll", async (req: Request, res: Response) => {
     });
     if (!service) { res.status(404).json({ error: "Service not found" }); return; }
 
-    const isServiceAdmin = req.user!.isAdmin || await isMissionAdminInDepartment(requesterId, service.departmentId);
-    if (!isServiceAdmin) {
-      res.status(403).json({ error: "Δεν έχετε δικαίωμα" });
-      return;
-    }
-
     const data = enrollSchema.parse(req.body);
     const targetUserId = data.userId ?? requesterId;
     const status = data.status ?? "requested";
+
+    // Self-enrollment with "requested" status is allowed for any authenticated user.
+    // Admin or missionAdmin is required otherwise (enrolling others, setting accepted/rejected).
+    const isSelfRequest = targetUserId === requesterId && status === "requested";
+    const isServiceAdmin = req.user!.isAdmin || await isMissionAdminInDepartment(requesterId, service.departmentId);
+    if (!isSelfRequest && !isServiceAdmin) {
+      res.status(403).json({ error: "Δεν έχετε δικαίωμα" });
+      return;
+    }
 
     const record = await prisma.userService.create({
       data: {
