@@ -60,17 +60,17 @@ async function main() {
 
   // ── Service types (11 types from old Mitroo) ──
   const serviceTypes = [
-    { name: "BLS “ΒΑΣΙΚΗ ΥΠΟΣΤΗΡΙΞΗ ΖΩΗΣ’’", externalMissionTypeId: 71, isDefaultVisible: false },
-    { name: "ΔΡΑΣΗ ΠΡΟΛΗΨΗΣ", externalMissionTypeId: 56, isDefaultVisible: false },
-    { name: "ΕΘΕΛΟΝΤΙΚΗ ΔΡΑΣΤΗΡΙΟΤΗΤΑ", externalMissionTypeId: 57, isDefaultVisible: false },
-    { name: "ΕΚΠΑΙΔΕΥΣΗ Α΄ ΒΟΗΘΕΙΩΝ ΣΕ ΠΟΛΙΤΕΣ", externalMissionTypeId: 36, isDefaultVisible: false },
-    { name: "ΕΚΠΑΙΔΕΥΣΗ Α' ΒΟΗΘΕΙΕΣ ΓΙΑ ΣΚΥΛΟΥΣ", externalMissionTypeId: 86, isDefaultVisible: false },
-    { name: "ΕΚΠΑΙΔΕΥΣΗ ΔΟΚΙΜΩΝ ΣΑΜΑΡΕΙΤΩΝ", externalMissionTypeId: 33, isDefaultVisible: false },
-    { name: "ΕΚΠΑΙΔΕΥΣΗ ΕΝΕΡΓΟΠΟΙΗΣΗΣ ΑΝΕΝΕΡΓΩΝ ΕΘΕΛΟΝΤΩΝ", externalMissionTypeId: 83, isDefaultVisible: false },
-    { name: "ΝΑΥΑΓΟΣΩΣΤΙΚΗ ΚΑΛΥΨΗ", externalMissionTypeId: 60, isDefaultVisible: false },
-    { name: "Τ.Ε.Π. ΔΟΚΙΜΩΝ", externalMissionTypeId: 85, isDefaultVisible: false },
-    { name: "ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ", externalMissionTypeId: 16, isDefaultVisible: false },
-    { name: "ΥΠΟΧΡΕΩΤΙΚΗ ΕΤΗΣΙΑ ΕΚΠΑΙΔΕΥΣΗ ΕΘΕΛΟΝΤΗ", externalMissionTypeId: 81, isDefaultVisible: false },
+    { name: "BLS “ΒΑΣΙΚΗ ΥΠΟΣΤΗΡΙΞΗ ΖΩΗΣ” (εκπαιδευτικές)", externalMissionTypeId: 71, isDefaultVisible: false },
+    { name: "ΔΡΑΣΗ ΠΡΟΛΗΨΗΣ (επανεκπαίδευσης)", externalMissionTypeId: 56, isDefaultVisible: false },
+    { name: "ΕΘΕΛΟΝΤΙΚΗ ΔΡΑΣΤΗΡΙΟΤΗΤΑ (επανεκπαίδευσης)", externalMissionTypeId: 57, isDefaultVisible: false },
+    { name: "ΕΚΠΑΙΔΕΥΣΗ Α΄ ΒΟΗΘΕΙΩΝ ΣΕ ΠΟΛΙΤΕΣ (εκπαιδευτικές)", externalMissionTypeId: 36, isDefaultVisible: false },
+    { name: "ΕΚΠΑΙΔΕΥΣΗ Α’ ΒΟΗΘΕΙΕΣ ΓΙΑ ΣΚΥΛΟΥΣ (εκπαιδευτικές)", externalMissionTypeId: 86, isDefaultVisible: false },
+    { name: "ΕΚΠΑΙΔΕΥΣΗ ΔΟΚΙΜΩΝ ΣΑΜΑΡΕΙΤΩΝ (εκπαιδευτικές)", externalMissionTypeId: 33, isDefaultVisible: false },
+    { name: "ΕΚΠΑΙΔΕΥΣΗ ΕΝΕΡΓΟΠΟΙΗΣΗΣ ΑΝΕΝΕΡΓΩΝ ΕΘΕΛΟΝΤΩΝ (επανεκπαίδευσης)", externalMissionTypeId: 83, isDefaultVisible: false },
+    { name: "ΝΑΥΑΓΟΣΩΣΤΙΚΗ ΚΑΛΥΨΗ (ναυαγοσωστικές)", externalMissionTypeId: 60, isDefaultVisible: false },
+    { name: "Τ.Ε.Π. ΔΟΚΙΜΩΝ (ΤΕΠ)", externalMissionTypeId: 85, isDefaultVisible: false },
+    { name: "ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ (υγειονομικές)", externalMissionTypeId: 16, isDefaultVisible: false },
+    { name: "ΥΠΟΧΡΕΩΤΙΚΗ ΕΤΗΣΙΑ ΕΚΠΑΙΔΕΥΣΗ ΕΘΕΛΟΝΤΗ (hours_retraining)", externalMissionTypeId: 81, isDefaultVisible: false },
   ];
 
   const createdTypes: Record<string, number> = {};
@@ -89,7 +89,7 @@ async function main() {
     { name: "Δόκιμος Ναυαγοσώστης", description: "Δόκιμος Ναυαγοσώστης" },
     { name: "Σαμαρείτης", description: "Σαμαρείτης" },
     { name: "Ναυαγοσώστης", description: "Ναυαγοσώστης" },
-    { name: "Εκπαιδευτής Α' Βοηθειών", description: "Εκπαιδευτής Πρώτων Βοηθειών" },
+    { name: "Εκπαιδευτής Α’ Βοηθειών", description: "Εκπαιδευτής Πρώτων Βοηθειών" },
     { name: "Εκπαιδευτής Ναυαγοσωστικής", description: "Εκπαιδευτής Ναυαγοσωστικής" },
   ];
 
@@ -105,14 +105,14 @@ async function main() {
 
   // ── Specialization ↔ ServiceType assignments ──
   const defaultVisibleTypeNames = [
-    "BLS “ΒΑΣΙΚΗ ΥΠΟΣΤΗΡΙΞΗ ΖΩΗΣ’’",
-    "ΔΡΑΣΗ ΠΡΟΛΗΨΗΣ",
-    "ΕΘΕΛΟΝΤΙΚΗ ΔΡΑΣΤΗΡΙΟΤΗΤΑ",
-    "ΕΚΠΑΙΔΕΥΣΗ Α΄ ΒΟΗΘΕΙΩΝ ΣΕ ΠΟΛΙΤΕΣ",
-    "ΕΚΠΑΙΔΕΥΣΗ Α' ΒΟΗΘΕΙΕΣ ΓΙΑ ΣΚΥΛΟΥΣ",
-    "ΕΚΠΑΙΔΕΥΣΗ ΔΟΚΙΜΩΝ ΣΑΜΑΡΕΙΤΩΝ",
-    "ΕΚΠΑΙΔΕΥΣΗ ΕΝΕΡΓΟΠΟΙΗΣΗΣ ΑΝΕΝΕΡΓΩΝ ΕΘΕΛΟΝΤΩΝ",
-    "ΥΠΟΧΡΕΩΤΙΚΗ ΕΤΗΣΙΑ ΕΚΠΑΙΔΕΥΣΗ ΕΘΕΛΟΝΤΗ",
+    "BLS “ΒΑΣΙΚΗ ΥΠΟΣΤΗΡΙΞΗ ΖΩΗΣ” (εκπαιδευτικές)",
+    "ΔΡΑΣΗ ΠΡΟΛΗΨΗΣ (επανεκπαίδευσης)",
+    "ΕΘΕΛΟΝΤΙΚΗ ΔΡΑΣΤΗΡΙΟΤΗΤΑ (επανεκπαίδευσης)",
+    "ΕΚΠΑΙΔΕΥΣΗ Α΄ ΒΟΗΘΕΙΩΝ ΣΕ ΠΟΛΙΤΕΣ (εκπαιδευτικές)",
+    "ΕΚΠΑΙΔΕΥΣΗ Α’ ΒΟΗΘΕΙΕΣ ΓΙΑ ΣΚΥΛΟΥΣ (εκπαιδευτικές)",
+    "ΕΚΠΑΙΔΕΥΣΗ ΔΟΚΙΜΩΝ ΣΑΜΑΡΕΙΤΩΝ (εκπαιδευτικές)",
+    "ΕΚΠΑΙΔΕΥΣΗ ΕΝΕΡΓΟΠΟΙΗΣΗΣ ΑΝΕΝΕΡΓΩΝ ΕΘΕΛΟΝΤΩΝ (επανεκπαίδευσης)",
+    "ΥΠΟΧΡΕΩΤΙΚΗ ΕΤΗΣΙΑ ΕΚΠΑΙΔΕΥΣΗ ΕΘΕΛΟΝΤΗ (hours_retraining)",
   ];
 
   for (const specName of Object.keys(createdSpecs)) {
@@ -137,7 +137,7 @@ async function main() {
 
   // Σαμαρείτης + Δόκιμος Σαμαρείτης see sanitary coverage + TEP
   for (const specName of ["Σαμαρείτης", "Δόκιμος Σαμαρείτης"]) {
-    for (const typeName of ["ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ", "Τ.Ε.Π. ΔΟΚΙΜΩΝ"]) {
+    for (const typeName of ["ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ (υγειονομικές)", "Τ.Ε.Π. ΔΟΚΙΜΩΝ (ΤΕΠ)"]) {
       if (createdTypes[typeName] && createdSpecs[specName]) {
         await prisma.specializationServiceType.upsert({
           where: {
@@ -158,7 +158,7 @@ async function main() {
 
   // Ναυαγοσώστης + Δόκιμος Ναυαγοσώστης see lifeguard + sanitary + TEP
   for (const specName of ["Ναυαγοσώστης", "Δόκιμος Ναυαγοσώστης"]) {
-    for (const typeName of ["ΝΑΥΑΓΟΣΩΣΤΙΚΗ ΚΑΛΥΨΗ", "ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ", "Τ.Ε.Π. ΔΟΚΙΜΩΝ"]) {
+    for (const typeName of ["ΝΑΥΑΓΟΣΩΣΤΙΚΗ ΚΑΛΥΨΗ (ναυαγοσωστικές)", "ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ (υγειονομικές)", "Τ.Ε.Π. ΔΟΚΙΜΩΝ (ΤΕΠ)"]) {
       if (createdTypes[typeName] && createdSpecs[specName]) {
         await prisma.specializationServiceType.upsert({
           where: {
@@ -178,18 +178,18 @@ async function main() {
   }
 
   // Εκπαιδευτής Α' Βοηθειών sees sanitary coverage + TEP
-  for (const typeName of ["ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ", "Τ.Ε.Π. ΔΟΚΙΜΩΝ"]) {
-    if (createdTypes[typeName] && createdSpecs["Εκπαιδευτής Α' Βοηθειών"]) {
+  for (const typeName of ["ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ (υγειονομικές)", "Τ.Ε.Π. ΔΟΚΙΜΩΝ (ΤΕΠ)"]) {
+    if (createdTypes[typeName] && createdSpecs["Εκπαιδευτής Α’ Βοηθειών"]) {
       await prisma.specializationServiceType.upsert({
         where: {
           specializationId_serviceTypeId: {
-            specializationId: createdSpecs["Εκπαιδευτής Α' Βοηθειών"],
+            specializationId: createdSpecs["Εκπαιδευτής Α’ Βοηθειών"],
             serviceTypeId: createdTypes[typeName],
           },
         },
         update: {},
         create: {
-          specializationId: createdSpecs["Εκπαιδευτής Α' Βοηθειών"],
+          specializationId: createdSpecs["Εκπαιδευτής Α’ Βοηθειών"],
           serviceTypeId: createdTypes[typeName],
         },
       });
@@ -197,7 +197,7 @@ async function main() {
   }
 
   // Εκπαιδευτής Ναυαγοσωστικής sees lifeguard + sanitary + TEP
-  for (const typeName of ["ΝΑΥΑΓΟΣΩΣΤΙΚΗ ΚΑΛΥΨΗ", "ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ", "Τ.Ε.Π. ΔΟΚΙΜΩΝ"]) {
+  for (const typeName of ["ΝΑΥΑΓΟΣΩΣΤΙΚΗ ΚΑΛΥΨΗ (ναυαγοσωστικές)", "ΥΓΕΙΟΝΟΜΙΚΗ ΚΑΛΥΨΗ (υγειονομικές)", "Τ.Ε.Π. ΔΟΚΙΜΩΝ (ΤΕΠ)"]) {
     if (createdTypes[typeName] && createdSpecs["Εκπαιδευτής Ναυαγοσωστικής"]) {
       await prisma.specializationServiceType.upsert({
         where: {
@@ -216,7 +216,7 @@ async function main() {
   }
 
   // ── User ↔ Specialization assignments ─────────
-  for (const specId of [createdSpecs["Σαμαρείτης"], createdSpecs["Εκπαιδευτής Α' Βοηθειών"], createdSpecs["Εκπαιδευτής Ναυαγοσωστικής"]]) {
+  for (const specId of [createdSpecs["Σαμαρείτης"], createdSpecs["Εκπαιδευτής Α’ Βοηθειών"], createdSpecs["Εκπαιδευτής Ναυαγοσωστικής"]]) {
     await prisma.userSpecialization.upsert({
       where: { userId_specializationId: { userId: admin.id, specializationId: specId } },
       update: {},

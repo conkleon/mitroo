@@ -43,52 +43,70 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Νέος Τύπος Υπηρεσίας'),
-        content: SizedBox(
-          width: 400,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Όνομα *',
-                    border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
+        bool isDefaultVisible = false;
+
+        return AlertDialog(
+          title: const Text('Νέος Τύπος Υπηρεσίας'),
+          content: SizedBox(
+            width: 400,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Όνομα *',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: extIdCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'External Mission Type ID',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: extIdCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'External Mission Type ID',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
                   ),
-                  keyboardType: TextInputType.number,
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  CheckboxListTile(
+                    value: isDefaultVisible,
+                    onChanged: (v) => setS(() => isDefaultVisible = v ?? false),
+                    title: const Text('Ορατό από προεπιλογή'),
+                    subtitle: const Text('Ορατό σε όλες τις ειδικεύσεις'),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Άκυρο'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final body = <String, dynamic>{'name': nameCtrl.text.trim()};
-              final extIdParsed = int.tryParse(extIdCtrl.text.trim());
-              if (extIdParsed != null) body['externalMissionTypeId'] = extIdParsed;
-              await _api.post('/service-types', body: body);
-              if (ctx.mounted) Navigator.pop(ctx);
-              _fetch();
-            },
-            child: const Text('Δημιουργία'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Άκυρο'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final body = <String, dynamic>{
+                  'name': nameCtrl.text.trim(),
+                  'isDefaultVisible': isDefaultVisible,
+                };
+                final extIdParsed = int.tryParse(extIdCtrl.text.trim());
+                if (extIdParsed != null) {
+                  body['externalMissionTypeId'] = extIdParsed;
+                }
+                await _api.post('/service-types', body: body);
+                if (ctx.mounted) Navigator.pop(ctx);
+                _fetch();
+              },
+              child: const Text('Δημιουργία'),
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -108,6 +126,7 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
 
     final nameCtrl = TextEditingController(text: type['name'] ?? '');
     final extIdCtrl = TextEditingController(text: '${type['externalMissionTypeId'] ?? ''}');
+    bool isDefaultVisible = type['isDefaultVisible'] == true;
 
     await showModalBottomSheet(
       context: context,
@@ -155,6 +174,15 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
                   ),
                   keyboardType: TextInputType.number,
                 ),
+                const SizedBox(height: 12),
+                CheckboxListTile(
+                  value: isDefaultVisible,
+                  onChanged: (v) => setS(() => isDefaultVisible = v ?? false),
+                  title: const Text('Ορατό από προεπιλογή'),
+                  subtitle: const Text('Ορατό σε όλες τις ειδικεύσεις'),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
                 const SizedBox(height: 20),
                 Text('Ειδικεύσεις που βλέπουν αυτό τον τύπο',
                     style: Theme.of(ctx).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
@@ -198,6 +226,7 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
                         onPressed: () async {
                           final body = <String, dynamic>{
                             'name': nameCtrl.text.trim(),
+                            'isDefaultVisible': isDefaultVisible,
                           };
                           final extIdParsed = int.tryParse(extIdCtrl.text.trim());
                           if (extIdParsed != null) {
