@@ -68,6 +68,7 @@ const createSchema = z.object({
   maxParticipants: z.number().int().min(1).optional(),
   startAt: z.string().datetime().optional(),
   endAt: z.string().datetime().optional(),
+  serviceTypeId: z.number().int().optional().nullable(),
 });
 
 const enrollSchema = z.object({
@@ -115,17 +116,19 @@ router.get("/", async (req: Request, res: Response) => {
     ];
   }
 
-  // Filter by specialization visibility
+  // Filter by specialization via service type chain
   if (specializationId) {
-    where.visibility = {
-      some: { specializationId: Number(specializationId) },
+    where.serviceType = {
+      specializations: {
+        some: { specializationId: Number(specializationId) },
+      },
     };
   }
 
   const includeBlock: any = {
     department: { select: { id: true, name: true } },
     responsibleUser: { select: { id: true, eame: true, forename: true, surname: true, imagePath: true } },
-    visibility: { include: { specialization: { select: { id: true, name: true } } } },
+    serviceType: { select: { id: true, name: true } },
     _count: { select: { userServices: true, itemServices: true } },
   };
 
@@ -182,10 +185,12 @@ router.get("/my", async (req: Request, res: Response) => {
     where.AND = [
       {
         OR: [
-          // services with NO visibility restrictions → visible to all dept members
-          { visibility: { none: {} } },
-          // services whose required specializations overlap the user's
-          { visibility: { some: { specializationId: { in: specIds } } } },
+          // services with no type → visible to all (safety net)
+          { serviceTypeId: null },
+          // services with default-visible types
+          { serviceType: { isDefaultVisible: true } },
+          // services whose types are assigned to the user's specializations
+          { serviceType: { specializations: { some: { specializationId: { in: specIds } } } } },
         ],
       },
     ];
@@ -196,7 +201,11 @@ router.get("/my", async (req: Request, res: Response) => {
     include: {
       department: { select: { id: true, name: true } },
       responsibleUser: { select: { id: true, eame: true, forename: true, surname: true, imagePath: true } },
-      visibility: { include: { specialization: { select: { id: true, name: true } } } },
+      serviceType: {
+        include: {
+          specializations: { include: { specialization: { select: { id: true, name: true } } } },
+        },
+      },
       // Include ONLY the current user's enrollment so the client knows if already applied
       userServices: {
         where: { userId },
@@ -253,7 +262,11 @@ router.get("/:id", async (req: Request, res: Response) => {
         },
       },
       vehicleLogs: { include: { vehicle: true } },
-      visibility: { include: { specialization: true } },
+      serviceType: {
+        include: {
+          specializations: { include: { specialization: { select: { id: true, name: true } } } },
+        },
+      },
     },
   });
   if (!service) { res.status(404).json({ error: "Service not found" }); return; }
@@ -487,38 +500,6 @@ router.patch("/:id/responsible", async (req: Request, res: Response) => {
     include: { responsibleUser: { select: { id: true, eame: true, forename: true, surname: true, imagePath: true } } },
   });
   res.json(updated);
-});
-
-// ── Service visibility (specialization requirements) ──
-
-// ── POST /api/services/:id/visibility ───────────
-router.post("/:id/visibility", async (req: Request, res: Response) => {
-  const serviceId = Number(req.params.id);
-  const service = await prisma.service.findUnique({ where: { id: serviceId }, select: { departmentId: true } });
-  if (!service) { res.status(404).json({ error: "Service not found" }); return; }
-  if (!await requireServiceAdmin(req, res, service.departmentId)) return;
-  const specId = Number(req.body.specializationId);
-  const record = await prisma.serviceVisibility.upsert({
-    where: { serviceId_specializationId: { serviceId, specializationId: specId } },
-    update: {},
-    create: { serviceId, specializationId: specId },
-    include: { specialization: true },
-  });
-  res.status(201).json(record);
-});
-
-// ── DELETE /api/services/:sid/visibility/:specId ─
-router.delete("/:sid/visibility/:specId", async (req: Request, res: Response) => {
-  const serviceId = Number(req.params.sid);
-  const service = await prisma.service.findUnique({ where: { id: serviceId }, select: { departmentId: true } });
-  if (!service) { res.status(404).json({ error: "Service not found" }); return; }
-  if (!await requireServiceAdmin(req, res, service.departmentId)) return;
-  await prisma.serviceVisibility.delete({
-    where: {
-      serviceId_specializationId: { serviceId, specializationId: Number(req.params.specId) },
-    },
-  });
-  res.status(204).end();
 });
 
 export default router;
