@@ -129,7 +129,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                         SizedBox(height: isCompact ? 16 : 28),
 
                         // ── System Management (sysAdmin only) ──
-                        if (isSysAdmin) ...[
+                        if (isSysAdmin || auth.isDepartmentMissionAdmin) ...[
                           _SectionHeader(
                               icon: Icons.settings,
                               label: 'Διαχείρηση Συστήματος'),
@@ -155,16 +155,28 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                                 onTap: () =>
                                     context.push('/admin/departments'),
                               ),
-                              _AdminTileData(
-                                icon: Icons.school,
-                                iconColor: const Color(0xFFD97706),
-                                bgColor: const Color(0xFFFEF3C7),
-                                title: 'Διαχείρηση Ειδικεύσεων',
-                                subtitle:
-                                    'Δημιουργία & ανάθεση ειδικεύσεων',
-                                onTap: () =>
-                                    context.push('/admin/specializations'),
-                              ),
+                              if (isSysAdmin) ...[
+                                _AdminTileData(
+                                  icon: Icons.school,
+                                  iconColor: const Color(0xFFD97706),
+                                  bgColor: const Color(0xFFFEF3C7),
+                                  title: 'Διαχείρηση Ειδικεύσεων',
+                                  subtitle:
+                                      'Δημιουργία & ανάθεση ειδικεύσεων',
+                                  onTap: () =>
+                                      context.push('/admin/specializations'),
+                                ),
+                                _AdminTileData(
+                                  icon: Icons.category,
+                                  iconColor: const Color(0xFF0891B2),
+                                  bgColor: const Color(0xFFECFEFF),
+                                  title: 'Τύποι Υπηρεσιών',
+                                  subtitle:
+                                      'Διαχείριση τύπων υπηρεσιών & ορατότητας',
+                                  onTap: () =>
+                                      context.push('/admin/service-types'),
+                                ),
+                              ],
                             ],
                           ),
                           SizedBox(height: isCompact ? 20 : 28),

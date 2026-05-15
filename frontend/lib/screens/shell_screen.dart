@@ -218,7 +218,7 @@ class _DesktopSidebar extends StatelessWidget {
                         selected: currentPath == '/admin',
                         onTap: () => context.go('/admin'),
                       ),
-                      if (isSysAdmin) ...[
+                      if (isSysAdmin || auth.isDepartmentMissionAdmin) ...[
                         _BrandSidebarItem(
                           icon: Icons.people_outline,
                           selectedIcon: Icons.people,
@@ -235,14 +235,15 @@ class _DesktopSidebar extends StatelessWidget {
                           onTap: () => context.push('/admin/departments'),
                           indent: true,
                         ),
-                        _BrandSidebarItem(
-                          icon: Icons.school_outlined,
-                          selectedIcon: Icons.school,
-                          label: 'Ειδικότητες',
-                          selected: currentPath.startsWith('/admin/specializations'),
-                          onTap: () => context.push('/admin/specializations'),
-                          indent: true,
-                        ),
+                        if (isSysAdmin)
+                          _BrandSidebarItem(
+                            icon: Icons.school_outlined,
+                            selectedIcon: Icons.school,
+                            label: 'Ειδικότητες',
+                            selected: currentPath.startsWith('/admin/specializations'),
+                            onTap: () => context.push('/admin/specializations'),
+                            indent: true,
+                          ),
                       ],
                       if (auth.isMissionAdmin || isSysAdmin) ...[
                         const Padding(

@@ -61,6 +61,9 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
         TextEditingController(text: _dept!['description'] ?? '');
     final locCtrl = TextEditingController(text: _dept!['location'] ?? '');
 
+    final auth = context.read<AuthProvider>();
+    final canEditName = auth.isAdmin;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -73,8 +76,10 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
               children: [
                 TextField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(
-                        labelText: 'Όνομα', border: OutlineInputBorder())),
+                    enabled: canEditName,
+                    decoration: InputDecoration(
+                        labelText: canEditName ? 'Όνομα' : 'Όνομα (Μόνο διαχειριστής)',
+                        border: const OutlineInputBorder())),
                 const SizedBox(height: 12),
                 TextField(
                     controller: descCtrl,
@@ -98,9 +103,10 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () async {
-              final body = <String, dynamic>{
-                'name': nameCtrl.text.trim(),
-              };
+              final body = <String, dynamic>{};
+              if (canEditName) {
+                body['name'] = nameCtrl.text.trim();
+              }
               if (descCtrl.text.isNotEmpty) {
                 body['description'] = descCtrl.text.trim();
               }
@@ -338,6 +344,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final auth = context.read<AuthProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -347,14 +354,16 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: _editDepartment,
-              tooltip: 'Επεξεργασία'),
-          IconButton(
-              icon: const Icon(Icons.delete, color: Color(0xFFDC2626)),
-              onPressed: _deleteDepartment,
-              tooltip: 'Διαγραφή'),
+          if (auth.isMissionAdmin)
+            IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: _editDepartment,
+                tooltip: 'Επεξεργασία'),
+          if (auth.isAdmin)
+            IconButton(
+                icon: const Icon(Icons.delete, color: Color(0xFFDC2626)),
+                onPressed: _deleteDepartment,
+                tooltip: 'Διαγραφή'),
         ],
       ),
       body: _loading
@@ -365,10 +374,9 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                   onRefresh: _load,
                   child: LayoutBuilder(builder: (context, constraints) {
                     final isWide = constraints.maxWidth >= 900;
-                    final auth = context.read<AuthProvider>();
                     final canSync = auth.isAdmin ||
                         auth.missionAdminDepartments.any(
-                          (d) => d['department']?['id'] == widget.departmentId,
+                          (d) => d['id'] == widget.departmentId,
                         );
                     return SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),

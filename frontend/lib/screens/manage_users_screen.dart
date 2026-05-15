@@ -437,7 +437,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           IconButton(icon: const Icon(Icons.refresh), onPressed: _fetch, tooltip: 'Ανανέωση'),
         ],
       ),
-      floatingActionButton: auth.isAdmin && !_selectionMode
+      floatingActionButton: (auth.isAdmin || auth.isDepartmentMissionAdmin) && !_selectionMode
           ? FloatingActionButton.extended(
               onPressed: _showCreateDialog,
               icon: const Icon(Icons.person_add),
