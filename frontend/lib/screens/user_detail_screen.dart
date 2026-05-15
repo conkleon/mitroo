@@ -52,6 +52,24 @@ class _UserDetailBodyState extends State<UserDetailBody> {
   int _svcPage = 0;
   int _svcRowsPerPage = 10;
 
+  /// True when the current user can manage (edit/delete/manage depts/specs)
+  /// this target user. System admins can manage anyone. Mission admins can
+  /// manage users who share at least one department with them.
+  bool get _canManage {
+    final auth = context.read<AuthProvider>();
+    if (auth.isAdmin) return true;
+    if (!auth.isDepartmentMissionAdmin) return false;
+
+    final depts = _user?['departments'] as List<dynamic>? ?? [];
+    final userDeptIds = depts
+        .map((d) => (d['department']?['id'] ?? d['departmentId']) as int)
+        .toSet();
+    final myDeptIds = auth.missionAdminDepartments
+        .map((d) => d['id'] as int)
+        .toSet();
+    return userDeptIds.intersection(myDeptIds).isNotEmpty;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -80,7 +98,8 @@ class _UserDetailBodyState extends State<UserDetailBody> {
   // ── Edit profile ──────────────────────────────────
   void _editProfile() {
     if (_user == null) return;
-    final canManage = context.read<AuthProvider>().isAdmin;
+    final auth = context.read<AuthProvider>();
+    final canManage = auth.isAdmin || auth.isDepartmentMissionAdmin;
     if (!canManage) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Δεν έχετε δικαίωμα επεξεργασίας χρήστη.')),
@@ -131,12 +150,13 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                     onChanged: (v) => setDlgState(() => rank = v ?? 'Γ'),
                   ),
                   const SizedBox(height: 8),
-                  SwitchListTile(
-                    title: const Text('Διαχειριστής Συστήματος'),
-                    value: isAdmin,
-                    onChanged: (v) => setDlgState(() => isAdmin = v),
-                    contentPadding: EdgeInsets.zero,
-                  ),
+                  if (auth.isAdmin)
+                    SwitchListTile(
+                      title: const Text('Διαχειριστής Συστήματος'),
+                      value: isAdmin,
+                      onChanged: (v) => setDlgState(() => isAdmin = v),
+                      contentPadding: EdgeInsets.zero,
+                    ),
                 ],
               ),
             ),
@@ -435,7 +455,7 @@ class _UserDetailBodyState extends State<UserDetailBody> {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    final canManage = context.watch<AuthProvider>().isAdmin;
+    final canManage = _canManage;
 
     if (_loading) {
       return const SafeArea(child: Center(child: CircularProgressIndicator()));
