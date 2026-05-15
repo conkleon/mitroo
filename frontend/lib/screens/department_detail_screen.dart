@@ -376,7 +376,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                     final isWide = constraints.maxWidth >= 900;
                     final canSync = auth.isAdmin ||
                         auth.missionAdminDepartments.any(
-                          (d) => d['department']?['id'] == widget.departmentId,
+                          (d) => d['id'] == widget.departmentId,
                         );
                     return SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
