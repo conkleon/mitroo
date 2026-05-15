@@ -135,20 +135,26 @@ class _ServicesScreenState extends State<ServicesScreen>
     }
   }
 
-  // ── Filter: by specialization visibility ────────
+  // ── Filter: by specialization via service type chain ────────
   List<dynamic> get _filteredServices {
     final all = context.read<ServiceProvider>().services;
     if (_selectedSpecId == null) return all;
     return all.where((s) {
-      final vis = s['visibility'] as List<dynamic>? ?? [];
-      return vis.any((v) => v['specializationId'] == _selectedSpecId);
+      final st = s['serviceType'] as Map<String, dynamic>?;
+      if (st == null) return false;
+      final specs2 = st['specializations'] as List<dynamic>? ?? [];
+      return specs2.any((row) => row['specializationId'] == _selectedSpecId ||
+          row['specialization']?['id'] == _selectedSpecId);
     }).toList();
   }
 
   int _countForSpec(int specId) {
     return context.read<ServiceProvider>().services.where((s) {
-      final vis = s['visibility'] as List<dynamic>? ?? [];
-      return vis.any((v) => v['specializationId'] == specId);
+      final st = s['serviceType'] as Map<String, dynamic>?;
+      if (st == null) return false;
+      final specs2 = st['specializations'] as List<dynamic>? ?? [];
+      return specs2.any((row) => row['specializationId'] == specId ||
+          row['specialization']?['id'] == specId);
     }).length;
   }
 
@@ -226,9 +232,11 @@ class _ServicesScreenState extends State<ServicesScreen>
     final allServices = svcProv.services;
     final specMap = <int, String>{}; // id -> name
     for (final svc in allServices) {
-      final vis = svc['visibility'] as List<dynamic>? ?? [];
-      for (final v in vis) {
-        final spec = v['specialization'] as Map<String, dynamic>?;
+      final st = svc['serviceType'] as Map<String, dynamic>?;
+      if (st == null) continue;
+      final specs2 = st['specializations'] as List<dynamic>? ?? [];
+      for (final row in specs2) {
+        final spec = row['specialization'] as Map<String, dynamic>?;
         if (spec != null) {
           specMap[spec['id'] as int] = spec['name'] as String? ?? '';
         }

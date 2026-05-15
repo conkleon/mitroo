@@ -22,6 +22,7 @@ import categoryRoutes from "./routes/category.routes";
 import pushRoutes from "./routes/push.routes";
 import syncRoutes from "./routes/sync.routes";
 import chatRoutes from "./routes/chat.routes";
+import serviceTypeRoutes from "./routes/serviceType.routes";
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use("/api/item-categories", categoryRoutes);
 app.use("/api/push", pushRoutes);
 app.use("/api/departments", syncRoutes);
 app.use("/api/chats", chatRoutes);
+app.use("/api/service-types", serviceTypeRoutes);
 
 // ── Error handling ──────────────────────────────
 app.use(notFound);

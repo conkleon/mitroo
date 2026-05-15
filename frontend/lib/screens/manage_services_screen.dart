@@ -89,11 +89,13 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       }).toList();
     }
 
-    // Filter by specialization
+    // Filter by specialization via service type chain
     if (_selectedSpecId != null) {
       list = list.where((s) {
-        final vis = s['visibility'] as List<dynamic>? ?? [];
-        return vis.any((v) => v['specialization']?['id'] == _selectedSpecId);
+        final st = s['serviceType'] as Map<String, dynamic>?;
+        if (st == null) return false;
+        final specs2 = st['specializations'] as List<dynamic>? ?? [];
+        return specs2.any((row) => row['specialization']?['id'] == _selectedSpecId);
       }).toList();
     }
 
@@ -618,14 +620,16 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     if (mounted) _load();
   }
 
-  /// Collect all unique specializations from loaded services
+  /// Collect all unique specializations from loaded services via serviceType chain
   List<Map<String, dynamic>> get _allSpecs {
     final seen = <int>{};
     final specs = <Map<String, dynamic>>[];
     for (final svc in _services) {
-      final vis = svc['visibility'] as List<dynamic>? ?? [];
-      for (final v in vis) {
-        final spec = v['specialization'] as Map<String, dynamic>?;
+      final st = svc['serviceType'] as Map<String, dynamic>?;
+      if (st == null) continue;
+      final specs2 = st['specializations'] as List<dynamic>? ?? [];
+      for (final row in specs2) {
+        final spec = row['specialization'] as Map<String, dynamic>?;
         if (spec != null) {
           final id = spec['id'] as int;
           if (seen.add(id)) specs.add(spec);
@@ -820,7 +824,8 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     final status = _statusLabel(svc);
     final sColor = _statusColor(status);
     final enrolledCount = (svc['_count']?['userServices'] ?? 0) as int;
-    final visSpecs = svc['visibility'] as List<dynamic>? ?? [];
+    final st = svc['serviceType'] as Map<String, dynamic>?;
+    final visSpecs = st?['specializations'] as List<dynamic>? ?? [];
     final userServices = svc['userServices'] as List<dynamic>? ?? [];
     final isExpanded = _expandedCards.contains(id);
     final requestedCount =
