@@ -39,7 +39,7 @@ router.get("/", async (_req: Request, res: Response) => {
   res.json(specs);
 });
 
-function toPrismaData(data: z.infer<typeof createSchema>): any {
+function toPrismaData(data: Partial<z.infer<typeof createSchema>>): any {
   const { rootId, ...rest } = data;
   const result: any = { ...rest };
   if (rootId !== undefined) {
