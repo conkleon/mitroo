@@ -223,6 +223,45 @@ export class MitrooClient {
     return null;
   }
 
+  async findVolunteerByCode(registrationCode: string): Promise<ExternalVolunteer | null> {
+    const normalized = registrationCode.trim().toUpperCase();
+    const pageSize = 200;
+    for (let page = 0; page < MAX_VOLUNTEER_PAGES; page += 1) {
+      const skip = page * pageSize;
+      const res = await this._xhr(
+        `/index.php/ajaxmember/grid_get_volunteers/?$count=true&$skip=${skip}&$top=${pageSize}`,
+      );
+      const text = await res.text();
+      try {
+        const parsed = JSON.parse(text);
+        const rows: ExternalVolunteer[] = Array.isArray(parsed)
+          ? parsed
+          : (parsed.result ?? []);
+        const match = rows.find((vol) => {
+          const candidate =
+            typeof vol.registration_code === "string"
+              ? vol.registration_code.trim().toUpperCase()
+              : "";
+          return candidate === normalized;
+        });
+        if (match) return match;
+        if (rows.length < pageSize) return null;
+      } catch {
+        console.error("[MitrooClient] findVolunteerByCode: invalid JSON response:", {
+          skip,
+          pageSize,
+          snippet: text.slice(0, 300),
+        });
+        return null;
+      }
+    }
+    console.warn("[MitrooClient] findVolunteerByCode: reached pagination safety limit", {
+      pageSize,
+      maxPages: MAX_VOLUNTEER_PAGES,
+    });
+    return null;
+  }
+
   async fetchProfileIdentity(): Promise<{ eame?: string; email?: string; forename?: string; surname?: string }> {
     const res = await this._get("/index.php/auth/profile");
     const html = await res.text();

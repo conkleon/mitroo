@@ -89,8 +89,8 @@ async function loginViaExternalMitroo(
 
   const match = await client.findVolunteerByEmail(email);
   const eame = (match?.registration_code as string | undefined)?.trim();
-  const externalId = match ? Number(match.id) : null;
-  const memberDepartment = (match?.member_department as string | undefined)?.trim();
+  let externalId = match ? Number(match.id) : null;
+  let memberDepartment = (match?.member_department as string | undefined)?.trim();
   let forename = match ? (match.first_name as string) ?? "" : "";
   let surname = match ? (match.last_name as string) ?? "" : "";
   const normalizedEmail = email.trim().toLowerCase();
@@ -106,6 +106,22 @@ async function loginViaExternalMitroo(
   if (!resolvedEame) {
     debugExternal("unable to resolve eame", { email });
     return null;
+  }
+
+  // If the email-based lookup didn't find the volunteer, try by
+  // registration_code. The login email may differ from the email stored
+  // in the volunteer record.
+  if (!match && resolvedEame) {
+    const matchByCode = await client.findVolunteerByCode(resolvedEame);
+    if (matchByCode) {
+      externalId = Number(matchByCode.id);
+      memberDepartment = (matchByCode.member_department as string | undefined)?.trim();
+      debugExternal("found volunteer by registration_code", {
+        eame: resolvedEame,
+        externalId: Number.isFinite(externalId) ? externalId : null,
+        memberDepartment: memberDepartment || null,
+      });
+    }
   }
 
   debugExternal("matched external identity", {
@@ -249,6 +265,45 @@ router.post("/login", async (req: Request, res: Response) => {
       },
       token,
     });
+
+    // Fire-and-forget: populate department + externalId from external Mitroo.
+    // syncUserDepartments() silently does nothing when the user lacks
+    // externalId or no DepartmentSyncConfig rows exist — this covers
+    // that bootstrap case by logging into the external system directly.
+    (async () => {
+      try {
+        const client = new MitrooClient(EXTERNAL_BASE_URL);
+        await client.login(data.email, data.password);
+        let match = await client.findVolunteerByEmail(identifier);
+
+        if (!match) {
+          // Email may differ between login and volunteer record — try
+          // the eame from the profile page to look up the volunteer.
+          const profile = await client.fetchProfileIdentity();
+          if (profile.eame) {
+            match = await client.findVolunteerByCode(profile.eame);
+          }
+        }
+        if (!match) return;
+
+        const extId = Number(match.id);
+        const memberDepartment = (match.member_department as string | undefined)?.trim();
+
+        if (Number.isFinite(extId) && extId > 0 && !user.externalId) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { externalId: extId },
+          });
+          debugExternal("populated missing externalId", { userId: user.id, externalId: extId });
+        }
+
+        if (memberDepartment) {
+          await linkUserToDepartment(user.id, memberDepartment);
+        }
+      } catch (e) {
+        console.error("[auth] external department sync after login error:", e);
+      }
+    })();
 
     // Fire-and-forget: sync user applications & department services on login
     syncUserApplications(user.id).catch((e) =>
