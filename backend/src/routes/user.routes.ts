@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import prisma from "../lib/prisma";
-import { authenticate, getMissionAdminDepartmentIds, requireAdmin } from "../middleware/auth";
+import { authenticate, getMissionAdminDepartmentIds, requireAdmin, requireAdminOrMissionAdminForDept } from "../middleware/auth";
 import { sendInviteEmail } from "../lib/email";
 import { formatGeneratedEame, getNextGeneratedEameSequence } from "../lib/eame";
 
@@ -85,6 +85,22 @@ async function canReadUserByScope(scope: UserAccessScope, currentUserId: number,
     return currentUserId === targetUserId;
   }
 
+  const count = await prisma.userDepartment.count({
+    where: {
+      userId: targetUserId,
+      departmentId: { in: scope.departmentIds },
+    },
+  });
+  return count > 0;
+}
+
+async function canWriteUserByScope(scope: UserAccessScope, targetUserId: number): Promise<boolean> {
+  if (scope.kind === "admin") {
+    return true;
+  }
+  if (scope.kind === "self") {
+    return false;
+  }
   const count = await prisma.userDepartment.count({
     where: {
       userId: targetUserId,
@@ -224,7 +240,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 
 // ── POST /api/users ─────────────────────────────
 // Admin creates a user: random password generated, invite email sent
-router.post("/", requireAdmin, async (req: Request, res: Response) => {
+router.post("/", requireAdminOrMissionAdminForDept((req) => Number(req.body?.departmentId)), async (req: Request, res: Response) => {
   try {
     const data = createUserSchema.parse(req.body);
     const providedEame = data.eame?.trim();
@@ -338,10 +354,19 @@ router.post("/", requireAdmin, async (req: Request, res: Response) => {
 });
 
 // ── PATCH /api/users/:id ────────────────────────
-router.patch("/:id", requireAdmin, async (req: Request, res: Response) => {
+router.patch("/:id", async (req: Request, res: Response) => {
   try {
     const targetUserId = Number(req.params.id);
     const data = updateSchema.parse(req.body);
+    const scope = await getAccessScope(req);
+    const writeAllowed = await canWriteUserByScope(scope, targetUserId);
+    if (!writeAllowed) {
+      res.status(403).json({ error: "Access denied" });
+      return;
+    }
+
+    // Strip isAdmin from body for non-system-admin callers
+    const cleanData = req.user!.isAdmin ? data : { ...data, isAdmin: undefined };
 
     if (data.eame) {
       const existingEame = await prisma.user.findUnique({ where: { eame: data.eame } });
@@ -362,8 +387,8 @@ router.patch("/:id", requireAdmin, async (req: Request, res: Response) => {
     const user = await prisma.user.update({
       where: { id: targetUserId },
       data: {
-        ...data,
-        birthDate: data.birthDate ? new Date(data.birthDate) : data.birthDate === null ? null : undefined,
+        ...cleanData,
+        birthDate: cleanData.birthDate ? new Date(cleanData.birthDate) : cleanData.birthDate === null ? null : undefined,
       },
       select: USER_SELECT,
     });
@@ -375,8 +400,15 @@ router.patch("/:id", requireAdmin, async (req: Request, res: Response) => {
 });
 
 // ── DELETE /api/users/:id ───────────────────────
-router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
-  await prisma.user.delete({ where: { id: Number(req.params.id) } });
+router.delete("/:id", async (req: Request, res: Response) => {
+  const targetUserId = Number(req.params.id);
+  const scope = await getAccessScope(req);
+  const writeAllowed = await canWriteUserByScope(scope, targetUserId);
+  if (!writeAllowed) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+  await prisma.user.delete({ where: { id: targetUserId } });
   res.status(204).end();
 });
 
@@ -441,19 +473,33 @@ router.get("/:id/services", async (req: Request, res: Response) => {
 });
 
 // ── POST /api/users/:id/specializations ─────────
-router.post("/:id/specializations", requireAdmin, async (req: Request, res: Response) => {
+router.post("/:id/specializations", async (req: Request, res: Response) => {
+  const targetUserId = Number(req.params.id);
+  const scope = await getAccessScope(req);
+  const writeAllowed = await canWriteUserByScope(scope, targetUserId);
+  if (!writeAllowed) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
   const { specializationId } = req.body;
   const record = await prisma.userSpecialization.create({
-    data: { userId: Number(req.params.id), specializationId: Number(specializationId) },
+    data: { userId: targetUserId, specializationId: Number(specializationId) },
     include: { specialization: true },
   });
   res.status(201).json(record);
 });
 
 // ── DELETE /api/users/:uid/specializations/:sid ─
-router.delete("/:uid/specializations/:sid", requireAdmin, async (req: Request, res: Response) => {
+router.delete("/:uid/specializations/:sid", async (req: Request, res: Response) => {
+  const targetUserId = Number(req.params.uid);
+  const scope = await getAccessScope(req);
+  const writeAllowed = await canWriteUserByScope(scope, targetUserId);
+  if (!writeAllowed) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
   await prisma.userSpecialization.delete({
-    where: { userId_specializationId: { userId: Number(req.params.uid), specializationId: Number(req.params.sid) } },
+    where: { userId_specializationId: { userId: targetUserId, specializationId: Number(req.params.sid) } },
   });
   res.status(204).end();
 });

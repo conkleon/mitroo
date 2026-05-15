@@ -17,7 +17,6 @@ import '../screens/manage_departments_screen.dart';
 import '../screens/department_detail_screen.dart';
 import '../screens/manage_specializations_screen.dart';
 import '../screens/specialization_detail_screen.dart';
-import '../screens/manage_service_types_screen.dart';
 import '../screens/training_applications_review_screen.dart';
 import '../screens/services_screen.dart';
 import '../screens/items_screen.dart';
@@ -214,10 +213,6 @@ GoRouter appRouter(AuthProvider auth) {
               final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
               return SpecializationDetailScreen(specializationId: id);
             },
-          ),
-          GoRoute(
-            path: '/admin/service-types',
-            builder: (context, state) => const ManageServiceTypesScreen(),
           ),
           GoRoute(
             path: '/admin/training-applications',
