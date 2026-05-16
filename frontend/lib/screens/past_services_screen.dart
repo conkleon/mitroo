@@ -755,7 +755,7 @@ class _PastServiceCard extends StatelessWidget {
     final name = (svc['name'] ?? '').toString();
     final location = (svc['location'] ?? '').toString();
     final userServices = svc['userServices'] as List<dynamic>? ?? [];
-    final enrolledCount = (svc['_count']?['userServices'] ?? 0) as int;
+    final enrolledCount = (svc['_count']?['userServices'] as int?) ?? userServices.length;
     final acceptedCount =
         userServices.where((us) => us['status'] == 'accepted').length;
 

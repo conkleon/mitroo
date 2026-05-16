@@ -19,8 +19,9 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-        () => context.read<DepartmentProvider>().fetchDepartments());
+    Future.microtask(() {
+      if (mounted) context.read<DepartmentProvider>().fetchDepartments();
+    });
   }
 
   List<dynamic> get _filtered {
@@ -269,10 +270,10 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
       itemCount: depts.length,
-      itemBuilder: (context, i) => _DeptCard(
+      itemBuilder: (ctx, i) => _DeptCard(
         dept: depts[i] as Map<String, dynamic>,
         onTap: () async {
-          await context.push('/admin/departments/${depts[i]['id']}');
+          await ctx.push('/admin/departments/${depts[i]['id']}');
           if (mounted) context.read<DepartmentProvider>().fetchDepartments();
         },
       ),
@@ -289,10 +290,10 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
         childAspectRatio: 3.5,
       ),
       itemCount: depts.length,
-      itemBuilder: (context, i) => _DeptCard(
+      itemBuilder: (ctx, i) => _DeptCard(
         dept: depts[i] as Map<String, dynamic>,
         onTap: () async {
-          await context.push('/admin/departments/${depts[i]['id']}');
+          await ctx.push('/admin/departments/${depts[i]['id']}');
           if (mounted) context.read<DepartmentProvider>().fetchDepartments();
         },
       ),
