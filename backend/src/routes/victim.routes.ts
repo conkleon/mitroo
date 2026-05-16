@@ -144,7 +144,7 @@ async function canWriteVictim(
 // ── GET /api/victims ─────────────────────────────
 
 router.get("/", async (req: Request, res: Response) => {
-  const { serviceId } = req.query;
+  const { serviceId, search, dateFrom, dateTo, status, page, limit } = req.query;
   const userId = req.user!.userId;
   const isAdmin = req.user!.isAdmin;
 
@@ -155,6 +155,34 @@ router.get("/", async (req: Request, res: Response) => {
       where.serviceId = Number(serviceId);
     }
 
+    // Search filter — case-insensitive name contains
+    if (typeof search === "string" && search.trim().length > 0) {
+      where.name = { contains: search.trim(), mode: "insensitive" };
+    }
+
+    // Date range filter
+    if (typeof dateFrom === "string" && dateFrom) {
+      const from = new Date(dateFrom);
+      if (!isNaN(from.getTime())) {
+        where.createdAt = { ...(where.createdAt ?? {}), gte: from };
+      }
+    }
+    if (typeof dateTo === "string" && dateTo) {
+      const to = new Date(dateTo);
+      if (!isNaN(to.getTime())) {
+        to.setHours(23, 59, 59, 999);
+        where.createdAt = { ...(where.createdAt ?? {}), lte: to };
+      }
+    }
+
+    // Status filter
+    if (status === "open") {
+      where.isFinalized = false;
+    } else if (status === "finalized") {
+      where.isFinalized = true;
+    }
+
+    // Access control (non-admin)
     if (!isAdmin) {
       const missionAdminDeptIds: number[] = [];
       const userDeptIds = await prisma.userDepartment.findMany({
@@ -184,22 +212,33 @@ router.get("/", async (req: Request, res: Response) => {
       ];
     }
 
-    const victims = await prisma.victim.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        name: true,
-        age: true,
-        gender: true,
-        isFinalized: true,
-        createdAt: true,
-        service: { select: { id: true, name: true } },
-        createdBy: { select: { id: true, forename: true, surname: true } },
-      },
-    });
+    // Pagination
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
+    const skip = (pageNum - 1) * limitNum;
 
-    res.json(victims);
+    const [data, total] = await Promise.all([
+      prisma.victim.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limitNum,
+        select: {
+          id: true,
+          name: true,
+          age: true,
+          gender: true,
+          chiefComplaint: true,
+          isFinalized: true,
+          createdAt: true,
+          service: { select: { id: true, name: true } },
+          createdBy: { select: { id: true, forename: true, surname: true } },
+        },
+      }),
+      prisma.victim.count({ where }),
+    ]);
+
+    res.json({ data, total, page: pageNum, limit: limitNum });
   } catch (err: any) {
     if (err instanceof z.ZodError) {
       res.status(400).json({ error: "Μη έγκυρα δεδομένα", details: err.errors });
