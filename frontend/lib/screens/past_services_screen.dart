@@ -93,6 +93,13 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
 
   String _fmtDay(DateTime d) => DateFormat('dd/MM/yyyy').format(d);
 
+  String _fmtDate(String? iso) {
+    if (iso == null) return '—';
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return '—';
+    return DateFormat('dd/MM/yy HH:mm').format(dt.toLocal());
+  }
+
   Future<void> _pickDate({required bool isFrom}) async {
     final initial = isFrom ? _fromDate : _toDate;
     final picked = await showDatePicker(
@@ -424,8 +431,7 @@ class _PastServiceCard extends StatelessWidget {
     if (iso == null) return '—';
     final dt = DateTime.tryParse(iso);
     if (dt == null) return '—';
-    final l = dt.toLocal();
-    return '${l.day.toString().padLeft(2, '0')}/${l.month.toString().padLeft(2, '0')}/${(l.year % 100).toString().padLeft(2, '0')} ${l.hour.toString().padLeft(2, '0')}:${l.minute.toString().padLeft(2, '0')}';
+    return DateFormat('dd/MM/yy HH:mm').format(dt.toLocal());
   }
 
   @override
