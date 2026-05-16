@@ -90,6 +90,7 @@ model Service {
   vehicleLogs     VehicleLog[]
   attachments     FileAttachment[]
   chats            Chat[]
+  victims          Victim[]
 
   @@map("services")
 }
@@ -142,6 +143,8 @@ model User {
   createdChats                 Chat[]              @relation("CreatedChats")
   chatMemberships              ChatMember[]
   chatMessages                 ChatMessage[]       @relation("ChatMessages")
+  createdVictims               Victim[]            @relation("VictimCreatedBy")
+  finalizedVictims             Victim[]            @relation("VictimFinalizedBy")
 
   @@map("users")
 }
@@ -279,6 +282,7 @@ model Item {
   itemServices ItemService[]
   attachments  FileAttachment[]
   comments     ItemComment[]
+  treatments   Treatment[]
 
   @@map("items")
 }
@@ -632,4 +636,108 @@ model FileAttachment {
   @@index([itemId])
   @@index([vehicleId])
   @@map("file_attachments")
+}
+
+// ──────────────────────────────────────────────
+// Victim Management
+// ──────────────────────────────────────────────
+
+model Victim {
+  id        Int    @id @default(autoincrement())
+
+  name            String
+  age             Int?
+  dateOfBirth     DateTime? @map("date_of_birth")
+  gender          String?
+  address         String?   @db.Text
+  city            String?   @db.VarChar(255)
+  postalCode      String?   @map("postal_code") @db.VarChar(20)
+  telephone       String?   @db.VarChar(30)
+  emergencyContact String?  @map("emergency_contact") @db.VarChar(255)
+  emergencyPhone  String?   @map("emergency_phone") @db.VarChar(30)
+
+  chiefComplaint  String?   @map("chief_complaint") @db.Text
+  allergies       String?   @db.Text
+  medications     String?   @db.Text
+  medicalHistory  String?   @map("medical_history") @db.Text
+
+  gcsEye          Int?      @map("gcs_eye")
+  gcsVerbal       Int?      @map("gcs_verbal")
+  gcsMotor        Int?      @map("gcs_motor")
+  gcsTotal        Int?      @map("gcs_total")
+
+  avpu            String?
+
+  latitude        Float?
+  longitude       Float?
+  locationNotes   String?   @map("location_notes") @db.Text
+
+  serviceId       Int?      @map("service_id")
+
+  notes           String?   @db.Text
+
+  isFinalized     Boolean   @default(false) @map("is_finalized")
+  finalizedAt     DateTime? @map("finalized_at")
+  finalizedById   Int?      @map("finalized_by_id")
+
+  createdById     Int       @map("created_by_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  createdBy       User       @relation("VictimCreatedBy", fields: [createdById], references: [id])
+  finalizedBy     User?      @relation("VictimFinalizedBy", fields: [finalizedById], references: [id], onDelete: SetNull)
+  service         Service?   @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  vitalSigns      VitalSign[]
+  treatments      Treatment[]
+
+  @@index([createdById])
+  @@index([serviceId])
+  @@index([createdAt])
+  @@map("victims")
+}
+
+model VitalSign {
+  id              Int      @id @default(autoincrement())
+  victimId        Int      @map("victim_id")
+
+  systolicBP      Int?     @map("systolic_bp")
+  diastolicBP     Int?     @map("diastolic_bp")
+  heartRate       Int?     @map("heart_rate")
+  respiratoryRate Int?     @map("respiratory_rate")
+  oxygenSat       Int?     @map("oxygen_sat")
+  temperature     Float?
+  bloodGlucose    Float?   @map("blood_glucose")
+  painScore       Int?     @map("pain_score")
+
+  measuredAt      DateTime @default(now()) @map("measured_at")
+  notes           String?  @db.Text
+  measuredBy      String?  @map("measured_by") @db.VarChar(255)
+
+  victim          Victim   @relation(fields: [victimId], references: [id], onDelete: Cascade)
+
+  @@index([victimId])
+  @@index([measuredAt])
+  @@map("vital_signs")
+}
+
+model Treatment {
+  id              Int      @id @default(autoincrement())
+  victimId        Int      @map("victim_id")
+
+  action          String   @db.Text
+  materialUsed    String?  @map("material_used") @db.Text
+  notes           String?  @db.Text
+
+  itemId          Int?     @map("item_id")
+  consumedNote    String?  @map("consumed_note") @db.Text
+
+  performedAt     DateTime @default(now()) @map("performed_at")
+  performedBy     String?  @map("performed_by") @db.VarChar(255)
+
+  victim          Victim   @relation(fields: [victimId], references: [id], onDelete: Cascade)
+  item            Item?    @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@index([victimId])
+  @@index([performedAt])
+  @@map("treatments")
 }
