@@ -286,7 +286,7 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
         crossAxisCount: 2,
         mainAxisSpacing: 8,
         crossAxisSpacing: 12,
-        childAspectRatio: 3.0,
+        childAspectRatio: 3.5,
       ),
       itemCount: depts.length,
       itemBuilder: (context, i) => _DeptCard(
@@ -313,66 +313,77 @@ class _DeptCard extends StatelessWidget {
     final memberCount = counts['userDepartments'] ?? 0;
     final serviceCount = counts['services'] ?? 0;
     final vehicleCount = counts['vehicles'] ?? 0;
+    final location = (dept['location'] ?? '').toString();
+    final description = (dept['description'] ?? '').toString();
+    final subtitle = [location, description]
+        .where((s) => s.isNotEmpty)
+        .join(' • ');
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 0,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
-        child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: IntrinsicHeight(
           child: Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                width: 4,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF7C3AED),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
                   ),
-                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.business,
-                    color: Colors.white, size: 22),
               ),
-              const SizedBox(width: 14),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(dept['name'] ?? '',
-                        style: tt.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 12,
-                      children: [
-                        _CountBadge(
-                            icon: Icons.people,
-                            count: memberCount,
-                            color: const Color(0xFFDC2626)),
-                        _CountBadge(
-                            icon: Icons.miscellaneous_services,
-                            count: serviceCount,
-                            color: const Color(0xFF059669)),
-                        _CountBadge(
-                            icon: Icons.directions_car,
-                            count: vehicleCount,
-                            color: const Color(0xFFD97706)),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(dept['name'] ?? '',
+                          style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                      if (subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(subtitle,
+                            style: GoogleFonts.inter(
+                                fontSize: 12, color: const Color(0xFF6B7280)),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
                       ],
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 10,
+                        children: [
+                          _CountBadge(
+                              icon: Icons.people,
+                              count: memberCount,
+                              color: const Color(0xFFDC2626)),
+                          _CountBadge(
+                              icon: Icons.miscellaneous_services,
+                              count: serviceCount,
+                              color: const Color(0xFF059669)),
+                          _CountBadge(
+                              icon: Icons.directions_car,
+                              count: vehicleCount,
+                              color: const Color(0xFFD97706)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              Icon(Icons.chevron_right,
-                  color: Color(0xFF9CA3AF), size: 20),
+              const Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: Icon(Icons.chevron_right, color: Color(0xFF9CA3AF), size: 18),
+              ),
             ],
           ),
         ),
