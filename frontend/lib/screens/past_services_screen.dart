@@ -91,13 +91,6 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     }).toList();
   }
 
-  String _fmtDate(String? iso) {
-    if (iso == null) return '—';
-    final dt = DateTime.tryParse(iso);
-    if (dt == null) return '—';
-    return DateFormat('dd/MM/yy HH:mm').format(dt.toLocal());
-  }
-
   String _fmtDay(DateTime d) => DateFormat('dd/MM/yyyy').format(d);
 
   Future<void> _pickDate({required bool isFrom}) async {
@@ -367,7 +360,10 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
       itemCount: services.length,
-      itemBuilder: (ctx, i) => _buildCard(services[i]),
+      itemBuilder: (ctx, i) => _PastServiceCard(
+        svc: services[i] as Map<String, dynamic>,
+        onTap: () => _showPastServiceSheet(services[i] as Map<String, dynamic>),
+      ),
     );
   }
 
@@ -376,150 +372,20 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
       padding: const EdgeInsets.fromLTRB(32, 4, 32, 24),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: 12,
+        mainAxisSpacing: 8,
         crossAxisSpacing: 12,
-        childAspectRatio: 2.0,
+        childAspectRatio: 2.8,
       ),
       itemCount: services.length,
-      itemBuilder: (ctx, i) => _buildCard(services[i]),
-    );
-  }
-
-  Widget _buildCard(Map<String, dynamic> svc) {
-    final tt = Theme.of(context).textTheme;
-    final name = svc['name'] ?? '';
-    final location = svc['location'] ?? '';
-    final carrier = svc['carrier'] ?? '';
-    final visSpecs = svc['visibility'] as List<dynamic>? ?? [];
-    final userServices = svc['userServices'] as List<dynamic>? ?? [];
-    final enrolledCount = (svc['_count']?['userServices'] ?? 0) as int;
-    final acceptedCount =
-        userServices.where((us) => us['status'] == 'accepted').length;
-    final totalHours = userServices.fold<int>(
-        0, (sum, us) => sum + ((us['hours'] as int?) ?? 0));
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Color(0xFFE5E7EB)),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => context.push('/admin/services/${svc['id']}'),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Top row: name + completed badge ──
-              Row(children: [
-                Expanded(
-                  child: Text(name,
-                      style: tt.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFECFDF5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text('Ολοκληρωμένη',
-                      style: TextStyle(
-                          color: Color(0xFF4B5563),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
-                ),
-              ]),
-              const SizedBox(height: 8),
-
-              // ── Info row: location, carrier, date range ──
-              Wrap(spacing: 12, runSpacing: 4, children: [
-                if (location.isNotEmpty)
-                  _PastInfoChip(Icons.location_on, location),
-                if (carrier.isNotEmpty)
-                  _PastInfoChip(Icons.groups, carrier),
-                _PastInfoChip(Icons.calendar_today,
-                    '${_fmtDate(svc['startAt'])} → ${_fmtDate(svc['endAt'])}'),
-              ]),
-
-              // ── Specialization chips (horizontal scroll) ──
-              if (visSpecs.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 26,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: visSpecs.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 4),
-                    itemBuilder: (context, i) {
-                      final specName =
-                          visSpecs[i]['specialization']?['name'] ?? '';
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF5F3FF),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFDDD6FE)),
-                        ),
-                        child: Text(specName,
-                            style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF6D28D9))),
-                      );
-                    },
-                  ),
-                ),
-              ],
-              const SizedBox(height: 10),
-
-              // ── Stats row ──
-              Row(children: [
-                _StatPill(Icons.people, '$enrolledCount εγγ.',
-                    const Color(0xFF6B7280)),
-                const SizedBox(width: 8),
-                if (acceptedCount > 0) ...[
-                  _StatPill(Icons.check_circle_outline,
-                      '$acceptedCount εγκ.', const Color(0xFF059669)),
-                  const SizedBox(width: 8),
-                ],
-                if (totalHours > 0)
-                  _StatPill(Icons.schedule, '${totalHours}h',
-                      const Color(0xFF2563EB)),
-                const Spacer(),
-                Icon(Icons.chevron_right,
-                    size: 18, color: Color(0xFF9CA3AF)),
-              ]),
-            ],
-          ),
-        ),
+      itemBuilder: (ctx, i) => _PastServiceCard(
+        svc: services[i] as Map<String, dynamic>,
+        onTap: () => _showPastServiceSheet(services[i] as Map<String, dynamic>),
       ),
     );
   }
-}
 
-class _PastInfoChip extends StatelessWidget {
-  final IconData icon;
-  final String text;
+  void _showPastServiceSheet(Map<String, dynamic> svc) {}
 
-  const _PastInfoChip(this.icon, this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 12, color: const Color(0xFF6B7280)),
-      const SizedBox(width: 4),
-      Text(text,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-    ]);
-  }
 }
 
 class _StatPill extends StatelessWidget {
@@ -545,6 +411,130 @@ class _StatPill extends StatelessWidget {
             style: TextStyle(
                 fontSize: 11, color: color, fontWeight: FontWeight.w600)),
       ]),
+    );
+  }
+}
+
+class _PastServiceCard extends StatelessWidget {
+  final Map<String, dynamic> svc;
+  final VoidCallback onTap;
+  const _PastServiceCard({required this.svc, required this.onTap});
+
+  String _fmt(String? iso) {
+    if (iso == null) return '—';
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return '—';
+    final l = dt.toLocal();
+    return '${l.day.toString().padLeft(2, '0')}/${l.month.toString().padLeft(2, '0')}/${(l.year % 100).toString().padLeft(2, '0')} ${l.hour.toString().padLeft(2, '0')}:${l.minute.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final name = (svc['name'] ?? '').toString();
+    final location = (svc['location'] ?? '').toString();
+    final userServices = svc['userServices'] as List<dynamic>? ?? [];
+    final enrolledCount = (svc['_count']?['userServices'] ?? 0) as int;
+    final acceptedCount =
+        userServices.where((us) => us['status'] == 'accepted').length;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        elevation: 0,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  Container(
+                    width: 4,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF059669),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        bottomLeft: Radius.circular(12),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(name,
+                              style: tt.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 2),
+                          Row(children: [
+                            const Icon(Icons.schedule,
+                                size: 12, color: Color(0xFF6B7280)),
+                            const SizedBox(width: 3),
+                            Flexible(
+                              child: Text(
+                                '${_fmt(svc['startAt'] as String?)} → ${_fmt(svc['endAt'] as String?)}',
+                                style: const TextStyle(
+                                    fontSize: 12, color: Color(0xFF6B7280)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ]),
+                          if (location.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Row(children: [
+                              const Icon(Icons.location_on_outlined,
+                                  size: 12, color: Color(0xFF6B7280)),
+                              const SizedBox(width: 3),
+                              Flexible(
+                                child: Text(location,
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF6B7280)),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                            ]),
+                          ],
+                          const SizedBox(height: 4),
+                          Row(children: [
+                            _StatPill(Icons.people, '$enrolledCount εγγ.',
+                                const Color(0xFF6B7280)),
+                            if (acceptedCount > 0) ...[
+                              const SizedBox(width: 6),
+                              _StatPill(
+                                  Icons.check_circle_outline,
+                                  '$acceptedCount εγκ.',
+                                  const Color(0xFF059669)),
+                            ],
+                          ]),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.only(right: 8),
+                    child: Icon(Icons.chevron_right,
+                        color: Color(0xFF9CA3AF), size: 18),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
