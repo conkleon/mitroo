@@ -357,8 +357,9 @@ class _DeptCard extends StatelessWidget {
                                 fontSize: 12, color: const Color(0xFF6B7280)),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis),
-                      ],
-                      const SizedBox(height: 4),
+                        const SizedBox(height: 4),
+                      ] else
+                        const SizedBox(height: 2),
                       Wrap(
                         spacing: 10,
                         children: [
