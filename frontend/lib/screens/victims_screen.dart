@@ -12,24 +12,50 @@ class VictimsScreen extends StatefulWidget {
 }
 
 class _VictimsScreenState extends State<VictimsScreen> {
-  String _filter = 'all';
+  final _searchCtrl = TextEditingController();
+  String _status = 'all';
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<VictimProvider>().fetchVictims());
+    Future.microtask(() => _fetch());
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _fetch({int page = 1}) {
+    context.read<VictimProvider>().fetchVictims(
+      search: _searchCtrl.text,
+      dateFrom: _dateFrom != null
+          ? '${_dateFrom!.year}-${_dateFrom!.month.toString().padLeft(2, '0')}-${_dateFrom!.day.toString().padLeft(2, '0')}'
+          : null,
+      dateTo: _dateTo != null
+          ? '${_dateTo!.year}-${_dateTo!.month.toString().padLeft(2, '0')}-${_dateTo!.day.toString().padLeft(2, '0')}'
+          : null,
+      status: _status,
+      page: page,
+    );
+  }
+
+  String _formatDate(String? iso) {
+    if (iso == null) return '';
+    final dt = DateTime.tryParse(iso)?.toLocal();
+    if (dt == null) return '';
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<VictimProvider>();
     final victims = provider.victims;
-
-    final filtered = _filter == 'all'
-        ? victims
-        : _filter == 'open'
-            ? victims.where((v) => v['isFinalized'] != true).toList()
-            : victims.where((v) => v['isFinalized'] == true).toList();
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -40,39 +66,258 @@ class _VictimsScreenState extends State<VictimsScreen> {
         child: const Icon(Icons.add),
       ),
       body: RefreshIndicator(
-        onRefresh: () => provider.fetchVictims(),
+        onRefresh: () async => _fetch(),
         child: Column(
           children: [
-            _FilterRow(selected: _filter, onChanged: (v) => setState(() => _filter = v)),
+            // ── Search bar ──────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: TextField(
+                controller: _searchCtrl,
+                decoration: InputDecoration(
+                  hintText: 'Αναζήτηση...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchCtrl.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            _fetch();
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onChanged: (_) => _fetch(),
+              ),
+            ),
+
+            // ── Date range row ─────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _DatePickerButton(
+                      label: 'Από',
+                      date: _dateFrom,
+                      onPicked: (d) {
+                        setState(() => _dateFrom = d);
+                        _fetch();
+                      },
+                      onClear: () {
+                        setState(() => _dateFrom = null);
+                        _fetch();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _DatePickerButton(
+                      label: 'Έως',
+                      date: _dateTo,
+                      onPicked: (d) {
+                        setState(() => _dateTo = d);
+                        _fetch();
+                      },
+                      onClear: () {
+                        setState(() => _dateTo = null);
+                        _fetch();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Status filter chips ────────────
+            _FilterRow(
+              selected: _status,
+              onChanged: (v) {
+                setState(() => _status = v);
+                _fetch();
+              },
+            ),
+
+            const SizedBox(height: 4),
+
+            // ── Table or loading/empty ─────────
             Expanded(
               child: provider.loading
                   ? const Center(child: CircularProgressIndicator())
-                  : filtered.isEmpty
+                  : victims.isEmpty
                       ? Center(
                           child: Text(
-                            _filter == 'all'
-                                ? 'Δεν υπάρχουν περιστατικά'
-                                : _filter == 'open'
-                                    ? 'Δεν υπάρχουν ανοιχτά περιστατικά'
-                                    : 'Δεν υπάρχουν οριστικοποιημένα περιστατικά',
-                            style: GoogleFonts.inter(color: const Color(0xFF6B7280), fontSize: 15),
+                            'Δεν υπάρχουν περιστατικά',
+                            style: GoogleFonts.inter(
+                              color: const Color(0xFF6B7280),
+                              fontSize: 15,
+                            ),
                           ),
                         )
-                      : ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                          itemCount: filtered.length,
-                          itemBuilder: (context, index) {
-                            final v = filtered[index];
-                            return _VictimCard(victim: v);
-                          },
+                      : SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minWidth: MediaQuery.of(context).size.width,
+                            ),
+                            child: DataTable(
+                              headingRowColor: WidgetStateProperty.all(
+                                const Color(0xFFF9FAFB),
+                              ),
+                              dataRowColor: WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) {
+                                  return cs.primary.withAlpha(15);
+                                }
+                                return null;
+                              }),
+                              columnSpacing: 24,
+                              horizontalMargin: 16,
+                              columns: [
+                                DataColumn(
+                                  label: Text('Όνομα',
+                                      style: tt.labelLarge?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF374151))),
+                                ),
+                                DataColumn(
+                                  label: Text('Ημ/νία Καταγραφής',
+                                      style: tt.labelLarge?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF374151))),
+                                ),
+                                DataColumn(
+                                  label: Text('Κύριο Σύμπτωμα',
+                                      style: tt.labelLarge?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF374151))),
+                                ),
+                              ],
+                              rows: victims.asMap().entries.map((entry) {
+                                final i = entry.key;
+                                final v = entry.value;
+                                final name = v['name'] as String? ?? 'Άγνωστο';
+                                final chiefComplaint = v['chiefComplaint'] as String? ?? '';
+                                return DataRow(
+                                  color: i.isEven
+                                      ? WidgetStateProperty.all(const Color(0xFFF9FAFB))
+                                      : null,
+                                  onSelectChanged: (_) => context.push('/victims/${v['id']}'),
+                                  cells: [
+                                    DataCell(
+                                      Text(name,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF1F2937)),
+                                          overflow: TextOverflow.ellipsis),
+                                    ),
+                                    DataCell(
+                                      Text(_formatDate(v['createdAt'] as String?),
+                                          style: const TextStyle(color: Color(0xFF6B7280))),
+                                    ),
+                                    DataCell(
+                                      Text(
+                                        chiefComplaint.isNotEmpty ? chiefComplaint : '—',
+                                        style: TextStyle(
+                                          color: chiefComplaint.isNotEmpty
+                                              ? const Color(0xFF374151)
+                                              : const Color(0xFF9CA3AF),
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          ),
                         ),
             ),
+
+            // ── Pagination ──────────────────────
+            if (provider.totalPages > 1)
+              _PaginationBar(
+                currentPage: provider.currentPage,
+                totalPages: provider.totalPages,
+                onPageChanged: (p) => _fetch(page: p),
+              ),
           ],
         ),
       ),
     );
   }
 }
+
+// ── Date picker button ─────────────────────────────────
+
+class _DatePickerButton extends StatelessWidget {
+  final String label;
+  final DateTime? date;
+  final ValueChanged<DateTime> onPicked;
+  final VoidCallback onClear;
+
+  const _DatePickerButton({
+    required this.label,
+    required this.date,
+    required this.onPicked,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: date ?? DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2035),
+          locale: const Locale('el'),
+        );
+        if (picked != null) onPicked(picked);
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_today, size: 15, color: cs.primary),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                date != null
+                    ? '${date!.day}/${date!.month}/${date!.year}'
+                    : label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: date != null ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
+                ),
+              ),
+            ),
+            if (date != null)
+              GestureDetector(
+                onTap: onClear,
+                child: const Icon(Icons.close, size: 16, color: Color(0xFF9CA3AF)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Status filter chips ────────────────────────────────
 
 class _FilterRow extends StatelessWidget {
   final String selected;
@@ -127,77 +372,121 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _VictimCard extends StatelessWidget {
-  final Map<String, dynamic> victim;
+// ── Pagination bar ─────────────────────────────────────
 
-  const _VictimCard({required this.victim});
+class _PaginationBar extends StatelessWidget {
+  final int currentPage;
+  final int totalPages;
+  final ValueChanged<int> onPageChanged;
+
+  const _PaginationBar({
+    required this.currentPage,
+    required this.totalPages,
+    required this.onPageChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final name = victim['name'] ?? 'Άγνωστο';
-    final age = victim['age'];
-    final isFinalized = victim['isFinalized'] == true;
-    final createdAt = victim['createdAt'] as String?;
-    final serviceName = (victim['service'] as Map<String, dynamic>?)?.let((s) => s['name']) ?? '—';
-    final id = victim['id'] as int;
-
-    String dateStr = '';
-    if (createdAt != null) {
-      final dt = DateTime.tryParse(createdAt)?.toLocal();
-      if (dt != null) {
-        dateStr = '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    // Build page number list (show max 7 with ellipsis)
+    final pages = <int>[];
+    if (totalPages <= 7) {
+      for (int i = 1; i <= totalPages; i++) {
+        pages.add(i);
       }
+    } else {
+      pages.add(1);
+      if (currentPage > 3) pages.add(-1); // ellipsis
+      for (int i = (currentPage - 1).clamp(2, totalPages - 1);
+          i <= (currentPage + 1).clamp(2, totalPages - 1);
+          i++) {
+        pages.add(i);
+      }
+      if (currentPage < totalPages - 2) pages.add(-2); // ellipsis
+      pages.add(totalPages);
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => context.push('/victims/$id'),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(name,
-                            style: GoogleFonts.literata(fontSize: 15, fontWeight: FontWeight.w700),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (isFinalized)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 6),
-                            child: Icon(Icons.lock, size: 14, color: const Color(0xFF6B7280)),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      [if (age != null) '$age ετών', serviceName].where((s) => s.isNotEmpty).join(' · '),
-                      style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF6B7280)),
-                    ),
-                  ],
-                ),
-              ),
-              Text(dateStr, style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF9CA3AF))),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _PageButton(
+            icon: Icons.chevron_left,
+            enabled: currentPage > 1,
+            onTap: () => onPageChanged(currentPage - 1),
           ),
-        ),
+          ...pages.map((p) {
+            if (p < 0) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 2),
+                child: Text('…', style: TextStyle(color: Color(0xFF9CA3AF))),
+              );
+            }
+            return _PageButton(
+              label: '$p',
+              active: p == currentPage,
+              enabled: true,
+              onTap: () => onPageChanged(p),
+            );
+          }),
+          _PageButton(
+            icon: Icons.chevron_right,
+            enabled: currentPage < totalPages,
+            onTap: () => onPageChanged(currentPage + 1),
+          ),
+        ],
       ),
     );
   }
 }
 
-extension _MapLet on Map? {
-  R? let<R>(R Function(Map m) fn) {
-    final self = this;
-    if (self == null) return null;
-    return fn(self);
+class _PageButton extends StatelessWidget {
+  final String? label;
+  final IconData? icon;
+  final bool active;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _PageButton({
+    this.label,
+    this.icon,
+    this.active = false,
+    this.enabled = true,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: SizedBox(
+        width: 36,
+        height: 36,
+        child: Material(
+          color: active ? cs.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          child: InkWell(
+            onTap: enabled ? onTap : null,
+            borderRadius: BorderRadius.circular(8),
+            child: Center(
+              child: icon != null
+                  ? Icon(icon, size: 18,
+                      color: enabled ? const Color(0xFF374151) : const Color(0xFFD1D5DB))
+                  : Text(label!,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: active
+                            ? Colors.white
+                            : enabled
+                                ? const Color(0xFF374151)
+                                : const Color(0xFFD1D5DB),
+                      )),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
