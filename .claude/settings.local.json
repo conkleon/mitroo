@@ -59,7 +59,7 @@
       "PowerShell(npx tsc --noEmit 2>&1)",
       "Bash(Select-Object FullName, Length, LastWriteTime)",
       "Bash(node *)",
-      "PowerShell($har = Get-Content \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\har.har\" -Raw | ConvertFrom-Json; for \\($i = 0; $i -lt $har.log.entries.Count; $i++\\) { $e = $har.log.entries[$i]; Write-Output \"$i $\\($e.request.method\\) $\\($e.request.url.Substring\\(0, [Math]::Min\\(200, $e.request.url.Length\\)\\)\\)\" })"
+      "PowerShell($har = Get-Content \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\har.har\" -Raw | ConvertFrom-Json; for \\($i = 0; $i -lt $har.log.entries.Count; $i++\\) { $e = $har.log.entries[$i]; Write-Output \"$i $\\($e.request.method\\) $\\($e.request.url.Substring\\(0, [Math]::Min\\(200, $e.request.url.Length\\)\\)\\)\" })",
       "Bash(Select-String \"0\\\\\\)\")",
       "WebSearch",
       "mcp__plugin_context7_context7__resolve-library-id",
@@ -71,7 +71,11 @@
       "Bash(Copy-Item -Path \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-maskable-192.png\" -Destination \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\build\\\\web\\\\icons\\\\Icon-maskable-192.png\" -Force)",
       "Bash(Copy-Item -Path \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\web\\\\icons\\\\Icon-maskable-512.png\" -Destination \"C:\\\\Users\\\\KNOWLEDGE\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\build\\\\web\\\\icons\\\\Icon-maskable-512.png\" -Force)",
       "Bash(Select-Object -Last 10)",
-      "PowerShell(flutter analyze *)"
+      "PowerShell(flutter analyze *)",
+      "Skill(superpowers:writing-plans)",
+      "Skill(superpowers:subagent-driven-development)",
+      "Skill(superpowers:finishing-a-development-branch)",
+      "Skill(superpowers:systematic-debugging)"
     ]
   }
 }

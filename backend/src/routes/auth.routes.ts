@@ -49,6 +49,25 @@ const selectAuthUser = {
   imagePath: true,
 };
 
+async function syncProfileSpecializations(
+  userId: number,
+  specializationNames: string[],
+): Promise<void> {
+  for (const name of specializationNames) {
+    const spec = await prisma.specialization.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+      select: { id: true },
+    });
+    await prisma.userSpecialization.upsert({
+      where: { userId_specializationId: { userId, specializationId: spec.id } },
+      update: {},
+      create: { userId, specializationId: spec.id },
+    });
+  }
+}
+
 async function linkUserToDepartment(userId: number, memberDepartment?: string): Promise<void> {
   if (!memberDepartment) return;
   let dept = await prisma.department.findFirst({
@@ -95,14 +114,13 @@ async function loginViaExternalMitroo(
   let surname = match ? (match.last_name as string) ?? "" : "";
   const normalizedEmail = email.trim().toLowerCase();
 
-  let resolvedEame = eame;
-  if (!resolvedEame) {
-    debugExternal("volunteer not found, trying profile", { email });
-    const profileIdentity = await client.fetchProfileIdentity();
-    resolvedEame = profileIdentity.eame;
-    if (!forename && profileIdentity.forename) forename = profileIdentity.forename;
-    if (!surname && profileIdentity.surname) surname = profileIdentity.surname;
-  }
+  // Always fetch profile for extended data (phones, birthdate, address, specializations)
+  // and as a fallback source for eame/name when the volunteer grid lookup misses
+  const profileIdentity = await client.fetchProfileIdentity();
+  let resolvedEame = eame || profileIdentity.eame;
+  if (!forename && profileIdentity.forename) forename = profileIdentity.forename;
+  if (!surname && profileIdentity.surname) surname = profileIdentity.surname;
+
   if (!resolvedEame) {
     debugExternal("unable to resolve eame", { email });
     return null;
@@ -152,6 +170,10 @@ async function loginViaExternalMitroo(
       forename: string;
       surname: string;
       externalId?: number;
+      phonePrimary?: string;
+      phoneSecondary?: string;
+      birthDate?: Date;
+      address?: string;
     } = {
       eame: resolvedEame,
       email: normalizedEmail,
@@ -162,6 +184,10 @@ async function loginViaExternalMitroo(
     if (Number.isFinite(externalId ?? NaN) && (externalId ?? 0) > 0) {
       createData.externalId = externalId as number;
     }
+    if (profileIdentity.phonePrimary) createData.phonePrimary = profileIdentity.phonePrimary;
+    if (profileIdentity.phoneSecondary) createData.phoneSecondary = profileIdentity.phoneSecondary;
+    if (profileIdentity.birthDate) createData.birthDate = profileIdentity.birthDate;
+    if (profileIdentity.address) createData.address = profileIdentity.address;
     const created = await prisma.user.create({
       data: createData,
       select: selectAuthUser,
@@ -170,6 +196,11 @@ async function loginViaExternalMitroo(
     linkUserToDepartment(created.id, memberDepartment).catch((e) =>
       console.error("[auth] linkUserToDepartment error:", e),
     );
+    if (profileIdentity.specializationNames?.length) {
+      syncProfileSpecializations(created.id, profileIdentity.specializationNames).catch((e) =>
+        console.error("[auth] syncProfileSpecializations error:", e),
+      );
+    }
     return { user: created, emailConflict: false };
   }
 
@@ -197,15 +228,22 @@ async function loginViaExternalMitroo(
       ...(forename ? { forename } : {}),
       ...(surname ? { surname } : {}),
       email: normalizedEmail,
-      ...(Number.isFinite(externalId ?? NaN) && (externalId ?? 0) > 0
-        ? { externalId }
-        : {}),
+      ...(Number.isFinite(externalId ?? NaN) && (externalId ?? 0) > 0 ? { externalId } : {}),
+      ...(profileIdentity.phonePrimary ? { phonePrimary: profileIdentity.phonePrimary } : {}),
+      ...(profileIdentity.phoneSecondary ? { phoneSecondary: profileIdentity.phoneSecondary } : {}),
+      ...(profileIdentity.birthDate ? { birthDate: profileIdentity.birthDate } : {}),
+      ...(profileIdentity.address ? { address: profileIdentity.address } : {}),
     },
     select: selectAuthUser,
   });
   linkUserToDepartment(updated.id, memberDepartment).catch((e) =>
     console.error("[auth] linkUserToDepartment error:", e),
   );
+  if (profileIdentity.specializationNames?.length) {
+    syncProfileSpecializations(updated.id, profileIdentity.specializationNames).catch((e) =>
+      console.error("[auth] syncProfileSpecializations error:", e),
+    );
+  }
   return { user: updated, emailConflict: false };
 }
 
@@ -266,39 +304,53 @@ router.post("/login", async (req: Request, res: Response) => {
       token,
     });
 
-    // Fire-and-forget: populate department + externalId from external Mitroo.
-    // syncUserDepartments() silently does nothing when the user lacks
-    // externalId or no DepartmentSyncConfig rows exist — this covers
-    // that bootstrap case by logging into the external system directly.
+    // Fire-and-forget: sync profile data (externalId, department, phones, birthdate,
+    // address, specializations) from external Mitroo on every successful local login.
     (async () => {
       try {
         const client = new MitrooClient(EXTERNAL_BASE_URL);
         await client.login(data.email, data.password);
         let match = await client.findVolunteerByEmail(identifier);
 
-        if (!match) {
-          // Email may differ between login and volunteer record — try
-          // the eame from the profile page to look up the volunteer.
-          const profile = await client.fetchProfileIdentity();
-          if (profile.eame) {
-            match = await client.findVolunteerByCode(profile.eame);
+        const profile = await client.fetchProfileIdentity();
+
+        if (!match && profile.eame) {
+          match = await client.findVolunteerByCode(profile.eame);
+        }
+
+        if (match) {
+          const extId = Number(match.id);
+          const memberDepartment = (match.member_department as string | undefined)?.trim();
+
+          if (Number.isFinite(extId) && extId > 0 && !user.externalId) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { externalId: extId },
+            });
+            debugExternal("populated missing externalId", { userId: user.id, externalId: extId });
+          }
+
+          if (memberDepartment) {
+            await linkUserToDepartment(user.id, memberDepartment);
           }
         }
-        if (!match) return;
 
-        const extId = Number(match.id);
-        const memberDepartment = (match.member_department as string | undefined)?.trim();
-
-        if (Number.isFinite(extId) && extId > 0 && !user.externalId) {
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { externalId: extId },
-          });
-          debugExternal("populated missing externalId", { userId: user.id, externalId: extId });
+        // Sync extended profile fields regardless of whether volunteer grid matched
+        const profileUpdateData: {
+          phonePrimary?: string;
+          phoneSecondary?: string;
+          birthDate?: Date;
+          address?: string;
+        } = {};
+        if (profile.phonePrimary) profileUpdateData.phonePrimary = profile.phonePrimary;
+        if (profile.phoneSecondary) profileUpdateData.phoneSecondary = profile.phoneSecondary;
+        if (profile.birthDate) profileUpdateData.birthDate = profile.birthDate;
+        if (profile.address) profileUpdateData.address = profile.address;
+        if (Object.keys(profileUpdateData).length > 0) {
+          await prisma.user.update({ where: { id: user.id }, data: profileUpdateData });
         }
-
-        if (memberDepartment) {
-          await linkUserToDepartment(user.id, memberDepartment);
+        if (profile.specializationNames?.length) {
+          await syncProfileSpecializations(user.id, profile.specializationNames);
         }
       } catch (e) {
         console.error("[auth] external department sync after login error:", e);

@@ -262,13 +262,33 @@ export class MitrooClient {
     return null;
   }
 
-  async fetchProfileIdentity(): Promise<{ eame?: string; email?: string; forename?: string; surname?: string }> {
+  async fetchProfileIdentity(): Promise<{
+    eame?: string;
+    email?: string;
+    forename?: string;
+    surname?: string;
+    phonePrimary?: string;
+    phoneSecondary?: string;
+    birthDate?: Date;
+    address?: string;
+    specializationNames?: string[];
+  }> {
     const res = await this._get("/index.php/auth/profile");
     const html = await res.text();
     const emailMatch = html.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
     // Match eame: first char can be ASCII A-Z or Greek uppercase (Α-Ω, U+0391–U+03A9)
     const eameMatch = html.match(/[A-ZΑ-Ω]\d{5}\/\d{1,2}\/\d{2}/);
-    const identity: { eame?: string; email?: string; forename?: string; surname?: string } = {};
+    const identity: {
+      eame?: string;
+      email?: string;
+      forename?: string;
+      surname?: string;
+      phonePrimary?: string;
+      phoneSecondary?: string;
+      birthDate?: Date;
+      address?: string;
+      specializationNames?: string[];
+    } = {};
     if (emailMatch?.[0]) identity.email = emailMatch[0].trim().toLowerCase();
     if (eameMatch?.[0]) identity.eame = eameMatch[0].trim();
 
@@ -281,6 +301,52 @@ export class MitrooClient {
         identity.forename = parts.slice(1).join(" ");
       }
     }
+
+    // Phone numbers: label "Τηλέφωνα (1ο | 2ο | Κινητό)", content "phone1 | phone2 | mobile"
+    const phoneMatch = html.match(
+      /class="collections-title">[^<]*Τηλέφωνα[^<]*<\/p>[\s\S]*?class="collections-content">([^<]*)<\/p>/,
+    );
+    if (phoneMatch?.[1]) {
+      const parts = phoneMatch[1].split("|").map((p) => p.trim());
+      const phone1 = parts[0] ?? "";
+      const phone2 = parts[1] ?? "";
+      const mobile = parts[2] ?? "";
+      const primary = phone1 || phone2 || mobile;
+      if (primary) identity.phonePrimary = primary;
+      const secondary = [phone1, phone2, mobile].find((p) => p && p !== primary);
+      if (secondary) identity.phoneSecondary = secondary;
+    }
+
+    // Birth date: "DD-MM-YYYY (age ετών)"
+    const birthMatch = html.match(
+      /class="collections-title">[^<]*Ημερομηνία γέννησης[^<]*<\/p>[\s\S]*?class="collections-content">([^<]*)<\/p>/,
+    );
+    if (birthMatch?.[1]) {
+      const dateMatch = birthMatch[1].match(/(\d{2})-(\d{2})-(\d{4})/);
+      if (dateMatch) {
+        identity.birthDate = new Date(`${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}T00:00:00Z`);
+      }
+    }
+
+    // Address
+    const addressMatch = html.match(
+      /class="collections-title">[^<]*Διεύθυνση[^<]*<\/p>[\s\S]*?class="collections-content">([^<]*)<\/p>/,
+    );
+    if (addressMatch?.[1]) {
+      const addr = addressMatch[1].trim();
+      if (addr) identity.address = addr;
+    }
+
+    // Specializations: flex divs with text before &nbsp; in the "Επιπλέον Πληροφορίες" section
+    const specializationNames: string[] = [];
+    const flexDivRe =
+      /<div[^>]*style="display:\s*flex;\s*align-items:\s*center;"[^>]*>\s*([\s\S]*?)&nbsp;/g;
+    let flexMatch;
+    while ((flexMatch = flexDivRe.exec(html)) !== null) {
+      const raw = flexMatch[1].replace(/<[^>]+>/g, "").trim();
+      if (raw && raw.length > 1) specializationNames.push(raw);
+    }
+    if (specializationNames.length > 0) identity.specializationNames = specializationNames;
 
     if (!identity.eame) {
       debugExternal("fetchProfileIdentity: eame not found", {

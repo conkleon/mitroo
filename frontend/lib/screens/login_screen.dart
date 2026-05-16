@@ -18,11 +18,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   String? _error;
-  bool _isRegister = false;
   bool _obscurePassword = true;
-  final _forenameCtrl = TextEditingController();
-  final _surnameCtrl = TextEditingController();
-  final _enameCtrl = TextEditingController();
 
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
@@ -41,9 +37,6 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
-    _forenameCtrl.dispose();
-    _surnameCtrl.dispose();
-    _enameCtrl.dispose();
     _fadeCtrl.dispose();
     super.dispose();
   }
@@ -51,29 +44,10 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
-    String? err;
-    if (_isRegister) {
-      err = await auth.register(
-        _emailCtrl.text.trim(),
-        _passwordCtrl.text,
-        _forenameCtrl.text.trim(),
-        _surnameCtrl.text.trim(),
-        _enameCtrl.text.trim(),
-      );
-    } else {
-      err = await auth.login(_emailCtrl.text.trim(), _passwordCtrl.text);
-    }
+    final err = await auth.login(_emailCtrl.text.trim(), _passwordCtrl.text);
     if (err != null && mounted) {
       setState(() => _error = err);
     }
-  }
-
-  void _toggleMode() {
-    setState(() {
-      _isRegister = !_isRegister;
-      _error = null;
-    });
-    _fadeCtrl.forward(from: 0.4);
   }
 
   @override
@@ -112,46 +86,11 @@ class _LoginScreenState extends State<LoginScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _FormHeader(isRegister: _isRegister),
+                    const _FormHeader(),
                     const SizedBox(height: 32),
                     if (_error != null) ...[
                       _ErrorBanner(message: _error!),
                       const SizedBox(height: 20),
-                    ],
-                    if (_isRegister) ...[
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _FormField(
-                              controller: _forenameCtrl,
-                              label: 'Όνομα',
-                              icon: Icons.person_outline_rounded,
-                              validator: (v) =>
-                                  (v == null || v.isEmpty) ? 'Υποχρεωτικό' : null,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _FormField(
-                              controller: _surnameCtrl,
-                              label: 'Επώνυμο',
-                              icon: Icons.person_outline_rounded,
-                              validator: (v) =>
-                                  (v == null || v.isEmpty) ? 'Υποχρεωτικό' : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      _FormField(
-                        controller: _enameCtrl,
-                        label: 'Κωδικός Μέλους',
-                        icon: Icons.badge_outlined,
-                        validator: (v) => (v == null || v.length < 2)
-                            ? 'Τουλάχιστον 2 χαρακτήρες'
-                            : null,
-                      ),
-                      const SizedBox(height: 14),
                     ],
                     _FormField(
                       controller: _emailCtrl,
@@ -188,67 +127,22 @@ class _LoginScreenState extends State<LoginScreen>
                           ? 'Τουλάχιστον 4 χαρακτήρες'
                           : null,
                     ),
-                    if (!_isRegister) ...[
-                      const SizedBox(height: 6),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () => context.go('/forgot-password'),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 4, vertical: 2),
-                            minimumSize: const Size(0, 28),
-                          ),
-                          child: const Text('Ξεχάσατε τον κωδικό;',
-                              style: TextStyle(fontSize: 12)),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    _SubmitButton(
-                        loading: auth.loading,
-                        isRegister: _isRegister,
-                        onPressed: _submit),
-                    const SizedBox(height: 14),
-                    Center(
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: _toggleMode,
-                        child: Text(
-                          _isRegister
-                              ? 'Έχετε ήδη λογαριασμό; Σύνδεση'
-                              : 'Δεν έχετε λογαριασμό; Εγγραφή',
-                          style: const TextStyle(fontSize: 13),
+                        onPressed: () => context.go('/forgot-password'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 2),
+                          minimumSize: const Size(0, 28),
                         ),
+                        child: const Text('Ξεχάσατε τον κωδικό;',
+                            style: TextStyle(fontSize: 12)),
                       ),
                     ),
-                    if (!_isRegister) ...[
-                      const SizedBox(height: 4),
-                      Row(children: [
-                        const Expanded(child: Divider()),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text('ή',
-                              style: TextStyle(
-                                  fontSize: 12, color: Color(0xFF9CA3AF))),
-                        ),
-                        const Expanded(child: Divider()),
-                      ]),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => context.go('/apply-training'),
-                          icon: const Icon(Icons.school_outlined, size: 18),
-                          label: const Text(
-                            'Αίτηση Εκπαίδευσης — Ε.Ε.Σ.',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 13),
-                          ),
-                        ),
-                      ),
-                    ],
+                    const SizedBox(height: 24),
+                    _SubmitButton(loading: auth.loading, onPressed: _submit),
                   ],
                 ),
               ),
@@ -350,7 +244,7 @@ class _BrandPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Σύστημα διαχείρισης πόρων\nκαι αποστολών έκτακτης ανάγκης.',
+                  'Σύστημα διαχείρισης πόρων\nκαι αποστολών Ε.Ε.Σ.',
                   style: GoogleFonts.inter(
                     color: Colors.white.withAlpha(190),
                     fontSize: 15,
@@ -360,20 +254,20 @@ class _BrandPanel extends StatelessWidget {
                 ),
                 const Spacer(flex: 3),
                 // Capability chips
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: const [
-                    _CapChip(icon: Icons.people_outline_rounded, label: 'Εθελοντές'),
-                    _CapChip(icon: Icons.inventory_2_outlined, label: 'Εξοπλισμός'),
-                    _CapChip(icon: Icons.local_shipping_outlined, label: 'Οχήματα'),
-                    _CapChip(icon: Icons.assignment_outlined, label: 'Αποστολές'),
-                  ],
-                ),
+                // Wrap(
+                //   spacing: 8,
+                //   runSpacing: 8,
+                //   children: const [
+                //     _CapChip(icon: Icons.people_outline_rounded, label: 'Εθελοντές'),
+                //     _CapChip(icon: Icons.inventory_2_outlined, label: 'Εξοπλισμός'),
+                //     _CapChip(icon: Icons.local_shipping_outlined, label: 'Οχήματα'),
+                //     _CapChip(icon: Icons.assignment_outlined, label: 'Αποστολές'),
+                //   ],
+                // ),
                 const SizedBox(height: 32),
                 // Version tag
                 Text(
-                  'v2.0 · Secure Access',
+                  'v1.1.3',
                   style: TextStyle(
                     color: Colors.white.withAlpha(100),
                     fontSize: 11,
@@ -436,14 +330,13 @@ class _CompactBrandHeader extends StatelessWidget {
 // ── Form sub-widgets ──────────────────────────────────────────────────────────
 
 class _FormHeader extends StatelessWidget {
-  final bool isRegister;
-  const _FormHeader({required this.isRegister});
+  const _FormHeader();
 
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
-        isRegister ? 'Νέος Λογαριασμός' : 'Καλώς ήρθατε',
+        'Καλώς ήρθατε',
         style: GoogleFonts.literata(
           fontSize: 30,
           fontWeight: FontWeight.w700,
@@ -454,9 +347,7 @@ class _FormHeader extends StatelessWidget {
       ),
       const SizedBox(height: 6),
       Text(
-        isRegister
-            ? 'Συμπληρώστε τα στοιχεία σας για εγγραφή'
-            : 'Συνδεθείτε με τα διαπιστευτήριά σας',
+        'Συνδεθείτε με τα διαπιστευτήριά σας',
         style: GoogleFonts.inter(
           fontSize: 13,
           color: const Color(0xFF6B7280),
@@ -535,14 +426,9 @@ class _FormField extends StatelessWidget {
 
 class _SubmitButton extends StatelessWidget {
   final bool loading;
-  final bool isRegister;
   final VoidCallback onPressed;
 
-  const _SubmitButton({
-    required this.loading,
-    required this.isRegister,
-    required this.onPressed,
-  });
+  const _SubmitButton({required this.loading, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -558,7 +444,7 @@ class _SubmitButton extends StatelessWidget {
                 child: CircularProgressIndicator(
                     strokeWidth: 2, color: Colors.white))
             : Text(
-                isRegister ? 'Δημιουργία Λογαριασμού' : 'Σύνδεση',
+                'Σύνδεση',
                 style: GoogleFonts.inter(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,

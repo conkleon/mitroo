@@ -642,6 +642,7 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
       defaultHoursTrainers: true,
       defaultHoursTEP: true,
       maxParticipants: true,
+      serviceType: { select: { externalMissionTypeId: true } },
     },
   });
   if (!service || service.externalShiftId) return;
@@ -666,12 +667,15 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
     }
     const endAt = service.endAt ?? startAt;
 
+    const missionTypeId = service.serviceType?.externalMissionTypeId ?? undefined;
+
     const missionId = await client.createMission({
       title: service.name,
       start_date: formatDate(startAt),
       end_date: formatDate(endAt),
       location_text: service.location ?? "",
       comments: service.description ?? "",
+      mission_type_id: missionTypeId,
     });
 
     const shiftId = await client.createShift({
@@ -684,6 +688,7 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
       hours_training: service.defaultHoursTraining ?? 0,
       hours_retraining: service.defaultHoursTrainers ?? 0,
       hours_tep: service.defaultHoursTEP ?? 0,
+      mission_type_id: missionTypeId,
     });
 
     await client.changeMissionStatus(missionId, 22);
