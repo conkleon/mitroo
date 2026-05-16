@@ -138,14 +138,15 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
   Future<void> _fetchAvailableItems([String query = '']) async {
     setState(() => _searchLoading = true);
     try {
-      final params = <String>['available=true'];
+      final params = <String>['available=true', 'limit=200'];
       if (query.isNotEmpty) {
         params.add('search=${Uri.encodeComponent(query)}');
       }
       final res = await widget.api.get('/items?${params.join('&')}');
       if (res.statusCode == 200 && mounted) {
-        setState(
-            () => _searchResults = jsonDecode(res.body) as List<dynamic>);
+        final body = jsonDecode(res.body) as Map<String, dynamic>;
+        setState(() =>
+            _searchResults = (body['data'] as List<dynamic>?) ?? []);
       }
     } catch (_) {}
     if (mounted) setState(() => _searchLoading = false);
@@ -562,7 +563,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         // Search bar
         TextField(
           decoration: InputDecoration(
-            hintText: 'Αναζήτηση με όνομα ή barcode...',
+            hintText: 'Αναζήτηση με όνομα, περιγραφή ή barcode...',
             prefixIcon: const Icon(Icons.search),
             border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10)),

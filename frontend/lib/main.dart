@@ -82,7 +82,7 @@ class MitrooApp extends StatelessWidget {
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 centerTitle: false,
-                titleTextStyle: GoogleFonts.literata(
+                titleTextStyle: GoogleFonts.inter(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF1A1C1E),

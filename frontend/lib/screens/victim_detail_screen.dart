@@ -342,7 +342,7 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
 
               Card(
                 child: ExpansionTile(
-                  title: Text('Ζωτικά Σημεία (${vitals.length})', style: GoogleFonts.literata(fontSize: 15, fontWeight: FontWeight.w600)),
+                  title: Text('Ζωτικά Σημεία (${vitals.length})', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
                   initiallyExpanded: _vitalsExpanded,
                   onExpansionChanged: (v) => setState(() => _vitalsExpanded = v),
                   trailing: Row(
@@ -401,7 +401,7 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
 
               Card(
                 child: ExpansionTile(
-                  title: Text('Θεραπείες (${treatments.length})', style: GoogleFonts.literata(fontSize: 15, fontWeight: FontWeight.w600)),
+                  title: Text('Θεραπείες (${treatments.length})', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
                   initiallyExpanded: _treatmentsExpanded,
                   onExpansionChanged: (v) => setState(() => _treatmentsExpanded = v),
                   trailing: Row(
@@ -521,7 +521,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Text(title, style: GoogleFonts.literata(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(0xFF1A1C1E))),
+      child: Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(0xFF1A1C1E))),
     );
   }
 }

@@ -275,7 +275,10 @@ router.get("/", async (req: Request, res: Response) => {
   const { containerId, search, barCode, available, categoryId, departmentId, page, limit, sortField, sortOrder } = req.query;
   const where: any = {};
   if (containerId) where.containedById = Number(containerId);
-  if (search) where.name = { contains: String(search), mode: "insensitive" };
+  if (search) {
+    const term = { contains: String(search), mode: "insensitive" as const };
+    where.OR = [{ name: term }, { description: term }];
+  }
   if (barCode) where.barCode = String(barCode);
   if (categoryId) where.categoryId = Number(categoryId);
   if (departmentId) where.departmentId = Number(departmentId);

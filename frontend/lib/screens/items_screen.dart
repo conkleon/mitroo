@@ -150,10 +150,11 @@ class _ItemsScreenState extends State<ItemsScreen> {
       final q = _search.toLowerCase();
       list = list.where((item) {
         final name = (item['name'] ?? '').toString().toLowerCase();
+        final desc = (item['description'] ?? '').toString().toLowerCase();
         final barcode = (item['barCode'] ?? '').toString().toLowerCase();
         final loc = (item['location'] ?? '').toString().toLowerCase();
         final deptName = (item['department']?['name'] ?? '').toString().toLowerCase();
-        return name.contains(q) || barcode.contains(q) || loc.contains(q) || deptName.contains(q);
+        return name.contains(q) || desc.contains(q) || barcode.contains(q) || loc.contains(q) || deptName.contains(q);
       }).toList();
     }
 

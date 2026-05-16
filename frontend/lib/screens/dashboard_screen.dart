@@ -116,7 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Text(name, style: GoogleFonts.literata(
+                    child: Text(name, style: GoogleFonts.inter(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF1A1C1E),

@@ -70,7 +70,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
             const SizedBox(width: 10),
             Text(
               'Συνομιλίες',
-              style: GoogleFonts.literata(
+              style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF1A1C1E),

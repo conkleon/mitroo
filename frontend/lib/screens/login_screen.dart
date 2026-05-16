@@ -225,7 +225,7 @@ class _BrandPanel extends StatelessWidget {
                 // Main headline
                 Text(
                   'Red Cross\nDispatcher',
-                  style: GoogleFonts.literata(
+                  style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 52,
                     fontWeight: FontWeight.w700,
@@ -315,7 +315,7 @@ class _CompactBrandHeader extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'Red Cross Dispatcher',
-            style: GoogleFonts.literata(
+            style: GoogleFonts.inter(
               color: Colors.white.withAlpha(220),
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -337,7 +337,7 @@ class _FormHeader extends StatelessWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
         'Καλώς ήρθατε',
-        style: GoogleFonts.literata(
+        style: GoogleFonts.inter(
           fontSize: 30,
           fontWeight: FontWeight.w700,
           color: const Color(0xFF1A1C1E),

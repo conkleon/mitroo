@@ -277,7 +277,7 @@ class _ManageSpecializationsScreenState
                   const SizedBox(width: 10),
                   Text(
                     'Ειδικεύσεις',
-                    style: GoogleFonts.literata(
+                    style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF1A1C1E),

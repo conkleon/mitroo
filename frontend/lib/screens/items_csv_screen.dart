@@ -308,7 +308,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                   scrollDirection: Axis.horizontal,
                   child: SelectableText(
                     _exportedCsv!,
-                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ),
               ),
@@ -427,7 +427,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                 ),
                 contentPadding: const EdgeInsets.all(14),
               ),
-              style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+              style: const TextStyle(fontSize: 13),
             ),
             const SizedBox(height: 16),
             SizedBox(

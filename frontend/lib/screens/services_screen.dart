@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
@@ -84,7 +85,10 @@ class _ServicesScreenState extends State<ServicesScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this, initialIndex: 1);
     _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) setState(() {});
+      if (!_tabController.indexIsChanging) {
+        setState(() {});
+        _saveViewPreference();
+      }
     });
     _fabController = AnimationController(
       duration: const Duration(milliseconds: 200),
@@ -100,6 +104,7 @@ class _ServicesScreenState extends State<ServicesScreen>
       context.read<ServiceProvider>().fetchMyServices();
     });
     _loadMyEquipment();
+    _loadViewPreference();
   }
 
   void _toggleFab() {
@@ -109,6 +114,20 @@ class _ServicesScreenState extends State<ServicesScreen>
     } else {
       _fabController.reverse();
     }
+  }
+
+  Future<void> _loadViewPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedIndex = prefs.getInt('services_view_tab_index') ?? 1;
+    if (mounted && savedIndex != _tabController.index) {
+      _tabController.animateTo(savedIndex);
+    }
+  }
+
+  void _saveViewPreference() {
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setInt('services_view_tab_index', _tabController.index);
+    });
   }
 
   @override
@@ -313,7 +332,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                       const SizedBox(width: 10),
                       Text(
                         'Υπηρεσίες',
-                        style: GoogleFonts.literata(
+                        style: GoogleFonts.inter(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF1A1C1E),
