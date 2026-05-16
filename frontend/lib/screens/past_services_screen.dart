@@ -404,18 +404,18 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     final carrier = (svc['carrier'] ?? '').toString();
     final description = (svc['description'] ?? '').toString();
     final userServices = svc['userServices'] as List<dynamic>? ?? [];
-    final enrolledCount = userServices.length;
+    final enrolledCount = (svc['_count']?['userServices'] as int?) ?? userServices.length;
 
     final responsible = svc['responsibleUser'] as Map<String, dynamic>?;
     final rName = responsible != null
         ? '${responsible['forename'] ?? ''} ${responsible['surname'] ?? ''}'.trim()
         : '';
 
-    final defaultHours = svc['defaultHours'] ?? 0;
-    final defaultHoursVol = svc['defaultHoursVol'] ?? 0;
-    final defaultHoursTraining = svc['defaultHoursTraining'] ?? 0;
-    final defaultHoursTrainers = svc['defaultHoursTrainers'] ?? 0;
-    final defaultHoursTEP = svc['defaultHoursTEP'] ?? 0;
+    final defaultHours = (svc['defaultHours'] as int?) ?? 0;
+    final defaultHoursVol = (svc['defaultHoursVol'] as int?) ?? 0;
+    final defaultHoursTraining = (svc['defaultHoursTraining'] as int?) ?? 0;
+    final defaultHoursTrainers = (svc['defaultHoursTrainers'] as int?) ?? 0;
+    final defaultHoursTEP = (svc['defaultHoursTEP'] as int?) ?? 0;
 
     showModalBottomSheet(
       context: context,
@@ -637,8 +637,9 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: () {
+                      final id = svc['id'];
                       Navigator.pop(ctx);
-                      context.push('/admin/services/${svc['id']}');
+                      if (id != null) context.push('/admin/services/$id');
                     },
                     icon: const Icon(Icons.edit_outlined, size: 16),
                     label: const Text('Επεξεργασία υπηρεσίας',
