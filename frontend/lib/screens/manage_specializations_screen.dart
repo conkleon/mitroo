@@ -434,7 +434,7 @@ class _ManageSpecializationsScreenState
         crossAxisCount: 2,
         mainAxisSpacing: 8,
         crossAxisSpacing: 12,
-        childAspectRatio: 3.2,
+        childAspectRatio: 3.8,
       ),
       itemCount: specs.length,
       itemBuilder: (context, i) => _SpecCard(
@@ -467,93 +467,100 @@ class _SpecCard extends StatelessWidget {
     final hoursTep = spec['hoursTEP'] ?? 0;
     final eamePrefix = (spec['eamePrefix'] ?? '').toString();
     final isRoot = spec['rootId'] == null;
+    final description = (spec['description'] ?? '').toString();
+    final subtitle = isRoot
+        ? description
+        : (root?['name'] ?? '').toString();
+    final accentColor =
+        isRoot ? const Color(0xFF7C3AED) : const Color(0xFFDC2626);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 0,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
-        child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: isRoot
-                      ? const [Color(0xFF7C3AED), Color(0xFF5B21B6)]
-                      : const [Color(0xFFDC2626), Color(0xFF991B1B)],
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
                 ),
-                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                  isRoot ? Icons.school : Icons.subdirectory_arrow_right,
-                  color: Colors.white,
-                  size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(spec['name'] ?? '',
-                        style: tt.titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 4),
-                    Wrap(spacing: 12, children: [
-                      if (root != null)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(spec['name'] ?? '',
+                          style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                      if (subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(subtitle,
+                            style: GoogleFonts.inter(
+                                fontSize: 12, color: const Color(0xFF6B7280)),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 4),
+                      ] else
+                        const SizedBox(height: 2),
+                      Wrap(spacing: 10, children: [
                         _MiniLabel(
-                            icon: Icons.account_tree,
-                            text: root['name'] ?? '',
-                            color: const Color(0xFF6B7280)),
-                      _MiniLabel(
-                          icon: Icons.people,
-                          text: '$userCount',
-                          color: const Color(0xFFDC2626)),
-                      if (isRoot && childCount > 0)
-                        _MiniLabel(
-                            icon: Icons.subdirectory_arrow_right,
-                            text: '$childCount',
-                            color: const Color(0xFF7C3AED)),
-                      if (hours > 0)
-                        _MiniLabel(
-                            icon: Icons.schedule,
-                            text: '${hours}h',
-                            color: const Color(0xFFD97706)),
-                      if (yearlyHours > 0)
-                        _MiniLabel(
-                            icon: Icons.calendar_month,
-                            text: 'Ετήσιες ${yearlyHours}h',
-                            color: const Color(0xFF2563EB)),
-                      if (yearlyHoursTraining > 0)
-                        _MiniLabel(
-                            icon: Icons.school_outlined,
-                            text: 'Εκπ. ${yearlyHoursTraining}h',
-                            color: const Color(0xFF0F766E)),
-                      if (hoursTep > 0)
-                        _MiniLabel(
-                            icon: Icons.timer,
-                            text: 'TEP ${hoursTep}h',
-                            color: const Color(0xFF0EA5E9)),
-                      if (eamePrefix.isNotEmpty)
-                        _MiniLabel(
-                            icon: Icons.badge_outlined,
-                            text: 'EAME $eamePrefix',
-                            color: const Color(0xFF111827)),
-                    ]),
-                  ]),
-            ),
-            Icon(Icons.chevron_right,
-                color: Color(0xFF9CA3AF), size: 20),
-          ]),
+                            icon: Icons.people,
+                            text: '$userCount',
+                            color: const Color(0xFFDC2626)),
+                        if (isRoot && childCount > 0)
+                          _MiniLabel(
+                              icon: Icons.subdirectory_arrow_right,
+                              text: '$childCount',
+                              color: const Color(0xFF7C3AED)),
+                        if (hours > 0)
+                          _MiniLabel(
+                              icon: Icons.schedule,
+                              text: '${hours}h',
+                              color: const Color(0xFFD97706)),
+                        if (yearlyHours > 0)
+                          _MiniLabel(
+                              icon: Icons.calendar_month,
+                              text: 'Ετήσιες ${yearlyHours}h',
+                              color: const Color(0xFF2563EB)),
+                        if (yearlyHoursTraining > 0)
+                          _MiniLabel(
+                              icon: Icons.school_outlined,
+                              text: 'Εκπ. ${yearlyHoursTraining}h',
+                              color: const Color(0xFF0F766E)),
+                        if (hoursTep > 0)
+                          _MiniLabel(
+                              icon: Icons.timer,
+                              text: 'TEP ${hoursTep}h',
+                              color: const Color(0xFF0EA5E9)),
+                        if (eamePrefix.isNotEmpty)
+                          _MiniLabel(
+                              icon: Icons.badge_outlined,
+                              text: 'EAME $eamePrefix',
+                              color: const Color(0xFF111827)),
+                      ]),
+                    ],
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: Icon(Icons.chevron_right, color: Color(0xFF9CA3AF), size: 18),
+              ),
+            ],
+          ),
         ),
       ),
     );
