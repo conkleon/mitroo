@@ -50,7 +50,7 @@ class _VictimsScreenState extends State<VictimsScreen> {
   void _onSearchChanged(String value) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
-      _fetch();
+      if (mounted) _fetch();
     });
   }
 
@@ -92,6 +92,7 @@ class _VictimsScreenState extends State<VictimsScreen> {
                       ? IconButton(
                           icon: const Icon(Icons.clear),
                           onPressed: () {
+                            _searchDebounce?.cancel();
                             _searchCtrl.clear();
                             _fetch();
                           },
@@ -289,7 +290,6 @@ class _DatePickerButton extends StatelessWidget {
           initialDate: date ?? DateTime.now(),
           firstDate: DateTime(2020),
           lastDate: DateTime(2035),
-          locale: const Locale('el'),
         );
         if (picked != null) onPicked(picked);
       },
