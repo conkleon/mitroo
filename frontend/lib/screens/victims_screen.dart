@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,6 +18,7 @@ class _VictimsScreenState extends State<VictimsScreen> {
   String _status = 'all';
   DateTime? _dateFrom;
   DateTime? _dateTo;
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -26,6 +29,7 @@ class _VictimsScreenState extends State<VictimsScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -41,6 +45,13 @@ class _VictimsScreenState extends State<VictimsScreen> {
       status: _status,
       page: page,
     );
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      _fetch();
+    });
   }
 
   String _formatDate(String? iso) {
@@ -92,7 +103,7 @@ class _VictimsScreenState extends State<VictimsScreen> {
                   ),
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                onChanged: (_) => _fetch(),
+                onChanged: _onSearchChanged,
               ),
             ),
 
