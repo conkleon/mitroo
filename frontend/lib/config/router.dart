@@ -29,6 +29,9 @@ import '../screens/create_chat_screen.dart';
 import '../screens/chat_settings_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/shell_screen.dart';
+import '../screens/victims_screen.dart';
+import '../screens/create_victim_screen.dart';
+import '../screens/victim_detail_screen.dart';
 
 GoRouter appRouter(AuthProvider auth) {
   return GoRouter(
@@ -105,6 +108,24 @@ GoRouter appRouter(AuthProvider auth) {
             builder: (context, state) {
               final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
               return ServiceDetailScreen(serviceId: id);
+            },
+          ),
+          GoRoute(
+            path: '/victims',
+            builder: (context, state) => const VictimsScreen(),
+          ),
+          GoRoute(
+            path: '/victims/create',
+            builder: (context, state) {
+              final serviceId = int.tryParse(state.uri.queryParameters['serviceId'] ?? '');
+              return CreateVictimScreen(prefilledServiceId: serviceId);
+            },
+          ),
+          GoRoute(
+            path: '/victims/:id',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+              return VictimDetailScreen(victimId: id);
             },
           ),
           GoRoute(
