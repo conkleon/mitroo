@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
+import '../providers/victim_provider.dart';
 import '../services/api_client.dart';
 
 /// Full-detail view for a single service.
@@ -675,6 +676,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                   const SizedBox(height: 16),
                   _VehicleLogsCard(
                       vehicleLogs: vehicleLogs, formatDate: _formatDate),
+                  const SizedBox(height: 16),
+                  _VictimsSection(serviceId: widget.serviceId),
                 ],
               ),
             ),
@@ -764,6 +767,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         ),
         const SizedBox(height: 16),
         _VehicleLogsCard(vehicleLogs: vehicleLogs, formatDate: _formatDate),
+        const SizedBox(height: 16),
+        _VictimsSection(serviceId: widget.serviceId),
       ],
     );
   }
@@ -1967,5 +1972,137 @@ class _HeaderChip extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Victims Section for Service Detail
+// ═══════════════════════════════════════════════════════════════
+
+class _VictimsSection extends StatefulWidget {
+  final int serviceId;
+  const _VictimsSection({required this.serviceId});
+
+  @override
+  State<_VictimsSection> createState() => _VictimsSectionState();
+}
+
+class _VictimsSectionState extends State<_VictimsSection> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => context.read<VictimProvider>().fetchVictims(serviceId: widget.serviceId));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final provider = context.watch<VictimProvider>();
+    final victims = provider.victims;
+
+    return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withAlpha(20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Color(0xFFF3F4F6)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.personal_injury_outlined, size: 18, color: Color(0xFFC62828)),
+                const SizedBox(width: 8),
+                Text('Περιστατικά', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC62828).withAlpha(20),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text('${victims.length}', style: tt.bodySmall?.copyWith(
+                    color: const Color(0xFFC62828), fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(width: 10),
+                FilledButton.icon(
+                  onPressed: () => context.push('/victims/create?serviceId=${widget.serviceId}'),
+                  icon: const Icon(Icons.add_circle_outline, size: 20),
+                  label: const Text('Προσθήκη Περιστατικού'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFC62828),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            if (victims.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.personal_injury_outlined, size: 40, color: Color(0xFFD1D5DB)),
+                      const SizedBox(height: 8),
+                      Text('Κανένα περιστατικό', style: tt.bodySmall?.copyWith(color: Color(0xFF9CA3AF))),
+                    ],
+                  ),
+                ),
+              )
+            else ...[
+              const Divider(height: 20),
+              ...victims.take(5).map((v) {
+                final name = v['name'] ?? '';
+                final age = v['age'];
+                final createdAt = v['createdAt'] as String?;
+                final isFinalized = v['isFinalized'] == true;
+
+                return ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: isFinalized
+                        ? const Color(0xFFF59E0B).withAlpha(25)
+                        : const Color(0xFFC62828).withAlpha(25),
+                    child: Icon(
+                      isFinalized ? Icons.lock : Icons.personal_injury,
+                      size: 18,
+                      color: isFinalized ? const Color(0xFFF59E0B) : const Color(0xFFC62828),
+                    ),
+                  ),
+                  title: Text(
+                    [name, if (age != null) '$age ετών'].join(', '),
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    createdAt != null ? _formatDt(createdAt) : '',
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+                  ),
+                  onTap: () => context.push('/victims/${v['id']}'),
+                );
+              }),
+              if (victims.length > 5)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text('...και ${victims.length - 5} ακόμα',
+                      style: tt.bodySmall?.copyWith(color: Color(0xFF6B7280))),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDt(String? iso) {
+    if (iso == null) return '';
+    final dt = DateTime.tryParse(iso)?.toLocal();
+    if (dt == null) return iso;
+    return '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }
