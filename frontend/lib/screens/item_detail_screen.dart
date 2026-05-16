@@ -539,10 +539,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Row(
                       children: [
-                        const Icon(Icons.inventory, size: 16, color: Color(0xFF7C3AED)),
+                        const Icon(Icons.check_box_outline_blank, size: 16, color: Color(0xFF2563EB)),
                         const SizedBox(width: 6),
                         Text('Τρέχον: ${_item!['containedBy']['name']}',
-                            style: const TextStyle(color: Color(0xFF7C3AED))),
+                            style: const TextStyle(color: Color(0xFF2563EB))),
                       ],
                     ),
                   ),
@@ -936,7 +936,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final cs = Theme.of(context).colorScheme;
     final canManage = _canManage;
     final isContainer = _item?['isContainer'] == true;
-    final accentColor = isContainer ? const Color(0xFF7C3AED) : const Color(0xFFDC2626);
+    final accentColor = isContainer ? const Color(0xFF2563EB) : const Color(0xFFDC2626);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.92,
@@ -969,13 +969,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         child: ListView(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                           children: [
-                            _buildQuickInfoRow(tt, cs),
-                            const SizedBox(height: 16),
-                            _buildDetailsCard(tt, cs),
-                            const SizedBox(height: 12),
-                            _buildAssignedUserCard(tt, cs, canManage),
-                            const SizedBox(height: 12),
-                            _buildServiceAssignmentsCard(tt, cs, canManage),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: _buildDetailsCard(tt, cs)),
+                                const SizedBox(width: 12),
+                                Expanded(child: _buildAssignedUserCard(tt, cs, canManage)),
+                              ],
+                            ),
+                            // const SizedBox(height: 12),
+                            // _buildServiceAssignmentsCard(tt, cs, canManage),
                             const SizedBox(height: 12),
                             if (_item!['isContainer'] == true) ...[
                               _buildContentsCard(tt, cs),
@@ -1002,7 +1005,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   // ── Header with gradient, drag handle, title & actions ──
 
   Widget _buildHeader(TextTheme tt, ColorScheme cs, bool canManage, Color accentColor) {
-    final isAvailable = _item?['availableForAssignment'] == true;
     final assigned = _item?['assignedTo'];
     final isContainer = _item?['isContainer'] == true;
 
@@ -1080,7 +1082,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
-                        isContainer ? Icons.inventory_2 : Icons.build_outlined,
+                        isContainer ? Icons.check_box_outline_blank : Icons.circle_outlined,
                         color: Colors.white,
                         size: 28,
                       ),
@@ -1104,10 +1106,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             spacing: 6,
                             runSpacing: 4,
                             children: [
-                              if (isContainer)
-                                _heroBadge('Κουτί', Icons.inventory_2, Colors.white.withAlpha(30)),
-                              if (isAvailable)
-                                _heroBadge('Διαθέσιμο', Icons.check_circle_outline, const Color(0xFF34D399).withAlpha(60)),
                               if (assigned != null)
                                 _heroBadge(
                                   '${assigned['forename'] ?? ''} ${assigned['surname'] ?? ''}'.trim(),
@@ -1146,59 +1144,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-        ],
-      ),
-    );
-  }
-
-  // ── Quick info chips row ──
-
-  Widget _buildQuickInfoRow(TextTheme tt, ColorScheme cs) {
-    final expDate = _item!['expirationDate'];
-    final isExpired = expDate != null && DateTime.tryParse(expDate)?.isBefore(DateTime.now()) == true;
-    final qty = _item!['quantity'];
-
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        _infoChip(Icons.tag, 'ID: #${_item!['id']}', const Color(0xFF6366F1)),
-        if (_item!['department'] != null)
-          _infoChip(Icons.business_outlined, _item!['department']['name'], const Color(0xFF0D9488)),
-        if (_item!['barCode'] != null)
-          _infoChip(Icons.qr_code, _item!['barCode'], const Color(0xFFDC2626)),
-        if (_item!['location'] != null)
-          _infoChip(Icons.location_on_outlined, _item!['location'], const Color(0xFF0891B2)),
-        if (_item!['category'] != null)
-          _infoChip(Icons.category_outlined, _item!['category']['name'], const Color(0xFF8B5CF6)),
-        if (qty != null && qty > 1)
-          _infoChip(Icons.inventory, '×$qty', const Color(0xFF059669)),
-        if (expDate != null)
-          _infoChip(
-            isExpired ? Icons.warning_amber_rounded : Icons.event,
-            _formatDate(expDate),
-            isExpired ? Color(0xFFDC2626) : const Color(0xFFF59E0B),
-          ),
-        _infoChip(Icons.calendar_today, _formatDate(_item!['createdAt']), const Color(0xFF6B7280)),
-      ],
-    );
-  }
-
-  Widget _infoChip(IconData icon, String label, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: color.withAlpha(15),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withAlpha(40)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
-          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
         ],
       ),
     );
@@ -1268,7 +1213,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 130,
+            width: 110,
             child: Text(label, style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280), fontSize: 12)),
           ),
           Expanded(
@@ -1576,10 +1521,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED).withAlpha(15),
+                    color: const Color(0xFF2563EB).withAlpha(15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.inbox, size: 18, color: Color(0xFF7C3AED)),
+                  child: const Icon(Icons.inbox, size: 18, color: Color(0xFF2563EB)),
                 ),
                 const SizedBox(width: 10),
                 Text('Περιεχόμενα', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
@@ -1587,12 +1532,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED).withAlpha(15),
+                    color: const Color(0xFF2563EB).withAlpha(15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '${contents.length}',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF7C3AED), fontWeight: FontWeight.w700),
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF2563EB), fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -1620,7 +1565,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 final child = entry.value;
                 final childIsContainer = child['isContainer'] == true;
                 final childAssigned = child['assignedTo'];
-                final childColor = childIsContainer ? const Color(0xFF7C3AED) : const Color(0xFFDC2626);
+                final childColor = childIsContainer ? const Color(0xFF2563EB) : const Color(0xFFDC2626);
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Material(
@@ -1644,7 +1589,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
-                                childIsContainer ? Icons.inventory : Icons.build_outlined,
+                                childIsContainer ? Icons.check_box_outline_blank : Icons.circle_outlined,
                                 color: childColor,
                                 size: 18,
                               ),
@@ -1904,10 +1849,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED).withAlpha(15),
+                    color: const Color(0xFF2563EB).withAlpha(15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.move_to_inbox, size: 18, color: Color(0xFF7C3AED)),
+                  child: const Icon(Icons.move_to_inbox, size: 18, color: Color(0xFF2563EB)),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -1931,19 +1876,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7C3AED).withAlpha(8),
+                      color: const Color(0xFF2563EB).withAlpha(8),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF7C3AED).withAlpha(25)),
+                      border: Border.all(color: const Color(0xFF2563EB).withAlpha(25)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF7C3AED).withAlpha(15),
+                            color: const Color(0xFF2563EB).withAlpha(15),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(Icons.inventory, color: Color(0xFF7C3AED), size: 18),
+                          child: const Icon(Icons.check_box_outline_blank, color: Color(0xFF2563EB), size: 18),
                         ),
                         const SizedBox(width: 12),
                         Expanded(

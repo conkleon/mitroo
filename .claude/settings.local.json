@@ -75,7 +75,14 @@
       "Skill(superpowers:writing-plans)",
       "Skill(superpowers:subagent-driven-development)",
       "Skill(superpowers:finishing-a-development-branch)",
-      "Skill(superpowers:systematic-debugging)"
+      "Skill(superpowers:systematic-debugging)",
+      "Bash(dir /s /b \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\lib\\\\*.dart\")",
+      "Bash(bash *)",
+      "Bash(Remove-Item -Recurse -Force node_modules\\\\.prisma\\\\client -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process *)",
+      "Bash(Test-Path *)",
+      "Bash(dir D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\lib\\\\providers *)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

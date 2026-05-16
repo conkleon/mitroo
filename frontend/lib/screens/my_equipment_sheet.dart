@@ -636,10 +636,10 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
 
               return _card(
                 icon: isContainer
-                    ? Icons.inventory_2
-                    : Icons.build_outlined,
+                    ? Icons.check_box_outline_blank
+                    : Icons.circle_outlined,
                 iconColor: isContainer
-                    ? const Color(0xFF7C3AED)
+                    ? const Color(0xFF2563EB)
                     : cs.primary,
                 title: item['name'] ?? '',
                 subtitle: subtitle,
@@ -717,77 +717,38 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                     ?.isBefore(DateTime.now()) ==
                 true;
 
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isExpired ? Color(0xFFFEF2F2) : Colors.white,
-            border: Border.all(
-              color: isExpired ? Color(0xFFFECACA) : const Color(0xFFE5E7EB),
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
+        final accent = item['isContainer'] == true
+            ? const Color(0xFF2563EB)
+            : cs.primary;
+
+        return _card(
+          icon: item['isContainer'] == true
+              ? Icons.check_box_outline_blank
+              : Icons.circle_outlined,
+          iconColor: accent,
+          title: item['name'] ?? '',
+          subtitle: [item['barCode'], item['location']]
+              .whereType<String>()
+              .where((s) => s.isNotEmpty)
+              .join(' · '),
+          tt: tt,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: cs.primary.withAlpha(20),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  item['isContainer'] == true
-                      ? Icons.inventory_2
-                      : Icons.build_outlined,
-                  color: cs.primary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      item['name'] ?? '',
-                      style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (item['barCode'] != null || item['location'] != null) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        [item['barCode'], item['location']]
-                            .whereType<String>()
-                            .where((s) => s.isNotEmpty)
-                            .join(' · '),
-                        style: tt.bodySmall?.copyWith(
-                          color: const Color(0xFF6B7280),
-                          fontSize: 12,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
               if (isExpired)
                 Padding(
-                  padding: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.only(right: 8),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Color(0xFFFECACA)),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       'Έληξε',
                       style: TextStyle(
                         color: Color(0xFFB91C1C),
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -796,12 +757,13 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               IconButton(
                 icon: const Icon(Icons.open_in_new, size: 18),
                 tooltip: 'Λεπτομέρειες',
-                color: const Color(0xFF6B7280),
+                color: const Color(0xFF9CA3AF),
                 onPressed: () {
                   Navigator.pop(context);
                   ItemDetailScreen.show(context, itemId);
                 },
                 visualDensity: VisualDensity.compact,
+                splashRadius: 18,
               ),
               IconButton(
                 icon: isBusy
@@ -809,11 +771,12 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2))
-                    : Icon(Icons.assignment_return,
+                    : const Icon(Icons.assignment_return,
                         size: 18, color: Color(0xFFDC2626)),
                 tooltip: 'Επιστροφή',
                 onPressed: isBusy ? null : () => _returnItem(item),
                 visualDensity: VisualDensity.compact,
+                splashRadius: 18,
               ),
             ],
           ),
@@ -1074,15 +1037,17 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF3F4F6)),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: iconColor.withAlpha(20),
+              color: iconColor.withAlpha(18),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: iconColor, size: 20),
@@ -1091,16 +1056,20 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(title,
                     style: tt.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                        ?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF111827))),
                 if (subtitle.isNotEmpty)
-                  Text(subtitle,
-                      style: tt.bodySmall
-                          ?.copyWith(color: const Color(0xFF6B7280)),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(subtitle,
+                        style: tt.bodySmall
+                            ?.copyWith(color: const Color(0xFF6B7280)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                  ),
               ],
             ),
           ),

@@ -434,7 +434,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
   Widget _buildThumbnail(Map<String, dynamic> item) {
     final path = _thumbPath(item);
     final isContainer = item['isContainer'] == true;
-    final accentColor = isContainer ? const Color(0xFF7C3AED) : const Color(0xFFDC2626);
+    final accentColor = isContainer ? const Color(0xFF2563EB) : const Color(0xFFDC2626);
     if (path != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(6),
@@ -459,7 +459,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Icon(
-        isContainer ? Icons.inventory_2 : Icons.build_outlined,
+        isContainer ? Icons.check_box_outline_blank : Icons.circle_outlined,
         size: 18,
         color: accentColor,
       ),
@@ -481,7 +481,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
     final childCount = item['_count']?['contents'] ?? 0;
     final itemId = item['id'] as int;
     final isSelected = _selectedIds.contains(itemId);
-
     return GestureDetector(
       onLongPress: canManage ? () => _enterSelectionMode(itemId) : null,
       child: InkWell(
@@ -530,11 +529,11 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7C3AED).withAlpha(25),
+                          color: const Color(0xFF2563EB).withAlpha(25),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text('$childCount',
-                            style: const TextStyle(fontSize: 10, color: Color(0xFF7C3AED), fontWeight: FontWeight.w600)),
+                            style: const TextStyle(fontSize: 10, color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ]),
@@ -542,6 +541,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     Text(barcode,
                         style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)),
                         maxLines: 1, overflow: TextOverflow.ellipsis),
+                  if (assignedTo != null)
+                    Text(
+                      '${assignedTo['surname'] ?? ''} ${assignedTo['forename'] ?? ''}'.trim(),
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF374151)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                 ],
               ),
             ),
@@ -563,27 +569,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                     textAlign: TextAlign.center),
               ),
-            Expanded(
-              flex: 2,
-              child: assignedTo != null
-                  ? Row(children: [
-                      CircleAvatar(
-                        radius: 8,
-                        backgroundColor: const Color(0xFFE5E7EB),
-                        child: Text(
-                          _assignedName(item).isNotEmpty ? _assignedName(item)[0].toUpperCase() : '?',
-                          style: const TextStyle(fontSize: 9, color: Color(0xFF374151)),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(_assignedName(item),
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF374151)),
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
-                      ),
-                    ])
-                  : const Text('—', style: TextStyle(fontSize: 11, color: Color(0xFFD1D5DB))),
-            ),
             if (canManage)
               IconButton(
                 icon: Icon(isAvailable ? Icons.visibility : Icons.visibility_off_outlined,
@@ -772,8 +757,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
                 if (selectedCategoryId != null) data['categoryId'] = selectedCategoryId;
                 final err = await context.read<ItemProvider>().create(data);
                 if (ctx.mounted) Navigator.pop(ctx);
-                if (err != null && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                if (err != null) {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                } else {
+                  _fetch();
                 }
               },
               child: const Text('Δημιουργία'),
@@ -1002,13 +989,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                         leading: CircleAvatar(
                           backgroundColor: (isContainer
-                                  ? const Color(0xFF7C3AED)
+                                  ? const Color(0xFF2563EB)
                                   : const Color(0xFFDC2626))
                               .withAlpha(25),
                           child: Icon(
-                            isContainer ? Icons.inventory : Icons.build_outlined,
+                            isContainer ? Icons.check_box_outline_blank : Icons.circle_outlined,
                             color: isContainer
-                                ? const Color(0xFF7C3AED)
+                                ? const Color(0xFF2563EB)
                                 : const Color(0xFFDC2626),
                             size: 20,
                           ),
@@ -1301,9 +1288,6 @@ class _ItemsScreenState extends State<ItemsScreen> {
                                   _headerCell('Κατ.', 'category', flex: canManage ? 2 : 3),
                                   _headerCell('Τοποθεσία', 'location', flex: canManage ? 2 : 3),
                                   if (canManage) _headerCell('Ποσ.', 'quantity'),
-
-
-                                  _headerCell('Ανάθεση', 'assignedTo', flex: 2),
                                   SizedBox(width: canManage ? 32 : 80),
                                 ]),
                               ),

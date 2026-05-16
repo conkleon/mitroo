@@ -1735,13 +1735,13 @@ class _MemberEquipmentCard extends StatelessWidget {
                   leading: CircleAvatar(
                     radius: 18,
                     backgroundColor: (isContainer
-                            ? const Color(0xFF7C3AED)
+                            ? const Color(0xFF2563EB)
                             : const Color(0xFFDC2626))
                         .withAlpha(25),
                     child: Icon(
-                      isContainer ? Icons.inventory : Icons.build_outlined,
+                      isContainer ? Icons.check_box_outline_blank : Icons.circle_outlined,
                       color: isContainer
-                          ? const Color(0xFF7C3AED)
+                          ? const Color(0xFF2563EB)
                           : const Color(0xFFDC2626),
                       size: 18,
                     ),

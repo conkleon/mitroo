@@ -74,7 +74,6 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
         });
       }
     } catch (_) {}
-    }
   }
 
   int get _gcsTotal => _gcsEye.round() + _gcsVerbal.round() + _gcsMotor.round();
