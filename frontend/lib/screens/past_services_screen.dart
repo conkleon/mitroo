@@ -64,7 +64,6 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
         params['fromDate'] = _fromDate!.toUtc().toIso8601String();
       }
       if (_toDate != null) {
-        // End of the selected day
         final eod = DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59);
         params['toDate'] = eod.toUtc().toIso8601String();
       }
@@ -164,121 +163,109 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                 ),
               ),
 
-              // ── Filter strip ──
-              SizedBox(
-                height: 38,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.symmetric(horizontal: hPad),
+              // ── Date range buttons (prominent) ──
+              Padding(
+                padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 8),
+                child: Row(
                   children: [
-                    ..._specializations.map((s) {
-                      final specId = s['id'] as int;
-                      final selected = _selectedSpecId == specId;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: FilterChip(
-                          avatar: Icon(Icons.workspace_premium,
-                              size: 14,
-                              color: selected
-                                  ? const Color(0xFF7C3AED)
-                                  : const Color(0xFF6B7280)),
-                          label: Text(s['name'] ?? ''),
-                          selected: selected,
-                          onSelected: (_) {
-                            setState(() =>
-                                _selectedSpecId = selected ? null : specId);
-                            _load();
-                          },
-                          selectedColor: const Color(0xFFF5F3FF),
-                          checkmarkColor: const Color(0xFF7C3AED),
-                          side: BorderSide(
-                              color: selected
-                                  ? const Color(0xFFDDD6FE)
-                                  : const Color(0xFFD1D5DB)),
-                          visualDensity: VisualDensity.compact,
-                          labelStyle: TextStyle(
-                            fontSize: 12,
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                            color: selected
-                                ? const Color(0xFF6D28D9)
-                                : const Color(0xFF6B7280),
-                          ),
-                          padding: EdgeInsets.zero,
-                        ),
-                      );
-                    }),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: _buildDateChip(
-                        label: _fromDate != null
-                            ? 'Από: ${_fmtDay(_fromDate!)}'
-                            : 'Από ημ/νία',
-                        isSet: _fromDate != null,
-                        onTap: () => _pickDate(isFrom: true),
-                        onClear: _fromDate != null
-                            ? () {
-                                setState(() => _fromDate = null);
-                                _load();
-                              }
-                            : null,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: _buildDateChip(
-                        label: _toDate != null
-                            ? 'Έως: ${_fmtDay(_toDate!)}'
-                            : 'Έως ημ/νία',
-                        isSet: _toDate != null,
-                        onTap: () => _pickDate(isFrom: false),
-                        onClear: _toDate != null
-                            ? () {
-                                setState(() => _toDate = null);
-                                _load();
-                              }
-                            : null,
-                      ),
-                    ),
-                    if (_selectedSpecId != null ||
-                        _fromDate != null ||
-                        _toDate != null)
-                      TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _selectedSpecId = null;
-                            _fromDate = null;
-                            _toDate = null;
-                          });
-                          _load();
-                        },
-                        icon: const Icon(Icons.clear_all, size: 16),
-                        label: const Text('Καθαρισμός',
-                            style: TextStyle(fontSize: 12)),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Color(0xFF4B5563),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
+                    Expanded(child: _buildDateButton(isFrom: true)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildDateButton(isFrom: false)),
                   ],
                 ),
               ),
+
+              // ── Spec filter strip ──
+              if (_specializations.isNotEmpty ||
+                  _selectedSpecId != null ||
+                  _fromDate != null ||
+                  _toDate != null)
+                SizedBox(
+                  height: 38,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: EdgeInsets.symmetric(horizontal: hPad),
+                    children: [
+                      ..._specializations.map((s) {
+                        final specId = s['id'] as int;
+                        final selected = _selectedSpecId == specId;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: FilterChip(
+                            avatar: Icon(Icons.workspace_premium,
+                                size: 14,
+                                color: selected
+                                    ? const Color(0xFF7C3AED)
+                                    : const Color(0xFF6B7280)),
+                            label: Text(s['name'] ?? ''),
+                            selected: selected,
+                            onSelected: (_) {
+                              setState(() =>
+                                  _selectedSpecId = selected ? null : specId);
+                              _load();
+                            },
+                            selectedColor: const Color(0xFFF5F3FF),
+                            checkmarkColor: const Color(0xFF7C3AED),
+                            side: BorderSide(
+                                color: selected
+                                    ? const Color(0xFFDDD6FE)
+                                    : const Color(0xFFD1D5DB)),
+                            visualDensity: VisualDensity.compact,
+                            labelStyle: TextStyle(
+                              fontSize: 12,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: selected
+                                  ? const Color(0xFF6D28D9)
+                                  : const Color(0xFF6B7280),
+                            ),
+                            padding: EdgeInsets.zero,
+                          ),
+                        );
+                      }),
+                      if (_selectedSpecId != null ||
+                          _fromDate != null ||
+                          _toDate != null)
+                        TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _selectedSpecId = null;
+                              _fromDate = null;
+                              _toDate = null;
+                            });
+                            _load();
+                          },
+                          icon: const Icon(Icons.clear_all, size: 16),
+                          label: const Text('Καθαρισμός',
+                              style: TextStyle(fontSize: 12)),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF4B5563),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
               Padding(
-                padding:
-                    EdgeInsets.symmetric(horizontal: hPad, vertical: 2),
-                child: Text(
-                  _loading
-                      ? 'Φόρτωση...'
-                      : 'Βρέθηκαν ${filtered.length} υπηρεσίες',
-                  style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+                padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 2),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _loading
+                        ? 'Φόρτωση...'
+                        : 'Βρέθηκαν ${filtered.length} υπηρεσίες',
+                    style:
+                        tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
 
-              // ── Service cards ──
+              // ── Table ──
               Expanded(
                 child: _loading
                     ? const Center(child: CircularProgressIndicator())
@@ -287,9 +274,8 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                             child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.history,
-                                      size: 64,
-                                      color: Color(0xFFD1D5DB)),
+                                  const Icon(Icons.history,
+                                      size: 64, color: Color(0xFFD1D5DB)),
                                   const SizedBox(height: 12),
                                   Text('Δεν βρέθηκαν παλαιότερες',
                                       style: tt.bodyLarge?.copyWith(
@@ -299,12 +285,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                                       style: tt.bodySmall?.copyWith(
                                           color: const Color(0xFF9CA3AF))),
                                 ]))
-                        : RefreshIndicator(
-                            onRefresh: _load,
-                            child: isWide
-                                ? _buildGrid(filtered)
-                                : _buildList(filtered),
-                          ),
+                        : _buildTable(filtered, isWide, hPad),
               ),
             ],
           );
@@ -313,83 +294,154 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     );
   }
 
-  Widget _buildDateChip({
-    required String label,
-    required bool isSet,
-    required VoidCallback onTap,
-    VoidCallback? onClear,
-  }) {
+  Widget _buildDateButton({required bool isFrom}) {
+    final date = isFrom ? _fromDate : _toDate;
+    final isSet = date != null;
+    final label = isSet
+        ? '${isFrom ? 'Από' : 'Έως'}: ${_fmtDay(date)}'
+        : (isFrom ? 'Από ημ/νία' : 'Έως ημ/νία');
+
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      onTap: () => _pickDate(isFrom: isFrom),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: isSet
-              ? const Color(0xFF7C3AED).withAlpha(15)
-              : Colors.white,
+          color: isSet ? const Color(0xFF7C3AED) : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSet
-                ? const Color(0xFF7C3AED)
-                : const Color(0xFFD1D5DB),
+            color: isSet ? const Color(0xFF7C3AED) : const Color(0xFFD1D5DB),
           ),
+          boxShadow: isSet
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF7C3AED).withAlpha(50),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.calendar_today,
-                size: 14,
-                color: isSet
-                    ? const Color(0xFF7C3AED)
-                    : const Color(0xFF6B7280)),
-            const SizedBox(width: 6),
-            Text(label,
+            Icon(
+              Icons.calendar_today,
+              size: 14,
+              color: isSet ? Colors.white : const Color(0xFF6B7280),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
                 style: TextStyle(
                   fontSize: 13,
-                  color: isSet
-                      ? const Color(0xFF7C3AED)
-                      : const Color(0xFF6B7280),
                   fontWeight: isSet ? FontWeight.w600 : FontWeight.w400,
-                )),
-            if (onClear != null) ...[
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: onClear,
-                child: Icon(Icons.close,
-                    size: 14, color: const Color(0xFF7C3AED)),
+                  color: isSet ? Colors.white : const Color(0xFF6B7280),
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
+            ),
+            if (isSet)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    if (isFrom) {
+                      _fromDate = null;
+                    } else {
+                      _toDate = null;
+                    }
+                  });
+                  _load();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: Icon(Icons.close,
+                      size: 14, color: Colors.white.withAlpha(220)),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildList(List<dynamic> services) {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-      itemCount: services.length,
-      itemBuilder: (ctx, i) => _PastServiceCard(
-        svc: services[i] as Map<String, dynamic>,
-        onTap: () => _showPastServiceSheet(services[i] as Map<String, dynamic>),
-      ),
-    );
-  }
+  Widget _buildTable(List<dynamic> services, bool isWide, double hPad) {
+    final startW = isWide ? 88.0 : 72.0;
+    final endW = isWide ? 88.0 : 72.0;
+    final countW = isWide ? 64.0 : 54.0;
+    const chevronW = 24.0;
+    final nameFlex = isWide ? 3 : 2;
 
-  Widget _buildGrid(List<dynamic> services) {
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(32, 4, 32, 24),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 12,
-        childAspectRatio: 2.8,
-      ),
-      itemCount: services.length,
-      itemBuilder: (ctx, i) => _PastServiceCard(
-        svc: services[i] as Map<String, dynamic>,
-        onTap: () => _showPastServiceSheet(services[i] as Map<String, dynamic>),
-      ),
+    Widget hdrText(String t) => Text(t,
+        style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF9CA3AF)),
+        overflow: TextOverflow.ellipsis);
+
+    return Column(
+      children: [
+        // Sticky header
+        Padding(
+          padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: const BoxDecoration(
+              border:
+                  Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 4), // aligns with left strip in rows
+                Expanded(
+                  flex: nameFlex,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: hdrText('Υπηρεσία'),
+                  ),
+                ),
+                SizedBox(width: startW, child: hdrText('Έναρξη')),
+                SizedBox(width: endW, child: hdrText('Λήξη')),
+                if (isWide)
+                  Expanded(
+                    flex: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: hdrText('Τοποθεσία'),
+                    ),
+                  ),
+                SizedBox(width: countW, child: hdrText('Αιτήσεις')),
+                const SizedBox(width: chevronW),
+              ],
+            ),
+          ),
+        ),
+
+        // Scrollable rows
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _load,
+            child: ListView.separated(
+              padding: EdgeInsets.fromLTRB(hPad, 6, hPad, 24),
+              itemCount: services.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 3),
+              itemBuilder: (ctx, i) {
+                final svc = services[i] as Map<String, dynamic>;
+                return _PastServiceRow(
+                  svc: svc,
+                  isWide: isWide,
+                  startW: startW,
+                  endW: endW,
+                  countW: countW,
+                  nameFlex: nameFlex,
+                  onTap: () => _showPastServiceSheet(svc),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -404,11 +456,14 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     final carrier = (svc['carrier'] ?? '').toString();
     final description = (svc['description'] ?? '').toString();
     final userServices = svc['userServices'] as List<dynamic>? ?? [];
-    final enrolledCount = (svc['_count']?['userServices'] as int?) ?? userServices.length;
+    final enrolledCount =
+        (svc['_count']?['userServices'] as int?) ?? userServices.length;
 
-    final responsible = svc['responsibleUser'] as Map<String, dynamic>?;
+    final responsible =
+        svc['responsibleUser'] as Map<String, dynamic>?;
     final rName = responsible != null
-        ? '${responsible['forename'] ?? ''} ${responsible['surname'] ?? ''}'.trim()
+        ? '${responsible['forename'] ?? ''} ${responsible['surname'] ?? ''}'
+            .trim()
         : '';
 
     final defaultHours = (svc['defaultHours'] as int?) ?? 0;
@@ -455,8 +510,8 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                           color: const Color(0xFF1F2937))),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFECFDF5),
                     borderRadius: BorderRadius.circular(12),
@@ -474,12 +529,13 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                   '${_fmtDate(svc['startAt'] as String?)} → ${_fmtDate(svc['endAt'] as String?)}',
                   cs),
               if (location.isNotEmpty)
-                _sheetInfoRow(
-                    Icons.location_on_outlined, 'Τοποθεσία', location, cs),
+                _sheetInfoRow(Icons.location_on_outlined, 'Τοποθεσία',
+                    location, cs),
               if (carrier.isNotEmpty)
                 _sheetInfoRow(Icons.groups, 'Φορέας', carrier, cs),
               if (rName.isNotEmpty)
-                _sheetInfoRow(Icons.star_rounded, 'Υπεύθυνος', rName, cs),
+                _sheetInfoRow(
+                    Icons.star_rounded, 'Υπεύθυνος', rName, cs),
               _sheetInfoRow(Icons.people_outline, 'Αιτήσεις',
                   '$enrolledCount μέλη', cs),
               // Description
@@ -541,12 +597,12 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
               const SizedBox(height: 20),
               Row(children: [
                 Text('Αιτήσεις',
-                    style:
-                        tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                    style: tt.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w700)),
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: const Color(0xFF6B7280).withAlpha(20),
                     borderRadius: BorderRadius.circular(8),
@@ -568,8 +624,8 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                 )
               else
                 ...userServices.map((us) {
-                  final user =
-                      (us as Map<String, dynamic>)['user'] as Map<String, dynamic>? ?? {};
+                  final user = (us as Map<String, dynamic>)['user']
+                      as Map<String, dynamic>? ?? {};
                   final fullName =
                       '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
                           .trim();
@@ -618,8 +674,8 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                         decoration: BoxDecoration(
                           color: statusColor.withAlpha(20),
                           borderRadius: BorderRadius.circular(6),
-                          border:
-                              Border.all(color: statusColor.withAlpha(60)),
+                          border: Border.all(
+                              color: statusColor.withAlpha(60)),
                         ),
                         child: Text(statusLabel,
                             style: TextStyle(
@@ -645,7 +701,8 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                     label: const Text('Επεξεργασία υπηρεσίας',
                         style: TextStyle(fontWeight: FontWeight.w700)),
                     style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -660,7 +717,8 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     );
   }
 
-  Widget _sheetInfoRow(IconData icon, String label, String value, ColorScheme cs) {
+  Widget _sheetInfoRow(
+      IconData icon, String label, String value, ColorScheme cs) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(children: [
@@ -707,46 +765,32 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
       ),
     );
   }
-
 }
 
-class _StatPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  const _StatPill(this.icon, this.label, this.color);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withAlpha(15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withAlpha(40)),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 12, color: color),
-        const SizedBox(width: 4),
-        Text(label,
-            style: TextStyle(
-                fontSize: 11, color: color, fontWeight: FontWeight.w600)),
-      ]),
-    );
-  }
-}
-
-class _PastServiceCard extends StatelessWidget {
+class _PastServiceRow extends StatelessWidget {
   final Map<String, dynamic> svc;
+  final bool isWide;
+  final double startW;
+  final double endW;
+  final double countW;
+  final int nameFlex;
   final VoidCallback onTap;
-  const _PastServiceCard({required this.svc, required this.onTap});
 
-  String _fmt(String? iso) {
+  const _PastServiceRow({
+    required this.svc,
+    required this.isWide,
+    required this.startW,
+    required this.endW,
+    required this.countW,
+    required this.nameFlex,
+    required this.onTap,
+  });
+
+  String _fmtShort(String? iso) {
     if (iso == null) return '—';
     final dt = DateTime.tryParse(iso);
     if (dt == null) return '—';
-    return DateFormat('dd/MM/yy HH:mm').format(dt.toLocal());
+    return DateFormat('dd/MM/yy').format(dt.toLocal());
   }
 
   @override
@@ -755,103 +799,132 @@ class _PastServiceCard extends StatelessWidget {
     final name = (svc['name'] ?? '').toString();
     final location = (svc['location'] ?? '').toString();
     final userServices = svc['userServices'] as List<dynamic>? ?? [];
-    final enrolledCount = (svc['_count']?['userServices'] as int?) ?? userServices.length;
+    final enrolledCount =
+        (svc['_count']?['userServices'] as int?) ?? userServices.length;
     final acceptedCount =
         userServices.where((us) => us['status'] == 'accepted').length;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        elevation: 0,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-            ),
-            child: IntrinsicHeight(
-              child: Row(
-                children: [
-                  Container(
-                    width: 4,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF059669),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(12),
-                        bottomLeft: Radius.circular(12),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              children: [
+                // Green left strip
+                Container(
+                  width: 4,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF059669),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      bottomLeft: Radius.circular(8),
+                    ),
+                  ),
+                ),
+                // Name column
+                Expanded(
+                  flex: nameFlex,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 10),
+                    child: Text(name,
+                        style: tt.bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                ),
+                // Start date
+                SizedBox(
+                  width: startW,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Text(
+                      _fmtShort(svc['startAt'] as String?),
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF6B7280)),
+                    ),
+                  ),
+                ),
+                // End date
+                SizedBox(
+                  width: endW,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Text(
+                      _fmtShort(svc['endAt'] as String?),
+                      style: const TextStyle(
+                          fontSize: 12, color: Color(0xFF6B7280)),
+                    ),
+                  ),
+                ),
+                // Location (wide only)
+                if (isWide)
+                  Expanded(
+                    flex: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 10),
+                      child: Text(
+                        location.isEmpty ? '—' : location,
+                        style: const TextStyle(
+                            fontSize: 12, color: Color(0xFF6B7280)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(name,
-                              style: tt.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
+                // Enrollment counts
+                SizedBox(
+                  width: countW,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.people,
+                              size: 11, color: Color(0xFF6B7280)),
+                          const SizedBox(width: 3),
+                          Text('$enrolledCount',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF6B7280),
+                                  fontWeight: FontWeight.w600)),
+                        ]),
+                        if (acceptedCount > 0) ...[
                           const SizedBox(height: 2),
-                          Row(children: [
-                            const Icon(Icons.schedule,
-                                size: 12, color: Color(0xFF6B7280)),
+                          Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.check,
+                                size: 11, color: Color(0xFF059669)),
                             const SizedBox(width: 3),
-                            Flexible(
-                              child: Text(
-                                '${_fmt(svc['startAt'] as String?)} → ${_fmt(svc['endAt'] as String?)}',
+                            Text('$acceptedCount',
                                 style: const TextStyle(
-                                    fontSize: 12, color: Color(0xFF6B7280)),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ]),
-                          if (location.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Row(children: [
-                              const Icon(Icons.location_on_outlined,
-                                  size: 12, color: Color(0xFF6B7280)),
-                              const SizedBox(width: 3),
-                              Flexible(
-                                child: Text(location,
-                                    style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Color(0xFF6B7280)),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis),
-                              ),
-                            ]),
-                          ],
-                          const SizedBox(height: 4),
-                          Row(children: [
-                            _StatPill(Icons.people, '$enrolledCount εγγ.',
-                                const Color(0xFF6B7280)),
-                            if (acceptedCount > 0) ...[
-                              const SizedBox(width: 6),
-                              _StatPill(
-                                  Icons.check_circle_outline,
-                                  '$acceptedCount εγκ.',
-                                  const Color(0xFF059669)),
-                            ],
+                                    fontSize: 11,
+                                    color: Color(0xFF059669),
+                                    fontWeight: FontWeight.w600)),
                           ]),
                         ],
-                      ),
+                      ],
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.only(right: 8),
-                    child: Icon(Icons.chevron_right,
-                        color: Color(0xFF9CA3AF), size: 18),
-                  ),
-                ],
-              ),
+                ),
+                // Chevron
+                const Padding(
+                  padding: EdgeInsets.only(right: 8),
+                  child: Icon(Icons.chevron_right,
+                      size: 16, color: Color(0xFF9CA3AF)),
+                ),
+              ],
             ),
           ),
         ),
