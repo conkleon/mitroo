@@ -176,8 +176,12 @@ router.get("/", async (req: Request, res: Response) => {
     });
 
     res.json(victims);
-  } catch (err) {
-    res.status(500).json({ error: "Αποτυχία ανάκτησης περιστατικών" });
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Μη έγκυρα δεδομένα", details: err.errors });
+      return;
+    }
+    throw err;
   }
 });
 
@@ -206,8 +210,12 @@ router.get("/:id", async (req: Request, res: Response) => {
     });
     if (!victim) { res.status(404).json({ error: "Δεν βρέθηκε" }); return; }
     res.json(victim);
-  } catch (err) {
-    res.status(500).json({ error: "Αποτυχία ανάκτησης περιστατικού" });
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Μη έγκυρα δεδομένα", details: err.errors });
+      return;
+    }
+    throw err;
   }
 });
 
@@ -222,7 +230,9 @@ router.post("/", async (req: Request, res: Response) => {
       gcsTotal = data.gcsEye + data.gcsVerbal + data.gcsMotor;
     }
 
-    const dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth) : undefined;
+    const dateOfBirth = "dateOfBirth" in data
+      ? (data.dateOfBirth ? new Date(data.dateOfBirth) : null)
+      : undefined;
 
     const victim = await prisma.victim.create({
       data: {
@@ -240,7 +250,7 @@ router.post("/", async (req: Request, res: Response) => {
       res.status(400).json({ error: "Μη έγκυρα δεδομένα", details: err.errors });
       return;
     }
-    res.status(500).json({ error: "Αποτυχία δημιουργίας περιστατικού" });
+    throw err;
   }
 });
 
@@ -275,7 +285,9 @@ router.patch("/:id", async (req: Request, res: Response) => {
       }
     }
 
-    const dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth) : undefined;
+    const dateOfBirth = "dateOfBirth" in data
+      ? (data.dateOfBirth ? new Date(data.dateOfBirth) : null)
+      : undefined;
 
     const victim = await prisma.victim.update({
       where: { id },
@@ -292,7 +304,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
       res.status(404).json({ error: "Δεν βρέθηκε" });
       return;
     }
-    res.status(500).json({ error: "Αποτυχία ενημέρωσης περιστατικού" });
+    throw err;
   }
 });
 
@@ -314,11 +326,15 @@ router.delete("/:id", async (req: Request, res: Response) => {
     await prisma.victim.delete({ where: { id } });
     res.status(204).send();
   } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Μη έγκυρα δεδομένα", details: err.errors });
+      return;
+    }
     if (err?.code === "P2025") {
       res.status(404).json({ error: "Δεν βρέθηκε" });
       return;
     }
-    res.status(500).json({ error: "Αποτυχία διαγραφής περιστατικού" });
+    throw err;
   }
 });
 
