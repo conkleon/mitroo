@@ -45,7 +45,6 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
   final _locationNotesCtrl = TextEditingController();
   int? _serviceId;
   List<Map<String, dynamic>> _acceptedServices = [];
-  bool _servicesLoaded = false;
 
   // Step 3: Notes
   final _notesCtrl = TextEditingController();
@@ -72,11 +71,9 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
             }
             return false;
           }).toList();
-          _servicesLoaded = true;
         });
       }
-    } catch (_) {
-      setState(() => _servicesLoaded = true);
+    } catch (_) {}
     }
   }
 
