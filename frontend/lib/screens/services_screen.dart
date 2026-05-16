@@ -250,12 +250,25 @@ class _ServicesScreenState extends State<ServicesScreen>
 
     return Scaffold(
       floatingActionButton: (auth.isAdmin || auth.isMissionAdmin)
-          ? FloatingActionButton(
-              onPressed: () => context.push('/admin/services/create'),
-              tooltip: 'Νέα υπηρεσία',
-              child: const Icon(Icons.add),
+          ? _SpeedDialFab(
+              items: [
+                _SpeedDialItem(
+                  label: 'Καταγραφή Περιστατικού',
+                  icon: Icons.personal_injury,
+                  onTap: () => context.push('/victims/create'),
+                ),
+                _SpeedDialItem(
+                  label: 'Νέα υπηρεσία',
+                  icon: Icons.add,
+                  onTap: () => context.push('/admin/services/create'),
+                ),
+              ],
             )
-          : null,
+          : FloatingActionButton(
+              onPressed: () => context.push('/victims/create'),
+              tooltip: 'Καταγραφή Περιστατικού',
+              child: const Icon(Icons.personal_injury),
+            ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => svcProv.fetchMyServices(),
@@ -2034,6 +2047,129 @@ class _CalendarServiceCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SpeedDial FAB (admin dual-action)
+// ═══════════════════════════════════════════════════════════════
+
+class _SpeedDialItem {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  const _SpeedDialItem({required this.label, required this.icon, required this.onTap});
+}
+
+class _SpeedDialFab extends StatefulWidget {
+  final List<_SpeedDialItem> items;
+  const _SpeedDialFab({required this.items});
+
+  @override
+  State<_SpeedDialFab> createState() => _SpeedDialFabState();
+}
+
+class _SpeedDialFabState extends State<_SpeedDialFab>
+    with SingleTickerProviderStateMixin {
+  bool _open = false;
+  late final AnimationController _controller;
+  late final Animation<double> _rotate;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _rotate = Tween<double>(begin: 0, end: 0.125).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _scale = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() => _open = !_open);
+    if (_open) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.bottomRight,
+      children: [
+        if (_open)
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _toggle,
+              child: Container(color: Colors.black.withAlpha(60)),
+            ),
+          ),
+        Positioned(
+          right: 0,
+          bottom: _open ? 72 : 0,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: widget.items.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final item = entry.value;
+              return ScaleTransition(
+                scale: _scale,
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: idx < widget.items.length - 1 ? 12 : 0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A1C1E).withAlpha(190),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(item.label,
+                          style: GoogleFonts.inter(color: Colors.white, fontSize: 12),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FloatingActionButton.small(
+                        heroTag: 'speeddial_$idx',
+                        onPressed: () {
+                          _toggle();
+                          item.onTap();
+                        },
+                        child: Icon(item.icon),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        RotationTransition(
+          turns: _rotate,
+          child: FloatingActionButton(
+            onPressed: _toggle,
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
     );
   }
 }
