@@ -18,7 +18,7 @@ class ShellScreen extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     final showAdmin = auth.canAccessAdminPanel;
 
-    final mainPaths = ['/services', '/items', '/vehicles', if (showAdmin) '/admin', '/chat'];
+    final mainPaths = ['/services', '/victims', '/items', '/vehicles', if (showAdmin) '/admin', '/chat'];
 
     final location = GoRouterState.of(context).matchedLocation;
     final fullUri = GoRouterState.of(context).uri.toString();
@@ -72,6 +72,11 @@ class ShellScreen extends StatelessWidget {
                     icon: Icon(Icons.miscellaneous_services_outlined),
                     selectedIcon: Icon(Icons.miscellaneous_services),
                     label: 'Υπηρεσίες',
+                  ),
+                  const NavigationDestination(
+                    icon: Icon(Icons.personal_injury_outlined),
+                    selectedIcon: Icon(Icons.personal_injury),
+                    label: 'Περιστατικά',
                   ),
                   const NavigationDestination(
                     icon: Icon(Icons.inventory_2_outlined),
@@ -186,17 +191,24 @@ class _DesktopSidebar extends StatelessWidget {
                       onTap: () => context.go('/services'),
                     ),
                     _BrandSidebarItem(
+                      icon: Icons.personal_injury_outlined,
+                      selectedIcon: Icons.personal_injury,
+                      label: 'Περιστατικά',
+                      selected: selectedIndex == 1,
+                      onTap: () => context.go('/victims'),
+                    ),
+                    _BrandSidebarItem(
                       icon: Icons.inventory_2_outlined,
                       selectedIcon: Icons.inventory_2,
                       label: 'Αντικείμενα',
-                      selected: selectedIndex == 1,
+                      selected: selectedIndex == 2,
                       onTap: () => context.go('/items'),
                     ),
                     _BrandSidebarItem(
                       icon: Icons.directions_car_outlined,
                       selectedIcon: Icons.directions_car,
                       label: 'Οχήματα',
-                      selected: selectedIndex == 2,
+                      selected: selectedIndex == 3,
                       onTap: () => context.go('/vehicles'),
                     ),
                     _BrandSidebarItem(
