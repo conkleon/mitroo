@@ -35,6 +35,30 @@ const createSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
+const vitalSignSchema = z.object({
+  systolicBP: z.number().int().min(0).optional().nullable(),
+  diastolicBP: z.number().int().min(0).optional().nullable(),
+  heartRate: z.number().int().min(0).optional().nullable(),
+  respiratoryRate: z.number().int().min(0).optional().nullable(),
+  oxygenSat: z.number().int().min(0).max(100).optional().nullable(),
+  temperature: z.number().optional().nullable(),
+  bloodGlucose: z.number().optional().nullable(),
+  painScore: z.number().int().min(0).max(10).optional().nullable(),
+  measuredAt: z.string().datetime().optional(),
+  notes: z.string().optional().nullable(),
+  measuredBy: z.string().max(255).optional().nullable(),
+});
+
+const treatmentSchema = z.object({
+  action: z.string().min(1),
+  materialUsed: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  itemId: z.number().int().optional().nullable(),
+  consumedNote: z.string().optional().nullable(),
+  performedAt: z.string().datetime().optional(),
+  performedBy: z.string().max(255).optional().nullable(),
+});
+
 // ── Access helpers ───────────────────────────────
 
 async function canReadVictim(
@@ -334,6 +358,166 @@ router.delete("/:id", async (req: Request, res: Response) => {
       res.status(404).json({ error: "Δεν βρέθηκε" });
       return;
     }
+    throw err;
+  }
+});
+
+// ── POST /api/victims/:id/finalize ───────────────
+
+router.post("/:id/finalize", async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Άκυρο ID" }); return; }
+
+  const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
+
+  const victim = await prisma.victim.findUnique({
+    where: { id },
+    select: { createdById: true, isFinalized: true, serviceId: true },
+  });
+  if (!victim) { res.status(404).json({ error: "Δεν βρέθηκε" }); return; }
+
+  if (victim.isFinalized) {
+    res.status(400).json({ error: "Το περιστατικό έχει ήδη οριστικοποιηθεί" });
+    return;
+  }
+
+  let allowed = isAdmin || victim.createdById === userId;
+  if (!allowed && victim.serviceId) {
+    const service = await prisma.service.findUnique({
+      where: { id: victim.serviceId },
+      select: { departmentId: true },
+    });
+    if (service) {
+      allowed = await isMissionAdminInDepartment(userId, service.departmentId);
+    }
+  }
+
+  if (!allowed) { res.status(403).json({ error: "Δεν έχετε δικαίωμα" }); return; }
+
+  try {
+    const updated = await prisma.victim.update({
+      where: { id },
+      data: {
+        isFinalized: true,
+        finalizedAt: new Date(),
+        finalizedById: userId,
+      },
+    });
+    res.json(updated);
+  } catch (err: any) {
+    if (err?.code === "P2025") { res.status(404).json({ error: "Δεν βρέθηκε" }); return; }
+    throw err;
+  }
+});
+
+// ── POST /api/victims/:id/vital-signs ─────────────
+
+router.post("/:id/vital-signs", async (req: Request, res: Response) => {
+  const victimId = Number(req.params.id);
+  if (isNaN(victimId)) { res.status(400).json({ error: "Άκυρο ID" }); return; }
+
+  const access = await canWriteVictim(victimId, req.user!.userId, req.user!.isAdmin);
+  if (!access.allowed) {
+    res.status(access.isFinalized ? 403 : 404).json({
+      error: access.isFinalized ? "Το περιστατικό έχει οριστικοποιηθεί" : "Δεν βρέθηκε",
+    });
+    return;
+  }
+
+  try {
+    const data = vitalSignSchema.parse(req.body);
+    const measuredAt = data.measuredAt ? new Date(data.measuredAt) : undefined;
+
+    const vs = await prisma.vitalSign.create({
+      data: { ...data, measuredAt, victimId },
+    });
+    res.status(201).json(vs);
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Μη έγκυρα δεδομένα", details: err.errors });
+      return;
+    }
+    throw err;
+  }
+});
+
+// ── DELETE /api/victims/:id/vital-signs/:vsId ──────
+
+router.delete("/:id/vital-signs/:vsId", async (req: Request, res: Response) => {
+  const victimId = Number(req.params.id);
+  const vsId = Number(req.params.vsId);
+  if (isNaN(victimId) || isNaN(vsId)) { res.status(400).json({ error: "Άκυρο ID" }); return; }
+
+  const access = await canWriteVictim(victimId, req.user!.userId, req.user!.isAdmin);
+  if (!access.allowed) {
+    res.status(access.isFinalized ? 403 : 404).json({
+      error: access.isFinalized ? "Το περιστατικό έχει οριστικοποιηθεί" : "Δεν βρέθηκε",
+    });
+    return;
+  }
+
+  try {
+    await prisma.vitalSign.delete({ where: { id: vsId, victimId } });
+    res.status(204).end();
+  } catch (err: any) {
+    if (err?.code === "P2025") { res.status(404).json({ error: "Δεν βρέθηκε" }); return; }
+    throw err;
+  }
+});
+
+// ── POST /api/victims/:id/treatments ──────────────
+
+router.post("/:id/treatments", async (req: Request, res: Response) => {
+  const victimId = Number(req.params.id);
+  if (isNaN(victimId)) { res.status(400).json({ error: "Άκυρο ID" }); return; }
+
+  const access = await canWriteVictim(victimId, req.user!.userId, req.user!.isAdmin);
+  if (!access.allowed) {
+    res.status(access.isFinalized ? 403 : 404).json({
+      error: access.isFinalized ? "Το περιστατικό έχει οριστικοποιηθεί" : "Δεν βρέθηκε",
+    });
+    return;
+  }
+
+  try {
+    const data = treatmentSchema.parse(req.body);
+    const performedAt = data.performedAt ? new Date(data.performedAt) : undefined;
+
+    const treatment = await prisma.treatment.create({
+      data: { ...data, performedAt, victimId },
+      include: { item: { select: { id: true, name: true } } },
+    });
+    res.status(201).json(treatment);
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Μη έγκυρα δεδομένα", details: err.errors });
+      return;
+    }
+    throw err;
+  }
+});
+
+// ── DELETE /api/victims/:id/treatments/:tId ────────
+
+router.delete("/:id/treatments/:tId", async (req: Request, res: Response) => {
+  const victimId = Number(req.params.id);
+  const tId = Number(req.params.tId);
+  if (isNaN(victimId) || isNaN(tId)) { res.status(400).json({ error: "Άκυρο ID" }); return; }
+
+  const access = await canWriteVictim(victimId, req.user!.userId, req.user!.isAdmin);
+  if (!access.allowed) {
+    res.status(access.isFinalized ? 403 : 404).json({
+      error: access.isFinalized ? "Το περιστατικό έχει οριστικοποιηθεί" : "Δεν βρέθηκε",
+    });
+    return;
+  }
+
+  try {
+    await prisma.treatment.delete({ where: { id: tId, victimId } });
+    res.status(204).end();
+  } catch (err: any) {
+    if (err?.code === "P2025") { res.status(404).json({ error: "Δεν βρέθηκε" }); return; }
     throw err;
   }
 });
