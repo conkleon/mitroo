@@ -507,6 +507,7 @@ enum ChatType {
   department
   mission
   custom
+  direct
 
   @@map("chat_type")
 }
