@@ -28,7 +28,9 @@
     // Register push service worker
     window.addEventListener('load', function() {
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/push_sw.js').catch(function(err) {
+        navigator.serviceWorker.register('/push_sw.js').then(function(reg) {
+          window._pushSwReg = reg;
+        }).catch(function(err) {
           console.error('push_sw registration failed', err);
         });
       }
@@ -53,7 +55,10 @@
       }
       Notification.requestPermission().then(function(permission) {
         if (permission !== 'granted') { callback(null); return; }
-        navigator.serviceWorker.ready.then(function(reg) {
+        var ready = window._pushSwReg
+          ? Promise.resolve(window._pushSwReg)
+          : navigator.serviceWorker.ready;
+        ready.then(function(reg) {
           reg.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),

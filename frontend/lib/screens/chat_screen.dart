@@ -55,33 +55,33 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 4,
-              height: 22,
-              decoration: BoxDecoration(
-                color: const Color(0xFFC62828),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'Συνομιλίες',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF1A1C1E),
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-      ),
+      // appBar: AppBar(
+      //   title: Row(
+      //     mainAxisSize: MainAxisSize.min,
+      //     children: [
+      //       // Container(
+      //       //   width: 4,
+      //       //   height: 22,
+      //       //   decoration: BoxDecoration(
+      //       //     color: const Color(0xFFC62828),
+      //       //     borderRadius: BorderRadius.circular(2),
+      //       //   ),
+      //       // ),
+      //       // const SizedBox(width: 10),
+      //       // Text(
+      //       //   'Συνομιλίες',
+      //       //   style: GoogleFonts.inter(
+      //       //     fontSize: 18,
+      //       //     fontWeight: FontWeight.w700,
+      //       //     color: const Color(0xFF1A1C1E),
+      //       //     letterSpacing: -0.5,
+      //       //   ),
+      //       // ),
+      //     ],
+      //   ),
+      //   backgroundColor: Colors.white,
+      //   surfaceTintColor: Colors.white,
+      // ),
       body: Column(
         children: [
           Padding(

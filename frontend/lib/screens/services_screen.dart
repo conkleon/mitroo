@@ -421,53 +421,102 @@ class _ServicesScreenState extends State<ServicesScreen>
                 ),
               ),
 
-              // ── Filter toggle ───────────────────────────
+              // ── Tab bar + filter toggle (inline) ─────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: GestureDetector(
-                      onTap: () => setState(() => _filtersExpanded = !_filtersExpanded),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: (_filtersExpanded || _selectedSpecId != null)
-                              ? cs.primary.withAlpha(15)
-                              : const Color(0xFFF3F4F6),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: (_filtersExpanded || _selectedSpecId != null)
-                                ? cs.primary.withAlpha(60)
-                                : const Color(0xFFE5E7EB),
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFE5E7EB)),
+                          ),
+                          child: TabBar(
+                            controller: _tabController,
+                            indicator: BoxDecoration(
+                              color: cs.primary,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            labelColor: Colors.white,
+                            unselectedLabelColor: const Color(0xFF6B7280),
+                            labelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+                            unselectedLabelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w500),
+                            dividerHeight: 0,
+                            indicatorPadding: const EdgeInsets.all(3),
+                            tabs: const [
+                              Tab(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.list_alt_rounded, size: 16),
+                                    SizedBox(width: 6),
+                                    Text('Λίστα'),
+                                  ],
+                                ),
+                              ),
+                              Tab(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.calendar_month_rounded, size: 16),
+                                    SizedBox(width: 6),
+                                    Text('Ημερολόγιο'),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.tune_rounded,
-                              size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => setState(() => _filtersExpanded = !_filtersExpanded),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          height: 44,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: (_filtersExpanded || _selectedSpecId != null)
+                                ? cs.primary.withAlpha(15)
+                                : const Color(0xFFF3F4F6),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
                               color: (_filtersExpanded || _selectedSpecId != null)
-                                  ? cs.primary
-                                  : const Color(0xFF6B7280),
+                                  ? cs.primary.withAlpha(60)
+                                  : const Color(0xFFE5E7EB),
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _selectedSpecId != null ? 'Φίλτρα (1)' : 'Φίλτρα',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.tune_rounded,
+                                size: 16,
                                 color: (_filtersExpanded || _selectedSpecId != null)
                                     ? cs.primary
                                     : const Color(0xFF6B7280),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 6),
+                              Text(
+                                _selectedSpecId != null ? 'Φίλτρα (1)' : 'Φίλτρα',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: (_filtersExpanded || _selectedSpecId != null)
+                                      ? cs.primary
+                                      : const Color(0xFF6B7280),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
@@ -479,7 +528,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                   curve: Curves.easeInOut,
                   child: (_filtersExpanded && dynamicSpecs.isNotEmpty)
                       ? Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
+                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 4),
                           child: SizedBox(
                             height: 40,
                             child: ListView.separated(
@@ -522,57 +571,6 @@ class _ServicesScreenState extends State<ServicesScreen>
                           ),
                         )
                       : const SizedBox.shrink(),
-                ),
-              ),
-
-              // ── Tab bar ──────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-                  child: Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      indicator: BoxDecoration(
-                        color: cs.primary,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: const Color(0xFF6B7280),
-                      labelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w700),
-                      unselectedLabelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w500),
-                      dividerHeight: 0,
-                      indicatorPadding: const EdgeInsets.all(3),
-                      tabs: const [
-                        Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.list_alt_rounded, size: 16),
-                              SizedBox(width: 6),
-                              Text('Λίστα'),
-                            ],
-                          ),
-                        ),
-                        Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.calendar_month_rounded, size: 16),
-                              SizedBox(width: 6),
-                              Text('Ημερολόγιο'),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
 

@@ -82,7 +82,9 @@
       "PowerShell(Stop-Process *)",
       "Bash(Test-Path *)",
       "Bash(dir D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\lib\\\\providers *)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(docker exec mitroo-postgres-1 *)",
+      "Bash(PGPASSWORD='WCByztgTlExGZKfU0niH5sJkuAewD2V8' psql *)"
     ]
   }
 }
