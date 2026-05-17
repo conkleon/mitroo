@@ -173,3 +173,53 @@ class ChatAttachment {
     );
   }
 }
+
+class DmCandidate {
+  final int id;
+  final String forename;
+  final String surname;
+  final String role;
+  final String? imagePath;
+
+  DmCandidate({
+    required this.id,
+    required this.forename,
+    required this.surname,
+    required this.role,
+    this.imagePath,
+  });
+
+  String get fullName => '$forename $surname'.trim();
+
+  factory DmCandidate.fromJson(Map<String, dynamic> json) {
+    return DmCandidate(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      forename: json['forename'] as String? ?? '',
+      surname: json['surname'] as String? ?? '',
+      role: json['role'] as String? ?? '',
+      imagePath: json['imagePath'] as String?,
+    );
+  }
+}
+
+class DmCandidateGroup {
+  final int departmentId;
+  final String departmentName;
+  final List<DmCandidate> users;
+
+  DmCandidateGroup({
+    required this.departmentId,
+    required this.departmentName,
+    required this.users,
+  });
+
+  factory DmCandidateGroup.fromJson(Map<String, dynamic> json) {
+    return DmCandidateGroup(
+      departmentId: (json['departmentId'] as num?)?.toInt() ?? 0,
+      departmentName: json['departmentName'] as String? ?? '',
+      users: (json['users'] as List<dynamic>? ?? [])
+          .map((u) => DmCandidate.fromJson(u as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
