@@ -133,14 +133,23 @@ router.get("/", async (req: Request, res: Response) => {
       department: { select: { id: true, name: true } },
       service: { select: { id: true, name: true } },
       _count: { select: { members: true } },
+      members: {
+        where: { userId: { not: userId } },
+        include: { user: { select: { id: true, forename: true, surname: true } } },
+        take: 1,
+      },
     },
     orderBy: { updatedAt: "desc" },
   });
 
-  const result = allChats.map((chat) => ({
-    id: chat.id,
-    type: chat.type,
-    name: chat.name ?? chat.department?.name ?? chat.service?.name ?? "Chat",
+  const result = allChats.map((chat) => {
+    const dmPeer = chat.type === "direct" ? (chat.members[0]?.user ?? null) : null;
+    return {
+      id: chat.id,
+      type: chat.type,
+      name: dmPeer
+        ? `${dmPeer.forename} ${dmPeer.surname}`.trim()
+        : chat.name ?? chat.department?.name ?? chat.service?.name ?? "Chat",
     departmentId: chat.departmentId,
     serviceId: chat.serviceId,
     itemAdminsCanSend: chat.itemAdminsCanSend,
@@ -150,9 +159,119 @@ router.get("/", async (req: Request, res: Response) => {
     lastMessage: chat.messages[0] ?? null,
     createdAt: chat.createdAt,
     updatedAt: chat.updatedAt,
-  }));
+    };
+  });
 
   res.json(result);
+});
+
+// ── POST /api/chats/direct ───────────────────────────
+const directChatSchema = z.object({
+  targetUserId: z.number().int(),
+});
+
+router.post("/direct", async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const isAdmin = req.user!.isAdmin;
+    const { targetUserId } = directChatSchema.parse(req.body);
+
+    if (userId === targetUserId) {
+      res.status(400).json({ error: "Cannot start a DM with yourself" });
+      return;
+    }
+
+    if (!isAdmin) {
+      const callerAdminDepts = await prisma.userDepartment.findMany({
+        where: { userId, role: "missionAdmin" },
+        select: { departmentId: true },
+      });
+
+      if (callerAdminDepts.length > 0) {
+        // Caller is missionAdmin: target must be a member of one of their departments
+        const allowed = await prisma.userDepartment.count({
+          where: {
+            userId: targetUserId,
+            departmentId: { in: callerAdminDepts.map((d) => d.departmentId) },
+          },
+        });
+        if (allowed === 0) {
+          res.status(403).json({ error: "Target user is not in any of your departments" });
+          return;
+        }
+      } else {
+        // Regular user: target must be missionAdmin in a shared department
+        const callerDepts = await prisma.userDepartment.findMany({
+          where: { userId },
+          select: { departmentId: true },
+        });
+        const allowed = await prisma.userDepartment.count({
+          where: {
+            userId: targetUserId,
+            role: "missionAdmin",
+            departmentId: { in: callerDepts.map((d) => d.departmentId) },
+          },
+        });
+        if (allowed === 0) {
+          res.status(403).json({ error: "You can only DM mission admins in your departments" });
+          return;
+        }
+      }
+    }
+
+    // Find existing DM between the two users
+    const existing = await prisma.chat.findFirst({
+      where: {
+        type: "direct",
+        AND: [
+          { members: { some: { userId } } },
+          { members: { some: { userId: targetUserId } } },
+        ],
+      },
+      include: {
+        members: {
+          include: {
+            user: { select: { id: true, forename: true, surname: true, imagePath: true } },
+          },
+        },
+        _count: { select: { members: true } },
+      },
+    });
+
+    if (existing) {
+      res.json(existing);
+      return;
+    }
+
+    // Create new DM
+    const chat = await prisma.chat.create({
+      data: {
+        type: "direct",
+        members: {
+          create: [{ userId }, { userId: targetUserId }],
+        },
+      },
+      include: {
+        members: {
+          include: {
+            user: { select: { id: true, forename: true, surname: true, imagePath: true } },
+          },
+        },
+        _count: { select: { members: true } },
+      },
+    });
+
+    const io = getIO();
+    io.to(`user:${targetUserId}`).emit("chat:new", { id: chat.id, type: "direct" });
+
+    res.status(201).json(chat);
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Validation failed", details: err.errors });
+      return;
+    }
+    throw err;
+  }
 });
 
 // ── POST /api/chats ──────────────────────────────
@@ -482,7 +601,7 @@ router.delete("/:id/leave", async (req: Request, res: Response) => {
     return;
   }
   if (chat.type !== "custom") {
-    res.status(400).json({ error: "Cannot leave department or mission chats" });
+    res.status(400).json({ error: "Cannot leave department, mission, or direct chats" });
     return;
   }
 
