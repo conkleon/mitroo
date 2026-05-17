@@ -351,9 +351,16 @@ router.delete("/logs/:logId", async (req: Request, res: Response) => {
 router.post("/:id/take", async (req: Request, res: Response) => {
   const vehicleId = Number(req.params.id);
   const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
 
   const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
   if (!vehicle) { res.status(404).json({ error: "Vehicle not found" }); return; }
+
+  // Personal vehicles: only owner or system admin may take
+  if (vehicle.ownerId !== null && !isAdmin && vehicle.ownerId !== userId) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
 
   // Check vehicle isn't already in use (open log exists)
   const openLog = await prisma.vehicleLog.findFirst({
@@ -392,8 +399,19 @@ router.post("/:id/take", async (req: Request, res: Response) => {
 router.post("/:id/return", async (req: Request, res: Response) => {
   const vehicleId = Number(req.params.id);
   const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
 
-  // Find the user's open log for this vehicle
+  const vehicle = await prisma.vehicle.findUnique({
+    where: { id: vehicleId },
+    select: { ownerId: true },
+  });
+  if (!vehicle) { res.status(404).json({ error: "Vehicle not found" }); return; }
+
+  if (vehicle.ownerId !== null && !isAdmin && vehicle.ownerId !== userId) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+
   const openLog = await prisma.vehicleLog.findFirst({
     where: { vehicleId, userId, endAt: null },
   });
@@ -425,7 +443,6 @@ router.post("/:id/return", async (req: Request, res: Response) => {
     },
   });
 
-  // Update vehicle current meter
   await prisma.vehicle.update({
     where: { id: vehicleId },
     data: { currentMeter: meterEnd },
