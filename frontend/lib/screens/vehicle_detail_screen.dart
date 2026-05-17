@@ -503,6 +503,17 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
 
   // ── Build ──
 
+  bool _computeCanManage(AuthProvider auth) {
+    if (_vehicle == null) return auth.isAdmin;
+    final ownerId = _vehicle!['ownerId'] as int?;
+    final currentUserId = auth.user?['id'] as int?;
+    final dept = _vehicle!['department'] as Map<String, dynamic>?;
+    final deptId = dept?['id'] as int?;
+    return auth.isAdmin ||
+        auth.isDeptAdminOf(deptId) ||
+        (ownerId != null && ownerId == currentUserId);
+  }
+
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
@@ -519,7 +530,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          _buildSheetHeader(tt, cs, isAdmin),
+          _buildSheetHeader(tt, cs, _computeCanManage(auth)),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
@@ -576,6 +587,13 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     final hasOpenLog = logs.any((l) => l['endAt'] == null && l['user']?['id'] == userId);
     final isInUse = logs.any((l) => l['endAt'] == null);
 
+    final ownerId = v['ownerId'] as int?;
+    final currentUserId = auth.user?['id'] as int?;
+    final isOwner = ownerId != null && ownerId == currentUserId;
+    final deptId = dept?['id'] as int?;
+    final canManage = isAdmin || auth.isDeptAdminOf(deptId) || isOwner;
+    final isPersonal = ownerId != null;
+
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
@@ -601,7 +619,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
           const SizedBox(height: 16),
 
           // ── Take / Return buttons ──
-          if (!hasOpenLog && !isInUse)
+          if (!hasOpenLog && !isInUse && (!isPersonal || isOwner || isAdmin))
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
@@ -610,7 +628,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 label: Text(_busy ? 'Παρακαλώ περιμένετε...' : 'Λήψη Οχήματος'),
               ),
             ),
-          if (hasOpenLog)
+          if (hasOpenLog && (!isPersonal || isOwner || isAdmin))
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
@@ -629,7 +647,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
           ImageGalleryCard(
             entityParam: 'vehicleId',
             entityId: widget.vehicleId,
-            canManage: isAdmin,
+            canManage: canManage,
           ),
           const SizedBox(height: 16),
           _buildCommentsCard(tt, cs, isAdmin),
@@ -640,7 +658,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
 
   // ── Sheet header ──
 
-  Widget _buildSheetHeader(TextTheme tt, ColorScheme cs, bool isAdmin) {
+  Widget _buildSheetHeader(TextTheme tt, ColorScheme cs, bool canManage) {
     final vehicleType = _vehicle?['type'] as String?;
     final logs = (_vehicle?['logs'] as List?) ?? [];
     final isInUse = logs.any((l) => l['endAt'] == null);
@@ -677,7 +695,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (isAdmin && _vehicle != null) ...[
+                  if (canManage && _vehicle != null) ...[
                     IconButton(
                       icon: _busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.edit_outlined, size: 20),
                       color: Colors.white,
