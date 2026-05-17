@@ -59,8 +59,13 @@ router.get("/", async (req: Request, res: Response) => {
   if (departmentId) {
     where.departmentId = Number(departmentId);
   } else if (!isAdmin) {
+    const userDepts = await prisma.userDepartment.findMany({
+      where: { userId },
+      select: { departmentId: true },
+    });
+    const deptIds = userDepts.map((d) => d.departmentId);
     where.OR = [
-      { departmentId: { not: null } },
+      ...(deptIds.length > 0 ? [{ departmentId: { in: deptIds } }] : []),
       { ownerId: userId },
     ];
   }
@@ -133,7 +138,17 @@ router.get("/available/list", async (req: Request, res: Response) => {
   const constraints: object[] = [];
 
   if (!isAdmin) {
-    constraints.push({ OR: [{ departmentId: { not: null } }, { ownerId: userId }] });
+    const userDepts = await prisma.userDepartment.findMany({
+      where: { userId },
+      select: { departmentId: true },
+    });
+    const deptIds = userDepts.map((d) => d.departmentId);
+    constraints.push({
+      OR: [
+        ...(deptIds.length > 0 ? [{ departmentId: { in: deptIds } }] : []),
+        { ownerId: userId },
+      ],
+    });
   }
   if (inUseIds.length > 0) {
     constraints.push({ id: { notIn: inUseIds } });
