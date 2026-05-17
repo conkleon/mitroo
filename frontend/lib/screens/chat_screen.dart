@@ -53,6 +53,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final chatProv = context.watch<ChatProvider>();
     final auth = context.watch<AuthProvider>();
 
+    final allFiltered = _filteredChats(chatProv);
+    final groupChats =
+        allFiltered.where((c) => c.type != 'direct').toList();
+    final directChats =
+        allFiltered.where((c) => c.type == 'direct').toList();
+
     return Scaffold(
       body: Column(
         children: [
