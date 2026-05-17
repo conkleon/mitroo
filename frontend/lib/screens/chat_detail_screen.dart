@@ -104,30 +104,37 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(chat?.name ?? 'Συνομιλία', style: tt.titleSmall),
-            Text('${chat?.memberCount ?? 0} μέλη',
-                style: tt.labelSmall
-                    ?.copyWith(color: const Color(0xFF6B7280))),
+            Text(
+              chat?.type == 'direct'
+                  ? 'Άμεσο μήνυμα'
+                  : '${chat?.memberCount ?? 0} μέλη',
+              style: tt.labelSmall
+                  ?.copyWith(color: const Color(0xFF6B7280)),
+            ),
           ],
         ),
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.people),
-            onPressed: () => _showParticipants(context),
-          ),
-          if (chat?.type == 'custom') ...[
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () =>
-                  context.push('/chat/${widget.chatId}/settings'),
-            ),
-            IconButton(
-              icon: const Icon(Icons.exit_to_app, color: Color(0xFFDC2626)),
-              onPressed: () => _confirmLeaveChat(context),
-            ),
-          ],
-        ],
+        actions: chat?.type == 'direct'
+            ? []
+            : [
+                IconButton(
+                  icon: const Icon(Icons.people),
+                  onPressed: () => _showParticipants(context),
+                ),
+                if (chat?.type == 'custom') ...[
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: () =>
+                        context.push('/chat/${widget.chatId}/settings'),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.exit_to_app,
+                        color: Color(0xFFDC2626)),
+                    onPressed: () => _confirmLeaveChat(context),
+                  ),
+                ],
+              ],
       ),
       body: Column(
         children: [
@@ -270,6 +277,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         return false;
       case 'mission':
       case 'custom':
+      case 'direct':
         return true; // Permission handled server-side
       default:
         return false;
