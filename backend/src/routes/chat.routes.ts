@@ -220,6 +220,120 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
+// ── GET /api/chats/direct/candidates ────────────────
+router.get("/direct/candidates", async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
+
+  if (isAdmin) {
+    const depts = await prisma.department.findMany({
+      include: {
+        userDepartments: {
+          where: { userId: { not: userId } },
+          include: {
+            user: { select: { id: true, forename: true, surname: true, imagePath: true } },
+          },
+          orderBy: [{ user: { surname: "asc" } }, { user: { forename: "asc" } }],
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    res.json(
+      depts
+        .filter((d) => d.userDepartments.length > 0)
+        .map((d) => ({
+          departmentId: d.id,
+          departmentName: d.name,
+          users: d.userDepartments.map((ud) => ({
+            id: ud.user.id,
+            forename: ud.user.forename,
+            surname: ud.user.surname,
+            role: ud.role,
+            imagePath: ud.user.imagePath,
+          })),
+        }))
+    );
+    return;
+  }
+
+  // Check if caller is missionAdmin in any department
+  const callerAdminDepts = await prisma.userDepartment.findMany({
+    where: { userId, role: "missionAdmin" },
+    select: { departmentId: true },
+  });
+
+  if (callerAdminDepts.length > 0) {
+    // Mission admin: return all users in their departments
+    const deptIds = callerAdminDepts.map((d) => d.departmentId);
+    const depts = await prisma.department.findMany({
+      where: { id: { in: deptIds } },
+      include: {
+        userDepartments: {
+          where: { userId: { not: userId } },
+          include: {
+            user: { select: { id: true, forename: true, surname: true, imagePath: true } },
+          },
+          orderBy: [{ user: { surname: "asc" } }, { user: { forename: "asc" } }],
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    res.json(
+      depts.map((d) => ({
+        departmentId: d.id,
+        departmentName: d.name,
+        users: d.userDepartments.map((ud) => ({
+          id: ud.user.id,
+          forename: ud.user.forename,
+          surname: ud.user.surname,
+          role: ud.role,
+          imagePath: ud.user.imagePath,
+        })),
+      }))
+    );
+    return;
+  }
+
+  // Regular user: return only missionAdmins in their departments
+  const callerDepts = await prisma.userDepartment.findMany({
+    where: { userId },
+    select: { departmentId: true },
+  });
+  const deptIds = callerDepts.map((d) => d.departmentId);
+
+  const depts = await prisma.department.findMany({
+    where: { id: { in: deptIds } },
+    include: {
+      userDepartments: {
+        where: { role: "missionAdmin", userId: { not: userId } },
+        include: {
+          user: { select: { id: true, forename: true, surname: true, imagePath: true } },
+        },
+        orderBy: [{ user: { surname: "asc" } }, { user: { forename: "asc" } }],
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  res.json(
+    depts
+      .filter((d) => d.userDepartments.length > 0)
+      .map((d) => ({
+        departmentId: d.id,
+        departmentName: d.name,
+        users: d.userDepartments.map((ud) => ({
+          id: ud.user.id,
+          forename: ud.user.forename,
+          surname: ud.user.surname,
+          role: ud.role,
+          imagePath: ud.user.imagePath,
+        })),
+      }))
+  );
+});
+
 // ── GET /api/chats/:id ───────────────────────────
 router.get("/:id", async (req: Request, res: Response) => {
   const chatId = Number(req.params.id);
