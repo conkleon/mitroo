@@ -56,6 +56,25 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
+  /// True when user is missionAdmin or itemAdmin in the given department (or is global admin).
+  bool isDeptAdminOf(int? deptId) {
+    if (deptId == null) return false;
+    if (isAdmin) return true;
+    final depts = _user?['departments'] as List<dynamic>? ?? [];
+    return depts.any((d) =>
+      (d['role'] == 'missionAdmin' || d['role'] == 'itemAdmin') &&
+      d['department']?['id'] == deptId,
+    );
+  }
+
+  /// True when user is missionAdmin or itemAdmin in at least one department (or global admin).
+  bool get isDeptAdmin {
+    if (isAdmin) return true;
+    final depts = _user?['departments'] as List<dynamic>?;
+    if (depts == null) return false;
+    return depts.any((d) => d['role'] == 'missionAdmin' || d['role'] == 'itemAdmin');
+  }
+
   /// Departments where the user is missionAdmin.
   List<Map<String, dynamic>> get missionAdminDepartments {
     final depts = _user?['departments'] as List<dynamic>?;
