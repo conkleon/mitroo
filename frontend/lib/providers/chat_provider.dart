@@ -196,6 +196,38 @@ class ChatProvider extends ChangeNotifier {
     return null;
   }
 
+  Future<List<DmCandidateGroup>> fetchDmCandidates() async {
+    try {
+      final res = await _api.get('/chats/direct/candidates');
+      if (res.statusCode == 200) {
+        final list = jsonDecode(res.body) as List<dynamic>;
+        return list
+            .map((g) => DmCandidateGroup.fromJson(g as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching DM candidates: $e');
+    }
+    return [];
+  }
+
+  Future<int?> createDirectChat(int targetUserId) async {
+    try {
+      final res = await _api.post(
+        '/chats/direct',
+        body: {'targetUserId': targetUserId},
+      );
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        await fetchChats();
+        return (data['id'] as num?)?.toInt();
+      }
+    } catch (e) {
+      debugPrint('Error creating direct chat: $e');
+    }
+    return null;
+  }
+
   Future<bool> inviteMembers(int chatId, List<int> userIds) async {
     try {
       final res = await _api.post('/chats/$chatId/members', body: {
