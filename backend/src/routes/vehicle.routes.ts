@@ -250,6 +250,20 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
 // ── GET /api/vehicles/:id/logs ──────────────────
 router.get("/:id/logs", async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
+
+  const vehicle = await prisma.vehicle.findUnique({
+    where: { id: Number(req.params.id) },
+    select: { ownerId: true },
+  });
+  if (!vehicle) { res.status(404).json({ error: "Vehicle not found" }); return; }
+
+  if (vehicle.ownerId !== null && !isAdmin && vehicle.ownerId !== userId) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+
   const logs = await prisma.vehicleLog.findMany({
     where: { vehicleId: Number(req.params.id) },
     include: {
@@ -264,6 +278,18 @@ router.get("/:id/logs", async (req: Request, res: Response) => {
 // ── POST /api/vehicles/:id/logs ─────────────────
 router.post("/:id/logs", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.userId;
+    const isAdmin = req.user!.isAdmin;
+
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { id: Number(req.params.id) },
+      select: { ownerId: true, departmentId: true },
+    });
+    if (!vehicle) { res.status(404).json({ error: "Vehicle not found" }); return; }
+
+    const allowed = await canManageVehicle(userId, isAdmin, vehicle);
+    if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }
+
     const data = logSchema.parse(req.body);
 
     if (data.meterEnd < data.meterStart) {
@@ -289,7 +315,6 @@ router.post("/:id/logs", async (req: Request, res: Response) => {
       },
     });
 
-    // Update vehicle current meter
     await prisma.vehicle.update({
       where: { id: Number(req.params.id) },
       data: { currentMeter: data.meterEnd },
@@ -304,6 +329,18 @@ router.post("/:id/logs", async (req: Request, res: Response) => {
 
 // ── DELETE /api/vehicles/logs/:logId ────────────
 router.delete("/logs/:logId", async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
+
+  const log = await prisma.vehicleLog.findUnique({
+    where: { id: Number(req.params.logId) },
+    include: { vehicle: { select: { ownerId: true, departmentId: true } } },
+  });
+  if (!log) { res.status(404).json({ error: "Log not found" }); return; }
+
+  const allowed = await canManageVehicle(userId, isAdmin, log.vehicle);
+  if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }
+
   await prisma.vehicleLog.delete({ where: { id: Number(req.params.logId) } });
   res.status(204).end();
 });
