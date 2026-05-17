@@ -169,6 +169,9 @@ router.get("/my/active", async (req: Request, res: Response) => {
 
 // ── GET /api/vehicles/:id ───────────────────────
 router.get("/:id", async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
+
   const vehicle = await prisma.vehicle.findUnique({
     where: { id: Number(req.params.id) },
     include: {
@@ -188,12 +191,30 @@ router.get("/:id", async (req: Request, res: Response) => {
     },
   });
   if (!vehicle) { res.status(404).json({ error: "Vehicle not found" }); return; }
+
+  if (vehicle.ownerId !== null && !isAdmin && vehicle.ownerId !== userId) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+
   res.json(vehicle);
 });
 
 // ── PATCH /api/vehicles/:id ─────────────────────
 router.patch("/:id", async (req: Request, res: Response) => {
   try {
+    const userId = req.user!.userId;
+    const isAdmin = req.user!.isAdmin;
+
+    const existing = await prisma.vehicle.findUnique({
+      where: { id: Number(req.params.id) },
+      select: { ownerId: true, departmentId: true },
+    });
+    if (!existing) { res.status(404).json({ error: "Vehicle not found" }); return; }
+
+    const allowed = await canManageVehicle(userId, isAdmin, existing);
+    if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }
+
     const data = createSchema.partial().parse(req.body);
     const vehicle = await prisma.vehicle.update({
       where: { id: Number(req.params.id) },
@@ -209,6 +230,18 @@ router.patch("/:id", async (req: Request, res: Response) => {
 
 // ── DELETE /api/vehicles/:id ────────────────────
 router.delete("/:id", async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
+
+  const existing = await prisma.vehicle.findUnique({
+    where: { id: Number(req.params.id) },
+    select: { ownerId: true, departmentId: true },
+  });
+  if (!existing) { res.status(404).json({ error: "Vehicle not found" }); return; }
+
+  const allowed = await canManageVehicle(userId, isAdmin, existing);
+  if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }
+
   await prisma.vehicle.delete({ where: { id: Number(req.params.id) } });
   res.status(204).end();
 });
