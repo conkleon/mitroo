@@ -104,13 +104,11 @@ router.post("/", async (req: Request, res: Response) => {
       }
     }
 
-    const vehicleData: any = { ...data };
-    if (!data.departmentId) {
-      vehicleData.ownerId = userId;
-    }
-
     const vehicle = await prisma.vehicle.create({
-      data: vehicleData,
+      data: {
+        ...data,
+        ...(data.departmentId == null ? { ownerId: userId } : {}),
+      },
       include: { department: { select: { id: true, name: true } } },
     });
     res.status(201).json(vehicle);
