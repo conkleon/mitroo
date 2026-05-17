@@ -139,6 +139,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       ),
       floatingActionButton: auth.isMissionAdmin
           ? FloatingActionButton(
+              heroTag: 'chat_create',
               onPressed: () => context.push('/chat/create'),
               child: const Icon(Icons.add),
             )

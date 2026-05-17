@@ -137,7 +137,10 @@ async function checkSendPermission(
     service?: { responsibleUserId: number | null } | null;
   }
 ): Promise<boolean> {
-  if (!chat.departmentId) return false;
+  if (!chat.departmentId) {
+    if (chat.type === 'direct') return true;
+    return false;
+  }
 
   const userDeptRoles = await prisma.userDepartment.findMany({
     where: { userId, departmentId: chat.departmentId },
@@ -171,6 +174,9 @@ async function checkSendPermission(
       if (chat.itemAdminsCanSend && isItemAdmin) return true;
       if (chat.volunteersCanSend) return true;
       return false;
+
+    case "direct":
+      return true;
 
     default:
       return false;
