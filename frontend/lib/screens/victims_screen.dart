@@ -19,6 +19,7 @@ class _VictimsScreenState extends State<VictimsScreen> {
   DateTime? _dateFrom;
   DateTime? _dateTo;
   Timer? _searchDebounce;
+  bool _filtersExpanded = false;
 
   @override
   void initState() {
@@ -54,6 +55,14 @@ class _VictimsScreenState extends State<VictimsScreen> {
     });
   }
 
+  int get _activeFilterCount {
+    int count = 0;
+    if (_dateFrom != null) count++;
+    if (_dateTo != null) count++;
+    if (_status != 'all') count++;
+    return count;
+  }
+
   String _formatDate(String? iso) {
     if (iso == null) return '';
     final dt = DateTime.tryParse(iso)?.toLocal();
@@ -69,92 +78,158 @@ class _VictimsScreenState extends State<VictimsScreen> {
     final tt = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Περιστατικά'),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/victims/create'),
         child: const Icon(Icons.add),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async => _fetch(),
-        child: Column(
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () async => _fetch(),
+          child: Column(
           children: [
-            // ── Search bar ──────────────────────
+            // ── Search bar + filter toggle ──────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: TextField(
-                controller: _searchCtrl,
-                decoration: InputDecoration(
-                  hintText: 'Αναζήτηση...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchCtrl.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchDebounce?.cancel();
-                            _searchCtrl.clear();
-                            _fetch();
-                          },
-                        )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                onChanged: _onSearchChanged,
-              ),
-            ),
-
-            // ── Date range row ─────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: Row(
                 children: [
                   Expanded(
-                    child: _DatePickerButton(
-                      label: 'Από',
-                      date: _dateFrom,
-                      onPicked: (d) {
-                        setState(() => _dateFrom = d);
-                        _fetch();
-                      },
-                      onClear: () {
-                        setState(() => _dateFrom = null);
-                        _fetch();
+                    child: TextField(
+                      controller: _searchCtrl,
+                      decoration: InputDecoration(
+                        hintText: 'Αναζήτηση...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchCtrl.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchDebounce?.cancel();
+                                  _searchCtrl.clear();
+                                  setState(() {});
+                                  _fetch();
+                                },
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onChanged: (v) {
+                        setState(() {});
+                        _onSearchChanged(v);
                       },
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: _DatePickerButton(
-                      label: 'Έως',
-                      date: _dateTo,
-                      onPicked: (d) {
-                        setState(() => _dateTo = d);
-                        _fetch();
-                      },
-                      onClear: () {
-                        setState(() => _dateTo = null);
-                        _fetch();
-                      },
+                  GestureDetector(
+                    onTap: () => setState(() => _filtersExpanded = !_filtersExpanded),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: (_filtersExpanded || _activeFilterCount > 0)
+                            ? Theme.of(context).colorScheme.primary.withAlpha(15)
+                            : const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: (_filtersExpanded || _activeFilterCount > 0)
+                              ? Theme.of(context).colorScheme.primary.withAlpha(60)
+                              : const Color(0xFFE5E7EB),
+                        ),
+                      ),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            Icons.tune_rounded,
+                            size: 20,
+                            color: (_filtersExpanded || _activeFilterCount > 0)
+                                ? Theme.of(context).colorScheme.primary
+                                : const Color(0xFF6B7280),
+                          ),
+                          if (_activeFilterCount > 0)
+                            Positioned(
+                              right: -4, top: -4,
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFC62828),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  '$_activeFilterCount',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            // ── Status filter chips ────────────
-            _FilterRow(
-              selected: _status,
-              onChanged: (v) {
-                setState(() => _status = v);
-                _fetch();
-              },
+            // ── Collapsible filters ─────────────
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: _filtersExpanded
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: _DatePickerButton(
+                                  label: 'Από',
+                                  date: _dateFrom,
+                                  onPicked: (d) {
+                                    setState(() => _dateFrom = d);
+                                    _fetch();
+                                  },
+                                  onClear: () {
+                                    setState(() => _dateFrom = null);
+                                    _fetch();
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _DatePickerButton(
+                                  label: 'Έως',
+                                  date: _dateTo,
+                                  onPicked: (d) {
+                                    setState(() => _dateTo = d);
+                                    _fetch();
+                                  },
+                                  onClear: () {
+                                    setState(() => _dateTo = null);
+                                    _fetch();
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        _FilterRow(
+                          selected: _status,
+                          onChanged: (v) {
+                            setState(() => _status = v);
+                            _fetch();
+                          },
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
             ),
-
             const SizedBox(height: 4),
 
             // ── Table or loading/empty ─────────
@@ -259,6 +334,7 @@ class _VictimsScreenState extends State<VictimsScreen> {
                 onPageChanged: (p) => _fetch(page: p),
               ),
           ],
+          ),
         ),
       ),
     );
