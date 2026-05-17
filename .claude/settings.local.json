@@ -84,7 +84,9 @@
       "Bash(dir D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\lib\\\\providers *)",
       "mcp__ide__getDiagnostics",
       "Bash(docker exec mitroo-postgres-1 *)",
-      "Bash(PGPASSWORD='WCByztgTlExGZKfU0niH5sJkuAewD2V8' psql *)"
+      "Bash(PGPASSWORD='WCByztgTlExGZKfU0niH5sJkuAewD2V8' psql *)",
+      "Bash(Get-Process -Name node -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object Id, ProcessName, MainWindowTitle, CommandLine)"
     ]
   }
 }

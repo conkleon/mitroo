@@ -969,14 +969,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         child: ListView(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(child: _buildDetailsCard(tt, cs)),
-                                const SizedBox(width: 12),
-                                Expanded(child: _buildAssignedUserCard(tt, cs, canManage)),
-                              ],
-                            ),
+                            _buildDetailsCard(tt, cs),
+                            const SizedBox(height: 12),
+                            _buildAssignedUserCard(tt, cs, canManage),
                             // const SizedBox(height: 12),
                             // _buildServiceAssignmentsCard(tt, cs, canManage),
                             const SizedBox(height: 12),
@@ -1254,30 +1249,40 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: (assigned != null ? const Color(0xFF059669) : const Color(0xFF6B7280)).withAlpha(15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    assigned != null ? Icons.person : Icons.person_off_outlined,
-                    size: 18,
-                    color: assigned != null ? const Color(0xFF059669) : const Color(0xFF6B7280),
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: (assigned != null ? const Color(0xFF059669) : const Color(0xFF6B7280)).withAlpha(15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        assigned != null ? Icons.person : Icons.person_off_outlined,
+                        size: 18,
+                        color: assigned != null ? const Color(0xFF059669) : const Color(0xFF6B7280),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text('Ανατεθειμένος Χρήστης', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text('Ανατεθειμένος Χρήστης', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                ),
-                if (canManage)
-                  _actionChip(
-                    label: assigned != null ? 'Αλλαγή' : 'Ανάθεση',
-                    icon: assigned != null ? Icons.swap_horiz : Icons.person_add_alt_1,
-                    onTap: _showAssignUserDialog,
+                if (canManage) ...[
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _actionChip(
+                      label: assigned != null ? 'Αλλαγή' : 'Ανάθεση',
+                      icon: assigned != null ? Icons.swap_horiz : Icons.person_add_alt_1,
+                      onTap: _showAssignUserDialog,
+                    ),
                   ),
+                ],
               ],
             ),
             const SizedBox(height: 14),
