@@ -55,33 +55,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Row(
-      //     mainAxisSize: MainAxisSize.min,
-      //     children: [
-      //       // Container(
-      //       //   width: 4,
-      //       //   height: 22,
-      //       //   decoration: BoxDecoration(
-      //       //     color: const Color(0xFFC62828),
-      //       //     borderRadius: BorderRadius.circular(2),
-      //       //   ),
-      //       // ),
-      //       // const SizedBox(width: 10),
-      //       // Text(
-      //       //   'Συνομιλίες',
-      //       //   style: GoogleFonts.inter(
-      //       //     fontSize: 18,
-      //       //     fontWeight: FontWeight.w700,
-      //       //     color: const Color(0xFF1A1C1E),
-      //       //     letterSpacing: -0.5,
-      //       //   ),
-      //       // ),
-      //     ],
-      //   ),
-      //   backgroundColor: Colors.white,
-      //   surfaceTintColor: Colors.white,
-      // ),
       body: Column(
         children: [
           Padding(
@@ -99,97 +72,63 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
               ),
-              onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
+              onChanged: (v) =>
+                  setState(() => _searchQuery = v.trim().toLowerCase()),
             ),
           ),
           Expanded(
             child: chatProv.loading && chatProv.chats.isEmpty
                 ? const Center(child: CircularProgressIndicator())
-                : _filteredChats(chatProv).isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.chat_bubble_outline,
-                                size: 48, color: const Color(0xFF9CA3AF)),
-                            const SizedBox(height: 16),
-                            Text(
-                                _searchQuery.isNotEmpty
-                                    ? 'Δεν βρέθηκαν συνομιλίες'
-                                    : 'Δεν υπάρχουν συνομιλίες',
-                                style: tt.bodyLarge
-                                    ?.copyWith(color: const Color(0xFF6B7280))),
-                          ],
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _filteredChats(chatProv).length,
-                        separatorBuilder: (_, __) =>
-                            const Divider(height: 1, indent: 72),
-                        itemBuilder: (context, index) {
-                          final chat = _filteredChats(chatProv)[index];
-                          final unread = chatProv.unread[chat.id] ?? 0;
-                          final icon = _chatIcon(chat.type);
-
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: cs.primary.withAlpha(25),
-                              child: Icon(icon, color: cs.primary, size: 22),
-                            ),
-                            title: Text(
-                              chat.name,
-                              style: tt.bodyMedium
-                                  ?.copyWith(fontWeight: FontWeight.w600),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: chat.lastMessage != null
-                                ? Text(
-                                    '${chat.lastMessage!.user.forename}: ${chat.lastMessage!.text}',
-                                    style: tt.bodySmall?.copyWith(
-                                        color: const Color(0xFF6B7280)),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  )
-                                : Text(
-                                    '${chat.memberCount} μέλη',
-                                    style: tt.bodySmall?.copyWith(
-                                        color: const Color(0xFF9CA3AF)),
-                                  ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (chat.lastMessage != null)
-                                  Text(
-                                    _formatTime(chat.lastMessage!.createdAt),
-                                    style: tt.labelSmall?.copyWith(
-                                        color: const Color(0xFF9CA3AF)),
-                                  ),
-                                if (unread > 0) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 7, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: cs.primary,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      '$unread',
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            onTap: () => context.push('/chat/${chat.id}'),
-                          );
-                        },
+                : ListView(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    children: [
+                      _SectionHeader(
+                        label: 'ΣΥΝΟΜΙΛΙΕΣ ΟΜΑΔΩΝ',
                       ),
+                      if (groupChats.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          child: Text(
+                            _searchQuery.isNotEmpty
+                                ? 'Δεν βρέθηκαν συνομιλίες'
+                                : 'Δεν υπάρχουν συνομιλίες ομάδων',
+                            style: tt.bodySmall
+                                ?.copyWith(color: const Color(0xFF9CA3AF)),
+                          ),
+                        )
+                      else
+                        ...groupChats.map((chat) => _buildChatTile(
+                            context, chat, chatProv, cs, tt)),
+                      _SectionHeader(
+                        label: 'ΑΜΕΣΑ ΜΗΝΥΜΑΤΑ',
+                        trailing: IconButton(
+                          icon: Icon(Icons.add_circle,
+                              color: cs.primary, size: 20),
+                          tooltip: 'Νέο άμεσο μήνυμα',
+                          onPressed: () =>
+                              context.push('/chat/direct/new'),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ),
+                      if (directChats.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          child: Text(
+                            _searchQuery.isNotEmpty
+                                ? 'Δεν βρέθηκαν άμεσα μηνύματα'
+                                : 'Δεν υπάρχουν άμεσα μηνύματα',
+                            style: tt.bodySmall
+                                ?.copyWith(color: const Color(0xFF9CA3AF)),
+                          ),
+                        )
+                      else
+                        ...directChats.map((chat) => _buildChatTile(
+                            context, chat, chatProv, cs, tt)),
+                    ],
+                  ),
           ),
         ],
       ),
@@ -202,6 +141,79 @@ class _ChatListScreenState extends State<ChatListScreen> {
     );
   }
 
+  Widget _buildChatTile(
+    BuildContext context,
+    ChatSummary chat,
+    ChatProvider chatProv,
+    ColorScheme cs,
+    TextTheme tt,
+  ) {
+    final unread = chatProv.unread[chat.id] ?? 0;
+    final icon = _chatIcon(chat.type);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          leading: CircleAvatar(
+            backgroundColor: cs.primary.withAlpha(25),
+            child: Icon(icon, color: cs.primary, size: 22),
+          ),
+          title: Text(
+            chat.name,
+            style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: chat.lastMessage != null
+              ? Text(
+                  '${chat.lastMessage!.user.forename}: ${chat.lastMessage!.text}',
+                  style:
+                      tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                )
+              : Text(
+                  '${chat.memberCount} μέλη',
+                  style:
+                      tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF)),
+                ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (chat.lastMessage != null)
+                Text(
+                  _formatTime(chat.lastMessage!.createdAt),
+                  style: tt.labelSmall
+                      ?.copyWith(color: const Color(0xFF9CA3AF)),
+                ),
+              if (unread > 0) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: cs.primary,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$unread',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          onTap: () => context.push('/chat/${chat.id}'),
+        ),
+        const Divider(height: 1, indent: 72),
+      ],
+    );
+  }
+
   IconData _chatIcon(String type) {
     switch (type) {
       case 'department':
@@ -210,6 +222,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
         return Icons.assignment;
       case 'custom':
         return Icons.group;
+      case 'direct':
+        return Icons.person;
       default:
         return Icons.chat;
     }
@@ -230,5 +244,35 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (diff.inDays < 1) return DateFormat('HH:mm').format(dt);
     if (diff.inDays < 7) return DateFormat('EEEE', 'el').format(dt);
     return DateFormat('d/M').format(dt);
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String label;
+  final Widget? trailing;
+
+  const _SectionHeader({required this.label, this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 12, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: tt.labelSmall?.copyWith(
+                color: const Color(0xFF9CA3AF),
+                letterSpacing: 0.8,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          if (trailing != null) trailing!,
+        ],
+      ),
+    );
   }
 }
