@@ -145,6 +145,7 @@ model User {
   chatMessages                 ChatMessage[]       @relation("ChatMessages")
   createdVictims               Victim[]            @relation("VictimCreatedBy")
   finalizedVictims             Victim[]            @relation("VictimFinalizedBy")
+  ownedVehicles                Vehicle[]           @relation("OwnedVehicles")
 
   @@map("users")
 }
@@ -434,6 +435,7 @@ model Vehicle {
   registrationNumber String? @map("registration_number") @db.VarChar(100)
   serialNumber       String? @map("serial_number") @db.VarChar(100)
   departmentId       Int?    @map("department_id")
+  ownerId            Int?    @map("owner_id")
   imagePath          String? @map("image_path")
 
   meterType    String  @map("meter_type") @db.VarChar(20) // "km" | "hours"
@@ -446,6 +448,7 @@ model Vehicle {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   department  Department?      @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  owner       User?            @relation("OwnedVehicles", fields: [ownerId], references: [id], onDelete: SetNull)
   logs        VehicleLog[]
   attachments FileAttachment[]
   comments    VehicleComment[]
