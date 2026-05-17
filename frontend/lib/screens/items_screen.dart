@@ -43,6 +43,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
   // Selection
   bool _selectionMode = false;
   final Set<int> _selectedIds = {};
+  bool _filtersExpanded = false;
 
   // My equipment
   List<Map<String, dynamic>> _myEquipment = [];
@@ -237,6 +238,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
       _selectionMode = false;
       _selectedIds.clear();
     });
+  }
+
+  int get _activeFilterCount {
+    int count = 0;
+    if (_deptFilter != null) count++;
+    if (_selectedCategoryId != null) count++;
+    return count;
   }
 
   void _toggleSelect(int itemId) {
@@ -1147,8 +1155,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildDeptFilter()),
+                    const Spacer(),
                     if (canManage) ...[
                       const SizedBox(width: 8),
                       IconButton(
@@ -1172,60 +1179,131 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   ]),
                 ),
 
-                // ── Search ──
+                // ── Search + filter toggle ──
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: TextField(
-                    controller: _searchCtrl,
-                    decoration: InputDecoration(
-                      hintText: canManage ? 'Αναζήτηση αντικειμένων...' : 'Αναζήτηση διαθέσιμου εξοπλισμού...',
-                      prefixIcon: const Icon(Icons.search, size: 20),
-                      suffixIcon: _search.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear, size: 18),
-                              onPressed: () {
-                                _searchCtrl.clear();
-                                setState(() { _search = ''; _page = 0; });
-                              },
-                            )
-                          : null,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      isDense: true,
-                    ),
-                    onChanged: (v) => setState(() { _search = v; _page = 0; }),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchCtrl,
+                          decoration: InputDecoration(
+                            hintText: canManage ? 'Αναζήτηση αντικειμένων...' : 'Αναζήτηση διαθέσιμου εξοπλισμού...',
+                            prefixIcon: const Icon(Icons.search, size: 20),
+                            suffixIcon: _search.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, size: 18),
+                                    onPressed: () {
+                                      _searchCtrl.clear();
+                                      setState(() { _search = ''; _page = 0; });
+                                    },
+                                  )
+                                : null,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            isDense: true,
+                          ),
+                          onChanged: (v) => setState(() { _search = v; _page = 0; }),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => setState(() => _filtersExpanded = !_filtersExpanded),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: (_filtersExpanded || _activeFilterCount > 0)
+                                ? cs.primary.withAlpha(15)
+                                : const Color(0xFFF3F4F6),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: (_filtersExpanded || _activeFilterCount > 0)
+                                  ? cs.primary.withAlpha(60)
+                                  : const Color(0xFFE5E7EB),
+                            ),
+                          ),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Icon(
+                                Icons.tune_rounded,
+                                size: 20,
+                                color: (_filtersExpanded || _activeFilterCount > 0)
+                                    ? cs.primary
+                                    : const Color(0xFF6B7280),
+                              ),
+                              if (_activeFilterCount > 0)
+                                Positioned(
+                                  right: -4, top: -4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(3),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFC62828),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      '$_activeFilterCount',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
-                // ── Category chips ──
-                if (cats.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: SizedBox(
-                      height: 34,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: [
-                          _chip('Όλα (${_processed.length})', null),
-                          const SizedBox(width: 6),
-                          ...cats.map((c) {
-                            final catId = c['id'] as int;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: _chip(
-                                '${c['name']} (${_countCat(catId)})',
-                                catId,
-                                color: const Color(0xFF7C3AED),
+                // ── Collapsible filters ─────────────
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: _filtersExpanded
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                              child: _buildDeptFilter(),
+                            ),
+                            if (cats.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: SizedBox(
+                                  height: 34,
+                                  child: ListView(
+                                    scrollDirection: Axis.horizontal,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    children: [
+                                      _chip('Όλα (${_processed.length})', null),
+                                      const SizedBox(width: 6),
+                                      ...cats.map((c) {
+                                        final catId = c['id'] as int;
+                                        return Padding(
+                                          padding: const EdgeInsets.only(right: 6),
+                                          child: _chip(
+                                            '${c['name']} (${_countCat(catId)})',
+                                            catId,
+                                            color: const Color(0xFF7C3AED),
+                                          ),
+                                        );
+                                      }),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-                  ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
+                ),
 
                 // ── Table ──
                 Expanded(
