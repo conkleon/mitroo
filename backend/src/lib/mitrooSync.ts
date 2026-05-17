@@ -50,11 +50,14 @@ export interface SyncResult {
   errors: string[];
 }
 
-const mapApplicationStatus = (statusId: unknown): "requested" | "accepted" | "rejected" => {
+// Status IDs in original Mitroo: 1 = ΑΡΧΙΚΗ (pending/initial), 3 = accepted, 4 = rejected.
+// Any other status (e.g. cancelled-by-member) is not imported to avoid phantom "applied for" records.
+const mapApplicationStatus = (statusId: unknown): "requested" | "accepted" | "rejected" | null => {
   const id = Number(statusId);
+  if (id === 1) return "requested";
   if (id === 3) return "accepted";
   if (id === 4) return "rejected";
-  return "requested";
+  return null;
 };
 
 async function getClient(departmentId: number): Promise<MitrooClient> {
@@ -559,6 +562,8 @@ export async function syncShiftApplications(departmentId: number): Promise<SyncR
         if (!userId) continue;
 
         const status = mapApplicationStatus(app.application_status_id);
+        if (status === null) continue;
+
         const hours = parseHours(app.hours_sanitary);
         const hoursVol = parseHours(app.hours_volunteering);
         const hoursTraining = parseHours(app.hours_training);
@@ -1153,6 +1158,7 @@ export async function syncUserApplications(userId: number): Promise<SyncResult> 
           if (!service) continue;
 
           const status = mapApplicationStatus(app.application_status_id);
+          if (status === null) continue;
 
           const existing = await prisma.userService.findUnique({
             where: { userId_serviceId: { userId, serviceId: service.id } },
