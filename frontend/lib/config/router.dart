@@ -26,6 +26,7 @@ import '../screens/vehicles_screen.dart';
 import '../screens/chat_screen.dart';
 import '../screens/chat_detail_screen.dart';
 import '../screens/create_chat_screen.dart';
+import '../screens/direct_message_picker_screen.dart';
 import '../screens/chat_settings_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/shell_screen.dart';
@@ -95,6 +96,10 @@ GoRouter appRouter(AuthProvider auth) {
       GoRoute(
         path: '/chat/create',
         builder: (context, state) => const CreateChatScreen(),
+      ),
+      GoRoute(
+        path: '/chat/direct/new',
+        builder: (context, state) => const DirectMessagePickerScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) => ShellScreen(child: child),
