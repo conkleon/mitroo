@@ -76,6 +76,7 @@ class _ServicesScreenState extends State<ServicesScreen>
 
   // SpeedDial state
   bool _fabOpen = false;
+  bool _filtersExpanded = false;
   late final AnimationController _fabController;
   late final Animation<double> _fabRotate;
   late final Animation<double> _fabScale;
@@ -316,38 +317,10 @@ class _ServicesScreenState extends State<ServicesScreen>
               onRefresh: () => svcProv.fetchMyServices(),
               child: CustomScrollView(
                 slivers: [
-              // ── Brand page title ──
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 4, height: 22,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFC62828),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Υπηρεσίες',
-                        style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1A1C1E),
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 12)),
               // ── Top bar ──────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                   child: Row(
                     children: [
                       // My accepted services button
@@ -448,58 +421,107 @@ class _ServicesScreenState extends State<ServicesScreen>
                 ),
               ),
 
-              // ── Specialization filter bubbles ────────
+              // ── Filter toggle ───────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
-                  child: SizedBox(
-                    height: 40,
-                    child: dynamicSpecs.isEmpty
-                        ? const SizedBox.shrink()
-                        : ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemCount: dynamicSpecs.length,
-                      itemBuilder: (context, i) {
-                        final specId = dynamicSpecs[i].key;
-                        final specName = dynamicSpecs[i].value;
-                        final count = _countForSpec(specId);
-                        final selected = _selectedSpecId == specId;
-
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedSpecId = selected ? null : specId;
-                            });
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color:
-                                  selected ? cs.primary : Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: selected
-                                    ? cs.primary
-                                    : const Color(0xFFD1D5DB),
-                              ),
-                            ),
-                            child: Text(
-                              '$specName($count)',
-                              style: tt.labelMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color:
-                                    selected ? Colors.white : const Color(0xFF374151),
-                              ),
-                            ),
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _filtersExpanded = !_filtersExpanded),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: (_filtersExpanded || _selectedSpecId != null)
+                              ? cs.primary.withAlpha(15)
+                              : const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: (_filtersExpanded || _selectedSpecId != null)
+                                ? cs.primary.withAlpha(60)
+                                : const Color(0xFFE5E7EB),
                           ),
-                        );
-                      },
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.tune_rounded,
+                              size: 16,
+                              color: (_filtersExpanded || _selectedSpecId != null)
+                                  ? cs.primary
+                                  : const Color(0xFF6B7280),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _selectedSpecId != null ? 'Φίλτρα (1)' : 'Φίλτρα',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: (_filtersExpanded || _selectedSpecId != null)
+                                    ? cs.primary
+                                    : const Color(0xFF6B7280),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
+                ),
+              ),
+
+              // ── Specialization filter bubbles (collapsible) ────────
+              SliverToBoxAdapter(
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: (_filtersExpanded && dynamicSpecs.isNotEmpty)
+                      ? Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
+                          child: SizedBox(
+                            height: 40,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              separatorBuilder: (_, __) => const SizedBox(width: 8),
+                              itemCount: dynamicSpecs.length,
+                              itemBuilder: (context, i) {
+                                final specId = dynamicSpecs[i].key;
+                                final specName = dynamicSpecs[i].value;
+                                final count = _countForSpec(specId);
+                                final selected = _selectedSpecId == specId;
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedSpecId = selected ? null : specId;
+                                    });
+                                  },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: selected ? cs.primary : Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: selected ? cs.primary : const Color(0xFFD1D5DB),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '$specName ($count)',
+                                      style: tt.labelMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: selected ? Colors.white : const Color(0xFF374151),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
 
