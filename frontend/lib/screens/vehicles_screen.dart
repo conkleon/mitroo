@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/vehicle_provider.dart';
@@ -130,47 +129,6 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                           child: Text(
                             name.isNotEmpty ? name[0].toUpperCase() : 'U',
                             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // ── Section header ──
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 4, height: 22,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFC62828),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'Οχήματα',
-                        style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1A1C1E),
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD97706).withAlpha(15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${prov.vehicles.length} σύνολο',
-                          style: GoogleFonts.inter(
-                            fontSize: 12, color: const Color(0xFFD97706), fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
