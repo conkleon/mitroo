@@ -77,6 +77,8 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
 
   Future<void> _showEditDialog() async {
     final v = _vehicle!;
+    final auth = context.read<AuthProvider>();
+    final isAdmin = auth.isAdmin;
     final nameCtrl = TextEditingController(text: v['name'] ?? '');
     final typeCtrl = TextEditingController(text: v['type'] ?? '');
     final regCtrl = TextEditingController(text: v['registrationNumber'] ?? '');
@@ -85,9 +87,11 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     final descCtrl = TextEditingController(text: v['description'] ?? '');
     final meterCtrl = TextEditingController(text: '${v['currentMeter'] ?? 0}');
 
-    final deptProv = context.read<DepartmentProvider>();
-    if (deptProv.departments.isEmpty) await deptProv.fetchDepartments();
     int? selectedDeptId = v['departmentId'];
+    if (isAdmin) {
+      final deptProv = context.read<DepartmentProvider>();
+      if (deptProv.departments.isEmpty) await deptProv.fetchDepartments();
+    }
 
     if (!mounted) return;
 
@@ -120,19 +124,21 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                   ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<int?>(
-                  value: selectedDeptId,
-                  decoration: const InputDecoration(labelText: 'Τμήμα'),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('Κανένα')),
-                    ...deptProv.departments.map((d) => DropdownMenuItem(
-                      value: d['id'] as int,
-                      child: Text(d['name'] ?? ''),
-                    )),
-                  ],
-                  onChanged: (v) => setSt(() => selectedDeptId = v),
-                ),
+                if (isAdmin) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int?>(
+                    value: selectedDeptId,
+                    decoration: const InputDecoration(labelText: 'Τμήμα'),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('Κανένα')),
+                      ...context.read<DepartmentProvider>().departments.map((d) => DropdownMenuItem(
+                        value: d['id'] as int,
+                        child: Text(d['name'] ?? ''),
+                      )),
+                    ],
+                    onChanged: (v) => setSt(() => selectedDeptId = v),
+                  ),
+                ],
               ],
             ),
           ),
@@ -143,7 +149,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 final data = <String, dynamic>{
                   'name': nameCtrl.text.trim(),
                   'type': typeCtrl.text.trim(),
-                  'departmentId': selectedDeptId,
+                  if (isAdmin) 'departmentId': selectedDeptId,
                 };
                 if (regCtrl.text.isNotEmpty) data['registrationNumber'] = regCtrl.text.trim();
                 if (serialCtrl.text.isNotEmpty) data['serialNumber'] = serialCtrl.text.trim();

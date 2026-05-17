@@ -19,7 +19,7 @@ const createSchema = z.object({
 });
 
 const logSchema = z.object({
-  userId: z.number().int(),
+  userId: z.number().int().optional(),
   serviceId: z.number().int().optional().nullable(),
   startAt: z.string().datetime(),
   endAt: z.string().datetime(),
@@ -121,25 +121,34 @@ router.post("/", async (req: Request, res: Response) => {
 // GET /api/vehicles/available — vehicles not currently in use
 router.get("/available/list", async (req: Request, res: Response) => {
   const { search } = req.query;
+  const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
 
-  // Get IDs of vehicles currently in use (have open logs)
   const openLogs = await prisma.vehicleLog.findMany({
     where: { endAt: null },
     select: { vehicleId: true },
   });
   const inUseIds = openLogs.map((l) => l.vehicleId);
 
-  const where: any = {};
+  const constraints: object[] = [];
+
+  if (!isAdmin) {
+    constraints.push({ OR: [{ departmentId: { not: null } }, { ownerId: userId }] });
+  }
   if (inUseIds.length > 0) {
-    where.id = { notIn: inUseIds };
+    constraints.push({ id: { notIn: inUseIds } });
   }
   if (search && typeof search === "string" && search.trim()) {
-    where.OR = [
-      { name: { contains: search, mode: "insensitive" } },
-      { registrationNumber: { contains: search, mode: "insensitive" } },
-      { type: { contains: search, mode: "insensitive" } },
-    ];
+    constraints.push({
+      OR: [
+        { name: { contains: search, mode: "insensitive" } },
+        { registrationNumber: { contains: search, mode: "insensitive" } },
+        { type: { contains: search, mode: "insensitive" } },
+      ],
+    });
   }
+
+  const where = constraints.length > 0 ? { AND: constraints } : {};
 
   const vehicles = await prisma.vehicle.findMany({
     where,
@@ -215,7 +224,8 @@ router.patch("/:id", async (req: Request, res: Response) => {
     const allowed = await canManageVehicle(userId, isAdmin, existing);
     if (!allowed) { res.status(403).json({ error: "Forbidden" }); return; }
 
-    const data = createSchema.partial().parse(req.body);
+    const { departmentId: _deptId, ...patchRest } = createSchema.partial().parse(req.body);
+    const data = isAdmin ? { departmentId: _deptId, ...patchRest } : patchRest;
     const vehicle = await prisma.vehicle.update({
       where: { id: Number(req.params.id) },
       data,
@@ -304,7 +314,7 @@ router.post("/:id/logs", async (req: Request, res: Response) => {
     const log = await prisma.vehicleLog.create({
       data: {
         vehicleId: Number(req.params.id),
-        userId: data.userId,
+        userId: isAdmin ? (data.userId ?? userId) : userId,
         serviceId: data.serviceId,
         startAt: new Date(data.startAt),
         endAt: new Date(data.endAt),
@@ -455,6 +465,20 @@ router.post("/:id/return", async (req: Request, res: Response) => {
 
 // GET /api/vehicles/:id/comments
 router.get("/:id/comments", async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
+
+  const vehicle = await prisma.vehicle.findUnique({
+    where: { id: Number(req.params.id) },
+    select: { ownerId: true },
+  });
+  if (!vehicle) { res.status(404).json({ error: "Vehicle not found" }); return; }
+
+  if (vehicle.ownerId !== null && !isAdmin && vehicle.ownerId !== userId) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
+
   const comments = await prisma.vehicleComment.findMany({
     where: { vehicleId: Number(req.params.id) },
     include: { user: { select: { id: true, forename: true, surname: true, eame: true } } },
@@ -466,7 +490,19 @@ router.get("/:id/comments", async (req: Request, res: Response) => {
 // POST /api/vehicles/:id/comments
 router.post("/:id/comments", async (req: Request, res: Response) => {
   const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
   const vehicleId = Number(req.params.id);
+
+  const vehicle = await prisma.vehicle.findUnique({
+    where: { id: vehicleId },
+    select: { ownerId: true },
+  });
+  if (!vehicle) { res.status(404).json({ error: "Vehicle not found" }); return; }
+
+  if (vehicle.ownerId !== null && !isAdmin && vehicle.ownerId !== userId) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
   const { text } = req.body;
   if (!text || typeof text !== "string" || text.trim().length === 0) {
     res.status(400).json({ error: "Text is required" });
