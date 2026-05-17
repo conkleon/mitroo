@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/department_provider.dart';
 import '../providers/vehicle_provider.dart';
 import '../services/api_client.dart';
 import '../helpers/vehicle_helpers.dart';
@@ -20,15 +21,44 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<VehicleProvider>().fetchVehicles());
+    Future.microtask(() {
+      context.read<VehicleProvider>().fetchVehicles();
+      final auth = context.read<AuthProvider>();
+      if (auth.isAdmin || auth.isDeptAdmin) {
+        context.read<DepartmentProvider>().fetchDepartments();
+      }
+    });
   }
 
   void _showCreateDialog() {
+    final auth = context.read<AuthProvider>();
+    final canCreateDept = auth.isAdmin || auth.isDeptAdmin;
+
     final nameCtrl = TextEditingController();
     final typeCtrl = TextEditingController();
     final regCtrl = TextEditingController();
     String meterType = 'km';
     String? nameError;
+    bool isPersonal = !canCreateDept;
+    int? selectedDeptId;
+    List<Map<String, dynamic>> deptOptions = [];
+
+    if (canCreateDept) {
+      if (auth.isAdmin) {
+        final deptProv = context.read<DepartmentProvider>();
+        deptOptions = deptProv.departments
+            .map((d) => {'id': d['id'] as int, 'name': d['name'] as String})
+            .toList();
+      } else {
+        deptOptions = [
+          ...auth.missionAdminDepartments,
+          ...auth.itemAdminDepartments,
+        ].fold<List<Map<String, dynamic>>>([], (acc, d) {
+          if (!acc.any((x) => x['id'] == d['id'])) acc.add(d);
+          return acc;
+        });
+      }
+    }
 
     showDialog(
       context: context,
@@ -39,6 +69,20 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (canCreateDept) ...[
+                  SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment(value: true, label: Text('Προσωπικό')),
+                      ButtonSegment(value: false, label: Text('Τμήματος')),
+                    ],
+                    selected: {isPersonal},
+                    onSelectionChanged: (v) => setSt(() {
+                      isPersonal = v.first;
+                      if (isPersonal) selectedDeptId = null;
+                    }),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 TextField(
                   controller: nameCtrl,
                   decoration: InputDecoration(
@@ -60,6 +104,21 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                   selected: {meterType},
                   onSelectionChanged: (v) => setSt(() => meterType = v.first),
                 ),
+                if (!isPersonal && deptOptions.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<int?>(
+                    value: selectedDeptId,
+                    decoration: const InputDecoration(labelText: 'Τμήμα'),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('Κανένα')),
+                      ...deptOptions.map((d) => DropdownMenuItem(
+                        value: d['id'] as int,
+                        child: Text(d['name'] as String),
+                      )),
+                    ],
+                    onChanged: (v) => setSt(() => selectedDeptId = v),
+                  ),
+                ],
               ],
             ),
           ),
@@ -80,6 +139,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                         'meterType': meterType,
                       };
                       if (regCtrl.text.isNotEmpty) data['registrationNumber'] = regCtrl.text.trim();
+                      if (!isPersonal && selectedDeptId != null) data['departmentId'] = selectedDeptId;
                       final err = await context.read<VehicleProvider>().create(data);
                       if (ctx.mounted) Navigator.pop(ctx);
                       if (err != null && mounted) {
