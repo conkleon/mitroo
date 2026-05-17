@@ -29,11 +29,41 @@ const logSchema = z.object({
   comment: z.string().optional(),
 });
 
+async function canManageVehicle(
+  userId: number,
+  isAdmin: boolean,
+  vehicle: { ownerId: number | null; departmentId: number | null },
+): Promise<boolean> {
+  if (isAdmin) return true;
+  if (vehicle.ownerId !== null && vehicle.ownerId === userId) return true;
+  if (vehicle.departmentId !== null) {
+    const count = await prisma.userDepartment.count({
+      where: {
+        userId,
+        departmentId: vehicle.departmentId,
+        role: { in: ["missionAdmin", "itemAdmin"] },
+      },
+    });
+    return count > 0;
+  }
+  return false;
+}
+
 // ── GET /api/vehicles ───────────────────────────
 router.get("/", async (req: Request, res: Response) => {
   const { departmentId } = req.query;
-  const where: any = {};
-  if (departmentId) where.departmentId = Number(departmentId);
+  const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
+
+  let where: any = {};
+  if (departmentId) {
+    where.departmentId = Number(departmentId);
+  } else if (!isAdmin) {
+    where.OR = [
+      { departmentId: { not: null } },
+      { ownerId: userId },
+    ];
+  }
 
   const vehicles = await prisma.vehicle.findMany({
     where,
