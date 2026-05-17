@@ -50,13 +50,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
             .map((d) => {'id': d['id'] as int, 'name': d['name'] as String})
             .toList();
       } else {
-        deptOptions = [
-          ...auth.missionAdminDepartments,
-          ...auth.itemAdminDepartments,
-        ].fold<List<Map<String, dynamic>>>([], (acc, d) {
-          if (!acc.any((x) => x['id'] == d['id'])) acc.add(d);
-          return acc;
-        });
+        deptOptions = auth.itemAdminDepartments;
       }
     }
 
@@ -109,13 +103,10 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                   DropdownButtonFormField<int?>(
                     value: selectedDeptId,
                     decoration: const InputDecoration(labelText: 'Τμήμα'),
-                    items: [
-                      const DropdownMenuItem(value: null, child: Text('Κανένα')),
-                      ...deptOptions.map((d) => DropdownMenuItem(
-                        value: d['id'] as int,
-                        child: Text(d['name'] as String),
-                      )),
-                    ],
+                    items: deptOptions.map((d) => DropdownMenuItem(
+                      value: d['id'] as int,
+                      child: Text(d['name'] as String),
+                    )).toList(),
                     onChanged: (v) => setSt(() => selectedDeptId = v),
                   ),
                 ],
