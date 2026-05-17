@@ -86,7 +86,15 @@
       "Bash(docker exec mitroo-postgres-1 *)",
       "Bash(PGPASSWORD='WCByztgTlExGZKfU0niH5sJkuAewD2V8' psql *)",
       "Bash(Get-Process -Name node -ErrorAction SilentlyContinue)",
-      "Bash(Select-Object Id, ProcessName, MainWindowTitle, CommandLine)"
+      "Bash(Select-Object Id, ProcessName, MainWindowTitle, CommandLine)",
+      "Bash(scripts/start-server.sh *)",
+      "Bash(/c/Users/conkl/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/brainstorming/scripts/start-server.sh *)",
+      "Skill(superpowers:using-git-worktrees)",
+      "Bash(Remove-Item -Force \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node.tmp*\" -ErrorAction SilentlyContinue)",
+      "Bash(Remove-Item -Force \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node\" -ErrorAction SilentlyContinue)",
+      "PowerShell($env:path = $env:path; Set-Location D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend; npx prisma generate 2>&1)",
+      "PowerShell(Add-MpPreference *)",
+      "Skill(code-review:code-review)"
     ]
   }
 }
