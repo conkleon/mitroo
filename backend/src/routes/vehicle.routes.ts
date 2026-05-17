@@ -85,8 +85,32 @@ router.get("/", async (req: Request, res: Response) => {
 router.post("/", async (req: Request, res: Response) => {
   try {
     const data = createSchema.parse(req.body);
+    const userId = req.user!.userId;
+    const isAdmin = req.user!.isAdmin;
+
+    if (data.departmentId) {
+      if (!isAdmin) {
+        const count = await prisma.userDepartment.count({
+          where: {
+            userId,
+            departmentId: data.departmentId,
+            role: { in: ["missionAdmin", "itemAdmin"] },
+          },
+        });
+        if (count === 0) {
+          res.status(403).json({ error: "Not an admin of this department" });
+          return;
+        }
+      }
+    }
+
+    const vehicleData: any = { ...data };
+    if (!data.departmentId) {
+      vehicleData.ownerId = userId;
+    }
+
     const vehicle = await prisma.vehicle.create({
-      data,
+      data: vehicleData,
       include: { department: { select: { id: true, name: true } } },
     });
     res.status(201).json(vehicle);
