@@ -646,7 +646,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
             ),
           const SizedBox(height: 16),
 
-          _buildDetailsCard(v, tt, cs),
+          _buildDetailsCard(v, tt, cs, auth: auth),
           const SizedBox(height: 16),
           _buildLogsCard(logs, meterUnit, tt, cs),
           const SizedBox(height: 16),
@@ -807,7 +807,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
 
   // ── Details card ──
 
-  Widget _buildDetailsCard(Map<String, dynamic> v, TextTheme tt, ColorScheme cs) {
+  Widget _buildDetailsCard(Map<String, dynamic> v, TextTheme tt, ColorScheme cs, {required AuthProvider auth}) {
     final rows = <Widget>[];
     final entries = <MapEntry<String, String>>[
       MapEntry('Όνομα', v['name'] ?? ''),
@@ -819,6 +819,10 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     if (v['description'] != null && v['description'].toString().isNotEmpty) entries.add(MapEntry('Περιγραφή', v['description']));
     entries.add(MapEntry('Μετρητής', '${v['currentMeter'] ?? 0} ${(v['meterType'] ?? 'km') == 'hours' ? 'h' : 'km'}'));
     if (v['department'] != null) entries.add(MapEntry('Τμήμα', v['department']['name'] ?? ''));
+    final owner = v['owner'] as Map<String, dynamic>?;
+    if (owner != null && (auth.isAdmin || auth.isDeptAdmin)) {
+      entries.add(MapEntry('Ιδιοκτήτης', '${owner['forename']} ${owner['surname']}'));
+    }
 
     for (var i = 0; i < entries.length; i++) {
       rows.add(

@@ -74,6 +74,7 @@ router.get("/", async (req: Request, res: Response) => {
     where,
     include: {
       department: { select: { id: true, name: true } },
+      owner: { select: { id: true, forename: true, surname: true } },
       attachments: {
         where: { isImage: true },
         select: { id: true, thumbnailPath: true },
@@ -200,6 +201,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     where: { id: Number(req.params.id) },
     include: {
       department: true,
+      owner: { select: { id: true, forename: true, surname: true } },
       logs: {
         include: {
           user: { select: { id: true, forename: true, surname: true } },

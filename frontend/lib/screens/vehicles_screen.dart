@@ -17,10 +17,13 @@ class VehiclesScreen extends StatefulWidget {
 
 class _VehiclesScreenState extends State<VehiclesScreen> {
   bool _creating = false;
+  final _searchCtrl = TextEditingController();
+  String _search = '';
 
   @override
   void initState() {
     super.initState();
+    _searchCtrl.addListener(() => setState(() => _search = _searchCtrl.text));
     Future.microtask(() {
       context.read<VehicleProvider>().fetchVehicles();
       final auth = context.read<AuthProvider>();
@@ -28,6 +31,12 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
         context.read<DepartmentProvider>().fetchDepartments();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   void _showCreateDialog() {
@@ -156,6 +165,15 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
     final cs = Theme.of(context).colorScheme;
     final name = auth.displayName.isNotEmpty ? auth.displayName : (auth.user?['eame'] ?? 'User');
 
+    final filtered = _search.isEmpty
+        ? prov.vehicles
+        : prov.vehicles.where((v) {
+            final q = _search.toLowerCase();
+            return (v['name'] as String? ?? '').toLowerCase().contains(q) ||
+                (v['type'] as String? ?? '').toLowerCase().contains(q) ||
+                (v['registrationNumber'] as String? ?? '').toLowerCase().contains(q);
+          }).toList();
+
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
@@ -184,6 +202,41 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+              // ── Search bar ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'Αναζήτηση οχήματος...',
+                      hintStyle: const TextStyle(fontSize: 14),
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      suffixIcon: _search.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: () => _searchCtrl.clear(),
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: cs.primary),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
                   ),
                 ),
               ),
@@ -221,14 +274,22 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                     ),
                   ),
                 )
+              else if (filtered.isEmpty && _search.isNotEmpty)
+                SliverFillRemaining(
+                  child: Center(
+                    child: Text('Δεν βρέθηκαν αποτελέσματα', style: tt.bodyMedium?.copyWith(color: const Color(0xFF6B7280))),
+                  ),
+                )
               else
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, i) {
-                        final v = prov.vehicles[i];
+                        final v = filtered[i];
                         final dept = v['department'];
+                        final owner = v['owner'] as Map<String, dynamic>?;
+                        final showOwner = owner != null && (auth.isAdmin || auth.isDeptAdmin);
                         final meter = v['currentMeter'] ?? 0;
                         final meterType = v['meterType'] ?? 'km';
                         final vehicleType = v['type'] as String?;
@@ -337,6 +398,12 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                                             label: dept['name'] ?? '',
                                             color: const Color(0xFF059669),
                                           ),
+                                        if (showOwner)
+                                          _VehicleChip(
+                                            icon: Icons.person_outline,
+                                            label: '${owner!['forename']} ${owner['surname']}',
+                                            color: const Color(0xFF7C3AED),
+                                          ),
                                       ],
                                     ),
                                   ],
@@ -346,7 +413,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                           ),
                         );
                       },
-                      childCount: prov.vehicles.length,
+                      childCount: filtered.length,
                     ),
                   ),
                 ),
