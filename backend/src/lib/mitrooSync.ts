@@ -411,6 +411,8 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
             select: { id: true },
           });
 
+          const location = (mission.location_text as string | undefined)?.trim() || null;
+
           if (existing) {
             const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
             await prisma.service.update({
@@ -419,6 +421,7 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
                 name,
                 startAt,
                 endAt,
+                location,
                 externalMissionId: missionId,
                 defaultHours,
                 defaultHoursVol,
@@ -439,6 +442,7 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
                 externalMissionId: missionId,
                 startAt,
                 endAt,
+                location,
                 defaultHours,
                 defaultHoursVol,
                 defaultHoursTraining,
