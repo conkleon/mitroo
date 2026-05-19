@@ -295,8 +295,9 @@ router.post("/login", async (req: Request, res: Response) => {
         }
       }
 
+      const { gdprAcceptedAt: _gdpr, ...userDto } = externalResult.user!;
       res.json({
-        user: externalResult.user,
+        user: userDto,
         token,
         gdprConsentRequired: !externalResult.user!.gdprAcceptedAt,
       });
@@ -448,11 +449,21 @@ router.get("/me", authenticate, async (req: Request, res: Response) => {
 
 // ── POST /api/auth/gdpr-consent ─────────────────
 router.post("/gdpr-consent", authenticate, async (req: Request, res: Response) => {
-  await prisma.user.update({
-    where: { id: req.user!.userId },
-    data: { gdprAcceptedAt: new Date() },
-  });
-  res.json({ ok: true });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { gdprAcceptedAt: true },
+    });
+    if (!user?.gdprAcceptedAt) {
+      await prisma.user.update({
+        where: { id: req.user!.userId },
+        data: { gdprAcceptedAt: new Date() },
+      });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to record consent" });
+  }
 });
 
 // ── GET /api/auth/me/profile ────────────────────
