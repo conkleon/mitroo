@@ -34,7 +34,8 @@ self.addEventListener('activate', function(event) {
 
 // Push notification → show to user
 self.addEventListener('push', function(event) {
-  var data = event.data ? event.data.json() : {};
+  var data = {};
+  try { data = event.data ? event.data.json() : {}; } catch(e) {}
   event.waitUntil(
     self.registration.showNotification(data.title || 'Mitroo', {
       body: data.body || '',
@@ -71,7 +72,9 @@ self.addEventListener('fetch', function(event) {
   if (event.request.mode === 'navigate') {
     event.respondWith(
       caches.match(event.request).then(function(cached) {
-        return cached || fetch(event.request);
+        return cached || fetch(event.request).catch(function() {
+          return caches.match('/index.html');
+        });
       })
     );
   }
