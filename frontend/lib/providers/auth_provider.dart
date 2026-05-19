@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_client.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -109,6 +110,8 @@ class AuthProvider extends ChangeNotifier {
     final res = await _api.get('/auth/me');
     if (res.statusCode == 200) {
       _user = jsonDecode(res.body);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('cached_user', res.body);
     }
   }
 
@@ -118,7 +121,13 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _api.loadToken();
       await _loadCurrentUser();
-    } catch (_) {}
+    } catch (_) {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString('cached_user');
+      if (cached != null) {
+        _user = jsonDecode(cached);
+      }
+    }
     _loading = false;
     notifyListeners();
   }
@@ -187,6 +196,8 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     await _api.clearToken();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('cached_user');
     _user = null;
     notifyListeners();
   }
