@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class GdprConsentDialog extends StatefulWidget {
-  final VoidCallback onAccept;
+  final Future<void> Function() onAccept;
   final VoidCallback onDecline;
 
   const GdprConsentDialog({
@@ -17,6 +17,7 @@ class GdprConsentDialog extends StatefulWidget {
 
 class _GdprConsentDialogState extends State<GdprConsentDialog> {
   bool _showEnglish = false;
+  bool _accepting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +69,12 @@ class _GdprConsentDialogState extends State<GdprConsentDialog> {
           ),
         ),
         FilledButton(
-          onPressed: widget.onAccept,
+          onPressed: _accepting
+              ? null
+              : () async {
+                  setState(() => _accepting = true);
+                  await widget.onAccept();
+                },
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFFC62828),
           ),

@@ -103,9 +103,9 @@ class _LoginScreenState extends State<LoginScreen>
         },
         onAccept: () async {
           Navigator.of(ctx).pop();
-          _maybeShowInstallDialog();
           try {
             await auth.acceptGdpr();
+            _maybeShowInstallDialog();
           } catch (_) {
             if (mounted) {
               setState(() => _gdprDialogScheduled = false);
