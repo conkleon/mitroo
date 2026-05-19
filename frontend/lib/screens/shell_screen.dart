@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/department_provider.dart';
+import '../widgets/offline_banner.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 
@@ -42,7 +43,14 @@ class ShellScreen extends StatelessWidget {
                   mainPaths: mainPaths,
                 ),
                 const VerticalDivider(width: 1, thickness: 1),
-                Expanded(child: child),
+                Expanded(
+                  child: Column(
+                    children: [
+                      const OfflineBanner(),
+                      Expanded(child: child),
+                    ],
+                  ),
+                ),
               ],
             ),
           );
@@ -50,7 +58,12 @@ class ShellScreen extends StatelessWidget {
 
         // Mobile: bottom nav
         return Scaffold(
-          body: child,
+          body: Column(
+            children: [
+              const OfflineBanner(),
+              Expanded(child: child),
+            ],
+          ),
           bottomNavigationBar: Container(
             decoration: BoxDecoration(
               color: Colors.white,
