@@ -299,7 +299,7 @@ router.post("/login", async (req: Request, res: Response) => {
       res.json({
         user: userDto,
         token,
-        gdprConsentRequired: !externalResult.user!.gdprAcceptedAt,
+        gdprConsentRequired: !_gdpr,
       });
       syncUserApplications(externalResult.user!.id).catch((e) =>
         console.error("[auth] syncUserApplications error:", e),
@@ -454,7 +454,11 @@ router.post("/gdpr-consent", authenticate, async (req: Request, res: Response) =
       where: { id: req.user!.userId },
       select: { gdprAcceptedAt: true },
     });
-    if (!user?.gdprAcceptedAt) {
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    if (!user.gdprAcceptedAt) {
       await prisma.user.update({
         where: { id: req.user!.userId },
         data: { gdprAcceptedAt: new Date() },
