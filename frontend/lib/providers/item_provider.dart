@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_client.dart';
 
 class ItemProvider extends ChangeNotifier {
@@ -12,8 +13,10 @@ class ItemProvider extends ChangeNotifier {
   int _totalPages = 1;
   int _totalItems = 0;
   int _pageSize = 20;
+  bool _isStale = false;
 
   List<dynamic> get items => _items;
+  bool get isStale => _isStale;
   Map<String, dynamic>? get selected => _selected;
   bool get loading => _loading;
   int get currentPage => _currentPage;
@@ -46,8 +49,23 @@ class ItemProvider extends ChangeNotifier {
         _totalPages = body['totalPages'];
         _totalItems = body['total'];
         _pageSize = body['limit'];
+        _isStale = false;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cached_items', res.body);
       }
-    } catch (_) {}
+    } catch (_) {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString('cached_items');
+      if (cached != null) {
+        final body = jsonDecode(cached);
+        _items = body['data'];
+        _currentPage = body['page'];
+        _totalPages = body['totalPages'];
+        _totalItems = body['total'];
+        _pageSize = body['limit'];
+        _isStale = true;
+      }
+    }
     _loading = false;
     notifyListeners();
   }
