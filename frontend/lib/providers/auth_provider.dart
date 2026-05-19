@@ -8,10 +8,12 @@ class AuthProvider extends ChangeNotifier {
 
   Map<String, dynamic>? _user;
   bool _loading = false;
+  bool _gdprConsentRequired = false;
 
   Map<String, dynamic>? get user => _user;
   bool get isAuthenticated => _user != null;
   bool get loading => _loading;
+  bool get gdprConsentRequired => _gdprConsentRequired;
   bool get isAdmin => _user?['isAdmin'] == true;
   String get displayName => '${_user?['forename'] ?? ''} ${_user?['surname'] ?? ''}'.trim();
 
@@ -120,12 +122,25 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _api.loadToken();
-      await _loadCurrentUser();
+      final res = await _api.get('/auth/me');
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        if (data['gdprAcceptedAt'] == null) {
+          _gdprConsentRequired = true;
+        } else {
+          _user = data;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('cached_user', res.body);
+        }
+      }
     } catch (_) {
       final prefs = await SharedPreferences.getInstance();
       final cached = prefs.getString('cached_user');
       if (cached != null) {
-        _user = jsonDecode(cached);
+        final data = jsonDecode(cached) as Map<String, dynamic>;
+        if (data['gdprAcceptedAt'] != null) {
+          _user = data;
+        }
       }
     }
     _loading = false;
@@ -143,6 +158,12 @@ class AuthProvider extends ChangeNotifier {
       final data = jsonDecode(res.body);
       if (res.statusCode == 200) {
         await _api.setToken(data['token']);
+        if (data['gdprConsentRequired'] == true) {
+          _gdprConsentRequired = true;
+          _loading = false;
+          notifyListeners();
+          return null;
+        }
         _user = data['user'];
         try {
           await _loadCurrentUser();
@@ -159,6 +180,18 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return 'Connection error: $e';
     }
+  }
+
+  Future<void> acceptGdpr() async {
+    await _api.post('/auth/gdpr-consent', body: {});
+    _gdprConsentRequired = false;
+    await _loadCurrentUser();
+    notifyListeners();
+  }
+
+  Future<void> declineGdpr() async {
+    _gdprConsentRequired = false;
+    await logout();
   }
 
   Future<String?> register(String email, String password, String forename, String surname, String eame) async {
