@@ -515,10 +515,12 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
             return NestedScrollView(
               headerSliverBuilder: (context, innerBoxScrolled) => [
                 SliverAppBar(
-                  expandedHeight: isWide ? 200 : 230,
+                  expandedHeight: isWide ? 168 : 188,
                   pinned: true,
                   backgroundColor: sColor,
                   foregroundColor: Colors.white,
+                  iconTheme: const IconThemeData(color: Colors.white, size: 24),
+                  actionsIconTheme: const IconThemeData(color: Colors.white, size: 24),
                   actions: [
                     if (canManage)
                       IconButton(
@@ -550,7 +552,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                       child: SafeArea(
                         child: Padding(
                           padding: EdgeInsets.fromLTRB(
-                              isWide ? 80 : 20, 60, isWide ? 80 : 20, 16),
+                              isWide ? 80 : 20, 44, isWide ? 80 : 20, 12),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.end,
@@ -586,7 +588,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 6),
                               Text(
                                 dept['name'] ?? '',
                                 style: TextStyle(
@@ -594,7 +596,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 6),
                               // Quick-info chips in header
                               Wrap(
                                 spacing: 10,
@@ -1682,14 +1684,13 @@ class _MemberEquipmentCard extends StatelessWidget {
                           fontWeight: FontWeight.w700)),
                 ),
                 const SizedBox(width: 10),
-                FilledButton.icon(
+                IconButton(
                   onPressed: onTakeItems,
-                  icon: const Icon(Icons.add_circle_outline, size: 20),
-                  label: const Text('Προσθήκη Εξοπλισμού'),
-                  style: FilledButton.styleFrom(
+                  icon: const Icon(Icons.add_circle_outline, size: 22),
+                  tooltip: 'Προσθήκη Εξοπλισμού',
+                  style: IconButton.styleFrom(
                     backgroundColor: const Color(0xFFDC2626),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    foregroundColor: Colors.white,
                   ),
                 ),
               ],
@@ -2028,14 +2029,13 @@ class _VictimsSectionState extends State<_VictimsSection> {
                     color: const Color(0xFFC62828), fontWeight: FontWeight.w700)),
                 ),
                 const SizedBox(width: 10),
-                FilledButton.icon(
+                IconButton(
                   onPressed: () => context.push('/victims/create?serviceId=${widget.serviceId}'),
-                  icon: const Icon(Icons.add_circle_outline, size: 20),
-                  label: const Text('Προσθήκη Περιστατικού'),
-                  style: FilledButton.styleFrom(
+                  icon: const Icon(Icons.add_circle_outline, size: 22),
+                  tooltip: 'Προσθήκη Περιστατικού',
+                  style: IconButton.styleFrom(
                     backgroundColor: const Color(0xFFC62828),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    foregroundColor: Colors.white,
                   ),
                 ),
               ],

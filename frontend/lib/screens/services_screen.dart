@@ -333,7 +333,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                         color: cs.primary.withAlpha(15),
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
-                          onTap: () => _showMyAcceptedServicesSheet(context),
+                          onTap: () => _showMyServicesSheet(context),
                           borderRadius: BorderRadius.circular(12),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -736,17 +736,26 @@ class _ServicesScreenState extends State<ServicesScreen>
   // ═══════════════════════════════════════════════════════════
   //  "My Accepted Services" Bottom Sheet
   // ═══════════════════════════════════════════════════════════
-  void _showMyAcceptedServicesSheet(BuildContext context) {
+  void _showMyServicesSheet(BuildContext context) {
     final svcProv = context.read<ServiceProvider>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    // Filter only services where current user is accepted
-    final accepted = svcProv.services.where((s) {
+    // Filter services where current user is accepted or has a pending application
+    final accepted = <Map<String, dynamic>>[];
+    final pending = <Map<String, dynamic>>[];
+    for (final s in svcProv.services) {
       final us = s['userServices'] as List<dynamic>?;
-      if (us == null || us.isEmpty) return false;
-      return us.first['status'] == 'accepted';
-    }).toList();
+      if (us == null || us.isEmpty) continue;
+      final status = us.first['status'] as String?;
+      if (status == 'accepted') {
+        accepted.add(Map<String, dynamic>.from(s as Map));
+      } else if (status == 'requested') {
+        pending.add(Map<String, dynamic>.from(s as Map));
+      }
+    }
+
+    final allServices = [...accepted, ...pending];
 
     showModalBottomSheet(
       context: context,
@@ -785,22 +794,39 @@ class _ServicesScreenState extends State<ServicesScreen>
                       style: tt.titleMedium?.copyWith(
                           fontWeight: FontWeight.w800, color: const Color(0xFF1F2937))),
                   const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF059669).withAlpha(20),
-                      borderRadius: BorderRadius.circular(8),
+                  if (accepted.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669).withAlpha(20),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${accepted.length}',
+                          style: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF059669)),
+                        ),
+                      ),
                     ),
-                    child: Text(
-                      '${accepted.length}',
-                      style: const TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF059669)),
+                  if (pending.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD97706).withAlpha(20),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${pending.length}',
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFFD97706)),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
-            if (accepted.isEmpty)
+            if (allServices.isEmpty)
               Expanded(
                 child: Center(
                   child: Column(
@@ -808,7 +834,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                     children: [
                       Icon(Icons.event_available, size: 48, color: Color(0xFFD1D5DB)),
                       const SizedBox(height: 12),
-                      Text('Δεν έχετε εγκεκριμένες υπηρεσίες',
+                      Text('Δεν έχετε υπηρεσίες',
                           style: tt.bodyMedium?.copyWith(color: Color(0xFF6B7280))),
                     ],
                   ),
@@ -819,21 +845,54 @@ class _ServicesScreenState extends State<ServicesScreen>
                 child: ListView.builder(
                   controller: scrollController,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: accepted.length,
+                  itemCount: allServices.length,
                   itemBuilder: (_, i) {
-                    final svc = Map<String, dynamic>.from(accepted[i] as Map);
-                    return _CalendarServiceCard(
-                      svc: svc,
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        context.push('/services/${svc['id']}');
-                      },
+                    final svc = allServices[i];
+                    return Column(
+                      children: [
+                        if (i == accepted.length && pending.isNotEmpty && accepted.isNotEmpty)
+                          _buildSectionHeader('Σε αναμονή', const Color(0xFFD97706)),
+                        _CalendarServiceCard(
+                          svc: svc,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            context.push('/services/${svc['id']}');
+                          },
+                        ),
+                      ],
                     );
                   },
                 ),
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 8, height: 8,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
