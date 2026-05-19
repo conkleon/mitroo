@@ -46,10 +46,27 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
   int? _serviceId;
   List<Map<String, dynamic>> _acceptedServices = [];
 
-  // Step 3: Notes
+  // Step 3: Ζωτικά Σημεία
+  final _systolicCtrl = TextEditingController();
+  final _diastolicCtrl = TextEditingController();
+  final _hrCtrl = TextEditingController();
+  final _rrCtrl = TextEditingController();
+  final _spo2Ctrl = TextEditingController();
+  final _tempCtrl = TextEditingController();
+  final _glucoseCtrl = TextEditingController();
+  final _painCtrl = TextEditingController();
+  final _measuredByCtrl = TextEditingController();
+  final _vitalNotesCtrl = TextEditingController();
+
+  // Step 4: Θεραπείες
+  final List<Map<String, dynamic>> _treatments = [];
+  List<Map<String, dynamic>> _treatmentItems = [];
+
+  // Step 5: Επισκόπηση + Notes
   final _notesCtrl = TextEditingController();
 
   bool _submitting = false;
+  bool _treatmentItemsLoaded = false;
 
   @override
   void initState() {
@@ -117,7 +134,16 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
     }
 
     setState(() => _submitting = true);
-    final err = await context.read<VictimProvider>().createVictim(_buildPayload());
+
+    final victimData = _buildPayload();
+    final vitals = _buildVitalSigns();
+    final treatments = _buildTreatments();
+
+    final err = await context.read<VictimProvider>().createVictim(
+      victimData,
+      vitalSigns: vitals != null ? [vitals] : [],
+      treatments: treatments,
+    );
     setState(() => _submitting = false);
 
     if (!mounted) return;
@@ -128,6 +154,103 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
       );
     } else {
       context.go('/victims');
+    }
+  }
+
+  Map<String, dynamic>? _buildVitalSigns() {
+    final data = <String, dynamic>{};
+    if (_systolicCtrl.text.isNotEmpty) data['systolicBP'] = int.tryParse(_systolicCtrl.text);
+    if (_diastolicCtrl.text.isNotEmpty) data['diastolicBP'] = int.tryParse(_diastolicCtrl.text);
+    if (_hrCtrl.text.isNotEmpty) data['heartRate'] = int.tryParse(_hrCtrl.text);
+    if (_rrCtrl.text.isNotEmpty) data['respiratoryRate'] = int.tryParse(_rrCtrl.text);
+    if (_spo2Ctrl.text.isNotEmpty) data['oxygenSat'] = int.tryParse(_spo2Ctrl.text);
+    if (_tempCtrl.text.isNotEmpty) data['temperature'] = double.tryParse(_tempCtrl.text);
+    if (_glucoseCtrl.text.isNotEmpty) data['bloodGlucose'] = double.tryParse(_glucoseCtrl.text);
+    if (_painCtrl.text.isNotEmpty) data['painScore'] = int.tryParse(_painCtrl.text);
+    if (_measuredByCtrl.text.isNotEmpty) data['measuredBy'] = _measuredByCtrl.text.trim();
+    if (_vitalNotesCtrl.text.isNotEmpty) data['notes'] = _vitalNotesCtrl.text.trim();
+    return data.isEmpty ? null : data;
+  }
+
+  List<Map<String, dynamic>> _buildTreatments() {
+    return _treatments.map((t) {
+      final data = <String, dynamic>{};
+      final action = (t['actionCtrl'] as TextEditingController).text.trim();
+      if (action.isNotEmpty) data['action'] = action;
+      final material = (t['materialCtrl'] as TextEditingController).text.trim();
+      if (material.isNotEmpty) data['materialUsed'] = material;
+      if (t['itemId'] != null) data['itemId'] = t['itemId'];
+      final consumed = (t['consumedCtrl'] as TextEditingController).text.trim();
+      if (consumed.isNotEmpty) data['consumedNote'] = consumed;
+      final performedBy = (t['performedByCtrl'] as TextEditingController).text.trim();
+      if (performedBy.isNotEmpty) data['performedBy'] = performedBy;
+      final notes = (t['notesCtrl'] as TextEditingController).text.trim();
+      if (notes.isNotEmpty) data['notes'] = notes;
+      return data;
+    }).where((d) => d.isNotEmpty).toList();
+  }
+
+  void _addTreatment() {
+    setState(() {
+      _treatments.add({
+        'actionCtrl': TextEditingController(),
+        'materialCtrl': TextEditingController(),
+        'itemId': null,
+        'consumedCtrl': TextEditingController(),
+        'performedByCtrl': TextEditingController(),
+        'notesCtrl': TextEditingController(),
+      });
+    });
+  }
+
+  Future<void> _loadTreatmentItems() async {
+    if (_treatmentItemsLoaded) return;
+    _treatmentItemsLoaded = true;
+
+    List<Map<String, dynamic>> items = [];
+
+    if (_serviceId != null) {
+      try {
+        final svcRes = await _api.get('/services/$_serviceId');
+        if (svcRes.statusCode == 200) {
+          final svc = jsonDecode(svcRes.body);
+          final itemServices = svc['itemServices'] as List? ?? [];
+          for (final is_ in itemServices) {
+            final item = is_['item'];
+            if (item != null) items.add(item as Map<String, dynamic>);
+          }
+        }
+      } catch (_) {}
+    }
+
+    try {
+      final profileRes = await _api.get('/auth/me');
+      if (profileRes.statusCode == 200) {
+        final profile = jsonDecode(profileRes.body);
+        final equipment = profile['equipment'] as List? ?? [];
+        for (final item in equipment) {
+          final exists = items.any((i) => i['id'] == item['id']);
+          if (!exists) items.add(item as Map<String, dynamic>);
+        }
+      }
+    } catch (_) {}
+
+    setState(() => _treatmentItems = items);
+  }
+
+  String _vitalSignLabel(String key) {
+    switch (key) {
+      case 'systolicBP': return 'Συστολική';
+      case 'diastolicBP': return 'Διαστολική';
+      case 'heartRate': return 'Καρδιακοί παλμοί';
+      case 'respiratoryRate': return 'Αναπνοές/λεπτό';
+      case 'oxygenSat': return 'SpO2';
+      case 'temperature': return 'Θερμοκρασία';
+      case 'bloodGlucose': return 'Γλυκόζη';
+      case 'painScore': return 'Πόνος';
+      case 'measuredBy': return 'Καταγραφή από';
+      case 'notes': return 'Σημειώσεις';
+      default: return key;
     }
   }
 
@@ -147,6 +270,23 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
     _medicalHistoryCtrl.dispose();
     _locationNotesCtrl.dispose();
     _notesCtrl.dispose();
+    _systolicCtrl.dispose();
+    _diastolicCtrl.dispose();
+    _hrCtrl.dispose();
+    _rrCtrl.dispose();
+    _spo2Ctrl.dispose();
+    _tempCtrl.dispose();
+    _glucoseCtrl.dispose();
+    _painCtrl.dispose();
+    _measuredByCtrl.dispose();
+    _vitalNotesCtrl.dispose();
+    for (final t in _treatments) {
+      (t['actionCtrl'] as TextEditingController).dispose();
+      (t['materialCtrl'] as TextEditingController).dispose();
+      (t['consumedCtrl'] as TextEditingController).dispose();
+      (t['performedByCtrl'] as TextEditingController).dispose();
+      (t['notesCtrl'] as TextEditingController).dispose();
+    }
     super.dispose();
   }
 
@@ -159,7 +299,10 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
       body: Stepper(
         currentStep: _currentStep,
         onStepContinue: () {
-          if (_currentStep < 3) {
+          if (_currentStep < 5) {
+            if (_currentStep == 3 && !_treatmentItemsLoaded) {
+              _loadTreatmentItems();
+            }
             setState(() => _currentStep += 1);
           } else {
             _submit();
@@ -182,7 +325,7 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
                 const SizedBox(width: 12),
                 FilledButton(
                   onPressed: _submitting ? null : details.onStepContinue,
-                  child: Text(_currentStep == 3 ? 'Υποβολή' : 'Επόμενο'),
+                  child: Text(_currentStep == 5 ? 'Υποβολή' : 'Επόμενο'),
                 ),
               ],
             ),
@@ -343,11 +486,131 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
             ),
           ),
 
-          // Step 3: Επισκόπηση
+          // Step 3: Ζωτικά Σημεία
           Step(
-            title: const Text('Επισκόπηση'),
+            title: const Text('Ζωτικά Σημεία'),
             isActive: _currentStep >= 3,
             state: _currentStep > 3 ? StepState.complete : StepState.indexed,
+            content: Column(
+              children: [
+                TextField(controller: _systolicCtrl, decoration: const InputDecoration(labelText: 'Συστολική (mmHg)'), keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                TextField(controller: _diastolicCtrl, decoration: const InputDecoration(labelText: 'Διαστολική (mmHg)'), keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                TextField(controller: _hrCtrl, decoration: const InputDecoration(labelText: 'Καρδιακοί παλμοί'), keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                TextField(controller: _rrCtrl, decoration: const InputDecoration(labelText: 'Αναπνοές/λεπτό'), keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                TextField(controller: _spo2Ctrl, decoration: const InputDecoration(labelText: 'SpO2 (%)'), keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                TextField(controller: _tempCtrl, decoration: const InputDecoration(labelText: 'Θερμοκρασία (°C)'), keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                TextField(controller: _glucoseCtrl, decoration: const InputDecoration(labelText: 'Γλυκόζη (mg/dL)'), keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                TextField(controller: _painCtrl, decoration: const InputDecoration(labelText: 'Πόνος (0–10)'), keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                TextField(controller: _measuredByCtrl, decoration: const InputDecoration(labelText: 'Καταγραφή από')),
+                const SizedBox(height: 12),
+                TextField(controller: _vitalNotesCtrl, decoration: const InputDecoration(labelText: 'Σημειώσεις'), maxLines: 2),
+              ],
+            ),
+          ),
+
+          // Step 4: Θεραπείες
+          Step(
+            title: const Text('Θεραπείες'),
+            isActive: _currentStep >= 4,
+            state: _currentStep > 4 ? StepState.complete : StepState.indexed,
+            content: Column(
+              children: [
+                ..._treatments.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final t = entry.value;
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Text('Θεραπεία ${i + 1}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                              const Spacer(),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Color(0xFFB91C1C), size: 20),
+                                onPressed: () {
+                                  (t['actionCtrl'] as TextEditingController).dispose();
+                                  (t['materialCtrl'] as TextEditingController).dispose();
+                                  (t['consumedCtrl'] as TextEditingController).dispose();
+                                  (t['performedByCtrl'] as TextEditingController).dispose();
+                                  (t['notesCtrl'] as TextEditingController).dispose();
+                                  setState(() => _treatments.removeAt(i));
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: t['actionCtrl'] as TextEditingController,
+                            decoration: const InputDecoration(labelText: 'Ενέργεια'),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: t['materialCtrl'] as TextEditingController,
+                            decoration: const InputDecoration(labelText: 'Υλικά που χρησιμοποιήθηκαν'),
+                          ),
+                          if (_treatmentItems.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<int>(
+                              value: t['itemId'] as int?,
+                              decoration: const InputDecoration(labelText: 'Αντικείμενο (από εξοπλισμό)'),
+                              items: [
+                                const DropdownMenuItem<int>(value: null, child: Text('—')),
+                                ..._treatmentItems.map((item) => DropdownMenuItem<int>(
+                                  value: item['id'] as int,
+                                  child: Text(item['name'] as String? ?? 'Αντικείμενο ${item['id']}'),
+                                )),
+                              ],
+                              onChanged: (v) => setState(() => t['itemId'] = v),
+                            ),
+                            if (t['itemId'] != null) ...[
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: t['consumedCtrl'] as TextEditingController,
+                                decoration: const InputDecoration(labelText: 'Σημείωση κατανάλωσης'),
+                              ),
+                            ],
+                          ],
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: t['performedByCtrl'] as TextEditingController,
+                            decoration: const InputDecoration(labelText: 'Εκτελέστηκε από'),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: t['notesCtrl'] as TextEditingController,
+                            decoration: const InputDecoration(labelText: 'Σημειώσεις'),
+                            maxLines: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+                OutlinedButton.icon(
+                  onPressed: _addTreatment,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Προσθήκη θεραπείας'),
+                ),
+              ],
+            ),
+          ),
+
+          // Step 5: Επισκόπηση
+          Step(
+            title: const Text('Επισκόπηση'),
+            isActive: _currentStep >= 5,
+            state: _currentStep > 5 ? StepState.complete : StepState.indexed,
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -361,6 +624,21 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
                 if (_avpu != null) _SummaryRow(label: 'AVPU', value: _avpu!),
                 if (_serviceId != null) _SummaryRow(label: 'Συνδεδεμένη υπηρεσία', value: 'ID $_serviceId'),
                 if (_notesCtrl.text.isNotEmpty) _SummaryRow(label: 'Σημειώσεις', value: _notesCtrl.text),
+                const SizedBox(height: 12),
+                const Text('Ζωτικά Σημεία:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                if (_buildVitalSigns() != null)
+                  ..._buildVitalSigns()!.entries.map((e) => _SummaryRow(label: _vitalSignLabel(e.key), value: '${e.value}')),
+                if (_buildVitalSigns() == null)
+                  const Padding(padding: EdgeInsets.only(top: 4), child: Text('Δεν καταγράφηκαν', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13))),
+                const SizedBox(height: 12),
+                const Text('Θεραπείες:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                if (_treatments.isNotEmpty)
+                  ..._treatments.asMap().entries.map((entry) {
+                    final action = (entry.value['actionCtrl'] as TextEditingController).text.trim();
+                    return _SummaryRow(label: 'Θεραπεία ${entry.key + 1}', value: action.isEmpty ? '—' : action);
+                  }),
+                if (_treatments.isEmpty)
+                  const Padding(padding: EdgeInsets.only(top: 4), child: Text('Δεν καταγράφηκαν', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13))),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _notesCtrl,

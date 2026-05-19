@@ -74,6 +74,8 @@ class _VictimsScreenState extends State<VictimsScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<VictimProvider>();
     final victims = provider.victims;
+    final pendingVictims = provider.pendingVictims;
+    final allRows = [...pendingVictims, ...victims];
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -236,7 +238,7 @@ class _VictimsScreenState extends State<VictimsScreen> {
             Expanded(
               child: provider.loading
                   ? const Center(child: CircularProgressIndicator())
-                  : victims.isEmpty
+                  : allRows.isEmpty
                       ? Center(
                           child: Text(
                             'Δεν υπάρχουν περιστατικά',
@@ -284,27 +286,48 @@ class _VictimsScreenState extends State<VictimsScreen> {
                                           color: const Color(0xFF374151))),
                                 ),
                               ],
-                              rows: victims.asMap().entries.map((entry) {
+                              rows: allRows.asMap().entries.map((entry) {
                                 final i = entry.key;
                                 final v = entry.value;
                                 final name = v['name'] as String? ?? 'Άγνωστο';
                                 final chiefComplaint = v['chiefComplaint'] as String? ?? '';
+                                final isPending = v['_isPending'] == true;
                                 return DataRow(
-                                  color: i.isEven
-                                      ? WidgetStateProperty.all(const Color(0xFFF9FAFB))
-                                      : null,
-                                  onSelectChanged: (_) => context.push('/victims/${v['id']}'),
+                                  color: WidgetStateProperty.all(
+                                    isPending
+                                        ? const Color(0xFFFEFCE8)
+                                        : i.isEven
+                                            ? const Color(0xFFF9FAFB)
+                                            : null,
+                                  ),
+                                  onSelectChanged: isPending
+                                      ? null
+                                      : (_) => context.push('/victims/${v['id']}'),
                                   cells: [
                                     DataCell(
-                                      Text(name,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF1F2937)),
-                                          overflow: TextOverflow.ellipsis),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (isPending) ...[
+                                            const Icon(Icons.cloud_off_outlined, size: 16, color: Color(0xFFD97706)),
+                                            const SizedBox(width: 6),
+                                          ],
+                                          Flexible(
+                                            child: Text(name,
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: isPending ? const Color(0xFF92400E) : const Color(0xFF1F2937)),
+                                                overflow: TextOverflow.ellipsis),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                     DataCell(
-                                      Text(_formatDate(v['createdAt'] as String?),
-                                          style: const TextStyle(color: Color(0xFF6B7280))),
+                                      isPending
+                                          ? const Text('Εκκρεμεί',
+                                              style: TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.w500, fontSize: 13))
+                                          : Text(_formatDate(v['createdAt'] as String?),
+                                              style: const TextStyle(color: Color(0xFF6B7280))),
                                     ),
                                     DataCell(
                                       Text(

@@ -16,6 +16,9 @@ class VictimProvider extends ChangeNotifier {
   int _pendingCount = 0;
   int get pendingCount => _pendingCount;
 
+  List<Map<String, dynamic>> _pendingVictims = [];
+  List<Map<String, dynamic>> get pendingVictims => _pendingVictims;
+
   List<Map<String, dynamic>> get victims => _victims;
   Map<String, dynamic>? get selected => _selected;
   bool get loading => _loading;
@@ -25,10 +28,25 @@ class VictimProvider extends ChangeNotifier {
   int get totalPages => _total == 0 ? 0 : (_total / _limit).ceil();
 
   VictimProvider() {
-    OfflineStore.getPendingVictimReports().then((reports) {
-      _pendingCount = reports.length;
-      notifyListeners();
-    });
+    _loadPendingVictims();
+  }
+
+  Future<void> _loadPendingVictims() async {
+    final reports = await OfflineStore.getPendingVictimReports();
+    _pendingVictims = reports.asMap().entries.map((entry) {
+      final i = entry.key;
+      final report = entry.value;
+      final data = report.containsKey('victim')
+          ? Map<String, dynamic>.from(report['victim'] as Map)
+          : Map<String, dynamic>.from(report);
+      data['_isPending'] = true;
+      data['_pendingIndex'] = i;
+      data['id'] = -(i + 1);
+      data['_storedAt'] = report['_storedAt'] ?? DateTime.now().toIso8601String();
+      return data;
+    }).toList();
+    _pendingCount = _pendingVictims.length;
+    notifyListeners();
   }
 
   Future<void> fetchVictims({
@@ -88,18 +106,46 @@ class VictimProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String?> createVictim(Map<String, dynamic> data) async {
+  Future<String?> createVictim(
+    Map<String, dynamic> victimData, {
+    List<Map<String, dynamic>> vitalSigns = const [],
+    List<Map<String, dynamic>> treatments = const [],
+  }) async {
     try {
-      final res = await _api.post('/victims', body: data);
+      final res = await _api.post('/victims', body: victimData);
       if (res.statusCode == 201) {
+        final created = jsonDecode(res.body);
+        final victimId = created['id'] as int;
+
+        for (final vs in vitalSigns) {
+          try {
+            await _api.post('/victims/$victimId/vital-signs', body: vs);
+          } catch (e) {
+            debugPrint('Failed to add vital sign for victim $victimId: $e');
+          }
+        }
+
+        for (final t in treatments) {
+          try {
+            await _api.post('/victims/$victimId/treatments', body: t);
+          } catch (e) {
+            debugPrint('Failed to add treatment for victim $victimId: $e');
+          }
+        }
+
         await fetchVictims();
         return null;
       }
       return jsonDecode(res.body)['error'] ?? 'Αποτυχία';
     } catch (_) {
-      await OfflineStore.saveVictimReport(data);
-      _pendingCount++;
-      notifyListeners();
+      final envelope = <String, dynamic>{
+        'victim': victimData,
+        'vitalSigns': vitalSigns,
+        'treatments': treatments,
+        '_storedAt': DateTime.now().toIso8601String(),
+      };
+      await OfflineStore.saveVictimReport(envelope);
+      await _loadPendingVictims();
       return null;
     }
   }
@@ -117,10 +163,47 @@ class VictimProvider extends ChangeNotifier {
         remaining.add(report);
         continue;
       }
+
+      Map<String, dynamic> victimData;
+      List<Map<String, dynamic>> vitalSigns = [];
+      List<Map<String, dynamic>> treatments = [];
+
+      if (report.containsKey('victim')) {
+        victimData = Map<String, dynamic>.from(report['victim'] as Map);
+        vitalSigns = (report['vitalSigns'] as List?)
+                ?.map((e) => Map<String, dynamic>.from(e as Map))
+                .toList() ??
+            [];
+        treatments = (report['treatments'] as List?)
+                ?.map((e) => Map<String, dynamic>.from(e as Map))
+                .toList() ??
+            [];
+      } else {
+        victimData = Map<String, dynamic>.from(report);
+      }
+
       try {
-        final res = await _api.post('/victims', body: report);
+        final res = await _api.post('/victims', body: victimData);
         if (res.statusCode == 201) {
           anySynced = true;
+          final created = jsonDecode(res.body);
+          final victimId = created['id'] as int;
+
+          for (final vs in vitalSigns) {
+            try {
+              await _api.post('/victims/$victimId/vital-signs', body: vs);
+            } catch (e) {
+              debugPrint('syncOutbox: vital sign failed for victim $victimId: $e');
+            }
+          }
+
+          for (final t in treatments) {
+            try {
+              await _api.post('/victims/$victimId/treatments', body: t);
+            } catch (e) {
+              debugPrint('syncOutbox: treatment failed for victim $victimId: $e');
+            }
+          }
         } else {
           remaining.add(report);
         }
@@ -131,7 +214,7 @@ class VictimProvider extends ChangeNotifier {
     }
 
     await OfflineStore.setPendingVictimReports(remaining);
-    _pendingCount = remaining.length;
+    await _loadPendingVictims();
     notifyListeners();
     if (anySynced) await fetchVictims();
   }
