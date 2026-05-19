@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import '../providers/auth_provider.dart';
+import '../providers/pwa_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -47,7 +48,38 @@ class _LoginScreenState extends State<LoginScreen>
     final err = await auth.login(_emailCtrl.text.trim(), _passwordCtrl.text);
     if (err != null && mounted) {
       setState(() => _error = err);
+      return;
     }
+    _maybeShowInstallDialog();
+  }
+
+  void _maybeShowInstallDialog() {
+    if (!mounted) return;
+    final pwa = context.read<PwaProvider>();
+    if (!pwa.shouldShowInstallDialog) return;
+    pwa.markInstallDialogShown();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Προσθήκη στην αρχική οθόνη'),
+        content: const Text(
+          'Εγκαταστήστε το Mitroo για γρήγορη πρόσβαση χωρίς το πρόγραμμα περιήγησης.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Όχι τώρα'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              context.read<PwaProvider>().triggerInstall();
+            },
+            child: const Text('Εγκατάσταση'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
