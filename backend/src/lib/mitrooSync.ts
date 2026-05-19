@@ -480,9 +480,9 @@ export async function syncShiftApplications(departmentId: number): Promise<SyncR
   try {
     const config = await prisma.departmentSyncConfig.findUnique({
       where: { departmentId },
-      select: { syncEnabled: true },
+      select: { departmentId: true },
     });
-    if (!config?.syncEnabled) return result;
+    if (!config) return result;
 
     const client = await getClient(departmentId);
     const applications = await client.fetchShiftApplications();
@@ -1135,7 +1135,7 @@ export async function syncUserApplications(userId: number): Promise<SyncResult> 
   if (!departmentIds.length) return result;
 
   const configs = await prisma.departmentSyncConfig.findMany({
-    where: { departmentId: { in: departmentIds }, syncEnabled: true },
+    where: { departmentId: { in: departmentIds } },
     select: { departmentId: true },
   });
   if (!configs.length) return result;
@@ -1148,6 +1148,92 @@ export async function syncUserApplications(userId: number): Promise<SyncResult> 
       const userApps = applications.filter(
         (app) => Number(app.member_id) === user.externalId,
       );
+
+      // ── Ensure services exist for shifts this user has applied to ─────────
+      // Only creates missing ones; no updates to avoid excessive writes.
+      const userShiftIds = Array.from(new Set(
+        userApps
+          .map((app) => Number(app.mission_shift_id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ));
+
+      if (userShiftIds.length > 0) {
+        const existingServices = await prisma.service.findMany({
+          where: { departmentId: config.departmentId, externalShiftId: { in: userShiftIds } },
+          select: { externalShiftId: true },
+        });
+        const existingShiftSet = new Set(existingServices.map((s) => s.externalShiftId));
+        const missingShiftIds = new Set(userShiftIds.filter((id) => !existingShiftSet.has(id)));
+
+        if (missingShiftIds.size > 0) {
+          // Group missing shift IDs by mission_id to minimise fetchShiftsForMission calls
+          const missionToMissingShifts = new Map<number, Set<number>>();
+          for (const app of userApps) {
+            const shiftId = Number(app.mission_shift_id);
+            const missionId = Number(app.mission_id);
+            if (!missingShiftIds.has(shiftId)) continue;
+            if (!Number.isFinite(missionId) || missionId <= 0) continue;
+            if (!missionToMissingShifts.has(missionId)) {
+              missionToMissingShifts.set(missionId, new Set());
+            }
+            missionToMissingShifts.get(missionId)!.add(shiftId);
+          }
+
+          for (const [missionId, shiftIds] of missionToMissingShifts) {
+            try {
+              const shifts = await client.fetchShiftsForMission(missionId);
+              for (const shift of shifts) {
+                const externalShiftId = Number(shift.id);
+                if (!shiftIds.has(externalShiftId)) continue;
+
+                // Guard against a race where another process created the service between
+                // our batch check and now (mirrors the pattern used in syncServices).
+                const alreadyExists = await prisma.service.findFirst({
+                  where: { externalShiftId },
+                  select: { id: true },
+                });
+                if (alreadyExists) continue;
+
+                const rawName =
+                  (shift.name as string | undefined) ??
+                  (shift.title as string | undefined) ??
+                  `Shift ${externalShiftId}`;
+                const name = cleanServiceName(rawName);
+
+                const startAt = shift.shift_start_date
+                  ? new Date(shift.shift_start_date as string)
+                  : undefined;
+                const endAt = shift.shift_end_date
+                  ? new Date(shift.shift_end_date as string)
+                  : undefined;
+
+                await prisma.service.create({
+                  data: {
+                    departmentId: config.departmentId,
+                    name,
+                    externalShiftId,
+                    externalMissionId: missionId,
+                    startAt,
+                    endAt,
+                    defaultHours: parseHours(shift.hours_sanitary),
+                    defaultHoursVol: parseHours(shift.hours_volunteering),
+                    defaultHoursTraining: parseHours(shift.hours_training),
+                    defaultHoursTrainers: parseHours(shift.hours_retraining),
+                    defaultHoursTEP: parseHours(shift.hours_tep),
+                  },
+                });
+                result.created++;
+                console.log(
+                  `[mitrooSync] syncUserApplications: created stub service for shift ${externalShiftId} (mission ${missionId})`,
+                );
+              }
+            } catch (e) {
+              result.errors.push(`mission_id=${missionId}: failed to fetch/create service: ${e}`);
+            }
+          }
+        }
+      }
+      // ── End service stub creation ─────────────────────────────────────────
 
       for (const app of userApps) {
         try {
@@ -1283,4 +1369,79 @@ export async function syncUserDepartments(userId: number): Promise<SyncResult> {
     );
   }
   return result;
+}
+
+// ── Auto-save credentials on login + fire syncServices ─────────────────────
+// Called fire-and-forget after any successful external Mitroo login so that
+// credentials are always up-to-date and sync runs without manual setup.
+
+export async function autoUpdateSyncConfig(
+  memberDepartment: string,
+  username: string,
+  password: string,
+  userId?: number,
+): Promise<void> {
+  let dept = await prisma.department.findFirst({
+    where: { name: { equals: memberDepartment, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (!dept) {
+    try {
+      dept = await prisma.department.create({
+        data: { name: memberDepartment },
+        select: { id: true },
+      });
+      console.log(`[mitrooSync] autoUpdateSyncConfig: auto-created department "${memberDepartment}"`);
+    } catch {
+      // Race: another concurrent login may have just created it
+      dept = await prisma.department.findFirst({
+        where: { name: { equals: memberDepartment, mode: "insensitive" } },
+        select: { id: true },
+      });
+      if (!dept) return;
+    }
+  }
+
+  const encryptedPassword = encrypt(password);
+  await prisma.departmentSyncConfig.upsert({
+    where: { departmentId: dept.id },
+    // Update credentials only — preserve syncEnabled so admins can opt out of write-backs
+    update: { externalUsername: username, externalPassword: encryptedPassword },
+    create: {
+      departmentId: dept.id,
+      externalUsername: username,
+      externalPassword: encryptedPassword,
+      syncEnabled: true,
+    },
+  });
+  console.log(`[mitrooSync] autoUpdateSyncConfig: credentials updated for dept ${dept.id}`);
+
+  // Promote the triggering user to missionAdmin for this department
+  if (userId) {
+    await prisma.userDepartment.upsert({
+      where: { userId_departmentId: { userId, departmentId: dept.id } },
+      update: { role: "missionAdmin" },
+      create: { userId, departmentId: dept.id, role: "missionAdmin" },
+    });
+    console.log(`[mitrooSync] autoUpdateSyncConfig: promoted user ${userId} to missionAdmin in dept ${dept.id}`);
+  }
+
+  syncServices(dept.id).catch((e) =>
+    console.error(`[mitrooSync] autoUpdateSyncConfig: syncServices failed for dept ${dept!.id}:`, e),
+  );
+}
+
+// ── Hourly cron: sync all departments that have credentials ─────────────────
+
+export async function autoSyncAllDepartments(): Promise<void> {
+  const configs = await prisma.departmentSyncConfig.findMany({
+    select: { departmentId: true },
+  });
+  if (!configs.length) return;
+  console.log(`[mitrooSync] autoSyncAllDepartments: syncing ${configs.length} department(s)`);
+  for (const config of configs) {
+    syncServices(config.departmentId).catch((e) =>
+      console.error(`[mitrooSync] autoSyncAllDepartments: dept ${config.departmentId} failed:`, e),
+    );
+  }
 }

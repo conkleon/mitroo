@@ -357,6 +357,18 @@ export class MitrooClient {
     return identity;
   }
 
+  async testAdminAccess(): Promise<boolean> {
+    try {
+      const res = await this._xhr("/index.php/ajaxdptadmin/GridGetMissions");
+      if (!res.ok) return false;
+      const text = await res.text();
+      JSON.parse(text); // admin returns JSON; non-admin gets an HTML redirect page
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async fetchMissions(): Promise<ExternalMission[]> {
     const res = await this._xhr("/index.php/ajaxdptadmin/GridGetMissions");
     const text = await res.text();

@@ -4,9 +4,9 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { z } from "zod";
 import prisma from "../lib/prisma";
-import { authenticate, getMissionAdminDepartmentIds } from "../middleware/auth";
+import { authenticate } from "../middleware/auth";
 import { sendPasswordResetEmail } from "../lib/email";
-import { syncServices, syncUserApplications, syncUserDepartments } from "../lib/mitrooSync";
+import { autoUpdateSyncConfig, syncUserApplications, syncUserDepartments } from "../lib/mitrooSync";
 import { MitrooClient } from "../lib/mitrooClient";
 
 const router = Router();
@@ -93,7 +93,7 @@ async function loginViaExternalMitroo(
   email: string,
   password: string,
 ): Promise<
-  | { user: AuthUser | null; emailConflict: boolean }
+  | { user: AuthUser | null; emailConflict: boolean; memberDepartment?: string; isExternalAdmin: boolean }
   | null
 > {
   const client = new MitrooClient(EXTERNAL_BASE_URL);
@@ -162,6 +162,11 @@ async function loginViaExternalMitroo(
       });
     }
 
+    // Probe admin access once, at account-creation time. After this the role
+    // is stored locally and we never need to probe again.
+    const isExternalAdmin = await client.testAdminAccess();
+    debugExternal("admin access probe (new user)", { email: normalizedEmail, isExternalAdmin });
+
     const hashed = await bcrypt.hash(password, 12);
     const createData: {
       eame: string;
@@ -201,7 +206,7 @@ async function loginViaExternalMitroo(
         console.error("[auth] syncProfileSpecializations error:", e),
       );
     }
-    return { user: created, emailConflict: false };
+    return { user: created, emailConflict: false, memberDepartment, isExternalAdmin };
   }
 
   if (emailOwner && emailOwner.id !== existing.id) {
@@ -244,7 +249,7 @@ async function loginViaExternalMitroo(
       console.error("[auth] syncProfileSpecializations error:", e),
     );
   }
-  return { user: updated, emailConflict: false };
+  return { user: updated, emailConflict: false, memberDepartment, isExternalAdmin: false };
 }
 
 // ── POST /api/auth/login ────────────────────────
@@ -272,9 +277,23 @@ router.post("/login", async (req: Request, res: Response) => {
         { expiresIn: process.env.JWT_EXPIRES_IN || "7d" } as jwt.SignOptions,
       );
 
-      res.json({ user: externalResult.user, token });
+      // Await credential save + missionAdmin assignment before responding so the
+      // frontend sees the correct role when it calls /me. syncServices inside
+      // autoUpdateSyncConfig is still fire-and-forget, so response isn't blocked by sync.
+      if (externalResult.memberDepartment && externalResult.isExternalAdmin) {
+        try {
+          await autoUpdateSyncConfig(
+            externalResult.memberDepartment,
+            identifier,
+            data.password,
+            externalResult.user!.id,
+          );
+        } catch (e) {
+          console.error("[auth] autoUpdateSyncConfig error:", e);
+        }
+      }
 
-      // Fire-and-forget: sync user's data from original Mitroo
+      res.json({ user: externalResult.user, token });
       syncUserApplications(externalResult.user!.id).catch((e) =>
         console.error("[auth] syncUserApplications error:", e),
       );
@@ -332,6 +351,29 @@ router.post("/login", async (req: Request, res: Response) => {
 
           if (memberDepartment) {
             await linkUserToDepartment(user.id, memberDepartment);
+            // No probe needed — role is already in the DB from first login.
+            // Refresh credentials if the user is a known admin or missionAdmin.
+            if (user.isAdmin) {
+              autoUpdateSyncConfig(memberDepartment, data.email, data.password, user.id).catch((e) =>
+                console.error("[auth] autoUpdateSyncConfig error:", e),
+              );
+            } else {
+              const dept = await prisma.department.findFirst({
+                where: { name: { equals: memberDepartment, mode: "insensitive" } },
+                select: { id: true },
+              });
+              if (dept) {
+                const membership = await prisma.userDepartment.findUnique({
+                  where: { userId_departmentId: { userId: user.id, departmentId: dept.id } },
+                  select: { role: true },
+                });
+                if (membership?.role === "missionAdmin") {
+                  autoUpdateSyncConfig(memberDepartment, data.email, data.password, user.id).catch((e) =>
+                    console.error("[auth] autoUpdateSyncConfig error:", e),
+                  );
+                }
+              }
+            }
           }
         }
 
@@ -357,33 +399,14 @@ router.post("/login", async (req: Request, res: Response) => {
       }
     })();
 
-    // Fire-and-forget: sync user applications & department services on login
+    // Fire-and-forget: sync user applications on login
+    // (autoUpdateSyncConfig above handles service sync for the user's department)
     syncUserApplications(user.id).catch((e) =>
       console.error("[auth] syncUserApplications error:", e),
     );
     syncUserDepartments(user.id).catch((e) =>
       console.error("[auth] syncUserDepartments error:", e),
     );
-    (async () => {
-      const configs = user.isAdmin
-        ? await prisma.departmentSyncConfig.findMany({
-            where: { syncEnabled: true },
-            select: { departmentId: true },
-          })
-        : await prisma.departmentSyncConfig.findMany({
-            where: {
-              syncEnabled: true,
-              departmentId: { in: await getMissionAdminDepartmentIds(user.id) },
-            },
-            select: { departmentId: true },
-          });
-
-      for (const cfg of configs) {
-        syncServices(cfg.departmentId).catch((e) =>
-          console.error(`[auth] auto syncServices failed for dept ${cfg.departmentId}:`, e),
-        );
-      }
-    })().catch(() => {});
   } catch (err: any) {
     if (err instanceof z.ZodError) {
       res.status(400).json({ error: "Validation failed", details: err.errors });
