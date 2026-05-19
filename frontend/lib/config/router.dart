@@ -39,6 +39,7 @@ GoRouter appRouter(AuthProvider auth) {
     initialLocation: '/services',
     refreshListenable: auth,
     redirect: (context, state) {
+      if (auth.loading) return null; // wait for _tryAutoLogin before any redirect
       final loggedIn = auth.isAuthenticated;
       final path = state.matchedLocation;
       final publicPaths = ['/login', '/forgot-password', '/reset-password', '/apply-training'];
