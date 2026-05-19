@@ -444,7 +444,8 @@ router.get("/me", authenticate, async (req: Request, res: Response) => {
     res.status(404).json({ error: "User not found" });
     return;
   }
-  res.json(user);
+  const { gdprAcceptedAt, ...userResponse } = user;
+  res.json({ ...userResponse, gdprConsentRequired: !gdprAcceptedAt });
 });
 
 // ── POST /api/auth/gdpr-consent ─────────────────

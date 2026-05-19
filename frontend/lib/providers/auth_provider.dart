@@ -110,11 +110,12 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _loadCurrentUser() async {
     final res = await _api.get('/auth/me');
-    if (res.statusCode == 200) {
-      _user = jsonDecode(res.body);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('cached_user', res.body);
+    if (res.statusCode != 200) {
+      throw Exception('Failed to load user profile: ${res.statusCode}');
     }
+    _user = jsonDecode(res.body);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('cached_user', res.body);
   }
 
   Future<void> _tryAutoLogin() async {
@@ -125,7 +126,7 @@ class AuthProvider extends ChangeNotifier {
       final res = await _api.get('/auth/me');
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        if (data['gdprAcceptedAt'] == null) {
+        if (data['gdprConsentRequired'] == true) {
           _gdprConsentRequired = true;
         } else {
           _user = data;
@@ -138,7 +139,9 @@ class AuthProvider extends ChangeNotifier {
       final cached = prefs.getString('cached_user');
       if (cached != null) {
         final data = jsonDecode(cached) as Map<String, dynamic>;
-        if (data['gdprAcceptedAt'] != null) {
+        final gdprOk = data['gdprConsentRequired'] == false ||
+            (data['gdprAcceptedAt'] != null);
+        if (gdprOk) {
           _user = data;
         }
       }
@@ -191,8 +194,8 @@ class AuthProvider extends ChangeNotifier {
       if (res.statusCode != 200) {
         throw Exception('GDPR consent failed: ${res.statusCode}');
       }
-      _gdprConsentRequired = false;
       await _loadCurrentUser();
+      _gdprConsentRequired = false;
     } catch (_) {
       _loading = false;
       notifyListeners();
