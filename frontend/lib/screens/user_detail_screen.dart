@@ -197,6 +197,21 @@ class _UserDetailBodyState extends State<UserDetailBody> {
     );
   }
 
+  // ── Toggle system admin ─────────────────────────
+  Future<void> _toggleAdmin(bool value) async {
+    try {
+      final res = await _api.patch('/users/${widget.userId}', body: {'isAdmin': value});
+      if (res.statusCode == 200) {
+        setState(() => _user!['isAdmin'] = value);
+      } else {
+        final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+    }
+  }
+
   // ── Delete user ───────────────────────────────────
   void _deleteUser() async {
     final confirmed = await showDialog<bool>(
@@ -477,7 +492,7 @@ class _UserDetailBodyState extends State<UserDetailBody> {
           builder: (context, constraints) {
             final isWide = constraints.maxWidth >= 900;
 
-            final profileCard = _buildProfileCard(u, name, isAdmin, tt, cs);
+            final profileCard = _buildProfileCard(u, name, isAdmin, tt, cs, canManage);
             final deptsCard = _buildDepartmentsCard(departments, tt, cs, canManage);
             final specsCard = _buildSpecializationsCard(specializations, tt, cs, canManage);
             final servicesCard = _buildServicesCard(tt, cs);
@@ -527,7 +542,9 @@ class _UserDetailBodyState extends State<UserDetailBody> {
   }
 
   // ── Profile card ──────────────────────────────────
-  Widget _buildProfileCard(Map<String, dynamic> u, String name, bool isAdmin, TextTheme tt, ColorScheme cs) {
+  Widget _buildProfileCard(Map<String, dynamic> u, String name, bool isAdmin, TextTheme tt, ColorScheme cs, bool canManage) {
+    final auth = context.read<AuthProvider>();
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 0,
@@ -566,6 +583,39 @@ class _UserDetailBodyState extends State<UserDetailBody> {
             _InfoRow(icon: Icons.calendar_today, label: 'Ημ. Γέννησης', value: _formatDate(u['birthDate'])),
             if ((u['extraInfo'] ?? '').toString().isNotEmpty)
               _InfoRow(icon: Icons.info_outline, label: 'Επιπλέον Πληρ.', value: u['extraInfo']),
+            if (auth.isAdmin) ...[
+              const SizedBox(height: 8),
+              const Divider(),
+              SwitchListTile(
+                title: const Text('Διαχειριστής Συστήματος'),
+                subtitle: Text(isAdmin ? 'Έχει πλήρη δικαιώματα διαχείρισης' : 'Χωρίς δικαιώματα διαχείρισης'),
+                value: isAdmin,
+                onChanged: (v) => _toggleAdmin(v),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+            ],
+            if (canManage) ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _deleteUser,
+                    icon: const Icon(Icons.delete, size: 16),
+                    label: const Text('Διαγραφή'),
+                    style: OutlinedButton.styleFrom(foregroundColor: Color(0xFFDC2626)),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    onPressed: _editProfile,
+                    icon: const Icon(Icons.edit, size: 16),
+                    label: const Text('Επεξεργασία'),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
