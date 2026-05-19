@@ -159,6 +159,7 @@ class AuthProvider extends ChangeNotifier {
       if (res.statusCode == 200) {
         await _api.setToken(data['token']);
         if (data['gdprConsentRequired'] == true) {
+          _user = null;
           _gdprConsentRequired = true;
           _loading = false;
           notifyListeners();
@@ -183,9 +184,21 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> acceptGdpr() async {
-    await _api.post('/auth/gdpr-consent', body: {});
-    _gdprConsentRequired = false;
-    await _loadCurrentUser();
+    _loading = true;
+    notifyListeners();
+    try {
+      final res = await _api.post('/auth/gdpr-consent', body: {});
+      if (res.statusCode != 200) {
+        throw Exception('GDPR consent failed: ${res.statusCode}');
+      }
+      _gdprConsentRequired = false;
+      await _loadCurrentUser();
+    } catch (_) {
+      _loading = false;
+      notifyListeners();
+      rethrow;
+    }
+    _loading = false;
     notifyListeners();
   }
 
@@ -232,6 +245,7 @@ class AuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('cached_user');
     _user = null;
+    _gdprConsentRequired = false;
     notifyListeners();
   }
 }
