@@ -8,6 +8,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
 import '../services/api_client.dart';
+import '../widgets/stale_banner.dart';
 import 'my_equipment_sheet.dart';
 
 // ── Greek day-of-week names ──────────────────────────────────
@@ -310,9 +311,13 @@ class _ServicesScreenState extends State<ServicesScreen>
               tooltip: 'Καταγραφή Περιστατικού',
               child: const Icon(Icons.personal_injury),
             ),
-      body: Stack(
+      body: Column(
         children: [
-          SafeArea(
+          StaleBanner(isStale: svcProv.isStale),
+          Expanded(
+            child: Stack(
+              children: [
+                SafeArea(
             child: RefreshIndicator(
               onRefresh: () => svcProv.fetchMyServices(),
               child: CustomScrollView(
@@ -722,6 +727,9 @@ class _ServicesScreenState extends State<ServicesScreen>
       ],
     ],
       ),
+    ),
+  ],
+),
     );
   }
 

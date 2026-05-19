@@ -1,6 +1,41 @@
+var CACHE_NAME = 'mitroo-shell-v1';
+
+// Shell assets to cache on install.
+// If flutter build web splits main.dart.js into chunks, add them here.
+var SHELL_ASSETS = [
+  '/',
+  '/index.html',
+  '/main.dart.js',
+  '/flutter.js',
+  '/manifest.json',
+  '/icons/Icon-192.png',
+  '/icons/Icon-512.png',
+];
+
+self.addEventListener('install', function(event) {
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll(SHELL_ASSETS);
+    })
+  );
+});
+
+self.addEventListener('activate', function(event) {
+  event.waitUntil(
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(k) { return k !== CACHE_NAME; })
+            .map(function(k) { return caches.delete(k); })
+      );
+    }).then(function() { return self.clients.claim(); })
+  );
+});
+
 // Push notification → show to user
 self.addEventListener('push', function(event) {
-  const data = event.data ? event.data.json() : {};
+  var data = {};
+  try { data = event.data ? event.data.json() : {}; } catch(e) {}
   event.waitUntil(
     self.registration.showNotification(data.title || 'Mitroo', {
       body: data.body || '',
@@ -31,7 +66,16 @@ self.addEventListener('notificationclick', function(event) {
   );
 });
 
-// Fetch passthrough — offline caching added in a future iteration
+// Navigation requests (HTML) → cache-first with network fallback.
+// All other requests pass through unchanged.
 self.addEventListener('fetch', function(event) {
-  // no-op
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      caches.match(event.request).then(function(cached) {
+        return cached || fetch(event.request).catch(function() {
+          return caches.match('/index.html');
+        });
+      })
+    );
+  }
 });

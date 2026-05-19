@@ -7,6 +7,7 @@ import '../providers/item_provider.dart';
 import '../providers/category_provider.dart';
 import '../providers/department_provider.dart';
 import '../services/api_client.dart';
+import '../widgets/stale_banner.dart';
 import 'scanner_screen.dart';
 import 'my_equipment_sheet.dart';
 import 'item_detail_screen.dart';
@@ -1086,6 +1087,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
     final pageEnd = (pageStart + _rowsPerPage).clamp(0, processed.length);
     final pageItems = processed.sublist(pageStart, pageEnd);
     final cats = context.watch<CategoryProvider>().categories;
+    final itemProv = context.watch<ItemProvider>();
 
     return Scaffold(
       body: Stack(
@@ -1093,6 +1095,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
           SafeArea(
             child: Column(
               children: [
+                StaleBanner(isStale: itemProv.isStale),
                 // ── Top bar ──
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),

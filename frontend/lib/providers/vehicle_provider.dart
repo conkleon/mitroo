@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_client.dart';
 
 class VehicleProvider extends ChangeNotifier {
@@ -9,11 +10,13 @@ class VehicleProvider extends ChangeNotifier {
   Map<String, dynamic>? _selected;
   List<dynamic> _logs = [];
   bool _loading = false;
+  bool _isStale = false;
 
   List<dynamic> get vehicles => _vehicles;
   Map<String, dynamic>? get selected => _selected;
   List<dynamic> get logs => _logs;
   bool get loading => _loading;
+  bool get isStale => _isStale;
 
   Future<void> fetchVehicles({int? departmentId}) async {
     _loading = true;
@@ -21,8 +24,20 @@ class VehicleProvider extends ChangeNotifier {
     try {
       final q = departmentId != null ? '?departmentId=$departmentId' : '';
       final res = await _api.get('/vehicles$q');
-      if (res.statusCode == 200) _vehicles = jsonDecode(res.body);
-    } catch (_) {}
+      if (res.statusCode == 200) {
+        _vehicles = jsonDecode(res.body);
+        _isStale = false;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cached_vehicles', res.body);
+      }
+    } catch (_) {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString('cached_vehicles');
+      if (cached != null) {
+        _vehicles = jsonDecode(cached);
+        _isStale = true;
+      }
+    }
     _loading = false;
     notifyListeners();
   }

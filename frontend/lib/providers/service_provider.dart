@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_client.dart';
 
 class ServiceProvider extends ChangeNotifier {
@@ -8,10 +9,12 @@ class ServiceProvider extends ChangeNotifier {
   List<dynamic> _services = [];
   Map<String, dynamic>? _selected;
   bool _loading = false;
+  bool _isStale = false;
 
   List<dynamic> get services => _services;
   Map<String, dynamic>? get selected => _selected;
   bool get loading => _loading;
+  bool get isStale => _isStale;
 
   Future<void> fetchServices({int? departmentId}) async {
     _loading = true;
@@ -39,11 +42,20 @@ class ServiceProvider extends ChangeNotifier {
       final res = await _api.get('/services/my');
       if (res.statusCode == 200) {
         _services = jsonDecode(res.body);
+        _isStale = false;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('cached_services', res.body);
       } else {
         debugPrint('fetchMyServices failed: ${res.statusCode} ${res.body}');
       }
     } catch (e) {
       debugPrint('fetchMyServices error: $e');
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString('cached_services');
+      if (cached != null) {
+        _services = jsonDecode(cached);
+        _isStale = true;
+      }
     }
     _loading = false;
     notifyListeners();

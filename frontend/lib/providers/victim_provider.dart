@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../services/api_client.dart';
+import '../services/offline_store.dart';
 
 class VictimProvider extends ChangeNotifier {
   final _api = ApiClient();
@@ -12,6 +13,9 @@ class VictimProvider extends ChangeNotifier {
   int _currentPage = 1;
   int _limit = 20;
 
+  int _pendingCount = 0;
+  int get pendingCount => _pendingCount;
+
   List<Map<String, dynamic>> get victims => _victims;
   Map<String, dynamic>? get selected => _selected;
   bool get loading => _loading;
@@ -19,6 +23,13 @@ class VictimProvider extends ChangeNotifier {
   int get currentPage => _currentPage;
   int get limit => _limit;
   int get totalPages => _total == 0 ? 0 : (_total / _limit).ceil();
+
+  VictimProvider() {
+    OfflineStore.getPendingVictimReports().then((reports) {
+      _pendingCount = reports.length;
+      notifyListeners();
+    });
+  }
 
   Future<void> fetchVictims({
     int? serviceId,
@@ -85,9 +96,44 @@ class VictimProvider extends ChangeNotifier {
         return null;
       }
       return jsonDecode(res.body)['error'] ?? 'Αποτυχία';
-    } catch (e) {
-      return 'Σφάλμα: $e';
+    } catch (_) {
+      await OfflineStore.saveVictimReport(data);
+      _pendingCount++;
+      notifyListeners();
+      return null;
     }
+  }
+
+  Future<void> syncOutbox() async {
+    final pending = await OfflineStore.getPendingVictimReports();
+    if (pending.isEmpty) return;
+
+    final remaining = <Map<String, dynamic>>[];
+    bool anySynced = false;
+    bool networkFailed = false;
+
+    for (final report in pending) {
+      if (networkFailed) {
+        remaining.add(report);
+        continue;
+      }
+      try {
+        final res = await _api.post('/victims', body: report);
+        if (res.statusCode == 201) {
+          anySynced = true;
+        } else {
+          remaining.add(report);
+        }
+      } catch (_) {
+        networkFailed = true;
+        remaining.add(report);
+      }
+    }
+
+    await OfflineStore.setPendingVictimReports(remaining);
+    _pendingCount = remaining.length;
+    notifyListeners();
+    if (anySynced) await fetchVictims();
   }
 
   Future<String?> updateVictim(int id, Map<String, dynamic> data) async {
