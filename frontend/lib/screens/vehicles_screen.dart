@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/department_provider.dart';
 import '../providers/vehicle_provider.dart';
+import '../widgets/stale_banner.dart';
 import '../services/api_client.dart';
 import '../helpers/vehicle_helpers.dart';
 import 'vehicle_detail_screen.dart';
@@ -175,8 +176,12 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
           }).toList();
 
     return Scaffold(
-      body: SafeArea(
-        child: RefreshIndicator(
+      body: Column(
+        children: [
+          StaleBanner(isStale: prov.isStale),
+          Expanded(
+            child: SafeArea(
+              child: RefreshIndicator(
           onRefresh: () => prov.fetchVehicles(),
           child: CustomScrollView(
             slivers: [
@@ -422,6 +427,9 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
           ),
         ),
       ),
+    ),
+  ],
+),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateDialog,
         child: const Icon(Icons.add),
