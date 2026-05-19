@@ -95,7 +95,8 @@
       "PowerShell($env:path = $env:path; Set-Location D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend; npx prisma generate 2>&1)",
       "PowerShell(Add-MpPreference *)",
       "Skill(code-review:code-review)",
-      "Bash(not exist *)"
+      "Bash(not exist *)",
+      "Bash(Select-Object -First 50)"
     ]
   }
 }

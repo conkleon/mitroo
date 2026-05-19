@@ -401,15 +401,18 @@ router.delete("/:id/unenroll", async (req: Request, res: Response) => {
   const serviceId = Number(req.params.id);
   const record = await prisma.userService.findUnique({
     where: { userId_serviceId: { userId, serviceId } },
+    select: { externalApplicationId: true, status: true },
   });
   if (!record) { res.status(404).json({ error: "Δεν βρέθηκε εγγραφή" }); return; }
   if (record.status !== "requested") {
     res.status(409).json({ error: "Η αίτηση έχει ήδη διεκπεραιωθεί" });
     return;
   }
-  writeBackUnenroll(serviceId, userId).catch((e) => console.error("[service] writeBackUnenroll error:", e));
+  const externalApplicationId = record.externalApplicationId ?? null;
   await prisma.userService.delete({ where: { userId_serviceId: { userId, serviceId } } });
   res.status(204).end();
+  writeBackUnenroll(serviceId, userId, externalApplicationId)
+    .catch((e) => console.error("[service] writeBackUnenroll error:", e));
 });
 
 // ── PATCH /api/services/:sid/users/:uid/status ──
@@ -480,18 +483,31 @@ router.patch("/:sid/users/:uid/hours", async (req: Request, res: Response) => {
 
 // ── DELETE /api/services/:sid/users/:uid ────────
 router.delete("/:sid/users/:uid", async (req: Request, res: Response) => {
-  const service = await prisma.service.findUnique({ where: { id: Number(req.params.sid) }, select: { departmentId: true } });
+  const sid = Number(req.params.sid);
+  const uid = Number(req.params.uid);
+  console.log(`[service] DELETE /${sid}/users/${uid} — admin removing user from service`);
+  const service = await prisma.service.findUnique({ where: { id: sid }, select: { departmentId: true } });
   if (!service) { res.status(404).json({ error: "Service not found" }); return; }
   if (!await requireServiceAdmin(req, res, service.departmentId)) return;
+
+  // Read externalApplicationId before deleting the record
+  const record = await prisma.userService.findUnique({
+    where: { userId_serviceId: { userId: uid, serviceId: sid } },
+    select: { externalApplicationId: true },
+  });
+  const externalApplicationId = record?.externalApplicationId ?? null;
+  console.log(`[service] DELETE /${sid}/users/${uid} — externalApplicationId from DB = ${externalApplicationId}`);
+
   await prisma.userService.delete({
-    where: { userId_serviceId: { userId: Number(req.params.uid), serviceId: Number(req.params.sid) } },
+    where: { userId_serviceId: { userId: uid, serviceId: sid } },
   });
   res.status(204).end();
+  console.log(`[service] DELETE /${sid}/users/${uid} — record deleted, firing writeBackRejection`);
 
   // Fire-and-forget: sync removal to original Mitroo + cleanup chat
-  writeBackRejection(Number(req.params.sid), Number(req.params.uid))
+  writeBackRejection(sid, uid, externalApplicationId)
     .catch((e) => console.error("[service] writeBackRejection error:", e));
-  removeFromMissionChat(Number(req.params.sid), Number(req.params.uid))
+  removeFromMissionChat(sid, uid)
     .catch((e) => console.error("[service] removeFromMissionChat error:", e));
 });
 

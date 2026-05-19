@@ -815,17 +815,20 @@ export class MitrooClient {
       shift_application_id: String(applicationId),
       rccrmtk: this.csrfToken,
     });
+    console.log(`[mitrooClient] cancelMemberShiftApplication: POST /ajaxcommon/member_shift_application_cancel body=${body.toString()}`);
     const res = await this._post("/ajaxcommon/member_shift_application_cancel", body);
     const text = await res.text();
+    console.log(`[mitrooClient] cancelMemberShiftApplication: HTTP ${res.status} response body=${text.slice(0, 500)}`);
     try {
       const json = JSON.parse(text);
       if (json.status !== 1) {
-        throw new Error(`cancelMemberShiftApplication: server returned status ${json.status}`);
+        throw new Error(`cancelMemberShiftApplication: server returned status ${json.status}, title=${json.title ?? "N/A"}`);
       }
     } catch (e) {
       if (!res.ok) {
         throw new Error(`cancelMemberShiftApplication failed (${res.status}): ${text.slice(0, 200)}`);
       }
+      throw e;
     }
   }
 

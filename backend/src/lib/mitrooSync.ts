@@ -961,12 +961,20 @@ export async function writeBackHoursUpdate(serviceId: number, userId: number): P
   }
 }
 
-export async function writeBackRejection(serviceId: number, userId: number): Promise<void> {
+export async function writeBackRejection(
+  serviceId: number,
+  userId: number,
+  knownApplicationId?: number | null,
+): Promise<void> {
+  console.log(`[mitrooSync] writeBackRejection: START serviceId=${serviceId} userId=${userId} knownApplicationId=${knownApplicationId}`);
+
   const [userService, service, user] = await Promise.all([
-    prisma.userService.findUnique({
-      where: { userId_serviceId: { userId, serviceId } },
-      select: { externalApplicationId: true },
-    }),
+    knownApplicationId !== undefined
+      ? null
+      : prisma.userService.findUnique({
+          where: { userId_serviceId: { userId, serviceId } },
+          select: { externalApplicationId: true },
+        }),
     prisma.service.findUnique({
       where: { id: serviceId },
       select: { externalShiftId: true, departmentId: true },
@@ -977,35 +985,59 @@ export async function writeBackRejection(serviceId: number, userId: number): Pro
     }),
   ]);
 
-  if (!service?.externalShiftId) return;
+  console.log(`[mitrooSync] writeBackRejection: DB lookup — userService=${JSON.stringify(userService)} service=${JSON.stringify(service)} user.externalId=${user?.externalId}`);
+
+  if (!service?.externalShiftId) {
+    console.log(`[mitrooSync] writeBackRejection: SKIP — service has no externalShiftId`);
+    return;
+  }
 
   const config = await prisma.departmentSyncConfig.findUnique({
     where: { departmentId: service.departmentId },
     select: { syncEnabled: true },
   });
-  if (!config?.syncEnabled) return;
+  console.log(`[mitrooSync] writeBackRejection: deptId=${service.departmentId} syncEnabled=${config?.syncEnabled}`);
+
+  if (!config?.syncEnabled) {
+    console.log(`[mitrooSync] writeBackRejection: SKIP — sync not enabled for department ${service.departmentId}`);
+    return;
+  }
 
   try {
     const client = await getClient(service.departmentId);
 
-    let applicationId = userService?.externalApplicationId ?? null;
+    let applicationId = knownApplicationId ?? userService?.externalApplicationId ?? null;
+    console.log(`[mitrooSync] writeBackRejection: applicationId after known/DB lookup = ${applicationId}`);
 
     if (!applicationId && user?.externalId) {
+      console.log(`[mitrooSync] writeBackRejection: falling back to findApplicationIdForMember(shiftId=${service.externalShiftId}, externalUserId=${user.externalId})`);
       applicationId = await client.findApplicationIdForMember(
         service.externalShiftId,
         user.externalId,
       );
+      console.log(`[mitrooSync] writeBackRejection: fallback result = ${applicationId}`);
     }
 
     if (!applicationId) {
-      console.log(`[mitrooSync] writeBackRejection: no application found for user ${userId} — skipping`);
+      console.log(`[mitrooSync] writeBackRejection: SKIP — no application found for user ${userId} (known=${knownApplicationId}, db=${userService?.externalApplicationId}, userExternalId=${user?.externalId})`);
       return;
     }
 
-    await client.cancelMemberShiftApplication(applicationId);
-    console.log(`[mitrooSync] writeBackRejection: cancelled application ${applicationId} for user ${userId}`);
+    console.log(`[mitrooSync] writeBackRejection: calling cancelShiftApplication(${applicationId})`);
+    await client.cancelShiftApplication(applicationId);
+
+    // Clear externalApplicationId so a subsequent acceptance creates a fresh application
+    // rather than trying to approve the now-cancelled one.
+    // The UserService record may already be deleted (admin removal), so use updateMany
+    // with a service+user filter instead of the compound unique.
+    await prisma.userService.updateMany({
+      where: { userId, serviceId, externalApplicationId: applicationId },
+      data: { externalApplicationId: null },
+    });
+
+    console.log(`[mitrooSync] writeBackRejection: SUCCESS — cancelled application ${applicationId} for user ${userId}`);
   } catch (e) {
-    console.error(`[mitrooSync] writeBackRejection failed for service ${serviceId}, user ${userId}:`, e);
+    console.error(`[mitrooSync] writeBackRejection: FAILED for service ${serviceId}, user ${userId}:`, e);
   }
 }
 
@@ -1041,14 +1073,36 @@ export async function writeBackEnrollmentRequest(serviceId: number, userId: numb
   try {
     const client = await getClient(service.departmentId);
 
-    const applicationId = await client.addUserToShift(service.externalShiftId, user.externalId);
+    let applicationId: number | null = null;
+
+    try {
+      applicationId = await client.addUserToShift(service.externalShiftId, user.externalId);
+    } catch (addErr) {
+      // addUserToShift may throw when the user already has an application for this shift.
+      // Fall through to try finding the existing application ID.
+      console.warn(
+        `[mitrooSync] writeBackEnrollmentRequest: addUserToShift threw, will try findApplicationIdForMember: ${addErr}`,
+      );
+    }
+
+    if (!applicationId) {
+      applicationId = await client.findApplicationIdForMember(
+        service.externalShiftId,
+        user.externalId,
+      );
+    }
+
     if (applicationId) {
       await prisma.userService.update({
         where: { userId_serviceId: { userId, serviceId } },
         data: { externalApplicationId: applicationId },
       });
       console.log(
-        `[mitrooSync] writeBackEnrollmentRequest: created application ${applicationId} for user ${userId} in shift ${service.externalShiftId}`,
+        `[mitrooSync] writeBackEnrollmentRequest: saved application ${applicationId} for user ${userId} in shift ${service.externalShiftId}`,
+      );
+    } else {
+      console.log(
+        `[mitrooSync] writeBackEnrollmentRequest: could not create or find application for user ${userId} in shift ${service.externalShiftId}`,
       );
     }
   } catch (e) {
@@ -1061,12 +1115,18 @@ export async function writeBackEnrollmentRequest(serviceId: number, userId: numb
 
 // ── Write-back: unenroll → cancel member shift application ────────────────
 
-export async function writeBackUnenroll(serviceId: number, userId: number): Promise<void> {
+export async function writeBackUnenroll(
+  serviceId: number,
+  userId: number,
+  knownApplicationId?: number | null,
+): Promise<void> {
   const [userService, service, user] = await Promise.all([
-    prisma.userService.findUnique({
-      where: { userId_serviceId: { userId, serviceId } },
-      select: { externalApplicationId: true },
-    }),
+    knownApplicationId !== undefined
+      ? null
+      : prisma.userService.findUnique({
+          where: { userId_serviceId: { userId, serviceId } },
+          select: { externalApplicationId: true },
+        }),
     prisma.service.findUnique({
       where: { id: serviceId },
       select: { externalShiftId: true, departmentId: true },
@@ -1091,7 +1151,7 @@ export async function writeBackUnenroll(serviceId: number, userId: number): Prom
   try {
     const client = await getClient(service.departmentId);
 
-    let applicationId = userService?.externalApplicationId ?? null;
+    let applicationId = knownApplicationId ?? userService?.externalApplicationId ?? null;
 
     if (!applicationId && user?.externalId) {
       applicationId = await client.findApplicationIdForMember(
@@ -1105,7 +1165,7 @@ export async function writeBackUnenroll(serviceId: number, userId: number): Prom
       return;
     }
 
-    await client.cancelMemberShiftApplication(applicationId);
+    await client.cancelShiftApplication(applicationId);
     console.log(
       `[mitrooSync] writeBackUnenroll: cancelled application ${applicationId} for user ${userId}`,
     );

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/service_provider.dart';
+import '../providers/sync_provider.dart';
 import '../services/api_client.dart';
 
 /// Lists all services for a given department using a card layout.
@@ -26,6 +27,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   final _api = ApiClient();
   List<dynamic> _services = [];
   bool _loading = true;
+  bool _isSyncing = false;
   String _search = '';
   int? _selectedSpecId;
   final Set<int> _expandedCards = {};
@@ -34,14 +36,14 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    _syncAndLoad();
   }
 
   @override
   void didUpdateWidget(covariant ManageServicesScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.departmentId != widget.departmentId) {
-      _load();
+      _syncAndLoad();
     }
   }
 
@@ -60,6 +62,18 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       }
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _syncAndLoad() async {
+    setState(() => _isSyncing = true);
+    try {
+      final sync = context.read<SyncProvider>();
+      await sync.syncServices(widget.departmentId);
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _isSyncing = false);
+      _load();
+    }
   }
 
   List<dynamic> get _filtered {
@@ -662,9 +676,15 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
             label: const Text('Προηγούμενες'),
           ),
           IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _load,
-              tooltip: 'Ανανέωση'),
+              icon: _isSyncing
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh),
+              onPressed: _isSyncing ? null : _syncAndLoad,
+              tooltip: _isSyncing ? 'Συγχρονισμός...' : 'Ανανέωση'),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -797,7 +817,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                             color: Color(0xFF6B7280))),
                                   ]))
                           : RefreshIndicator(
-                              onRefresh: _load,
+                              onRefresh: _syncAndLoad,
                               child: _buildList(filtered),
                             ),
                     ),
