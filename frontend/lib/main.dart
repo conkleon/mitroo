@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'config/router.dart';
 import 'providers/auth_provider.dart';
 import 'providers/category_provider.dart';
+import 'providers/connectivity_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/department_provider.dart';
 import 'providers/item_provider.dart';
@@ -78,6 +79,7 @@ class _MitrooAppState extends State<MitrooApp> {
 
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider.value(value: _pwaProvider),
         ChangeNotifierProvider(create: (_) => DepartmentProvider()),
