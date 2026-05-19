@@ -36,6 +36,7 @@ type AuthUser = {
   rank: string;
   isAdmin: boolean;
   imagePath: string | null;
+  gdprAcceptedAt: Date | null;
 };
 
 const selectAuthUser = {
@@ -47,6 +48,7 @@ const selectAuthUser = {
   rank: true,
   isAdmin: true,
   imagePath: true,
+  gdprAcceptedAt: true,
 };
 
 async function syncProfileSpecializations(
@@ -293,7 +295,11 @@ router.post("/login", async (req: Request, res: Response) => {
         }
       }
 
-      res.json({ user: externalResult.user, token });
+      res.json({
+        user: externalResult.user,
+        token,
+        gdprConsentRequired: !externalResult.user!.gdprAcceptedAt,
+      });
       syncUserApplications(externalResult.user!.id).catch((e) =>
         console.error("[auth] syncUserApplications error:", e),
       );
@@ -321,6 +327,7 @@ router.post("/login", async (req: Request, res: Response) => {
         imagePath: user.imagePath,
       },
       token,
+      gdprConsentRequired: !user.gdprAcceptedAt,
     });
 
     // Fire-and-forget: sync profile data (externalId, department, phones, birthdate,
@@ -425,6 +432,7 @@ router.get("/me", authenticate, async (req: Request, res: Response) => {
       rank: true,
       isAdmin: true, imagePath: true, phonePrimary: true, phoneSecondary: true,
       birthDate: true, address: true, extraInfo: true,
+      gdprAcceptedAt: true,
       departments: { include: { department: { select: { id: true, name: true } } } },
       specializations: {
         include: { specialization: { select: { id: true, name: true, description: true } } },
@@ -436,6 +444,15 @@ router.get("/me", authenticate, async (req: Request, res: Response) => {
     return;
   }
   res.json(user);
+});
+
+// ── POST /api/auth/gdpr-consent ─────────────────
+router.post("/gdpr-consent", authenticate, async (req: Request, res: Response) => {
+  await prisma.user.update({
+    where: { id: req.user!.userId },
+    data: { gdprAcceptedAt: new Date() },
+  });
+  res.json({ ok: true });
 });
 
 // ── GET /api/auth/me/profile ────────────────────
