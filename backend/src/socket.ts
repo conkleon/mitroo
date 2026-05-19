@@ -234,6 +234,8 @@ async function notifyOfflineMembers(
       sendPushToUser(m.userId, {
         title: chatName,
         body: `${senderName}: ${truncated}`,
+        tag: `chat-${chat.id}`,
+        route: `/chat/${chat.id}`,
         data: { chatId: chat.id, type: "chat_message" },
       }).catch(() => {});
     }

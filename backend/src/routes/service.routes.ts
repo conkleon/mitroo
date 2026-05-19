@@ -380,6 +380,8 @@ router.post("/:id/enroll", async (req: Request, res: Response) => {
             sendPushToUser(admin.user.id, {
               title: "Νέα αίτηση",
               body: `${applicantName} αιτήθηκε για "${service.name}"`,
+              tag: `service-enroll-${serviceId}`,
+              route: `/services/${serviceId}`,
             }).catch(() => {}),
           ];
         }));
@@ -444,6 +446,8 @@ router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
       sendPushToUser(record.user.id, {
         title: "Ενημέρωση αίτησης",
         body: `Η αίτησή σας για "${service.name}" ${status === "accepted" ? "εγκρίθηκε" : "απορρίφθηκε"}`,
+        tag: `service-status-${sid}`,
+        route: `/services/${sid}`,
       }).catch(() => {});
     }
   } catch (err: any) {

@@ -9,7 +9,7 @@ webpush.setVapidDetails(
 
 export async function sendPushToUser(
   userId: number,
-  payload: { title: string; body: string; data?: Record<string, unknown> }
+  payload: { title: string; body: string; tag?: string; route?: string; data?: Record<string, unknown> }
 ): Promise<void> {
   const subscriptions = await prisma.pushSubscription.findMany({ where: { userId } });
   await Promise.all(
