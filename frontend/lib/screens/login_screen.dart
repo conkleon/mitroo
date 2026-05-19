@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import '../providers/auth_provider.dart';
 import '../providers/pwa_provider.dart';
+import '../widgets/gdpr_consent_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _passwordCtrl = TextEditingController();
   String? _error;
   bool _obscurePassword = true;
+  bool _gdprDialogScheduled = false;
 
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
@@ -50,7 +52,13 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _error = err);
       return;
     }
-    _maybeShowInstallDialog();
+    if (!mounted) return;
+    if (auth.gdprConsentRequired) {
+      _gdprDialogScheduled = true;
+      _showGdprDialog();
+    } else {
+      _maybeShowInstallDialog();
+    }
   }
 
   void _maybeShowInstallDialog() {
@@ -82,9 +90,39 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
+  void _showGdprDialog() {
+    if (!mounted) return;
+    final auth = context.read<AuthProvider>();
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => GdprConsentDialog(
+        onDecline: () {
+          Navigator.of(ctx).pop();
+          auth.declineGdpr();
+        },
+        onAccept: () async {
+          Navigator.of(ctx).pop();
+          _maybeShowInstallDialog();
+          try {
+            await auth.acceptGdpr();
+          } catch (_) {
+            if (mounted) {
+              setState(() => _gdprDialogScheduled = false);
+            }
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    if (auth.gdprConsentRequired && !auth.loading && !_gdprDialogScheduled) {
+      _gdprDialogScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showGdprDialog());
+    }
     final width = MediaQuery.of(context).size.width;
     final isWide = width >= 900;
 
