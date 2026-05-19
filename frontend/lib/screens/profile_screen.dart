@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
+import '../services/pwa_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -174,6 +175,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     currentCtrl.dispose();
     newCtrl.dispose();
     confirmCtrl.dispose();
+  }
+
+  Future<void> _forceUpdate() async {
+    final updated = await PwaService.forceUpdate();
+    if (!mounted) return;
+    if (!updated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Δεν υπάρχουν νέες ενημερώσεις')),
+      );
+    }
   }
 
   @override
@@ -358,6 +369,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: _showChangePasswordDialog,
               icon: const Icon(Icons.lock_outline, size: 18),
               label: const Text('Αλλαγή Κωδικού'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // ── Force update ──
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _forceUpdate,
+              icon: const Icon(Icons.system_update_rounded, size: 18),
+              label: const Text('Έλεγχος για ενημερώσεις'),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
