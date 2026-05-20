@@ -93,21 +93,12 @@ self.addEventListener('fetch', function(event) {
 
   var path = url.pathname;
 
-  // Navigation: stale-while-revalidate — serve cached index.html immediately for
-  // instant startup, update cache in the background. New version active on next reload.
+  // Navigation: cache-first for instant offline startup, network fallback when not cached.
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.open(CACHE_NAME).then(function(cache) {
-        return cache.match('/index.html').then(function(cached) {
-          var networkFetch = fetch(event.request).then(function(response) {
-            if (response && response.ok) {
-              cache.put('/index.html', response.clone());
-            }
-            return response;
-          }).catch(function() {
-            return cached;
-          });
-          return cached || networkFetch;
+      caches.match('/index.html').then(function(cached) {
+        return cached || fetch(event.request).catch(function() {
+          return caches.match('/index.html');
         });
       })
     );
