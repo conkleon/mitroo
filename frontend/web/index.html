@@ -47,6 +47,44 @@
     window.addEventListener('appinstalled', function() {
       window._appInstalled = true;
     });
+
+    // Check for and apply a SW update. Resolves true if an update was found
+    // (page will reload automatically), false if already up-to-date.
+    window._checkAndUpdate = function() {
+      return new Promise(function(resolve) {
+        if (!('serviceWorker' in navigator)) { resolve(false); return; }
+        navigator.serviceWorker.ready.then(function(reg) {
+          // Case 1: new SW already installed and waiting → activate it now
+          if (reg.waiting) {
+            reg.waiting.postMessage('skipWaiting');
+            navigator.serviceWorker.addEventListener('controllerchange', function() {
+              window.location.reload();
+            }, { once: true });
+            resolve(true);
+            return;
+          }
+          // Case 2: no waiting SW → fetch latest and listen for install
+          var resolved = false;
+          reg.addEventListener('updatefound', function() {
+            var newWorker = reg.installing;
+            if (!newWorker) return;
+            newWorker.addEventListener('statechange', function() {
+              if (newWorker.state === 'installed' && !resolved) {
+                resolved = true;
+                newWorker.postMessage('skipWaiting');
+                navigator.serviceWorker.addEventListener('controllerchange', function() {
+                  window.location.reload();
+                }, { once: true });
+                resolve(true);
+              }
+            });
+          }, { once: true });
+          reg.update().then(function() {
+            setTimeout(function() { if (!resolved) resolve(false); }, 3000);
+          }).catch(function() { if (!resolved) resolve(false); });
+        }).catch(function() { resolve(false); });
+      });
+    };
   </script>
 </body>
 </html>

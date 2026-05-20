@@ -55,42 +55,16 @@ class PwaService {
   }
 
   /// Force-update the service worker and reload.
-  /// Returns false when no update is waiting (already up-to-date).
+  /// Returns false when no update is available (already up-to-date).
+  /// When true is returned the page will reload automatically via JS.
   static Future<bool> forceUpdate() async {
     if (!kIsWeb) return false;
     try {
-      final sw = _swContainer;
-      if (sw == null) return false;
-
-      // First check the cached sw registration from index.html
-      final cached = _jsWindow.getProperty<JSObject?>('_swReg'.toJS);
-      JSObject? reg;
-      if (cached != null) {
-        reg = cached;
-      } else {
-        final ready = sw.getProperty<JSPromise>('ready'.toJS);
-        reg = await ready.toDart as JSObject?;
-      }
-      if (reg == null) return false;
-
-      final waiting = reg.getProperty<JSObject?>('waiting'.toJS);
-      if (waiting == null) {
-        // Try to update — this finds a new version if one exists
-        await reg.callMethod<JSPromise>('update'.toJS).toDart;
-        // wait a tick for the new worker to reach 'waiting' state
-        await Future.delayed(const Duration(milliseconds: 300));
-        final waiting2 = reg.getProperty<JSObject?>('waiting'.toJS);
-        if (waiting2 == null) return false;
-        waiting2.callMethod('postMessage'.toJS, 'skipWaiting'.toJS);
-      } else {
-        waiting.callMethod('postMessage'.toJS, 'skipWaiting'.toJS);
-      }
-
-      // Reload after the new SW activates
-      await Future.delayed(const Duration(milliseconds: 200));
-      _jsWindow.getProperty<JSObject?>('location'.toJS)
-          ?.callMethod('reload'.toJS);
-      return true;
+      final result = await _jsWindow
+          .callMethod<JSPromise>('_checkAndUpdate'.toJS)
+          .toDart;
+      if (result == null) return false;
+      return (result as JSBoolean).toDart;
     } catch (_) {
       return false;
     }
