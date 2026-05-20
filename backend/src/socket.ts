@@ -229,16 +229,25 @@ async function notifyOfflineMembers(
       ? message.text.slice(0, 97) + "..."
       : message.text;
 
+  let offlineCount = 0;
   for (const m of allMembers) {
     if (!onlineUserIds.has(m.userId)) {
+      offlineCount++;
       sendPushToUser(m.userId, {
         title: chatName,
         body: `${senderName}: ${truncated}`,
         tag: `chat-${chat.id}`,
         route: `/chat/${chat.id}`,
         data: { chatId: chat.id, type: "chat_message" },
-      }).catch(() => {});
+      }).catch((err) => {
+        console.error(`[push] failed to send to user ${m.userId}:`, err?.message ?? err);
+      });
     }
+  }
+  if (offlineCount > 0) {
+    console.log(`[push] chat ${chat.id}: ${onlineUserIds.size} online, ${offlineCount} offline → push sent`);
+  } else {
+    console.log(`[push] chat ${chat.id}: all ${allMembers.length} members online, no push needed`);
   }
 }
 

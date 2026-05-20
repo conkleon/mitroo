@@ -31,8 +31,8 @@ class PwaService {
     _listenForSwMessages();
     try {
       await _subscribeAndRegister();
-    } catch (_) {
-      // Push subscription is best-effort
+    } catch (e) {
+      debugPrint('[pwa] push subscription threw: $e');
     }
   }
 
@@ -140,15 +140,24 @@ class PwaService {
 
   static Future<void> _subscribeAndRegister() async {
     final sw = _swContainer;
-    if (sw == null) return;
+    if (sw == null) {
+      debugPrint('[pwa] serviceWorker container not available');
+      return;
+    }
 
     // 1. Fetch VAPID public key from backend
     final keyRes = await ApiClient().get('/push/vapid-public-key');
-    if (keyRes.statusCode != 200) return;
+    if (keyRes.statusCode != 200) {
+      debugPrint('[pwa] VAPID key fetch failed: ${keyRes.statusCode}');
+      return;
+    }
     final vapidPublicKey =
         (jsonDecode(keyRes.body) as Map<String, dynamic>)['publicKey']
             as String?;
-    if (vapidPublicKey == null) return;
+    if (vapidPublicKey == null) {
+      debugPrint('[pwa] VAPID public key missing in response');
+      return;
+    }
 
     // 2. Get the SW registration (set by index.html on load)
     JSObject reg;
@@ -162,7 +171,10 @@ class PwaService {
 
     // 3. Subscribe via PushManager
     final pushManager = reg.getProperty<JSObject?>('pushManager'.toJS);
-    if (pushManager == null) return;
+    if (pushManager == null) {
+      debugPrint('[pwa] pushManager not available on SW registration');
+      return;
+    }
 
     final options = JSObject();
     options.setProperty('userVisibleOnly'.toJS, true.toJS);
@@ -178,19 +190,29 @@ class PwaService {
         sub.callMethod('toJSON'.toJS) as JSObject;
     final endpoint =
         subJson.getProperty<JSString?>('endpoint'.toJS)?.toDart;
-    if (endpoint == null) return;
+    if (endpoint == null) {
+      debugPrint('[pwa] push subscription endpoint missing');
+      return;
+    }
     final keys = subJson.getProperty<JSObject?>('keys'.toJS);
-    if (keys == null) return;
+    if (keys == null) {
+      debugPrint('[pwa] push subscription keys missing');
+      return;
+    }
     final p256dh = keys.getProperty<JSString?>('p256dh'.toJS)?.toDart;
     final auth = keys.getProperty<JSString?>('auth'.toJS)?.toDart;
-    if (p256dh == null || auth == null) return;
+    if (p256dh == null || auth == null) {
+      debugPrint('[pwa] push subscription key fields missing');
+      return;
+    }
 
     // 5. POST subscription to backend
-    await ApiClient().post('/push/subscribe', body: {
+    final subRes = await ApiClient().post('/push/subscribe', body: {
       'endpoint': endpoint,
       'p256dhKey': p256dh,
       'authKey': auth,
     });
+    debugPrint('[pwa] push subscription registered: ${subRes.statusCode}');
   }
 
   static JSUint8Array _urlBase64ToUint8Array(String base64String) {
