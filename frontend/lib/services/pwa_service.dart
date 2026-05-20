@@ -171,15 +171,12 @@ class PwaService {
       return;
     }
 
-    // 2. Get the SW registration (set by index.html on load)
-    JSObject reg;
-    final cached = _jsWindow.getProperty<JSObject?>('_swReg'.toJS);
-    if (cached != null) {
-      reg = cached;
-    } else {
-      final ready = sw.getProperty<JSPromise>('ready'.toJS);
-      reg = await ready.toDart as JSObject;
-    }
+    // 2. Get the SW registration — must use navigator.serviceWorker.ready so we
+    // only proceed once the SW is in activated state. window._swReg is set by
+    // index.html after register() resolves, but register() resolves before the
+    // SW activates, so using it directly causes "no active Service Worker".
+    final ready = sw.getProperty<JSPromise>('ready'.toJS);
+    final JSObject reg = await ready.toDart as JSObject;
 
     // 3. Subscribe via PushManager — unsubscribe any stale subscription first
     final pushManager = reg.getProperty<JSObject?>('pushManager'.toJS);
