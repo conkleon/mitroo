@@ -247,6 +247,7 @@ class _VictimsScreenState extends State<VictimsScreen> {
                           ),
                         )
                       : ListView.builder(
+                          padding: const EdgeInsets.only(top: 8),
                           itemCount: allRows.length,
                           itemBuilder: (context, i) {
                             final v = allRows[i];
@@ -268,65 +269,66 @@ class _VictimsScreenState extends State<VictimsScreen> {
                                 onTap: isPending ? null : () => context.push('/victims/${v['id']}'),
                                 child: IntrinsicHeight(
                                   child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    Container(width: 4, color: borderColor),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                if (isPending) ...[
-                                                  const Icon(Icons.cloud_off_outlined,
-                                                      size: 14, color: Color(0xFFD97706)),
-                                                  const SizedBox(width: 4),
-                                                ],
-                                                Expanded(
-                                                  child: Text(
-                                                    name,
-                                                    style: TextStyle(
-                                                      fontWeight: FontWeight.w700,
-                                                      fontSize: 14,
-                                                      color: isPending
-                                                          ? const Color(0xFF92400E)
-                                                          : const Color(0xFF1F2937),
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Container(width: 4, color: borderColor),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  if (isPending) ...[
+                                                    const Icon(Icons.cloud_off_outlined,
+                                                        size: 14, color: Color(0xFFD97706)),
+                                                    const SizedBox(width: 4),
+                                                  ],
+                                                  Expanded(
+                                                    child: Text(
+                                                      name,
+                                                      style: TextStyle(
+                                                        fontWeight: FontWeight.w700,
+                                                        fontSize: 14,
+                                                        color: isPending
+                                                            ? const Color(0xFF92400E)
+                                                            : const Color(0xFF1F2937),
+                                                      ),
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
-                                                    overflow: TextOverflow.ellipsis,
                                                   ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              isPending
-                                                  ? 'Εκκρεμεί'
-                                                  : [
-                                                      _formatDate(v['createdAt'] as String?),
-                                                      if (chiefComplaint.isNotEmpty) chiefComplaint,
-                                                    ].join(' · '),
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: isPending
-                                                    ? const Color(0xFFD97706)
-                                                    : const Color(0xFF6B7280),
+                                                ],
                                               ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                isPending
+                                                    ? 'Εκκρεμεί'
+                                                    : [
+                                                        _formatDate(v['createdAt'] as String?),
+                                                        if (chiefComplaint.isNotEmpty) chiefComplaint,
+                                                      ].join(' · '),
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: isPending
+                                                      ? const Color(0xFFD97706)
+                                                      : const Color(0xFF6B7280),
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const Padding(
-                                      padding: EdgeInsets.only(right: 12),
-                                      child: Icon(Icons.chevron_right,
-                                          size: 18, color: Color(0xFF9CA3AF)),
-                                    ),
-                                  ],
-                                ),
+                                      if (!isPending)
+                                        const Padding(
+                                          padding: EdgeInsets.only(right: 12),
+                                          child: Icon(Icons.chevron_right,
+                                              size: 18, color: Color(0xFF9CA3AF)),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             );
