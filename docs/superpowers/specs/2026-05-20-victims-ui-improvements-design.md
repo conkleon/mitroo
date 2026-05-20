@@ -14,7 +14,7 @@ The current `DataTable` requires horizontal scrolling on mobile, making the list
 Replace the `DataTable` and its `SingleChildScrollView(scrollDirection: Axis.horizontal)` wrapper with a `ListView.builder` of cards. Each card has a 4 px coloured left border communicating status at a glance.
 
 ### Card design
-- **Container**: white background, `BorderRadius.circular(10)`, subtle box shadow matching the rest of the app
+- **Container**: Flutter `Card` widget (consistent with existing cards in `victim_detail_screen.dart`), clipped with `BorderRadius.circular(10)`
 - **Left border**: 4 px wide, colour determined by status:
   - Amber `#D97706` — pending (unsynced, `_isPending == true`)
   - Blue `#2563EB` — open (synced, not finalized)
