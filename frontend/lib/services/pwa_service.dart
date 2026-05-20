@@ -169,11 +169,27 @@ class PwaService {
       reg = await ready.toDart as JSObject;
     }
 
-    // 3. Subscribe via PushManager
+    // 3. Subscribe via PushManager — unsubscribe any stale subscription first
     final pushManager = reg.getProperty<JSObject?>('pushManager'.toJS);
     if (pushManager == null) {
       debugPrint('[pwa] pushManager not available on SW registration');
       return;
+    }
+
+    // Check for and remove any existing subscription (could be stale)
+    final existingSub = await pushManager
+        .callMethod<JSPromise>('getSubscription'.toJS)
+        .toDart as JSObject?;
+    if (existingSub != null) {
+      String? oldEndpoint;
+      try {
+        final oldJson = existingSub.callMethod('toJSON'.toJS) as JSObject?;
+        oldEndpoint = oldJson
+            ?.getProperty<JSString?>('endpoint'.toJS)
+            ?.toDart;
+      } catch (_) {}
+      await existingSub.callMethod<JSPromise>('unsubscribe'.toJS).toDart;
+      debugPrint('[pwa] unsubscribed stale push subscription: $oldEndpoint');
     }
 
     final options = JSObject();
@@ -206,7 +222,8 @@ class PwaService {
       return;
     }
 
-    // 5. POST subscription to backend
+    // 5. POST subscription to backend (ensure token is loaded first)
+    await ApiClient().loadToken();
     final subRes = await ApiClient().post('/push/subscribe', body: {
       'endpoint': endpoint,
       'p256dhKey': p256dh,
