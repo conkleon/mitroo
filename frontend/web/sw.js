@@ -24,8 +24,13 @@ var FLUTTER_CACHES = ['flutter-app-cache', 'flutter-temp-cache', 'flutter-app-ma
 
 var PRESERVED_CACHES = FLUTTER_CACHES.concat([CACHE_NAME, IMAGE_CACHE, API_CACHE]);
 
+self.addEventListener('message', function(event) {
+  if (event.data === 'skipWaiting') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('install', function(event) {
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
       return cache.addAll(SHELL_ASSETS).catch(function(err) {
