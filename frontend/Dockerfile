@@ -6,7 +6,7 @@ COPY pubspec.yaml pubspec.lock* ./
 RUN flutter pub get
 
 COPY . .
-RUN flutter build web --release --web-renderer html --dart-define=API_BASE_URL=/api
+RUN flutter build web --release --dart-define=API_BASE_URL=/api
 
 # ── Serve with nginx ─────────────────────────────
 FROM nginx:alpine AS runner
