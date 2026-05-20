@@ -147,6 +147,26 @@ self.addEventListener('fetch', function(event) {
     return;
   }
 
+  // All other static assets (fonts, wasm, icons, Flutter chunks, etc.):
+  // network-first on first load so they get cached, then serve from cache offline.
+  if (!path.startsWith('/api/') && !path.startsWith('/uploads/')) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(function(cache) {
+        return cache.match(event.request).then(function(cached) {
+          return fetch(event.request).then(function(response) {
+            if (response && response.ok) {
+              cache.put(event.request, response.clone());
+            }
+            return response;
+          }).catch(function() {
+            return cached;
+          });
+        });
+      })
+    );
+    return;
+  }
+
   // API GET: network-first, cache fallback for offline, capped at MAX_API_CACHE_ENTRIES
   if (path.startsWith('/api/')) {
     event.respondWith(
