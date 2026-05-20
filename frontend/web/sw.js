@@ -126,7 +126,7 @@ self.addEventListener('fetch', function(event) {
               cache.put(event.request, response.clone());
             }
             return response;
-          });
+          }).catch(function() {});
           return cached || networkFetch;
         });
       })
