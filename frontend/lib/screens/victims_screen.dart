@@ -76,9 +76,6 @@ class _VictimsScreenState extends State<VictimsScreen> {
     final victims = provider.victims;
     final pendingVictims = provider.pendingVictims;
     final allRows = [...pendingVictims, ...victims];
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         heroTag: 'victims_fab',
@@ -249,104 +246,91 @@ class _VictimsScreenState extends State<VictimsScreen> {
                             ),
                           ),
                         )
-                      : SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minWidth: MediaQuery.of(context).size.width,
-                            ),
-                            child: DataTable(
-                              headingRowColor: WidgetStateProperty.all(
-                                const Color(0xFFF9FAFB),
-                              ),
-                              dataRowColor: WidgetStateProperty.resolveWith((states) {
-                                if (states.contains(WidgetState.selected)) {
-                                  return cs.primary.withAlpha(15);
-                                }
-                                return null;
-                              }),
-                              columnSpacing: 24,
-                              horizontalMargin: 16,
-                              columns: [
-                                DataColumn(
-                                  label: Text('Όνομα',
-                                      style: tt.labelLarge?.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF374151))),
-                                ),
-                                DataColumn(
-                                  label: Text('Ημ/νία Καταγραφής',
-                                      style: tt.labelLarge?.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF374151))),
-                                ),
-                                DataColumn(
-                                  label: Text('Κύριο Σύμπτωμα',
-                                      style: tt.labelLarge?.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF374151))),
-                                ),
-                              ],
-                              rows: allRows.asMap().entries.map((entry) {
-                                final i = entry.key;
-                                final v = entry.value;
-                                final name = v['name'] as String? ?? 'Άγνωστο';
-                                final chiefComplaint = v['chiefComplaint'] as String? ?? '';
-                                final isPending = v['_isPending'] == true;
-                                return DataRow(
-                                  color: WidgetStateProperty.all(
-                                    isPending
-                                        ? const Color(0xFFFEFCE8)
-                                        : i.isEven
-                                            ? const Color(0xFFF9FAFB)
-                                            : null,
-                                  ),
-                                  onSelectChanged: isPending
-                                      ? null
-                                      : (_) => context.push('/victims/${v['id']}'),
-                                  cells: [
-                                    DataCell(
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (isPending) ...[
-                                            const Icon(Icons.cloud_off_outlined, size: 16, color: Color(0xFFD97706)),
-                                            const SizedBox(width: 6),
+                      : ListView.builder(
+                          itemCount: allRows.length,
+                          itemBuilder: (context, i) {
+                            final v = allRows[i];
+                            final name = v['name'] as String? ?? 'Άγνωστο';
+                            final chiefComplaint = v['chiefComplaint'] as String? ?? '';
+                            final isPending = v['_isPending'] == true;
+                            final isFinalized = v['isFinalized'] == true;
+
+                            final borderColor = isPending
+                                ? const Color(0xFFD97706)
+                                : isFinalized
+                                    ? const Color(0xFF9CA3AF)
+                                    : const Color(0xFF2563EB);
+
+                            return Card(
+                              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                              clipBehavior: Clip.antiAlias,
+                              child: InkWell(
+                                onTap: isPending ? null : () => context.push('/victims/${v['id']}'),
+                                child: IntrinsicHeight(
+                                  child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Container(width: 4, color: borderColor),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                if (isPending) ...[
+                                                  const Icon(Icons.cloud_off_outlined,
+                                                      size: 14, color: Color(0xFFD97706)),
+                                                  const SizedBox(width: 4),
+                                                ],
+                                                Expanded(
+                                                  child: Text(
+                                                    name,
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.w700,
+                                                      fontSize: 14,
+                                                      color: isPending
+                                                          ? const Color(0xFF92400E)
+                                                          : const Color(0xFF1F2937),
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              isPending
+                                                  ? 'Εκκρεμεί'
+                                                  : [
+                                                      _formatDate(v['createdAt'] as String?),
+                                                      if (chiefComplaint.isNotEmpty) chiefComplaint,
+                                                    ].join(' · '),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: isPending
+                                                    ? const Color(0xFFD97706)
+                                                    : const Color(0xFF6B7280),
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ],
-                                          Flexible(
-                                            child: Text(name,
-                                                style: TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    color: isPending ? const Color(0xFF92400E) : const Color(0xFF1F2937)),
-                                                overflow: TextOverflow.ellipsis),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    DataCell(
-                                      isPending
-                                          ? const Text('Εκκρεμεί',
-                                              style: TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.w500, fontSize: 13))
-                                          : Text(_formatDate(v['createdAt'] as String?),
-                                              style: const TextStyle(color: Color(0xFF6B7280))),
-                                    ),
-                                    DataCell(
-                                      Text(
-                                        chiefComplaint.isNotEmpty ? chiefComplaint : '—',
-                                        style: TextStyle(
-                                          color: chiefComplaint.isNotEmpty
-                                              ? const Color(0xFF374151)
-                                              : const Color(0xFF9CA3AF),
                                         ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.only(right: 12),
+                                      child: Icon(Icons.chevron_right,
+                                          size: 18, color: Color(0xFF9CA3AF)),
                                     ),
                                   ],
-                                );
-                              }).toList(),
-                            ),
-                          ),
+                                ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
             ),
 
