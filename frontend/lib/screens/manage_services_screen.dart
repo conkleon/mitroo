@@ -29,7 +29,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   bool _loading = true;
   bool _isSyncing = false;
   String _search = '';
-  int? _selectedSpecId;
+  int? _selectedServiceTypeId;
   bool _filtersExpanded = false;
   final Set<int> _expandedCards = {};
   List<dynamic> _deptMembers = [];
@@ -113,13 +113,10 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       }).toList();
     }
 
-    // Filter by specialization via service type chain
-    if (_selectedSpecId != null) {
+    if (_selectedServiceTypeId != null) {
       list = list.where((s) {
         final st = s['serviceType'] as Map<String, dynamic>?;
-        if (st == null) return false;
-        final specs2 = st['specializations'] as List<dynamic>? ?? [];
-        return specs2.any((row) => row['specialization']?['id'] == _selectedSpecId);
+        return st?['id'] == _selectedServiceTypeId;
       }).toList();
     }
 
@@ -644,30 +641,23 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     if (mounted) _load();
   }
 
-  /// Collect all unique specializations from loaded services via serviceType chain
-  List<Map<String, dynamic>> get _allSpecs {
+  List<Map<String, dynamic>> get _allServiceTypes {
     final seen = <int>{};
-    final specs = <Map<String, dynamic>>[];
+    final types = <Map<String, dynamic>>[];
     for (final svc in _services) {
       final st = svc['serviceType'] as Map<String, dynamic>?;
       if (st == null) continue;
-      final specs2 = st['specializations'] as List<dynamic>? ?? [];
-      for (final row in specs2) {
-        final spec = row['specialization'] as Map<String, dynamic>?;
-        if (spec != null) {
-          final id = spec['id'] as int;
-          if (seen.add(id)) specs.add(spec);
-        }
-      }
+      final id = st['id'] as int?;
+      if (id != null && seen.add(id)) types.add(st);
     }
-    return specs;
+    return types;
   }
 
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final filtered = _filtered;
-    final specs = _allSpecs;
+    final serviceTypes = _allServiceTypes;
 
     return Scaffold(
       appBar: AppBar(
@@ -736,7 +726,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                               onChanged: (v) => setState(() => _search = v),
                             ),
                           ),
-                          if (specs.isNotEmpty) ...[
+                          if (serviceTypes.isNotEmpty) ...[
                             const SizedBox(width: 8),
                             GestureDetector(
                               onTap: () => setState(
@@ -748,13 +738,13 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                     const EdgeInsets.symmetric(horizontal: 12),
                                 decoration: BoxDecoration(
                                   color: (_filtersExpanded ||
-                                          _selectedSpecId != null)
+                                          _selectedServiceTypeId != null)
                                       ? const Color(0xFF7C3AED).withAlpha(15)
                                       : const Color(0xFFF3F4F6),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: (_filtersExpanded ||
-                                            _selectedSpecId != null)
+                                            _selectedServiceTypeId != null)
                                         ? const Color(0xFF7C3AED).withAlpha(60)
                                         : const Color(0xFFE5E7EB),
                                   ),
@@ -766,20 +756,20 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                       Icons.tune_rounded,
                                       size: 16,
                                       color: (_filtersExpanded ||
-                                              _selectedSpecId != null)
+                                              _selectedServiceTypeId != null)
                                           ? const Color(0xFF7C3AED)
                                           : const Color(0xFF6B7280),
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      _selectedSpecId != null
+                                      _selectedServiceTypeId != null
                                           ? 'Φίλτρα (1)'
                                           : 'Φίλτρα',
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
                                         color: (_filtersExpanded ||
-                                                _selectedSpecId != null)
+                                                _selectedServiceTypeId != null)
                                             ? const Color(0xFF7C3AED)
                                             : const Color(0xFF6B7280),
                                       ),
@@ -793,11 +783,11 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                       ),
                     ),
 
-                    // ── Specialization filter bubbles (collapsible) ──
+                    // ── Service type filter bubbles (collapsible) ──
                     AnimatedSize(
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeInOut,
-                      child: (_filtersExpanded && specs.isNotEmpty)
+                      child: (_filtersExpanded && serviceTypes.isNotEmpty)
                           ? Padding(
                               padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 4),
                               child: SizedBox(
@@ -806,15 +796,15 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                   scrollDirection: Axis.horizontal,
                                   separatorBuilder: (_, __) =>
                                       const SizedBox(width: 8),
-                                  itemCount: specs.length,
+                                  itemCount: serviceTypes.length,
                                   itemBuilder: (context, i) {
-                                    final spec = specs[i];
-                                    final specId = spec['id'] as int;
-                                    final selected = _selectedSpecId == specId;
+                                    final st = serviceTypes[i];
+                                    final stId = st['id'] as int;
+                                    final selected = _selectedServiceTypeId == stId;
                                     return GestureDetector(
                                       onTap: () => setState(() {
-                                        _selectedSpecId =
-                                            selected ? null : specId;
+                                        _selectedServiceTypeId =
+                                            selected ? null : stId;
                                       }),
                                       child: AnimatedContainer(
                                         duration:
@@ -834,7 +824,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
                                           ),
                                         ),
                                         child: Text(
-                                          spec['name'] ?? '',
+                                          st['name'] ?? '',
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w600,
