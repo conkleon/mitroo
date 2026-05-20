@@ -75,7 +75,7 @@ void main() {
     expect(find.text('Διαγραφή'), findsOneWidget);
   });
 
-  testWidgets('bottom bar uses Wrap not Row', (tester) async {
+  testWidgets('Delete button is visible on a narrow screen', (tester) async {
     final victim = {
       'id': 1,
       'name': 'Νικολάου Μαρία',
@@ -85,13 +85,18 @@ void main() {
       'treatments': <dynamic>[],
     };
 
+    // Simulate a narrow mobile screen (320 logical pixels wide)
+    await tester.binding.setSurfaceSize(const Size(320, 600));
+
     await tester.pumpWidget(_buildSubject(
       victimProvider: _FakeVictimProvider(victim),
       authProvider: _FakeAuthProvider(),
     ));
     await tester.pump();
 
-    // Wrap replaces Row in the bottom bar — verify Wrap is present
-    expect(find.byType(Wrap), findsWidgets);
+    // All three buttons must be visible even on a narrow screen
+    expect(find.text('Επεξεργασία'), findsOneWidget);
+    expect(find.text('Οριστικοποίηση'), findsOneWidget);
+    expect(find.text('Διαγραφή'), findsOneWidget);
   });
 }

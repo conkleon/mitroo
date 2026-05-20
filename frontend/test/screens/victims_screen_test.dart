@@ -71,7 +71,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(DataTable), findsNothing);
-    expect(find.byType(Card), findsWidgets);
+    expect(find.byType(Card), findsNWidgets(1));
     expect(find.text('Νικολάου Μαρία'), findsOneWidget);
   });
 
