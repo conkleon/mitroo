@@ -3,16 +3,28 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/department_provider.dart';
+import '../services/pwa_service.dart';
 import '../widgets/offline_banner.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 
 /// Responsive shell: bottom nav on mobile, sidebar on desktop (≥900px).
-class ShellScreen extends StatelessWidget {
+class ShellScreen extends StatefulWidget {
   final Widget child;
   const ShellScreen({super.key, required this.child});
 
   static const double _kDesktopBreakpoint = 900;
+
+  @override
+  State<ShellScreen> createState() => _ShellScreenState();
+}
+
+class _ShellScreenState extends State<ShellScreen> {
+  @override
+  void initState() {
+    super.initState();
+    PwaService.subscribeForPush();
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -22,16 +22,28 @@ class PwaService {
   static Stream<String> get navigateStream => _navigateCtrl.stream;
 
   static PwaProvider? _provider;
+  static bool _pushSubscribed = false;
 
-  /// Called once from main.dart after the first frame on web only.
+  /// Called early (before login) to set up message listener and install state.
+  /// Does NOT request notification permission — that waits until after login.
   static Future<void> init(PwaProvider provider) async {
     if (!kIsWeb) return;
     _provider = provider;
     await _checkInstallState();
     _listenForSwMessages();
+  }
+
+  /// Call after the user has logged in to request notification permission
+  /// and register for push. Safe to call multiple times — subsequent calls
+  /// are no-ops.
+  static Future<void> subscribeForPush() async {
+    if (!kIsWeb) return;
+    if (_pushSubscribed) return;
+    _pushSubscribed = true;
     try {
       await _subscribeAndRegister();
     } catch (e) {
+      _pushSubscribed = false; // allow retry next time
       debugPrint('[pwa] push subscription threw: $e');
     }
   }
