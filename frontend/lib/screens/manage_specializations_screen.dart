@@ -252,6 +252,7 @@ class _ManageSpecializationsScreenState
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'manage_specializations_fab',
         onPressed: _showCreateDialog,
         icon: const Icon(Icons.add),
         label: const Text('Νέα Ειδίκευση'),

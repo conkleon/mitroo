@@ -126,6 +126,7 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'manage_departments_fab',
         onPressed: _showCreateDialog,
         icon: const Icon(Icons.add),
         label: const Text('Νέο Τμήμα'),

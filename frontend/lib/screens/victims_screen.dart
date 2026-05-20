@@ -81,6 +81,7 @@ class _VictimsScreenState extends State<VictimsScreen> {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
+        heroTag: 'victims_fab',
         onPressed: () => context.push('/victims/create'),
         child: const Icon(Icons.add),
       ),

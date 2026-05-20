@@ -271,6 +271,7 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'manage_service_types_fab',
         onPressed: _showCreateDialog,
         child: const Icon(Icons.add),
       ),

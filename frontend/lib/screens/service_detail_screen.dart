@@ -500,6 +500,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     return Scaffold(
       floatingActionButton: !canManage && !isAcceptedMember
           ? FloatingActionButton.extended(
+              heroTag: 'service_detail_fab',
               onPressed: isPending ? _unenrollSelf : _enrollSelf,
               backgroundColor: isPending ? Color(0xFFEA580C) : sColor,
               foregroundColor: Colors.white,

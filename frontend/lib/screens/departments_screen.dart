@@ -259,6 +259,7 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'departments_fab',
         onPressed: _showCreateDialog,
         child: const Icon(Icons.add),
       ),

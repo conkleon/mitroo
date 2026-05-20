@@ -439,6 +439,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       ),
       floatingActionButton: (auth.isAdmin || auth.isDepartmentMissionAdmin) && !_selectionMode
           ? FloatingActionButton.extended(
+              heroTag: 'manage_users_fab',
               onPressed: _showCreateDialog,
               icon: const Icon(Icons.person_add),
               label: const Text('Νέος Χρήστης'),

@@ -30,6 +30,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   bool _isSyncing = false;
   String _search = '';
   int? _selectedSpecId;
+  bool _filtersExpanded = false;
   final Set<int> _expandedCards = {};
   List<dynamic> _deptMembers = [];
 
@@ -37,7 +38,9 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   void initState() {
     super.initState();
     _load();
-    _backgroundSync();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _backgroundSync();
+    });
   }
 
   @override
@@ -45,7 +48,9 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.departmentId != widget.departmentId) {
       _load();
-      _backgroundSync();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _backgroundSync();
+      });
     }
   }
 
@@ -693,6 +698,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'manage_services_fab',
         onPressed: () async {
           await context.push(
               '/admin/services/create?departmentId=${widget.departmentId}&departmentName=${Uri.encodeComponent(widget.departmentName)}');
@@ -710,101 +716,142 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
 
                 return Column(
                   children: [
-                    // ── Search bar ──
+                    // ── Search bar + Filter button ──
                     Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: hPad, vertical: 4),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Αναζήτηση υπηρεσιών...',
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                        ),
-                        onChanged: (v) => setState(() => _search = v),
+                      padding: EdgeInsets.fromLTRB(hPad, 4, hPad, 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              decoration: InputDecoration(
+                                hintText: 'Αναζήτηση υπηρεσιών...',
+                                prefixIcon: const Icon(Icons.search),
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
+                              ),
+                              onChanged: (v) => setState(() => _search = v),
+                            ),
+                          ),
+                          if (specs.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => setState(
+                                  () => _filtersExpanded = !_filtersExpanded),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                height: 48,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: (_filtersExpanded ||
+                                          _selectedSpecId != null)
+                                      ? const Color(0xFF7C3AED).withAlpha(15)
+                                      : const Color(0xFFF3F4F6),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: (_filtersExpanded ||
+                                            _selectedSpecId != null)
+                                        ? const Color(0xFF7C3AED).withAlpha(60)
+                                        : const Color(0xFFE5E7EB),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.tune_rounded,
+                                      size: 16,
+                                      color: (_filtersExpanded ||
+                                              _selectedSpecId != null)
+                                          ? const Color(0xFF7C3AED)
+                                          : const Color(0xFF6B7280),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      _selectedSpecId != null
+                                          ? 'Φίλτρα (1)'
+                                          : 'Φίλτρα',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: (_filtersExpanded ||
+                                                _selectedSpecId != null)
+                                            ? const Color(0xFF7C3AED)
+                                            : const Color(0xFF6B7280),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
 
-                    // ── Specialization filter chips ──
-                    if (specs.isNotEmpty)
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 0),
-                        child: SizedBox(
-                          height: 36,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: specs.length + 1,
-                            separatorBuilder: (_, __) => const SizedBox(width: 6),
-                            itemBuilder: (context, i) {
-                              if (i == 0) {
-                                final selected = _selectedSpecId == null;
-                                return FilterChip(
-                                  avatar: Icon(Icons.apps,
-                                      size: 14,
-                                      color: selected
-                                          ? const Color(0xFF7C3AED)
-                                          : const Color(0xFF6B7280)),
-                                  label: const Text('Όλες'),
-                                  selected: selected,
-                                  onSelected: (_) =>
-                                      setState(() => _selectedSpecId = null),
-                                  selectedColor: const Color(0xFFF5F3FF),
-                                  checkmarkColor: const Color(0xFF7C3AED),
-                                  side: BorderSide(
-                                      color: selected
-                                          ? const Color(0xFFDDD6FE)
-                                          : Color(0xFFD1D5DB)),
-                                  visualDensity: VisualDensity.compact,
-                                  labelStyle: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight:
-                                        selected ? FontWeight.w600 : FontWeight.w400,
-                                    color: selected
-                                        ? const Color(0xFF6D28D9)
-                                        : const Color(0xFF6B7280),
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                );
-                              }
-                              final spec = specs[i - 1];
-                              final specId = spec['id'] as int;
-                              final selected = _selectedSpecId == specId;
-                              return FilterChip(
-                                avatar: Icon(Icons.workspace_premium,
-                                    size: 14,
-                                    color: selected
-                                        ? const Color(0xFF7C3AED)
-                                        : const Color(0xFF6B7280)),
-                                label: Text(spec['name'] ?? ''),
-                                selected: selected,
-                                onSelected: (_) => setState(() =>
-                                    _selectedSpecId = selected ? null : specId),
-                                selectedColor: const Color(0xFFF5F3FF),
-                                checkmarkColor: const Color(0xFF7C3AED),
-                                side: BorderSide(
-                                    color: selected
-                                        ? const Color(0xFFDDD6FE)
-                                        : Color(0xFFD1D5DB)),
-                                visualDensity: VisualDensity.compact,
-                                labelStyle: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight:
-                                      selected ? FontWeight.w600 : FontWeight.w400,
-                                  color: selected
-                                      ? const Color(0xFF6D28D9)
-                                      : const Color(0xFF6B7280),
+                    // ── Specialization filter bubbles (collapsible) ──
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      child: (_filtersExpanded && specs.isNotEmpty)
+                          ? Padding(
+                              padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 4),
+                              child: SizedBox(
+                                height: 40,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 8),
+                                  itemCount: specs.length,
+                                  itemBuilder: (context, i) {
+                                    final spec = specs[i];
+                                    final specId = spec['id'] as int;
+                                    final selected = _selectedSpecId == specId;
+                                    return GestureDetector(
+                                      onTap: () => setState(() {
+                                        _selectedSpecId =
+                                            selected ? null : specId;
+                                      }),
+                                      child: AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 200),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 14, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: selected
+                                              ? const Color(0xFF7C3AED)
+                                              : Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: selected
+                                                ? const Color(0xFF7C3AED)
+                                                : const Color(0xFFD1D5DB),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          spec['name'] ?? '',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: selected
+                                                ? Colors.white
+                                                : const Color(0xFF374151),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
-                                padding: EdgeInsets.zero,
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 8),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                    const SizedBox(height: 4),
 
                     // ── Service rows ──
                     Expanded(

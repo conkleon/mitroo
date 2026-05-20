@@ -302,11 +302,13 @@ class _ServicesScreenState extends State<ServicesScreen>
           ? RotationTransition(
               turns: _fabRotate,
               child: FloatingActionButton(
+                heroTag: 'services_fab',
                 onPressed: _toggleFab,
                 child: const Icon(Icons.add),
               ),
             )
           : FloatingActionButton(
+              heroTag: 'services_fab',
               onPressed: () => context.push('/victims/create'),
               tooltip: 'Καταγραφή Περιστατικού',
               child: const Icon(Icons.personal_injury),
@@ -2257,6 +2259,7 @@ class _SpeedDialItemRow extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         FloatingActionButton.small(
+          heroTag: null,
           onPressed: onTap,
           child: Icon(icon),
         ),

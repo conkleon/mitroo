@@ -431,6 +431,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
   ],
 ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'vehicles_fab',
         onPressed: _showCreateDialog,
         child: const Icon(Icons.add),
       ),
