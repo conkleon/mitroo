@@ -456,7 +456,9 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
           ? SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Row(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     if (canEdit)
                       FilledButton.icon(
@@ -464,22 +466,19 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
                         icon: const Icon(Icons.edit, size: 18),
                         label: const Text('Επεξεργασία'),
                       ),
-                    if (canEdit) const SizedBox(width: 8),
                     if (canFinalize)
                       FilledButton.icon(
                         onPressed: _showFinalizeDialog,
                         icon: const Icon(Icons.lock_outline, size: 18),
                         label: const Text('Οριστικοποίηση'),
                       ),
-                    if (canDelete) ...[
-                      const SizedBox(width: 8),
+                    if (canDelete)
                       FilledButton.icon(
                         style: FilledButton.styleFrom(backgroundColor: const Color(0xFFB91C1C)),
                         onPressed: _showDeleteDialog,
                         icon: const Icon(Icons.delete_outline, size: 18),
                         label: const Text('Διαγραφή'),
                       ),
-                    ],
                   ],
                 ),
               ),
