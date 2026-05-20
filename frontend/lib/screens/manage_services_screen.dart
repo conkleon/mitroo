@@ -36,14 +36,16 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
   @override
   void initState() {
     super.initState();
-    _syncAndLoad();
+    _load();
+    _backgroundSync();
   }
 
   @override
   void didUpdateWidget(covariant ManageServicesScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.departmentId != widget.departmentId) {
-      _syncAndLoad();
+      _load();
+      _backgroundSync();
     }
   }
 
@@ -64,8 +66,9 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     if (mounted) setState(() => _loading = false);
   }
 
-  Future<void> _syncAndLoad() async {
-    setState(() => _isSyncing = true);
+  Future<void> _backgroundSync() async {
+    if (_isSyncing) return;
+    if (mounted) setState(() => _isSyncing = true);
     try {
       final sync = context.read<SyncProvider>();
       await sync.syncServices(widget.departmentId);
@@ -75,6 +78,8 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
       _load();
     }
   }
+
+  Future<void> _syncAndLoad() => _backgroundSync();
 
   List<dynamic> get _filtered {
     var list = List<dynamic>.from(_services);
