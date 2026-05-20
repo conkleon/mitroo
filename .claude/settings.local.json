@@ -96,7 +96,10 @@
       "PowerShell(Add-MpPreference *)",
       "Skill(code-review:code-review)",
       "Bash(not exist *)",
-      "Bash(Select-Object -First 50)"
+      "Bash(Select-Object -First 50)",
+      "Bash(Select-String -Pattern \"\\(FAIL|PASS|Error|Exception|✓|✗|══\\)\")",
+      "Bash(Select-Object -First 40)",
+      "Bash(flutter --version)"
     ]
   }
 }

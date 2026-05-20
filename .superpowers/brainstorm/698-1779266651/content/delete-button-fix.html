@@ -1,0 +1,81 @@
+<h2>Victim Details — Delete Button Fix</h2>
+<p class="subtitle">Current issue: on narrow screens all 3 bottom buttons (Edit / Finalize / Delete) overflow and Delete gets cut off. Pick a fix.</p>
+
+<div class="cards">
+
+  <!-- Option A: Wrap -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 12px; background: #f9fafb;">
+      <div style="max-width:280px; margin:0 auto;">
+        <div style="background:white; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.1); padding:10px 12px;">
+          <div style="font-size:10px; color:#9CA3AF; margin-bottom:6px; text-align:center;">bottom bar (narrow screen)</div>
+          <!-- First row: Edit + Finalize -->
+          <div style="display:flex; gap:8px; margin-bottom:8px;">
+            <div style="flex:1; background:#1D4ED8; color:white; border-radius:8px; padding:8px 10px; font-size:12px; font-weight:600; display:flex; align-items:center; gap:4px; justify-content:center;">✏️ Επεξεργασία</div>
+            <div style="flex:1; background:#1D4ED8; color:white; border-radius:8px; padding:8px 10px; font-size:12px; font-weight:600; display:flex; align-items:center; gap:4px; justify-content:center;">🔒 Οριστικοποίηση</div>
+          </div>
+          <!-- Second row: Delete (left-aligned) -->
+          <div style="display:flex;">
+            <div style="background:#B91C1C; color:white; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:600; display:flex; align-items:center; gap:4px;">🗑 Διαγραφή</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Wrap to second line</h3>
+      <p>Buttons use a <code>Wrap</code> widget. Edit + Finalize share the first row; Delete wraps to a second row when space is tight. Always visible, no overflow.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Delete in AppBar overflow menu -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 12px; background: #f9fafb;">
+      <div style="max-width:280px; margin:0 auto;">
+        <!-- AppBar -->
+        <div style="background:#1D4ED8; border-radius:10px 10px 0 0; padding:10px 12px; display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="color:white; font-size:16px;">←</span>
+            <span style="color:white; font-size:13px; font-weight:600;">Νικολάου Μαρία</span>
+          </div>
+          <div style="color:white; font-size:18px; font-weight:700;">⋮</div>
+        </div>
+        <!-- Body placeholder -->
+        <div style="background:white; padding:10px 12px; min-height:60px; display:flex; align-items:center; justify-content:center;">
+          <span style="font-size:11px; color:#9CA3AF;">... content ...</span>
+        </div>
+        <!-- Bottom bar: only Edit + Finalize -->
+        <div style="background:white; border-radius:0 0 10px 10px; box-shadow:0 1px 4px rgba(0,0,0,0.1); padding:10px 12px; display:flex; gap:8px;">
+          <div style="flex:1; background:#1D4ED8; color:white; border-radius:8px; padding:8px 10px; font-size:12px; font-weight:600; display:flex; align-items:center; gap:4px; justify-content:center;">✏️ Επεξεργασία</div>
+          <div style="flex:1; background:#1D4ED8; color:white; border-radius:8px; padding:8px 10px; font-size:12px; font-weight:600; display:flex; align-items:center; gap:4px; justify-content:center;">🔒 Οριστικοποίηση</div>
+        </div>
+        <!-- Overflow menu hint -->
+        <div style="text-align:center; margin-top:6px; font-size:10px; color:#6B7280;">⋮ menu → Διαγραφή (admin only)</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Delete in AppBar ⋮ menu</h3>
+      <p>Delete moves to an overflow menu in the AppBar. Bottom bar only has primary actions. Keeps Delete accessible but out of the way—good since it's admin-only.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Icon-only delete button -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 12px; background: #f9fafb;">
+      <div style="max-width:280px; margin:0 auto;">
+        <div style="background:white; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,0.1); padding:10px 12px;">
+          <div style="font-size:10px; color:#9CA3AF; margin-bottom:6px; text-align:center;">bottom bar (any screen width)</div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <div style="flex:1; background:#1D4ED8; color:white; border-radius:8px; padding:8px 10px; font-size:12px; font-weight:600; display:flex; align-items:center; gap:4px; justify-content:center;">✏️ Επεξεργασία</div>
+            <div style="flex:1; background:#1D4ED8; color:white; border-radius:8px; padding:8px 10px; font-size:12px; font-weight:600; display:flex; align-items:center; gap:4px; justify-content:center;">🔒 Οριστικοποίηση</div>
+            <div style="background:#FEE2E2; border:1.5px solid #B91C1C; color:#B91C1C; border-radius:8px; padding:8px 10px; font-size:16px; display:flex; align-items:center; justify-content:center;">🗑</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Icon-only delete button</h3>
+      <p>Delete is a compact icon-only button (outlined, red). Fits on one row with the others. A confirmation dialog still appears on tap—no accidental deletes.</p>
+    </div>
+  </div>
+
+</div>
