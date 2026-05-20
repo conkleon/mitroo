@@ -40,7 +40,7 @@ class _ShellScreenState extends State<ShellScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= _kDesktopBreakpoint;
+        final isWide = constraints.maxWidth >= ShellScreen._kDesktopBreakpoint;
 
         if (isWide) {
           return Scaffold(
@@ -59,7 +59,7 @@ class _ShellScreenState extends State<ShellScreen> {
                   child: Column(
                     children: [
                       const OfflineBanner(),
-                      Expanded(child: child),
+                      Expanded(child: widget.child),
                     ],
                   ),
                 ),
@@ -73,7 +73,7 @@ class _ShellScreenState extends State<ShellScreen> {
           body: Column(
             children: [
               const OfflineBanner(),
-              Expanded(child: child),
+              Expanded(child: widget.child),
             ],
           ),
           bottomNavigationBar: Container(
