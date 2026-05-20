@@ -138,7 +138,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
   Future<void> _fetchAvailableItems([String query = '']) async {
     setState(() => _searchLoading = true);
     try {
-      final params = <String>['available=true', 'limit=5'];
+      final params = <String>['available=true', 'limit=200'];
       if (query.isNotEmpty) {
         params.add('search=${Uri.encodeComponent(query)}');
       }
