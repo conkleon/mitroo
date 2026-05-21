@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/sync_provider.dart';
 import '../services/api_client.dart';
 
 /// Shows past (completed) services with search, specialization filter,
@@ -28,6 +29,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
   List<dynamic> _services = [];
   List<dynamic> _specializations = [];
   bool _loading = true;
+  bool _isSyncing = false;
   String _search = '';
   int? _selectedSpecId;
   DateTime? _fromDate;
@@ -39,6 +41,22 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     super.initState();
     _loadSpecs();
     _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _backgroundSync();
+    });
+  }
+
+  Future<void> _backgroundSync() async {
+    if (_isSyncing) return;
+    if (mounted) setState(() => _isSyncing = true);
+    try {
+      final sync = context.read<SyncProvider>();
+      await sync.syncServices(widget.departmentId);
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _isSyncing = false);
+      _load();
+    }
   }
 
   Future<void> _loadSpecs() async {
@@ -220,6 +238,19 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          IconButton(
+            icon: _isSyncing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: _isSyncing ? null : _backgroundSync,
+            tooltip: _isSyncing ? 'Συγχρονισμός...' : 'Ανανέωση',
+          ),
+        ],
       ),
       body: SafeArea(
         child: LayoutBuilder(builder: (context, box) {

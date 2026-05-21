@@ -58,7 +58,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     setState(() => _loading = true);
     try {
       final results = await Future.wait([
-        _api.get('/services?departmentId=${widget.departmentId}&includeEnrollments=true'),
+        _api.get('/services?departmentId=${widget.departmentId}&includeEnrollments=true&lifecycleStatus=active&includeExpired=true'),
         _api.get('/departments/${widget.departmentId}/members'),
       ]);
       if (results[0].statusCode == 200 && mounted) {
@@ -88,16 +88,6 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
 
   List<dynamic> get _filtered {
     var list = List<dynamic>.from(_services);
-    final now = DateTime.now();
-
-    // Show only current & upcoming (exclude past)
-    list = list.where((s) {
-      final end = DateTime.tryParse(s['endAt'] ?? '');
-      if (end != null && end.isBefore(now)) return false;
-      final start = DateTime.tryParse(s['startAt'] ?? '');
-      if (end == null && start != null && start.isBefore(now)) return false;
-      return true;
-    }).toList();
 
     if (_search.isNotEmpty) {
       final q = _search.toLowerCase();
