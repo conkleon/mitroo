@@ -101,6 +101,84 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     return DateFormat('dd/MM/yy HH:mm').format(dt.toLocal());
   }
 
+  Future<void> _closeService(int serviceId, String name) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Κλείσιμο Υπηρεσίας'),
+        content: Text('Κλείσιμο "$name"; Θα σταλούν ειδοποιήσεις σε όλους τους αποδεκτούς εθελοντές.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ακύρωση')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFD97706)),
+            child: const Text('Κλείσιμο'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    final res = await _api.post('/services/$serviceId/close', body: {});
+    if (!mounted) return;
+    if (res.statusCode == 200) {
+      setState(() {
+        for (final s in _services) {
+          if ((s as Map)['id'] == serviceId) {
+            s['lifecycleStatus'] = 'closed';
+            break;
+          }
+        }
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Αποτυχία κλεισίματος υπηρεσίας')),
+      );
+    }
+  }
+
+  Future<void> _completeService(int serviceId, String name) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ολοκλήρωση Υπηρεσίας'),
+        content: Text('Ολοκλήρωση "$name"; Όλοι οι αποδεκτοί εθελοντές θα σημανθούν ως παρόντες.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Ακύρωση')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF059669)),
+            child: const Text('Ολοκλήρωση'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    final res = await _api.post('/services/$serviceId/complete', body: {});
+    if (!mounted) return;
+    if (res.statusCode == 200) {
+      setState(() {
+        for (final s in _services) {
+          if ((s as Map)['id'] == serviceId) {
+            s['lifecycleStatus'] = 'completed';
+            final us = s['userServices'];
+            if (us is List) {
+              for (final u in us) {
+                if ((u as Map)['status'] == 'accepted') u['status'] = 'participated';
+              }
+            }
+            break;
+          }
+        }
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Αποτυχία ολοκλήρωσης υπηρεσίας')),
+      );
+    }
+  }
+
   Future<void> _pickDate({required bool isFrom}) async {
     final initial = isFrom ? _fromDate : _toDate;
     final picked = await showDatePicker(
@@ -371,6 +449,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     final endW = isWide ? 88.0 : 72.0;
     final countW = isWide ? 64.0 : 54.0;
     const chevronW = 24.0;
+    const lifecycleW = 90.0;
     final nameFlex = isWide ? 3 : 2;
 
     Widget hdrText(String t) => Text(t,
@@ -413,6 +492,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                   ),
                 SizedBox(width: countW, child: hdrText('Αιτήσεις')),
                 const SizedBox(width: chevronW),
+                const SizedBox(width: lifecycleW),
               ],
             ),
           ),
@@ -428,6 +508,46 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
               separatorBuilder: (_, __) => const SizedBox(height: 3),
               itemBuilder: (ctx, i) {
                 final svc = services[i] as Map<String, dynamic>;
+                final auth = context.read<AuthProvider>();
+                final lc = (svc['lifecycleStatus'] ?? 'active') as String;
+                final svcId = svc['id'] as int;
+                final svcName = (svc['name'] ?? '') as String;
+                Widget lifecycleWidget;
+                if (!auth.isAdmin) {
+                  lifecycleWidget = const SizedBox.shrink();
+                } else if (lc == 'active') {
+                  lifecycleWidget = SizedBox(
+                    width: lifecycleW,
+                    child: TextButton(
+                      onPressed: () => _closeService(svcId, svcName),
+                      style: TextButton.styleFrom(foregroundColor: const Color(0xFFD97706)),
+                      child: const Text('Κλείσιμο', style: TextStyle(fontSize: 12)),
+                    ),
+                  );
+                } else if (lc == 'closed') {
+                  lifecycleWidget = SizedBox(
+                    width: lifecycleW,
+                    child: TextButton(
+                      onPressed: () => _completeService(svcId, svcName),
+                      style: TextButton.styleFrom(foregroundColor: const Color(0xFF059669)),
+                      child: const Text('Ολοκλήρωση', style: TextStyle(fontSize: 12)),
+                    ),
+                  );
+                } else {
+                  lifecycleWidget = SizedBox(
+                    width: lifecycleW,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6B7280).withAlpha(20),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text('Ολοκληρώθηκε',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+                    ),
+                  );
+                }
                 return _PastServiceRow(
                   svc: svc,
                   isWide: isWide,
@@ -435,6 +555,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                   endW: endW,
                   countW: countW,
                   nameFlex: nameFlex,
+                  lifecycleWidget: lifecycleWidget,
                   onTap: () => _showPastServiceSheet(svc),
                 );
               },
@@ -774,6 +895,7 @@ class _PastServiceRow extends StatelessWidget {
   final double endW;
   final double countW;
   final int nameFlex;
+  final Widget lifecycleWidget;
   final VoidCallback onTap;
 
   const _PastServiceRow({
@@ -783,6 +905,7 @@ class _PastServiceRow extends StatelessWidget {
     required this.endW,
     required this.countW,
     required this.nameFlex,
+    required this.lifecycleWidget,
     required this.onTap,
   });
 
@@ -924,6 +1047,8 @@ class _PastServiceRow extends StatelessWidget {
                   child: Icon(Icons.chevron_right,
                       size: 16, color: Color(0xFF9CA3AF)),
                 ),
+                // Lifecycle action
+                lifecycleWidget,
               ],
             ),
           ),
