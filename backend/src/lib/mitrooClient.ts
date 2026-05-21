@@ -792,6 +792,23 @@ export class MitrooClient {
     }
   }
 
+  async markShiftApplicationParticipated(applicationId: number): Promise<void> {
+    const res = await this._xhr(
+      `/ajaxdptadmin/ShiftApplicationStatusChange/${applicationId}/6`,
+    );
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      if (json.status !== 1) {
+        throw new Error(`markShiftApplicationParticipated: server returned status ${json.status}`);
+      }
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error(`markShiftApplicationParticipated failed (${res.status}): ${text.slice(0, 200)}`);
+      }
+    }
+  }
+
   async cancelShiftApplication(applicationId: number): Promise<void> {
     const res = await this._xhr(
       `/ajaxdptadmin/ShiftApplicationStatusChange/${applicationId}/4`,
