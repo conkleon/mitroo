@@ -1177,6 +1177,65 @@ export async function writeBackUnenroll(
   }
 }
 
+// ── Write-back: close service → set mission status to closed ──────────────
+
+export async function writeBackServiceClose(serviceId: number): Promise<void> {
+  const MITROO_MISSION_STATUS_CLOSED = 3;
+  try {
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { externalMissionId: true, departmentId: true, name: true },
+    });
+    if (!service?.externalMissionId) {
+      console.log(`[mitrooSync] writeBackServiceClose: service ${serviceId} has no externalMissionId — skipping`);
+      return;
+    }
+    const client = await getClient(service.departmentId);
+    await client.changeMissionStatus(service.externalMissionId, MITROO_MISSION_STATUS_CLOSED);
+    console.log(`[mitrooSync] writeBackServiceClose: SUCCESS — mission ${service.externalMissionId} closed`);
+  } catch (e) {
+    console.error(`[mitrooSync] writeBackServiceClose: FAILED for service ${serviceId}:`, e);
+  }
+}
+
+// ── Write-back: complete service → mark participated + set mission completed ─
+
+export async function writeBackServiceComplete(serviceId: number): Promise<void> {
+  const MITROO_MISSION_STATUS_COMPLETED = 4;
+  try {
+    const service = await prisma.service.findUnique({
+      where: { id: serviceId },
+      select: {
+        externalMissionId: true,
+        departmentId: true,
+        userServices: {
+          where: { status: "participated" },
+          select: { externalApplicationId: true },
+        },
+      },
+    });
+    if (!service?.externalMissionId) {
+      console.log(`[mitrooSync] writeBackServiceComplete: service ${serviceId} has no externalMissionId — skipping`);
+      return;
+    }
+    const client = await getClient(service.departmentId);
+
+    for (const us of service.userServices) {
+      if (!us.externalApplicationId) continue;
+      try {
+        await client.markShiftApplicationParticipated(us.externalApplicationId);
+      } catch (e) {
+        console.error(`[mitrooSync] writeBackServiceComplete: failed to mark application ${us.externalApplicationId}:`, e);
+      }
+    }
+
+    await client.changeMissionStatus(service.externalMissionId, MITROO_MISSION_STATUS_COMPLETED);
+    console.log(`[mitrooSync] writeBackServiceComplete: SUCCESS — mission ${service.externalMissionId} completed`);
+  } catch (e) {
+    console.error(`[mitrooSync] writeBackServiceComplete: FAILED for service ${serviceId}:`, e);
+  }
+}
+
 // ── Per-user sync: pull applications from original Mitroo ─────────────────
 
 export async function syncUserApplications(userId: number): Promise<SyncResult> {
