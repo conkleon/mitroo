@@ -32,6 +32,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
   int? _selectedSpecId;
   DateTime? _fromDate;
   DateTime? _toDate;
+  Set<String> _selectedLifecycleStatuses = {'closed'};
 
   @override
   void initState() {
@@ -68,7 +69,11 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
         params['toDate'] = eod.toUtc().toIso8601String();
       }
 
-      final query = params.entries.map((e) => '${e.key}=${e.value}').join('&');
+      final parts = params.entries.map((e) => '${e.key}=${e.value}').toList();
+      for (final s in _selectedLifecycleStatuses) {
+        parts.add('lifecycleStatus=$s');
+      }
+      final query = parts.join('&');
       final res = await _api.get('/services?$query');
       if (res.statusCode == 200 && mounted) {
         _services = jsonDecode(res.body);
