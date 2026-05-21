@@ -324,13 +324,16 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                       }),
                       if (_selectedSpecId != null ||
                           _fromDate != null ||
-                          _toDate != null)
+                          _toDate != null ||
+                          _selectedLifecycleStatuses.length != 1 ||
+                          !_selectedLifecycleStatuses.contains('closed'))
                         TextButton.icon(
                           onPressed: () {
                             setState(() {
                               _selectedSpecId = null;
                               _fromDate = null;
                               _toDate = null;
+                              _selectedLifecycleStatuses = {'closed'};
                             });
                             _load();
                           },
