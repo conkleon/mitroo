@@ -73,6 +73,7 @@ model Service {
 
   startAt DateTime? @map("start_at")
   endAt   DateTime? @map("end_at")
+  lifecycleStatus ServiceLifecycleStatus @default(active) @map("lifecycle_status")
 
   externalShiftId   Int? @map("external_shift_id")
   externalMissionId Int? @map("external_mission_id")
@@ -228,8 +229,17 @@ enum ServiceStatus {
   requested
   accepted
   rejected
+  participated
 
   @@map("service_status")
+}
+
+enum ServiceLifecycleStatus {
+  active
+  closed
+  completed
+
+  @@map("service_lifecycle_status")
 }
 
 model UserService {
