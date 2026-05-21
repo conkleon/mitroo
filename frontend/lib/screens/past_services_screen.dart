@@ -73,9 +73,17 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     try {
       final params = <String, String>{
         'departmentId': '${widget.departmentId}',
-        'pastOnly': 'true',
         'includeEnrollments': 'true',
       };
+      // Active tab: only show services whose end date has already passed (overdue-active).
+      // Closed/completed tabs: bypass all date filters — lifecycle status is authoritative
+      // and these missions can have any date (e.g. a future mission closed early by admin,
+      // or a past mission that was completed).
+      if (_selectedLifecycle == 'active') {
+        params['pastOnly'] = 'true';
+      } else {
+        params['includeExpired'] = 'true';
+      }
       if (_selectedSpecId != null) {
         params['specializationId'] = '$_selectedSpecId';
       }
@@ -600,7 +608,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                 final svcId = svc['id'] as int;
                 final svcName = (svc['name'] ?? '') as String;
                 Widget lifecycleWidget;
-                if (!auth.isAdmin) {
+                if (!auth.isAdmin && !auth.isMissionAdmin) {
                   lifecycleWidget = const SizedBox.shrink();
                 } else if (lc == 'active') {
                   lifecycleWidget = SizedBox(

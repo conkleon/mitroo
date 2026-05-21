@@ -69,6 +69,8 @@ const MISSION_SUBMIT_VALUE = "ΔΗΜΙΟΥΡΓΙΑ";
 
 // Safety cap: prevent infinite pagination if the upstream API never returns a short page.
 const MAX_OPEN_MISSION_PAGES = 200;
+const MAX_CLOSED_MISSION_PAGES = 500;
+const MAX_FINISHED_MISSION_PAGES = 500;
 const MAX_SHIFT_APPLICATION_PAGES = 100;
 const MAX_VOLUNTEER_PAGES = 200;
 const EXTERNAL_DEBUG = process.env.MITROO_EXTERNAL_DEBUG === "1";
@@ -414,6 +416,72 @@ export class MitrooClient {
     return all;
   }
 
+  async fetchClosedMissions(): Promise<ExternalMission[]> {
+    const pageSize = 200;
+    const all: ExternalMission[] = [];
+    for (let page = 0; page < MAX_CLOSED_MISSION_PAGES; page += 1) {
+      const skip = page * pageSize;
+      const res = await this._xhr(
+        `/index.php/ajaxdptadmin/GridGetMissions/closed/?$count=true&$skip=${skip}&$top=${pageSize}`,
+      );
+      const text = await res.text();
+      try {
+        const parsed = JSON.parse(text);
+        const rows = Array.isArray(parsed) ? parsed : (parsed.result ?? []);
+        all.push(...rows);
+        if (rows.length < pageSize) return all;
+      } catch (error) {
+        console.error("[MitrooClient] fetchClosedMissions: failed to parse JSON response:", {
+          skip,
+          pageSize,
+          snippet: text.slice(0, 300),
+          error,
+        });
+        throw new Error(`fetchClosedMissions: invalid JSON response (${error})`);
+      }
+    }
+    console.warn("[MitrooClient] fetchClosedMissions: reached pagination safety limit", {
+      pageSize,
+      maxPages: MAX_CLOSED_MISSION_PAGES,
+      total: all.length,
+    });
+    return all;
+  }
+
+  async fetchFinishedMissions(): Promise<ExternalMission[]> {
+    const pageSize = 200;
+    const all: ExternalMission[] = [];
+    for (let page = 0; page < MAX_FINISHED_MISSION_PAGES; page += 1) {
+      const skip = page * pageSize;
+      const url = `/index.php/ajaxdptadmin/GridGetMissions/finished/?$count=true&$skip=${skip}&$top=${pageSize}`;
+      console.log(`[MitrooClient] fetchFinishedMissions: GET ${url}`);
+      const res = await this._xhr(url);
+      console.log(`[MitrooClient] fetchFinishedMissions: HTTP ${res.status} ok=${res.ok}`);
+      const text = await res.text();
+      console.log(`[MitrooClient] fetchFinishedMissions: response snippet: ${text.slice(0, 300)}`);
+      try {
+        const parsed = JSON.parse(text);
+        const rows = Array.isArray(parsed) ? parsed : (parsed.result ?? []);
+        all.push(...rows);
+        if (rows.length < pageSize) return all;
+      } catch (error) {
+        console.error("[MitrooClient] fetchFinishedMissions: failed to parse JSON response:", {
+          skip,
+          pageSize,
+          snippet: text.slice(0, 300),
+          error,
+        });
+        throw new Error(`fetchFinishedMissions: invalid JSON response (${error})`);
+      }
+    }
+    console.warn("[MitrooClient] fetchFinishedMissions: reached pagination safety limit", {
+      pageSize,
+      maxPages: MAX_FINISHED_MISSION_PAGES,
+      total: all.length,
+    });
+    return all;
+  }
+
   async fetchShiftsForMission(missionId: number): Promise<ExternalShift[]> {
     const res = await this._xhr(
       `/index.php/ajaxdptadmin/mission_shifts_by_mission_with_members/${missionId}`,
@@ -425,10 +493,27 @@ export class MitrooClient {
       const rows = Array.isArray(parsed)
         ? parsed
         : (parsed.mission_shifts?.data ?? parsed.result ?? []);
-      return rows;
+      if (rows.length > 0) return rows;
     } catch {
-      console.error("[MitrooClient] fetchShiftsForMission: unexpected response:", text.slice(0, 300));
-      throw new Error("fetchShiftsForMission: invalid JSON response");
+      console.warn(`[MitrooClient] fetchShiftsForMission (_with_members): non-JSON for mission ${missionId}:`, text.slice(0, 300));
+    }
+
+    // Fallback for completed missions: _with_members returns empty because all members
+    // are in participated/no-show state. Use the paginated endpoint instead.
+    console.log(`[MitrooClient] fetchShiftsForMission: _with_members returned 0 for mission ${missionId}, trying fallback`);
+    const res2 = await this._xhr(
+      `/index.php/ajaxdptadmin/mission_shifts_by_mission/${missionId}/1`,
+    );
+    const text2 = await res2.text();
+    try {
+      const parsed2 = JSON.parse(text2);
+      // Response: { status: 1, data: { count: N, data: [...] } }
+      return Array.isArray(parsed2)
+        ? parsed2
+        : (parsed2.data?.data ?? parsed2.mission_shifts?.data ?? parsed2.result ?? []);
+    } catch {
+      console.error(`[MitrooClient] fetchShiftsForMission (fallback): unexpected response for mission ${missionId}:`, text2.slice(0, 300));
+      throw new Error("fetchShiftsForMission: invalid JSON response from both endpoints");
     }
   }
 
