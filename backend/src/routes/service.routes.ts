@@ -13,6 +13,8 @@ import {
   writeBackServiceDelete,
   writeBackEnrollmentRequest,
   writeBackUnenroll,
+  writeBackServiceClose,
+  writeBackServiceComplete,
 } from "../lib/mitrooSync";
 
 async function addToMissionChat(serviceId: number, userId: number): Promise<void> {
@@ -293,6 +295,79 @@ router.patch("/:id", async (req: Request, res: Response) => {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
     throw err;
   }
+});
+
+// ── POST /api/services/:id/close ────────────────
+router.post("/:id/close", async (req: Request, res: Response) => {
+  const serviceId = Number(req.params.id);
+  const service = await prisma.service.findUnique({
+    where: { id: serviceId },
+    include: {
+      userServices: {
+        where: { status: "accepted" },
+        include: { user: { select: { id: true } } },
+      },
+    },
+  });
+  if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+  if (!await requireServiceAdmin(req, res, service.departmentId)) return;
+  if (service.lifecycleStatus !== "active") {
+    res.status(409).json({ error: "Η υπηρεσία δεν είναι σε κατάσταση active" });
+    return;
+  }
+
+  await prisma.service.update({
+    where: { id: serviceId },
+    data: { lifecycleStatus: "closed" },
+  });
+
+  const acceptedUserIds = service.userServices.map((us) => us.user.id);
+  for (const userId of acceptedUserIds) {
+    sendPushToUser(userId, {
+      title: "Επιβεβαίωση Υπηρεσίας",
+      body: `Η συμμετοχή σας στην υπηρεσία "${service.name}" επιβεβαιώθηκε.`,
+      tag: `service-closed-${serviceId}`,
+      route: `/services/${serviceId}`,
+    }).catch(() => {});
+  }
+
+  writeBackServiceClose(serviceId).catch((e) =>
+    console.error("[service] writeBackServiceClose error:", e)
+  );
+
+  res.json({ lifecycleStatus: "closed" });
+});
+
+// ── POST /api/services/:id/complete ─────────────
+router.post("/:id/complete", async (req: Request, res: Response) => {
+  const serviceId = Number(req.params.id);
+  const service = await prisma.service.findUnique({
+    where: { id: serviceId },
+    select: { departmentId: true, lifecycleStatus: true },
+  });
+  if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+  if (!await requireServiceAdmin(req, res, service.departmentId)) return;
+  if (service.lifecycleStatus !== "closed") {
+    res.status(409).json({ error: "Η υπηρεσία πρέπει πρώτα να κλείσει" });
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.userService.updateMany({
+      where: { serviceId, status: "accepted" },
+      data: { status: "participated" },
+    }),
+    prisma.service.update({
+      where: { id: serviceId },
+      data: { lifecycleStatus: "completed" },
+    }),
+  ]);
+
+  writeBackServiceComplete(serviceId).catch((e) =>
+    console.error("[service] writeBackServiceComplete error:", e)
+  );
+
+  res.json({ lifecycleStatus: "completed" });
 });
 
 // ── DELETE /api/services/:id ────────────────────
