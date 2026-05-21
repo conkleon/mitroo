@@ -258,6 +258,21 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                 ),
               ),
 
+              // ── Lifecycle status filter strip ──
+              SizedBox(
+                height: 38,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.symmetric(horizontal: hPad),
+                  children: [
+                    _lifecycleChip('closed', 'Κλειστές'),
+                    const SizedBox(width: 6),
+                    _lifecycleChip('completed', 'Ολοκληρωμένες'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+
               // ── Spec filter strip ──
               if (_specializations.isNotEmpty ||
                   _selectedSpecId != null ||
@@ -446,6 +461,31 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _lifecycleChip(String value, String label) {
+    final selected = _selectedLifecycleStatuses.contains(value);
+    return FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: (_) {
+        if (selected && _selectedLifecycleStatuses.length == 1) return;
+        setState(() {
+          if (selected) {
+            _selectedLifecycleStatuses.remove(value);
+          } else {
+            _selectedLifecycleStatuses.add(value);
+          }
+        });
+        _load();
+      },
+      selectedColor: const Color(0xFFF5F3FF),
+      checkmarkColor: const Color(0xFF7C3AED),
+      side: BorderSide(
+        color: selected ? const Color(0xFF6D28D9) : const Color(0xFF6B7280),
+      ),
+      padding: EdgeInsets.zero,
     );
   }
 
