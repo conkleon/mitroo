@@ -94,7 +94,7 @@ async function requireServiceAdmin(req: Request, res: Response, departmentId: nu
 
 // ── GET /api/services ───────────────────────────
 router.get("/", async (req: Request, res: Response) => {
-  const { departmentId, includeEnrollments, fromDate, toDate, specializationId, pastOnly, includeExpired } = req.query;
+  const { departmentId, includeEnrollments, fromDate, toDate, specializationId, pastOnly, includeExpired, lifecycleStatus } = req.query;
   const where: any = {};
   if (departmentId) where.departmentId = Number(departmentId);
 
@@ -125,6 +125,17 @@ router.get("/", async (req: Request, res: Response) => {
         some: { specializationId: Number(specializationId) },
       },
     };
+  }
+
+  // Filter by lifecycle status
+  if (lifecycleStatus) {
+    const statuses = (Array.isArray(lifecycleStatus) ? lifecycleStatus : [lifecycleStatus]) as string[];
+    const allowed = ['active', 'closed', 'completed'];
+    if (!statuses.every((s) => allowed.includes(s))) {
+      res.status(400).json({ error: 'Invalid lifecycleStatus value' });
+      return;
+    }
+    where.lifecycleStatus = { in: statuses };
   }
 
   const includeBlock: any = {
