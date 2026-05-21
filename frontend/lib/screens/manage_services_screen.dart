@@ -58,7 +58,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     setState(() => _loading = true);
     try {
       final results = await Future.wait([
-        _api.get('/services?departmentId=${widget.departmentId}&includeEnrollments=true&lifecycleStatus=active&includeExpired=true'),
+        _api.get('/services?departmentId=${widget.departmentId}&includeEnrollments=true&lifecycleStatus=active'),
         _api.get('/departments/${widget.departmentId}/members'),
       ]);
       if (results[0].statusCode == 200 && mounted) {

@@ -44,6 +44,13 @@ function lookupServiceTypeId(map: Map<number, number>, missionTypeId: unknown): 
   return map.get(id) ?? null;
 }
 
+function mapMissionStatus(statusId: unknown): 'active' | 'closed' | 'completed' {
+  const id = Number(statusId);
+  if (id === 3) return 'closed';
+  if (id === 4) return 'completed';
+  return 'active';
+}
+
 export interface SyncResult {
   created: number;
   updated: number;
@@ -415,6 +422,7 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
 
           if (existing) {
             const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
+            const lifecycleStatus = mapMissionStatus(mission.mission_status_id);
             await prisma.service.update({
               where: { id: existing.id },
               data: {
@@ -429,11 +437,13 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
                 defaultHoursTrainers,
                 defaultHoursTEP,
                 serviceTypeId,
+                lifecycleStatus,
               },
             });
             result.updated++;
           } else {
             const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
+            const lifecycleStatus = mapMissionStatus(mission.mission_status_id);
             const newService = await prisma.service.create({
               data: {
                 departmentId,
@@ -449,6 +459,7 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
                 defaultHoursTrainers,
                 defaultHoursTEP,
                 serviceTypeId,
+                lifecycleStatus,
               },
             });
             result.created++;

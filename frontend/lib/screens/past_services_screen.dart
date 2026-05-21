@@ -34,7 +34,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
   int? _selectedSpecId;
   DateTime? _fromDate;
   DateTime? _toDate;
-  Set<String> _selectedLifecycleStatuses = {'closed'};
+  String _selectedLifecycle = 'active';
 
   @override
   void initState() {
@@ -88,9 +88,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
       }
 
       final parts = params.entries.map((e) => '${e.key}=${e.value}').toList();
-      for (final s in _selectedLifecycleStatuses) {
-        parts.add('lifecycleStatus=$s');
-      }
+      parts.add('lifecycleStatus=$_selectedLifecycle');
       final query = parts.join('&');
       final res = await _api.get('/services?$query');
       if (res.statusCode == 200 && mounted) {
@@ -289,20 +287,24 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                 ),
               ),
 
-              // ── Lifecycle status filter strip ──
-              SizedBox(
-                height: 38,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.symmetric(horizontal: hPad),
-                  children: [
-                    _lifecycleChip('closed', 'Κλειστές'),
-                    const SizedBox(width: 6),
-                    _lifecycleChip('completed', 'Ολοκληρωμένες'),
-                  ],
+              // ── Lifecycle status tabs ──
+              Padding(
+                padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 8),
+                child: Container(
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      _lifecycleTab('active', 'Ενεργές'),
+                      _lifecycleTab('closed', 'Κλειστές'),
+                      _lifecycleTab('completed', 'Ολοκληρωμένες'),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 4),
 
               // ── Spec filter strip ──
               if (_specializations.isNotEmpty ||
@@ -355,16 +357,14 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                       }),
                       if (_selectedSpecId != null ||
                           _fromDate != null ||
-                          _toDate != null ||
-                          _selectedLifecycleStatuses.length != 1 ||
-                          !_selectedLifecycleStatuses.contains('closed'))
+                          _toDate != null)
                         TextButton.icon(
                           onPressed: () {
                             setState(() {
                               _selectedSpecId = null;
                               _fromDate = null;
                               _toDate = null;
-                              _selectedLifecycleStatuses = {'closed'};
+                              _selectedLifecycle = 'active';
                             });
                             _load();
                           },
@@ -498,28 +498,36 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
     );
   }
 
-  Widget _lifecycleChip(String value, String label) {
-    final selected = _selectedLifecycleStatuses.contains(value);
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) {
-        if (selected && _selectedLifecycleStatuses.length == 1) return;
-        setState(() {
-          if (selected) {
-            _selectedLifecycleStatuses.remove(value);
-          } else {
-            _selectedLifecycleStatuses.add(value);
-          }
-        });
-        _load();
-      },
-      selectedColor: const Color(0xFFF5F3FF),
-      checkmarkColor: const Color(0xFF7C3AED),
-      side: BorderSide(
-        color: selected ? const Color(0xFF6D28D9) : const Color(0xFF6B7280),
+  Widget _lifecycleTab(String value, String label) {
+    final selected = _selectedLifecycle == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (selected) return;
+          setState(() => _selectedLifecycle = value);
+          _load();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: selected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: selected
+                ? [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 4, offset: const Offset(0, 1))]
+                : null,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected ? const Color(0xFF7C3AED) : const Color(0xFF6B7280),
+            ),
+          ),
+        ),
       ),
-      padding: EdgeInsets.zero,
     );
   }
 
