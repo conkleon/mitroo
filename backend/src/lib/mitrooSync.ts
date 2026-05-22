@@ -51,6 +51,40 @@ function mapMissionStatus(statusId: unknown): 'active' | 'closed' | 'completed' 
   return 'active';
 }
 
+// The external Mitroo system stores datetimes in Europe/Athens local time without a
+// timezone indicator. These helpers convert between Athens local strings and UTC Dates.
+
+function getAthensOffsetMinutes(date: Date): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Athens",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const get = (type: string) => parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10);
+  const athensMs = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"), get("second"));
+  return Math.round((athensMs - date.getTime()) / 60000);
+}
+
+function parseAthensDatetime(raw: string | undefined): Date | undefined {
+  if (!raw) return undefined;
+  const naive = new Date(raw.trim().replace(" ", "T") + "Z");
+  if (isNaN(naive.getTime())) return undefined;
+  return new Date(naive.getTime() - getAthensOffsetMinutes(naive) * 60000);
+}
+
+function formatAthensDate(d: Date | null | undefined): string {
+  if (!d) return "";
+  const shifted = new Date(d.getTime() + getAthensOffsetMinutes(d) * 60000);
+  return shifted.toISOString().slice(0, 10);
+}
+
+function formatAthensDatetime(d: Date | null | undefined): string {
+  if (!d) return "";
+  const shifted = new Date(d.getTime() + getAthensOffsetMinutes(d) * 60000);
+  return shifted.toISOString().slice(0, 16).replace("T", " ");
+}
+
 export interface SyncResult {
   created: number;
   updated: number;
@@ -427,12 +461,8 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
         try {
           const rawName = (mission.title as string | undefined)?.trim() || `Mission ${missionId}`;
           const name = cleanServiceName(rawName);
-          const startAt = (mission.start_date as string | undefined)
-            ? new Date(mission.start_date as string)
-            : undefined;
-          const endAt = (mission.end_date as string | undefined)
-            ? new Date(mission.end_date as string)
-            : undefined;
+          const startAt = parseAthensDatetime(mission.start_date as string | undefined);
+          const endAt = parseAthensDatetime(mission.end_date as string | undefined);
           const location = (mission.location_text as string | undefined)?.trim() || null;
           const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
 
@@ -482,12 +512,8 @@ export async function syncServices(departmentId: number): Promise<SyncResult> {
             `Shift ${externalShiftId}`;
           const name = cleanServiceName(rawName);
 
-          const startAt = shift.shift_start_date
-            ? new Date(shift.shift_start_date as string)
-            : undefined;
-          const endAt = shift.shift_end_date
-            ? new Date(shift.shift_end_date as string)
-            : undefined;
+          const startAt = parseAthensDatetime(shift.shift_start_date as string | undefined);
+          const endAt = parseAthensDatetime(shift.shift_end_date as string | undefined);
           const rawHours: DefaultHours = {
             defaultHours: parseHours(shift.hours_sanitary),
             defaultHoursVol: parseHours(shift.hours_volunteering),
@@ -776,10 +802,6 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
   try {
     const client = await getClient(service.departmentId);
 
-    const formatDate = (d: Date | null | undefined) =>
-      d ? d.toISOString().slice(0, 10) : "";
-    const formatDateTime = (d: Date | null | undefined) =>
-      d ? d.toISOString().slice(0, 16).replace("T", " ") : "";
     const startAt = service.startAt ?? service.endAt;
     if (!startAt) {
       console.warn(`[mitrooSync] writeBackNewService: skipped — service ${serviceId} has no dates`);
@@ -791,8 +813,8 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
 
     const missionId = await client.createMission({
       title: service.name,
-      start_date: formatDate(startAt),
-      end_date: formatDate(endAt),
+      start_date: formatAthensDate(startAt),
+      end_date: formatAthensDate(endAt),
       location_text: service.location ?? "",
       comments: service.description ?? "",
       mission_type_id: missionTypeId,
@@ -800,8 +822,8 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
 
     const shiftId = await client.createShift({
       mission_id: missionId,
-      shift_start_date: formatDateTime(startAt),
-      shift_end_date: formatDateTime(endAt),
+      shift_start_date: formatAthensDatetime(startAt),
+      shift_end_date: formatAthensDatetime(endAt),
       total_participants: service.maxParticipants ?? 100,
       hours_sanitary: service.defaultHours ?? 0,
       hours_volunteering: service.defaultHoursVol ?? 0,
