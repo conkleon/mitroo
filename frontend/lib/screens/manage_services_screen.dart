@@ -76,7 +76,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen> {
     if (mounted) setState(() => _isSyncing = true);
     try {
       final sync = context.read<SyncProvider>();
-      await sync.syncServices(widget.departmentId);
+      await sync.syncActive(widget.departmentId);
     } catch (_) {}
     if (mounted) {
       setState(() => _isSyncing = false);

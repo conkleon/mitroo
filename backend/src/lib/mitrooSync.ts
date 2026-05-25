@@ -2,7 +2,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
 import { encrypt, decrypt } from "./encryption";
-import { MitrooClient } from "./mitrooClient";
+import { MitrooClient, ExternalMission, ExternalShift, ExternalShiftMember } from "./mitrooClient";
 
 const EXTERNAL_BASE_URL =
   process.env.MITROO_EXTERNAL_BASE_URL ?? "https://mitroo.redcross.gr";
@@ -44,10 +44,11 @@ function lookupServiceTypeId(map: Map<number, number>, missionTypeId: unknown): 
   return map.get(id) ?? null;
 }
 
-function mapMissionStatus(statusId: unknown): 'active' | 'closed' | 'completed' {
+function mapMissionStatus(statusId: unknown): 'active' | 'closed' | 'completed' | 'finalized' {
   const id = Number(statusId);
   if (id === 3) return 'closed';
   if (id === 4) return 'completed';
+  if (id === 9) return 'finalized';
   return 'active';
 }
 
@@ -118,12 +119,13 @@ async function getClient(departmentId: number): Promise<MitrooClient> {
 
 async function setSyncStatus(
   departmentId: number,
-  type: "user" | "service",
+  type: "user" | "service" | "finalized",
   status: "success" | "failed",
   error?: string,
 ) {
   const data: Record<string, unknown> = { lastSyncStatus: status };
   if (type === "user") data.lastUserSyncAt = new Date();
+  else if (type === "finalized") data.lastFinalizedSyncAt = new Date();
   else data.lastServiceSyncAt = new Date();
   if (error) data.lastSyncError = error.slice(0, 1000);
   else data.lastSyncError = null;
@@ -235,7 +237,341 @@ const remapDefaultHoursByMissionType = (
   return hours;
 };
 
+// ── HTML scraping for mission detail pages ──────────────────────────────────
+// Used as a fallback for finished/finalized missions where _with_members returns
+// empty and grid_get_shiftapplications doesn't include them.
+
+interface ParsedApplication {
+  applicationId: number;
+  memberId: number;
+  status: "requested" | "accepted" | "rejected" | "participated";
+  hoursVolunteering: number;
+  hoursSanitary: number;
+  hoursTraining: number;
+  hoursRetraining: number;
+  hoursTEP: number;
+}
+
+const mapApplicationLabelToStatus = (
+  label: string,
+): "requested" | "accepted" | "rejected" | "participated" | null => {
+  const trimmed = label.trim().toUpperCase();
+  if (trimmed.startsWith("ΠΑΡΟΥΣΙΑΣΤΗΚΕ")) return "participated";
+  if (trimmed.startsWith("ΟΡΙΣΤΙΚΟΠΟΙΗΜΕΝΗ")) return "participated";
+  if (trimmed.startsWith("ΕΓΚΕΚΡΙΜΕΝΗ")) return "accepted";
+  if (trimmed.startsWith("ΔΟΚ.") || trimmed.startsWith("ΔΟΚΙΜΗ")) return "accepted";
+  if (trimmed.startsWith("ΝΕΑ") || trimmed.startsWith("ΑΡΧΙΚΗ")) return "requested";
+  if (trimmed.startsWith("ΜΗ ΕΓΚΕΚΡΙΜΕΝΗ") || trimmed.startsWith("ΑΠΟΡΡΙΦΘΗΚΕ")) return "rejected";
+  if (trimmed.startsWith("ΔΕΝ ΠΑΡΟΥΣΙΑΣΤΗΚΕ")) return "rejected";
+  if (trimmed.startsWith("ΑΚΥΡΩΜΕΝΗ")) return "rejected";
+  return null;
+};
+
+function parseApplicationsFromHtml(html: string): Map<number, ParsedApplication[]> {
+  const result = new Map<number, ParsedApplication[]>();
+
+  // Find all shift_id markers and their positions
+  const shiftMarkers: { shiftId: number; pos: number }[] = [];
+  const shiftRe = /data-shift_id\s*=\s*["'](\d+)["']/gi;
+  let shiftMatch: RegExpExecArray | null;
+  while ((shiftMatch = shiftRe.exec(html)) !== null) {
+    shiftMarkers.push({ shiftId: Number(shiftMatch[1]), pos: shiftMatch.index });
+  }
+
+  // Find all application rows
+  const appRowRe = /<tr[^>]*id="shift_application_item_(\d+)"[^>]*>([\s\S]*?)<\/tr>/gi;
+  let appMatch: RegExpExecArray | null;
+  let appRowCount = 0;
+  let skippedNoShiftId = 0;
+  let skippedNoMemberId = 0;
+  let skippedNoStatus = 0;
+  while ((appMatch = appRowRe.exec(html)) !== null) {
+    appRowCount++;
+    const appId = Number(appMatch[1]);
+    const rowHtml = appMatch[2];
+    const rowPos = appMatch.index;
+
+    // Find the nearest shift_id before this row
+    let shiftId = 0;
+    for (let i = shiftMarkers.length - 1; i >= 0; i--) {
+      if (shiftMarkers[i].pos < rowPos) {
+        shiftId = shiftMarkers[i].shiftId;
+        break;
+      }
+    }
+    if (!shiftId) { skippedNoShiftId++; continue; }
+
+    // Parse member_id from data-member_id attribute
+    const memberMatch = rowHtml.match(/data-member_id\s*=\s*["'](\d+)["']/i);
+    if (!memberMatch) { skippedNoMemberId++; continue; }
+    const memberId = Number(memberMatch[1]);
+
+    // Parse status label from <span class='task-cat...'>
+    const statusMatch = rowHtml.match(/<span[^>]*class=['"]task-cat[^'"]*['"][^>]*>([^<]*)<\/span>/i);
+    if (!statusMatch) { skippedNoStatus++; continue; }
+    const rawStatusText = statusMatch[1].trim();
+    const status = mapApplicationLabelToStatus(rawStatusText);
+    if (!status) {
+      skippedNoStatus++;
+      if (skippedNoStatus <= 3) {
+        console.warn(`[mitrooSync] parseApplicationsFromHtml: unrecognised status label: "${rawStatusText}"`);
+      }
+      continue;
+    }
+
+    // Parse hours from classed <td> cells
+    const extractHours = (pattern: RegExp): number => {
+      const m = rowHtml.match(pattern);
+      if (!m) return 0;
+      const num = parseFloat(m[1]);
+      return Number.isFinite(num) ? num : 0;
+    };
+
+    const hoursVolunteering = extractHours(/class="[^"]*hours_volunteering[^"]*"[^>]*>([\d.]+)<\/td>/i);
+    const hoursSanitary = extractHours(/class="[^"]*hours_sanitary[^"]*"[^>]*>([\d.]+)<\/td>/i);
+    const hoursTraining = extractHours(/class="[^"]*hours_training[^"]*"[^>]*>([\d.]+)<\/td>/i);
+    const hoursRetraining = extractHours(/class="[^"]*hours_retraining[^"]*"[^>]*>([\d.]+)<\/td>/i);
+    const hoursTEP = extractHours(/class="[^"]*hours_tep[^"]*"[^>]*>([\d.]+)<\/td>/i);
+
+    const app: ParsedApplication = {
+      applicationId: appId,
+      memberId,
+      status,
+      hoursVolunteering,
+      hoursSanitary,
+      hoursTraining,
+      hoursRetraining,
+      hoursTEP,
+    };
+
+    if (!result.has(shiftId)) result.set(shiftId, []);
+    result.get(shiftId)!.push(app);
+  }
+
+  if (result.size === 0) {
+    console.warn(
+      `[mitrooSync] parseApplicationsFromHtml: found ${appRowCount} app row(s), ${shiftMarkers.length} shift marker(s) ` +
+      `— skipped: noShiftId=${skippedNoShiftId}, noMemberId=${skippedNoMemberId}, noStatus=${skippedNoStatus}`,
+    );
+  }
+
+  return result;
+}
+
+// ── Shared batch helpers ────────────────────────────────────────────────────
+
+async function buildServiceMap(departmentId: number): Promise<{
+  byShiftId: Map<number, number>;
+  byMissionId: Map<number, number>;
+}> {
+  const allServices = await prisma.service.findMany({
+    where: { departmentId },
+    select: { id: true, externalShiftId: true, externalMissionId: true },
+  });
+  const byShiftId = new Map<number, number>();
+  const byMissionId = new Map<number, number>();
+  for (const s of allServices) {
+    if (s.externalShiftId != null) byShiftId.set(s.externalShiftId, s.id);
+    else if (s.externalMissionId != null) byMissionId.set(s.externalMissionId, s.id);
+  }
+  return { byShiftId, byMissionId };
+}
+
+async function batchFetchUsers(externalIds: Set<number>): Promise<Map<number, number>> {
+  if (externalIds.size === 0) return new Map();
+  const users = await prisma.user.findMany({
+    where: { externalId: { in: Array.from(externalIds) } },
+    select: { id: true, externalId: true },
+  });
+  const map = new Map<number, number>();
+  for (const u of users) {
+    if (u.externalId != null) map.set(u.externalId, u.id);
+  }
+  return map;
+}
+
 // ── Sync volunteers → Users ────────────────────────────────────────────────
+
+// Shared per-mission processing loop: fetches shifts, upserts services
+// using pre-built service maps, and batch-executes DB writes.
+// Returns a map of externalShiftId → serviceId for downstream application sync.
+async function processMissions(
+  departmentId: number,
+  missions: ExternalMission[],
+  client: MitrooClient,
+  result: SyncResult,
+): Promise<Map<number, number>> {
+  const typeIdMap = await getServiceTypeIdMap();
+  const { byShiftId, byMissionId } = await buildServiceMap(departmentId);
+  const shiftToServiceId = new Map(byShiftId);
+
+  const updateOps: Array<ReturnType<typeof prisma.service.update>> = [];
+  const createOps: Array<ReturnType<typeof prisma.service.create>> = [];
+  const createShiftIds: number[] = [];
+
+  for (const mission of missions) {
+    const missionId = Number(mission.id);
+    const lifecycleStatus = mapMissionStatus(mission.mission_status_id);
+
+    let shifts: ExternalShift[] = [];
+    try {
+      shifts = await client.fetchShiftsForMission(missionId);
+      console.log(`[mitrooSync] processMissions: mission_id=${missionId} lifecycleStatus=${lifecycleStatus} got ${shifts.length} shift(s)`);
+    } catch (e) {
+      result.errors.push(`mission_id=${missionId}: failed to fetch shifts: ${e}`);
+      console.error(`[mitrooSync] processMissions: mission_id=${missionId}: fetchShiftsForMission FAILED:`, e);
+      continue;
+    }
+
+    if (shifts.length === 0) {
+      console.warn(`[mitrooSync] processMissions: mission_id=${missionId}: no shifts — creating mission-level stub service`);
+      try {
+        const rawName = (mission.title as string | undefined)?.trim() || `Mission ${missionId}`;
+        const name = cleanServiceName(rawName);
+        const startAt = parseAthensDatetime(mission.start_date as string | undefined);
+        const endAt = parseAthensDatetime(mission.end_date as string | undefined);
+        const location = (mission.location_text as string | undefined)?.trim() || null;
+        const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
+        const existingStubId = byMissionId.get(missionId);
+
+        if (existingStubId) {
+          updateOps.push(
+            prisma.service.update({
+              where: { id: existingStubId },
+              data: { name, startAt, endAt, location, serviceTypeId, lifecycleStatus },
+            }),
+          );
+          result.updated++;
+        } else {
+          createOps.push(
+            prisma.service.create({
+              data: {
+                departmentId,
+                name,
+                externalMissionId: missionId,
+                startAt,
+                endAt,
+                location,
+                serviceTypeId,
+                lifecycleStatus,
+              },
+            }),
+          );
+          result.created++;
+        }
+      } catch (e: unknown) {
+        result.errors.push(`mission_id=${missionId} (stub): ${e}`);
+      }
+      continue;
+    }
+
+    for (const shift of shifts) {
+      try {
+        const externalShiftId = Number(shift.id);
+        const rawName =
+          (shift.name as string) ??
+          (shift.title as string) ??
+          (mission.title as string) ??
+          `Shift ${externalShiftId}`;
+        const name = cleanServiceName(rawName);
+
+        const startAt = parseAthensDatetime(shift.shift_start_date as string | undefined);
+        const endAt = parseAthensDatetime(shift.shift_end_date as string | undefined);
+        const rawHours: DefaultHours = {
+          defaultHours: parseHours(shift.hours_sanitary),
+          defaultHoursVol: parseHours(shift.hours_volunteering),
+          defaultHoursTraining: parseHours(shift.hours_training),
+          defaultHoursTrainers: parseHours(shift.hours_retraining),
+          defaultHoursTEP: parseHours(shift.hours_tep),
+        };
+        const mappedHours = remapDefaultHoursByMissionType(
+          mission.mission_type_id,
+          rawHours,
+        );
+        const {
+          defaultHours,
+          defaultHoursVol,
+          defaultHoursTraining,
+          defaultHoursTrainers,
+          defaultHoursTEP,
+        } = mappedHours;
+
+        const location = (mission.location_text as string | undefined)?.trim() || null;
+        const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
+
+        const existingId = byShiftId.get(externalShiftId);
+
+        if (existingId) {
+          updateOps.push(
+            prisma.service.update({
+              where: { id: existingId },
+              data: {
+                name,
+                startAt,
+                endAt,
+                location,
+                externalMissionId: missionId,
+                defaultHours,
+                defaultHoursVol,
+                defaultHoursTraining,
+                defaultHoursTrainers,
+                defaultHoursTEP,
+                serviceTypeId,
+                lifecycleStatus,
+              },
+            }),
+          );
+          result.updated++;
+        } else {
+          createOps.push(
+            prisma.service.create({
+              data: {
+                departmentId,
+                name,
+                externalShiftId,
+                externalMissionId: missionId,
+                startAt,
+                endAt,
+                location,
+                defaultHours,
+                defaultHoursVol,
+                defaultHoursTraining,
+                defaultHoursTrainers,
+                defaultHoursTEP,
+                serviceTypeId,
+                lifecycleStatus,
+              },
+            }),
+          );
+          createShiftIds.push(externalShiftId);
+          result.created++;
+        }
+      } catch (e: unknown) {
+        result.errors.push(`shift_id=${shift.id}: ${e}`);
+      }
+    }
+  }
+
+  // Batch execute all accumulated updates
+  const batchSize = 200;
+  for (let i = 0; i < updateOps.length; i += batchSize) {
+    await prisma.$transaction(updateOps.slice(i, i + batchSize));
+  }
+
+  // Execute creates in transaction batches to capture returned IDs
+  for (let i = 0; i < createOps.length; i += batchSize) {
+    const batch = createOps.slice(i, i + batchSize);
+    const results = await prisma.$transaction(batch);
+    for (let j = 0; j < results.length; j++) {
+      const shiftIdx = i + j;
+      if (shiftIdx < createShiftIds.length) {
+        shiftToServiceId.set(createShiftIds[shiftIdx], results[j].id);
+      }
+    }
+  }
+
+  return shiftToServiceId;
+}
 
 export async function syncUsers(departmentId: number): Promise<SyncResult> {
   const result: SyncResult = { created: 0, updated: 0, errors: [] };
@@ -391,221 +727,738 @@ export async function syncUsers(departmentId: number): Promise<SyncResult> {
   return result;
 }
 
-// ── Sync missions/shifts → Services ────────────────────────────────────────
+// ── Application sync for completed missions via HTML scraping ────────────────
 
-export async function syncServices(departmentId: number): Promise<SyncResult> {
+async function syncApplicationsViaHtml(
+  departmentId: number,
+  client: MitrooClient,
+  missions: ExternalMission[],
+  shiftToServiceId: Map<number, number>,
+  result: SyncResult,
+): Promise<void> {
+  if (missions.length === 0) return;
+
+  console.log(
+    `[mitrooSync] syncApplicationsViaHtml: scraping ${missions.length} mission detail page(s)`,
+  );
+
+  for (const mission of missions) {
+    const missionId = Number(mission.id);
+    try {
+      const html = await client.fetchMissionDetailHtml(missionId);
+      const parsedAppsByShift = parseApplicationsFromHtml(html);
+      if (parsedAppsByShift.size === 0) {
+        // Diagnostic: check what's in the HTML
+        const hasShiftMarkers = /data-shift_id/i.test(html);
+        const hasAppRows = /shift_application_item/i.test(html);
+        const hasTaskCat = /task-cat/i.test(html);
+        console.warn(
+          `[mitrooSync] syncApplicationsViaHtml: mission_id=${missionId}: HTML parsing returned 0 apps. ` +
+          `HTML length=${html.length}, hasShiftMarkers=${hasShiftMarkers}, hasAppRows=${hasAppRows}, hasTaskCat=${hasTaskCat}`,
+        );
+        if (!hasAppRows && !hasTaskCat) {
+          // Dump first 500 chars to see what we got
+          console.warn(
+            `[mitrooSync] syncApplicationsViaHtml: mission_id=${missionId}: HTML preview:`,
+            html.slice(0, 500),
+          );
+        }
+        continue;
+      }
+
+      const userExternalIds = new Set<number>();
+      for (const apps of parsedAppsByShift.values()) {
+        for (const app of apps) {
+          if (app.memberId > 0) userExternalIds.add(app.memberId);
+        }
+      }
+      const userByExternal = await batchFetchUsers(userExternalIds);
+
+      let matchedShifts = 0;
+      let unmatchedShifts = 0;
+      let createdShifts = 0;
+      let processedApps = 0;
+      let skippedNoUser = 0;
+      for (const [shiftId, apps] of parsedAppsByShift) {
+        let serviceId = shiftToServiceId.get(shiftId);
+        if (!serviceId) {
+          // The pre-built map (from fetchShiftsForMission) didn't include this shift.
+          // This happens when the API endpoint and the HTML detail page return different
+          // shift IDs.  Fall back to a direct DB lookup, or create the service on the fly.
+          const existing = await prisma.service.findFirst({
+            where: { externalShiftId: shiftId },
+            select: { id: true },
+          });
+          if (existing) {
+            serviceId = existing.id;
+            shiftToServiceId.set(shiftId, serviceId);
+          } else {
+            // Try to find a mission-level stub (created when fetchShiftsForMission returned empty)
+            const stub = await prisma.service.findFirst({
+              where: { externalMissionId: missionId, externalShiftId: null },
+              select: { id: true },
+            });
+            if (stub) {
+              await prisma.service.update({
+                where: { id: stub.id },
+                data: { externalShiftId: shiftId },
+              });
+              serviceId = stub.id;
+              shiftToServiceId.set(shiftId, serviceId);
+              result.updated++;
+            } else {
+              // Create a minimal service so we can attach applications
+              try {
+                const typeIdMap = await getServiceTypeIdMap();
+                const rawName = (mission.title as string | undefined)?.trim() || `Mission ${missionId}`;
+                const name = cleanServiceName(rawName);
+                const startAt = parseAthensDatetime(mission.start_date as string | undefined);
+                const endAt = parseAthensDatetime(mission.end_date as string | undefined);
+                const location = (mission.location_text as string | undefined)?.trim() || null;
+                const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
+                const lifecycleStatus = mapMissionStatus(mission.mission_status_id);
+
+                const created = await prisma.service.create({
+                  data: {
+                    departmentId,
+                    name,
+                    externalShiftId: shiftId,
+                    externalMissionId: missionId,
+                    startAt,
+                    endAt,
+                    location,
+                    serviceTypeId,
+                    lifecycleStatus,
+                  },
+                });
+                serviceId = created.id;
+                shiftToServiceId.set(shiftId, serviceId);
+                createdShifts++;
+                result.created++;
+              } catch (e: unknown) {
+                unmatchedShifts++;
+                console.warn(
+                  `[mitrooSync] syncApplicationsViaHtml: mission_id=${missionId}: shift_id=${shiftId} ` +
+                  `not in service map and failed to create: ${e}`,
+                );
+                continue;
+              }
+            }
+          }
+        }
+        matchedShifts++;
+        for (const app of apps) {
+          try {
+            const userId = userByExternal.get(app.memberId);
+            if (!userId) { skippedNoUser++; continue; }
+            await upsertUserService(
+              serviceId,
+              userId,
+              app.status,
+              app.hoursSanitary,
+              app.hoursVolunteering,
+              app.hoursTraining,
+              app.hoursRetraining,
+              app.hoursTEP,
+              app.applicationId,
+              result,
+            );
+            processedApps++;
+          } catch (e: unknown) {
+            result.errors.push(
+              `mission=${missionId} app=${app.applicationId}: ${e}`,
+            );
+          }
+        }
+      }
+      console.log(
+        `[mitrooSync] syncApplicationsViaHtml: mission_id=${missionId}: ` +
+        `${matchedShifts} shift(s) matched, ${unmatchedShifts} unmatched, ${createdShifts} created, ` +
+        `${processedApps} app(s) upserted, ${skippedNoUser} skipped (no local user)`,
+      );
+    } catch (e) {
+      console.warn(
+        `[mitrooSync] syncApplicationsViaHtml: mission_id=${missionId}: HTML scraping failed:`,
+        e,
+      );
+    }
+  }
+}
+
+// ── Per-lifecycle-status sync functions ──────────────────────────────────────
+
+export async function syncActiveServices(departmentId: number): Promise<SyncResult> {
+  const result: SyncResult = { created: 0, updated: 0, errors: [] };
+  try {
+    const client = await getClient(departmentId);
+    console.log("[mitrooSync] syncActiveServices: fetching open missions...");
+    const missions = await client.fetchOpenMissions();
+    console.log(`[mitrooSync] syncActiveServices: open=${missions.length}`);
+    await processMissions(departmentId, missions, client, result);
+    console.log(
+      `[mitrooSync] syncActiveServices: services done — created=${result.created} updated=${result.updated} errors=${result.errors.length}`,
+    );
+    const appResult = await syncShiftApplications(departmentId);
+    result.created += appResult.created;
+    result.updated += appResult.updated;
+    result.errors.push(...appResult.errors);
+    await setSyncStatus(departmentId, "service", "success");
+  } catch (e: unknown) {
+    const msg = String(e);
+    result.errors.push(msg);
+    console.error("[mitrooSync] syncActiveServices: FATAL error:", e);
+    await setSyncStatus(departmentId, "service", "failed", msg).catch(() => {});
+  }
+  return result;
+}
+
+export async function syncClosedServices(departmentId: number): Promise<SyncResult> {
+  const result: SyncResult = { created: 0, updated: 0, errors: [] };
+  try {
+    const client = await getClient(departmentId);
+    console.log("[mitrooSync] syncClosedServices: fetching closed missions...");
+    const missions = await client.fetchClosedMissions();
+    console.log(`[mitrooSync] syncClosedServices: closed=${missions.length}`);
+    const shiftToServiceId = await processMissions(departmentId, missions, client, result);
+    console.log(
+      `[mitrooSync] syncClosedServices: services done — created=${result.created} updated=${result.updated} errors=${result.errors.length}`,
+    );
+    await syncApplicationsViaHtml(departmentId, client, missions, shiftToServiceId, result);
+    await setSyncStatus(departmentId, "service", "success");
+  } catch (e: unknown) {
+    const msg = String(e);
+    result.errors.push(msg);
+    console.error("[mitrooSync] syncClosedServices: FATAL error:", e);
+    await setSyncStatus(departmentId, "service", "failed", msg).catch(() => {});
+  }
+  return result;
+}
+
+export async function syncCompletedServices(departmentId: number): Promise<SyncResult> {
+  const result: SyncResult = { created: 0, updated: 0, errors: [] };
+  try {
+    const client = await getClient(departmentId);
+    console.log("[mitrooSync] syncCompletedServices: fetching finished missions...");
+    const missions = await client.fetchFinishedMissions();
+    console.log(`[mitrooSync] syncCompletedServices: finished=${missions.length}`);
+    const shiftToServiceId = await processMissions(departmentId, missions, client, result);
+    console.log(
+      `[mitrooSync] syncCompletedServices: services done — created=${result.created} updated=${result.updated} errors=${result.errors.length}`,
+    );
+    await syncApplicationsViaHtml(departmentId, client, missions, shiftToServiceId, result);
+    await setSyncStatus(departmentId, "service", "success");
+  } catch (e: unknown) {
+    const msg = String(e);
+    result.errors.push(msg);
+    console.error("[mitrooSync] syncCompletedServices: FATAL error:", e);
+    await setSyncStatus(departmentId, "service", "failed", msg).catch(() => {});
+  }
+  return result;
+}
+
+// ── Composite: sync all lifecycle statuses in one call ───────────────────────
+
+export async function syncAllServices(departmentId: number): Promise<SyncResult> {
   const result: SyncResult = { created: 0, updated: 0, errors: [] };
   try {
     const client = await getClient(departmentId);
 
-    // Fetch open (unfiltered default), closed, and finished missions sequentially
-    // to avoid PHP session-locking issues with concurrent requests.
-    console.log("[mitrooSync] syncServices: fetching open missions...");
-    const openMissions = await client.fetchMissions();
-    console.log(`[mitrooSync] syncServices: open=${openMissions.length}`);
+    console.log("[mitrooSync] syncAllServices: fetching open missions...");
+    const openMissions = await client.fetchOpenMissions();
+    console.log(`[mitrooSync] syncAllServices: open=${openMissions.length}`);
 
-    console.log("[mitrooSync] syncServices: fetching closed missions...");
+    console.log("[mitrooSync] syncAllServices: fetching closed missions...");
     const closedMissions = await client.fetchClosedMissions();
-    console.log(`[mitrooSync] syncServices: closed=${closedMissions.length}`);
-    if (closedMissions.length > 0) {
-      console.log("[mitrooSync] Sample closed mission:", JSON.stringify(closedMissions[0]).slice(0, 200));
-    }
+    console.log(`[mitrooSync] syncAllServices: closed=${closedMissions.length}`);
 
-    console.log("[mitrooSync] syncServices: fetching finished missions...");
+    console.log("[mitrooSync] syncAllServices: fetching finished missions...");
     const finishedMissions = await client.fetchFinishedMissions();
-    console.log(`[mitrooSync] syncServices: finished=${finishedMissions.length}`);
-    if (finishedMissions.length > 0) {
-      console.log("[mitrooSync] Sample finished mission:", JSON.stringify(finishedMissions[0]).slice(0, 200));
-    } else {
-      console.warn("[mitrooSync] syncServices: fetchFinishedMissions returned EMPTY — check external auth and endpoint");
-    }
+    console.log(`[mitrooSync] syncAllServices: finished=${finishedMissions.length}`);
 
-    // Deduplicate by mission ID — open list may overlap with closed/finished.
-    // Closed/finished take priority over open so their lifecycle status wins.
-    const seenMissionIds = new Set<number>();
-    const missions = [];
-    for (const m of [...closedMissions, ...finishedMissions, ...openMissions]) {
-      const id = Number(m.id);
-      if (!seenMissionIds.has(id)) {
-        seenMissionIds.add(id);
-        missions.push(m);
-      }
-    }
+    console.log("[mitrooSync] syncAllServices: fetching finalized missions...");
+    const finalizedMissions = await client.fetchFinalizedMissions();
+    console.log(`[mitrooSync] syncAllServices: finalized=${finalizedMissions.length}`);
+
+    // Process all four statuses sequentially (shared PHP session)
+    await processMissions(departmentId, openMissions, client, result);
+    const closedShiftMap = await processMissions(departmentId, closedMissions, client, result);
+    const completedShiftMap = await processMissions(departmentId, finishedMissions, client, result);
+    await processFinalizedMissions(departmentId, client, finalizedMissions, result);
 
     console.log(
-      `[mitrooSync] syncServices: total_deduped=${missions.length} (closed+finished take priority over open)`,
+      `[mitrooSync] syncAllServices: all services done — created=${result.created} updated=${result.updated} errors=${result.errors.length}`,
     );
-    if (missions.length > 0) {
-      console.log("[mitrooSync] Sample mission fields:", Object.keys(missions[0]));
-    }
 
-    const typeIdMap = await getServiceTypeIdMap();
-
-    for (const mission of missions) {
-      const missionId = Number(mission.id);
-      const lifecycleStatus = mapMissionStatus(mission.mission_status_id);
-      console.log(`[mitrooSync] Processing mission_id=${missionId} status_id=${mission.mission_status_id} → lifecycleStatus=${lifecycleStatus} title="${mission.title}"`);
-
-      let shifts = [];
-      try {
-        shifts = await client.fetchShiftsForMission(missionId);
-        console.log(`[mitrooSync] mission_id=${missionId}: got ${shifts.length} shift(s)`);
-      } catch (e) {
-        result.errors.push(`mission_id=${missionId}: failed to fetch shifts: ${e}`);
-        console.error(`[mitrooSync] mission_id=${missionId}: fetchShiftsForMission FAILED:`, e);
-        continue;
-      }
-
-      if (shifts.length === 0) {
-        console.warn(`[mitrooSync] mission_id=${missionId}: no shifts — creating mission-level stub service`);
-        try {
-          const rawName = (mission.title as string | undefined)?.trim() || `Mission ${missionId}`;
-          const name = cleanServiceName(rawName);
-          const startAt = parseAthensDatetime(mission.start_date as string | undefined);
-          const endAt = parseAthensDatetime(mission.end_date as string | undefined);
-          const location = (mission.location_text as string | undefined)?.trim() || null;
-          const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
-
-          // Stub services are keyed by externalMissionId with externalShiftId null
-          const existingStub = await prisma.service.findFirst({
-            where: { externalMissionId: missionId, externalShiftId: null },
-            select: { id: true },
-          });
-
-          if (existingStub) {
-            await prisma.service.update({
-              where: { id: existingStub.id },
-              data: { name, startAt, endAt, location, serviceTypeId, lifecycleStatus },
-            });
-            console.log(`[mitrooSync] mission_id=${missionId}: UPDATED stub service id=${existingStub.id}`);
-            result.updated++;
-          } else {
-            const newService = await prisma.service.create({
-              data: {
-                departmentId,
-                name,
-                externalMissionId: missionId,
-                startAt,
-                endAt,
-                location,
-                serviceTypeId,
-                lifecycleStatus,
-              },
-            });
-            console.log(`[mitrooSync] mission_id=${missionId}: CREATED stub service id=${newService.id}`);
-            result.created++;
-          }
-        } catch (e: unknown) {
-          result.errors.push(`mission_id=${missionId} (stub): ${e}`);
-          console.error(`[mitrooSync] mission_id=${missionId}: stub service creation ERROR:`, e);
-        }
-        continue;
-      }
-
-      for (const shift of shifts) {
-        try {
-          const externalShiftId = Number(shift.id);
-          const rawName =
-            (shift.name as string) ??
-            (shift.title as string) ??
-            (mission.title as string) ??
-            `Shift ${externalShiftId}`;
-          const name = cleanServiceName(rawName);
-
-          const startAt = parseAthensDatetime(shift.shift_start_date as string | undefined);
-          const endAt = parseAthensDatetime(shift.shift_end_date as string | undefined);
-          const rawHours: DefaultHours = {
-            defaultHours: parseHours(shift.hours_sanitary),
-            defaultHoursVol: parseHours(shift.hours_volunteering),
-            defaultHoursTraining: parseHours(shift.hours_training),
-            defaultHoursTrainers: parseHours(shift.hours_retraining),
-            defaultHoursTEP: parseHours(shift.hours_tep),
-          };
-          const mappedHours = remapDefaultHoursByMissionType(
-            mission.mission_type_id,
-            rawHours,
-          );
-          const {
-            defaultHours,
-            defaultHoursVol,
-            defaultHoursTraining,
-            defaultHoursTrainers,
-            defaultHoursTEP,
-          } = mappedHours;
-
-          const existing = await prisma.service.findFirst({
-            where: { externalShiftId },
-            select: { id: true },
-          });
-
-          const location = (mission.location_text as string | undefined)?.trim() || null;
-          const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
-
-          if (existing) {
-            await prisma.service.update({
-              where: { id: existing.id },
-              data: {
-                name,
-                startAt,
-                endAt,
-                location,
-                externalMissionId: missionId,
-                defaultHours,
-                defaultHoursVol,
-                defaultHoursTraining,
-                defaultHoursTrainers,
-                defaultHoursTEP,
-                serviceTypeId,
-                lifecycleStatus,
-              },
-            });
-            console.log(`[mitrooSync] shift_id=${externalShiftId}: UPDATED service id=${existing.id} lifecycleStatus=${lifecycleStatus}`);
-            result.updated++;
-          } else {
-            const newService = await prisma.service.create({
-              data: {
-                departmentId,
-                name,
-                externalShiftId,
-                externalMissionId: missionId,
-                startAt,
-                endAt,
-                location,
-                defaultHours,
-                defaultHoursVol,
-                defaultHoursTraining,
-                defaultHoursTrainers,
-                defaultHoursTEP,
-                serviceTypeId,
-                lifecycleStatus,
-              },
-            });
-            console.log(`[mitrooSync] shift_id=${externalShiftId}: CREATED service id=${newService.id} lifecycleStatus=${lifecycleStatus}`);
-            result.created++;
-          }
-        } catch (e: unknown) {
-          result.errors.push(`shift_id=${shift.id}: ${e}`);
-          console.error(`[mitrooSync] shift_id=${shift.id}: ERROR:`, e);
-        }
-      }
-    }
-
-    console.log(`[mitrooSync] syncServices: done — created=${result.created} updated=${result.updated} errors=${result.errors.length}`);
-    if (result.errors.length > 0) {
-      console.error("[mitrooSync] syncServices errors:", result.errors);
-    }
-
+    // Application sync: one bulk call covers open missions (grid_get_shiftapplications),
+    // then HTML scrape for closed + completed (not covered by grid endpoint).
+    // Finalized missions handle their own app sync inside processFinalizedMissions.
     const appResult = await syncShiftApplications(departmentId);
     result.created += appResult.created;
     result.updated += appResult.updated;
     result.errors.push(...appResult.errors);
 
+    await syncApplicationsViaHtml(departmentId, client, closedMissions, closedShiftMap, result);
+    await syncApplicationsViaHtml(departmentId, client, finishedMissions, completedShiftMap, result);
+
+    console.log(
+      `[mitrooSync] syncAllServices: all done — created=${result.created} updated=${result.updated} errors=${result.errors.length}`,
+    );
+
     await setSyncStatus(departmentId, "service", "success");
   } catch (e: unknown) {
     const msg = String(e);
     result.errors.push(msg);
-    console.error("[mitrooSync] syncServices: FATAL error:", e);
+    console.error("[mitrooSync] syncAllServices: FATAL error:", e);
     await setSyncStatus(departmentId, "service", "failed", msg).catch(() => {});
+  }
+  return result;
+}
+
+// ── Process finalized missions (shared by syncFinalizedServices + syncAllServices) ─
+
+async function processFinalizedMissions(
+  departmentId: number,
+  client: MitrooClient,
+  missions: ExternalMission[],
+  result: SyncResult,
+): Promise<void> {
+  if (missions.length === 0) return;
+
+  const typeIdMap = await getServiceTypeIdMap();
+
+  for (const mission of missions) {
+    const missionId = Number(mission.id);
+    const lifecycleStatus = mapMissionStatus(mission.mission_status_id);
+
+    let shifts: ExternalShift[] = [];
+    try {
+      shifts = await client.fetchShiftsForMission(missionId);
+    } catch (e) {
+      result.errors.push(`mission_id=${missionId}: failed to fetch shifts: ${e}`);
+      console.error(`[mitrooSync] processFinalizedMissions: mission_id=${missionId}: fetchShiftsForMission FAILED:`, e);
+      continue;
+    }
+
+    // For finalized missions, the _with_members endpoint often returns members
+    // whose application_status_id is not in the 1-7 range that mapApplicationStatus
+    // recognises, so all members get silently skipped. HTML scraping always uses
+    // text labels which we can map reliably. Always scrape HTML as the primary
+    // source; also try _with_members as a supplement (e.g. when HTML scraping
+    // finds nothing but the endpoint returns usable data).
+    let membersByShift: Map<number, ExternalShiftMember[]> = new Map();
+    let parsedAppsByShift: Map<number, ParsedApplication[]> = new Map();
+
+    // Always scrape HTML for finalized missions — primary source for applications.
+    // Do this regardless of whether fetchShiftsForMission returned shifts, because
+    // the API and HTML may disagree on shift IDs.
+    try {
+      console.log(`[mitrooSync] processFinalizedMissions: mission_id=${missionId}: scraping HTML detail page`);
+      const html = await client.fetchMissionDetailHtml(missionId);
+      parsedAppsByShift = parseApplicationsFromHtml(html);
+      if (parsedAppsByShift.size > 0) {
+        let totalApps = 0;
+        for (const apps of parsedAppsByShift.values()) totalApps += apps.length;
+        console.log(`[mitrooSync] processFinalizedMissions: mission_id=${missionId}: scraped ${totalApps} application(s) across ${parsedAppsByShift.size} shift(s)`);
+      } else {
+        const hasShiftMarkers = /data-shift_id/i.test(html);
+        const hasAppRows = /shift_application_item/i.test(html);
+        const hasTaskCat = /task-cat/i.test(html);
+        console.warn(
+          `[mitrooSync] processFinalizedMissions: mission_id=${missionId}: HTML scraping found no applications. ` +
+          `HTML length=${html.length}, hasShiftMarkers=${hasShiftMarkers}, hasAppRows=${hasAppRows}, hasTaskCat=${hasTaskCat}`,
+        );
+        if (!hasAppRows && !hasTaskCat) {
+          console.warn(
+            `[mitrooSync] processFinalizedMissions: mission_id=${missionId}: HTML preview:`,
+            html.slice(0, 500),
+          );
+        }
+      }
+    } catch (e) {
+      console.warn(`[mitrooSync] processFinalizedMissions: mission_id=${missionId}: HTML scraping failed:`, e);
+    }
+
+    // Also try _with_members as a supplement
+    try {
+      membersByShift = await client.fetchShiftMembersForMission(missionId);
+      if (membersByShift.size > 0) {
+        console.log(`[mitrooSync] processFinalizedMissions: mission_id=${missionId}: got embedded members for ${membersByShift.size} shift(s)`);
+      }
+    } catch (e) {
+      console.warn(`[mitrooSync] processFinalizedMissions: mission_id=${missionId}: fetchShiftMembersForMission failed:`, e);
+    }
+
+    // Build a map of user external IDs to batch-fetch local users
+    const userExternalIds = new Set<number>();
+    for (const members of membersByShift.values()) {
+      for (const m of members) {
+        const uid = Number(m.member_id);
+        if (uid > 0) userExternalIds.add(uid);
+      }
+    }
+    for (const apps of parsedAppsByShift.values()) {
+      for (const app of apps) {
+        if (app.memberId > 0) userExternalIds.add(app.memberId);
+      }
+    }
+
+    // Batch-fetch users for this mission's members
+    const users = userExternalIds.size > 0
+      ? await prisma.user.findMany({
+          where: { externalId: { in: Array.from(userExternalIds) } },
+          select: { id: true, externalId: true },
+        })
+      : [];
+    const userByExternal = new Map<number, number>();
+    for (const u of users) {
+      if (u.externalId != null) userByExternal.set(u.externalId, u.id);
+    }
+
+    let missionMembersProcessed = 0;
+    let missionMembersSkippedNoStatus = 0;
+    let missionHtmlMatchedShifts = 0;
+    let missionHtmlUnmatchedShifts = 0;
+    let missionHtmlCreatedShifts = 0;
+    let missionHtmlAppsProcessed = 0;
+    let missionHtmlAppsSkippedNoUser = 0;
+    const processedHtmlShiftIds = new Set<number>();
+
+    if (shifts.length === 0 && parsedAppsByShift.size === 0) {
+      // No API shifts and no HTML apps — create a mission-level stub for visibility
+      const rawName = (mission.title as string | undefined)?.trim() || `Mission ${missionId}`;
+      const name = cleanServiceName(rawName);
+      const startAt = parseAthensDatetime(mission.start_date as string | undefined);
+      const endAt = parseAthensDatetime(mission.end_date as string | undefined);
+      const location = (mission.location_text as string | undefined)?.trim() || null;
+      const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
+
+      const existingStub = await prisma.service.findFirst({
+        where: { externalMissionId: missionId, externalShiftId: null },
+        select: { id: true },
+      });
+
+      if (existingStub) {
+        await prisma.service.update({
+          where: { id: existingStub.id },
+          data: { name, startAt, endAt, location, serviceTypeId, lifecycleStatus },
+        });
+        result.updated++;
+      } else {
+        await prisma.service.create({
+          data: {
+            departmentId,
+            name,
+            externalMissionId: missionId,
+            startAt,
+            endAt,
+            location,
+            serviceTypeId,
+            lifecycleStatus,
+          },
+        });
+        result.created++;
+      }
+
+      console.log(
+        `[mitrooSync] processFinalizedMissions: mission_id=${missionId}: ` +
+        `0 API shifts, 0 HTML apps — created stub only`,
+      );
+      continue;
+    }
+
+    for (const shift of shifts) {
+      try {
+        const externalShiftId = Number(shift.id);
+        const rawName =
+          (shift.name as string) ??
+          (shift.title as string) ??
+          (mission.title as string) ??
+          `Shift ${externalShiftId}`;
+        const name = cleanServiceName(rawName);
+
+        const startAt = parseAthensDatetime(shift.shift_start_date as string | undefined);
+        const endAt = parseAthensDatetime(shift.shift_end_date as string | undefined);
+        const rawHours: DefaultHours = {
+          defaultHours: parseHours(shift.hours_sanitary),
+          defaultHoursVol: parseHours(shift.hours_volunteering),
+          defaultHoursTraining: parseHours(shift.hours_training),
+          defaultHoursTrainers: parseHours(shift.hours_retraining),
+          defaultHoursTEP: parseHours(shift.hours_tep),
+        };
+        const mappedHours = remapDefaultHoursByMissionType(
+          mission.mission_type_id,
+          rawHours,
+        );
+        const {
+          defaultHours,
+          defaultHoursVol,
+          defaultHoursTraining,
+          defaultHoursTrainers,
+          defaultHoursTEP,
+        } = mappedHours;
+
+        const existing = await prisma.service.findFirst({
+          where: { externalShiftId },
+          select: { id: true },
+        });
+
+        const location = (mission.location_text as string | undefined)?.trim() || null;
+        const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
+
+        let serviceId: number;
+        if (existing) {
+          serviceId = existing.id;
+          await prisma.service.update({
+            where: { id: existing.id },
+            data: {
+              name,
+              startAt,
+              endAt,
+              location,
+              externalMissionId: missionId,
+              defaultHours,
+              defaultHoursVol,
+              defaultHoursTraining,
+              defaultHoursTrainers,
+              defaultHoursTEP,
+              serviceTypeId,
+              lifecycleStatus,
+            },
+          });
+          result.updated++;
+        } else {
+          const created = await prisma.service.create({
+            data: {
+              departmentId,
+              name,
+              externalShiftId,
+              externalMissionId: missionId,
+              startAt,
+              endAt,
+              location,
+              defaultHours,
+              defaultHoursVol,
+              defaultHoursTraining,
+              defaultHoursTrainers,
+              defaultHoursTEP,
+              serviceTypeId,
+              lifecycleStatus,
+            },
+          });
+          serviceId = created.id;
+          result.created++;
+        }
+
+        // Process embedded members for this shift (_with_members endpoint)
+        const embeddedMembers = membersByShift.get(externalShiftId);
+        if (embeddedMembers) {
+          for (const member of embeddedMembers) {
+            try {
+              const externalUserId = Number(member.member_id);
+              const externalApplicationId = Number(member.id);
+              if (!externalUserId || !externalApplicationId) continue;
+
+              const userId = userByExternal.get(externalUserId);
+              if (!userId) continue;
+
+              const status = mapApplicationStatus(member.application_status_id);
+              if (status === null) { missionMembersSkippedNoStatus++; continue; }
+
+              const hours = parseHours(member.hours_sanitary);
+              const hoursVol = parseHours(member.hours_volunteering);
+              const hoursTraining = parseHours(member.hours_training);
+              const hoursTrainers = parseHours(member.hours_retraining);
+              const hoursTEP = parseHours(member.hours_tep);
+
+              await upsertUserService(
+                serviceId, userId, status,
+                hours, hoursVol, hoursTraining, hoursTrainers, hoursTEP,
+                externalApplicationId, result,
+              );
+              missionMembersProcessed++;
+            } catch (e: unknown) {
+              result.errors.push(`member_id=${member.member_id} shift_id=${externalShiftId}: ${e}`);
+            }
+          }
+        }
+
+        // Process scraped HTML applications for this shift (primary source for finalized)
+        const parsedApps = parsedAppsByShift.get(externalShiftId);
+        if (parsedApps) {
+          missionHtmlMatchedShifts++;
+          processedHtmlShiftIds.add(externalShiftId);
+          for (const app of parsedApps) {
+            try {
+              const userId = userByExternal.get(app.memberId);
+              if (!userId) { missionHtmlAppsSkippedNoUser++; continue; }
+
+              await upsertUserService(
+                serviceId, userId, app.status,
+                app.hoursSanitary, app.hoursVolunteering, app.hoursTraining,
+                app.hoursRetraining, app.hoursTEP,
+                app.applicationId, result,
+              );
+              missionHtmlAppsProcessed++;
+            } catch (e: unknown) {
+              result.errors.push(`html_app member_id=${app.memberId} shift_id=${externalShiftId}: ${e}`);
+            }
+          }
+        } else if (parsedAppsByShift.size > 0) {
+          missionHtmlUnmatchedShifts++;
+          console.warn(
+            `[mitrooSync] processFinalizedMissions: mission_id=${missionId}: shift_id=${externalShiftId} not found in HTML apps ` +
+            `(HTML has shift IDs: ${[...parsedAppsByShift.keys()].join(',')})`,
+          );
+        }
+      } catch (e: unknown) {
+        result.errors.push(`shift_id=${shift.id}: ${e}`);
+        console.error(`[mitrooSync] processFinalizedMissions: shift_id=${shift.id}: ERROR:`, e);
+      }
+    }
+
+    // Process any HTML-scraped shift IDs that weren't matched to an API shift.
+    // This handles the case where fetchShiftsForMission and the HTML detail page
+    // return different shift IDs for the same mission.
+    for (const [htmlShiftId, apps] of parsedAppsByShift) {
+      if (processedHtmlShiftIds.has(htmlShiftId)) continue;
+
+      const existing = await prisma.service.findFirst({
+        where: { externalShiftId: htmlShiftId },
+        select: { id: true },
+      });
+      let svcId: number;
+      if (existing) {
+        svcId = existing.id;
+      } else {
+        const stub = await prisma.service.findFirst({
+          where: { externalMissionId: missionId, externalShiftId: null },
+          select: { id: true },
+        });
+        if (stub) {
+          await prisma.service.update({
+            where: { id: stub.id },
+            data: {
+              externalShiftId: htmlShiftId,
+              lifecycleStatus,
+              name: cleanServiceName((mission.title as string | undefined)?.trim() || `Mission ${missionId}`),
+            },
+          });
+          svcId = stub.id;
+          result.updated++;
+        } else {
+          try {
+            const rawName = (mission.title as string | undefined)?.trim() || `Mission ${missionId}`;
+            const name = cleanServiceName(rawName);
+            const startAt = parseAthensDatetime(mission.start_date as string | undefined);
+            const endAt = parseAthensDatetime(mission.end_date as string | undefined);
+            const location = (mission.location_text as string | undefined)?.trim() || null;
+            const serviceTypeId = lookupServiceTypeId(typeIdMap, mission.mission_type_id);
+            const created = await prisma.service.create({
+              data: {
+                departmentId,
+                name,
+                externalShiftId: htmlShiftId,
+                externalMissionId: missionId,
+                startAt,
+                endAt,
+                location,
+                serviceTypeId,
+                lifecycleStatus,
+              },
+            });
+            svcId = created.id;
+            missionHtmlCreatedShifts++;
+            result.created++;
+          } catch (e: unknown) {
+            console.warn(
+              `[mitrooSync] processFinalizedMissions: mission_id=${missionId}: shift_id=${htmlShiftId} ` +
+              `not in API shifts and failed to create service: ${e}`,
+            );
+            continue;
+          }
+        }
+      }
+
+      missionHtmlCreatedShifts++;
+      for (const app of apps) {
+        try {
+          const userId = userByExternal.get(app.memberId);
+          if (!userId) { missionHtmlAppsSkippedNoUser++; continue; }
+          await upsertUserService(
+            svcId, userId, app.status,
+            app.hoursSanitary, app.hoursVolunteering, app.hoursTraining,
+            app.hoursRetraining, app.hoursTEP,
+            app.applicationId, result,
+          );
+          missionHtmlAppsProcessed++;
+        } catch (e: unknown) {
+          result.errors.push(`html_app member_id=${app.memberId} shift_id=${htmlShiftId}: ${e}`);
+        }
+      }
+    }
+
+    // Per-mission diagnostic summary
+    console.log(
+      `[mitrooSync] processFinalizedMissions: mission_id=${missionId}: ` +
+      `${shifts.length} API shift(s), ` +
+      `_with_members: ${missionMembersProcessed} processed, ${missionMembersSkippedNoStatus} skipped (no status), ` +
+      `HTML: ${missionHtmlMatchedShifts} shift(s) matched, ${missionHtmlUnmatchedShifts} unmatched, ${missionHtmlCreatedShifts} created, ` +
+      `${missionHtmlAppsProcessed} app(s) upserted, ${missionHtmlAppsSkippedNoUser} skipped (no local user)`,
+    );
+  }
+}
+
+// ── Sync finalized missions ────────────────────────────────────────────
+
+async function upsertUserService(
+  serviceId: number,
+  userId: number,
+  status: "requested" | "accepted" | "rejected" | "participated",
+  hours: number,
+  hoursVol: number,
+  hoursTraining: number,
+  hoursTrainers: number,
+  hoursTEP: number,
+  externalApplicationId: number,
+  result: SyncResult,
+) {
+  const existing = await prisma.userService.findUnique({
+    where: { userId_serviceId: { userId, serviceId } },
+    select: { userId: true },
+  });
+  if (existing) {
+    await prisma.userService.update({
+      where: { userId_serviceId: { userId, serviceId } },
+      data: { status, hours, hoursVol, hoursTraining, hoursTrainers, hoursTEP, externalApplicationId },
+    });
+    result.updated++;
+  } else {
+    await prisma.userService.create({
+      data: { userId, serviceId, status, hours, hoursVol, hoursTraining, hoursTrainers, hoursTEP, externalApplicationId },
+    });
+    result.created++;
+  }
+}
+
+export async function syncFinalizedServices(departmentId: number): Promise<SyncResult> {
+  const result: SyncResult = { created: 0, updated: 0, errors: [] };
+  try {
+    const client = await getClient(departmentId);
+
+    console.log("[mitrooSync] syncFinalizedServices: fetching finalized missions...");
+    const finalizedMissions = await client.fetchFinalizedMissions();
+    console.log(`[mitrooSync] syncFinalizedServices: finalized=${finalizedMissions.length}`);
+
+    await processFinalizedMissions(departmentId, client, finalizedMissions, result);
+
+    console.log(`[mitrooSync] syncFinalizedServices: done — created=${result.created} updated=${result.updated} errors=${result.errors.length}`);
+
+    await setSyncStatus(departmentId, "finalized", "success");
+  } catch (e: unknown) {
+    const msg = String(e);
+    result.errors.push(msg);
+    console.error("[mitrooSync] syncFinalizedServices: FATAL error:", e);
+    await setSyncStatus(departmentId, "finalized", "failed", msg).catch(() => {});
   }
   return result;
 }
@@ -1678,8 +2531,8 @@ export async function autoUpdateSyncConfig(
     console.log(`[mitrooSync] autoUpdateSyncConfig: promoted user ${userId} to missionAdmin in dept ${dept.id}`);
   }
 
-  syncServices(dept.id).catch((e) =>
-    console.error(`[mitrooSync] autoUpdateSyncConfig: syncServices failed for dept ${dept!.id}:`, e),
+  syncAllServices(dept.id).catch((e) =>
+    console.error(`[mitrooSync] autoUpdateSyncConfig: syncAllServices failed for dept ${dept!.id}:`, e),
   );
 }
 
@@ -1692,7 +2545,7 @@ export async function autoSyncAllDepartments(): Promise<void> {
   if (!configs.length) return;
   console.log(`[mitrooSync] autoSyncAllDepartments: syncing ${configs.length} department(s)`);
   for (const config of configs) {
-    syncServices(config.departmentId).catch((e) =>
+    syncAllServices(config.departmentId).catch((e) =>
       console.error(`[mitrooSync] autoSyncAllDepartments: dept ${config.departmentId} failed:`, e),
     );
   }

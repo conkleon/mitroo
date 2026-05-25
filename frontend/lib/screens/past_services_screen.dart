@@ -47,11 +47,28 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
   }
 
   Future<void> _backgroundSync() async {
+    await _syncLifecycle(_selectedLifecycle);
+  }
+
+  Future<void> _syncLifecycle(String lifecycle) async {
     if (_isSyncing) return;
     if (mounted) setState(() => _isSyncing = true);
     try {
       final sync = context.read<SyncProvider>();
-      await sync.syncServices(widget.departmentId);
+      switch (lifecycle) {
+        case 'active':
+          await sync.syncActive(widget.departmentId);
+          break;
+        case 'closed':
+          await sync.syncClosed(widget.departmentId);
+          break;
+        case 'completed':
+          await sync.syncCompleted(widget.departmentId);
+          break;
+        case 'finalized':
+          await sync.syncFinalized(widget.departmentId);
+          break;
+      }
     } catch (_) {}
     if (mounted) {
       setState(() => _isSyncing = false);
@@ -309,6 +326,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                       _lifecycleTab('active', 'Ενεργές'),
                       _lifecycleTab('closed', 'Κλειστές'),
                       _lifecycleTab('completed', 'Ολοκληρωμένες'),
+                      _lifecycleTab('finalized', 'Οριστικ/νες'),
                     ],
                   ),
                 ),
@@ -513,7 +531,8 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
         onTap: () {
           if (selected) return;
           setState(() => _selectedLifecycle = value);
-          _load();
+          _load(); // show cached data immediately
+          _syncLifecycle(value); // then sync in background
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
@@ -628,6 +647,20 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                       child: const Text('Ολοκλήρωση', style: TextStyle(fontSize: 12)),
                     ),
                   );
+                } else if (lc == 'finalized') {
+                  lifecycleWidget = SizedBox(
+                    width: lifecycleW,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF374151).withAlpha(20),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text('Οριστικ/κε',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 11, color: Color(0xFF374151))),
+                    ),
+                  );
                 } else {
                   lifecycleWidget = SizedBox(
                     width: lifecycleW,
@@ -717,7 +750,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                   ),
                 ),
               ),
-              // Title + completed badge
+              // Title + lifecycle badge
               Row(children: [
                 Expanded(
                   child: Text(name,
@@ -725,19 +758,7 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF1F2937))),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFECFDF5),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text('Ολοκληρωμένη',
-                      style: TextStyle(
-                          color: Color(0xFF059669),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
-                ),
+                _buildLifecycleBadge((svc['lifecycleStatus'] ?? 'completed') as String),
               ]),
               const SizedBox(height: 16),
               // Info rows
@@ -858,13 +879,21 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
                       statusColor = const Color(0xFF059669);
                       statusLabel = 'Εγκρίθηκε';
                       break;
+                    case 'participated':
+                      statusColor = const Color(0xFF0891B2);
+                      statusLabel = 'Παρουσιάστηκε';
+                      break;
                     case 'rejected':
                       statusColor = const Color(0xFFDC2626);
                       statusLabel = 'Απορρίφθηκε';
                       break;
-                    default:
+                    case 'requested':
                       statusColor = const Color(0xFFD97706);
                       statusLabel = 'Αίτηση';
+                      break;
+                    default:
+                      statusColor = const Color(0xFF6B7280);
+                      statusLabel = status;
                   }
 
                   return Padding(
@@ -981,6 +1010,50 @@ class _PastServicesScreenState extends State<PastServicesScreen> {
       ),
     );
   }
+
+  Widget _buildLifecycleBadge(String lc) {
+    switch (lc) {
+      case 'finalized':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF374151).withAlpha(20),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text('Οριστικοποιημένη',
+              style: TextStyle(
+                  color: Color(0xFF374151),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600)),
+        );
+      case 'closed':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF7C3AED).withAlpha(20),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text('Κλειστή',
+              style: TextStyle(
+                  color: Color(0xFF7C3AED),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600)),
+        );
+      default:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFECFDF5),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text('Ολοκληρωμένη',
+              style: TextStyle(
+                  color: Color(0xFF059669),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600)),
+        );
+    }
+  }
 }
 
 class _PastServiceRow extends StatelessWidget {
@@ -1021,6 +1094,20 @@ class _PastServiceRow extends StatelessWidget {
         (svc['_count']?['userServices'] as int?) ?? userServices.length;
     final acceptedCount =
         userServices.where((us) => us['status'] == 'accepted').length;
+    final lc = (svc['lifecycleStatus'] ?? 'active') as String;
+
+    Color stripColor() {
+      switch (lc) {
+        case 'closed':
+          return const Color(0xFF7C3AED);
+        case 'completed':
+          return const Color(0xFF059669);
+        case 'finalized':
+          return const Color(0xFF374151);
+        default:
+          return const Color(0xFF059669);
+      }
+    }
 
     return Material(
       color: Colors.white,
@@ -1036,12 +1123,12 @@ class _PastServiceRow extends StatelessWidget {
           child: IntrinsicHeight(
             child: Row(
               children: [
-                // Green left strip
+                // Colored left strip by lifecycle
                 Container(
                   width: 4,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF059669),
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: stripColor(),
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(8),
                       bottomLeft: Radius.circular(8),
                     ),

@@ -101,16 +101,82 @@ class _SyncConfigCardState extends State<SyncConfigCard> {
     }
   }
 
-  Future<void> _triggerServiceSync() async {
+  Future<void> _triggerActiveSync() async {
     final sync = context.read<SyncProvider>();
-    final result = await sync.syncServices(widget.departmentId);
+    final result = await sync.syncActive(widget.departmentId);
     if (!mounted) return;
     if (result != null) {
       final created = result['created'] ?? 0;
       final updated = result['updated'] ?? 0;
       final errors = (result['errors'] as List?)?.length ?? 0;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Υπηρεσίες: +$created νέες, $updated ενημερώθηκαν'
+        content: Text('Ενεργές: +$created νέες, $updated ενημερώθηκαν'
+            '${errors > 0 ? ', $errors σφάλματα' : ''}'),
+      ));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(sync.error ?? 'Αποτυχία συγχρονισμού'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _triggerClosedSync() async {
+    final sync = context.read<SyncProvider>();
+    final result = await sync.syncClosed(widget.departmentId);
+    if (!mounted) return;
+    if (result != null) {
+      final created = result['created'] ?? 0;
+      final updated = result['updated'] ?? 0;
+      final errors = (result['errors'] as List?)?.length ?? 0;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Κλειστές: +$created νέες, $updated ενημερώθηκαν'
+            '${errors > 0 ? ', $errors σφάλματα' : ''}'),
+      ));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(sync.error ?? 'Αποτυχία συγχρονισμού'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _triggerCompletedSync() async {
+    final sync = context.read<SyncProvider>();
+    final result = await sync.syncCompleted(widget.departmentId);
+    if (!mounted) return;
+    if (result != null) {
+      final created = result['created'] ?? 0;
+      final updated = result['updated'] ?? 0;
+      final errors = (result['errors'] as List?)?.length ?? 0;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Ολοκληρωμένες: +$created νέες, $updated ενημερώθηκαν'
+            '${errors > 0 ? ', $errors σφάλματα' : ''}'),
+      ));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(sync.error ?? 'Αποτυχία συγχρονισμού'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _triggerFinalizedSync() async {
+    final sync = context.read<SyncProvider>();
+    final result = await sync.syncFinalized(widget.departmentId);
+    if (!mounted) return;
+    if (result != null) {
+      final created = result['created'] ?? 0;
+      final updated = result['updated'] ?? 0;
+      final errors = (result['errors'] as List?)?.length ?? 0;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Οριστικοποιημένες: +$created νέες, $updated ενημερώθηκαν'
             '${errors > 0 ? ', $errors σφάλματα' : ''}'),
       ));
     } else {
@@ -130,6 +196,7 @@ class _SyncConfigCardState extends State<SyncConfigCard> {
         final status = sync.status;
         final lastUserSync = status?['lastUserSyncAt'];
         final lastServiceSync = status?['lastServiceSyncAt'];
+        final lastFinalizedSync = status?['lastFinalizedSyncAt'];
         final lastStatus = status?['lastSyncStatus'];
 
         return Card(
@@ -214,10 +281,31 @@ class _SyncConfigCardState extends State<SyncConfigCard> {
                   ),
                   const SizedBox(height: 8),
                   _SyncRow(
-                    label: 'Υπηρεσίες',
+                    label: 'Ενεργές',
                     lastSync: _formatDate(lastServiceSync),
-                    loading: sync.isSyncingServices,
-                    onSync: _triggerServiceSync,
+                    loading: sync.isSyncingActive,
+                    onSync: _triggerActiveSync,
+                  ),
+                  const SizedBox(height: 8),
+                  _SyncRow(
+                    label: 'Κλειστές',
+                    lastSync: _formatDate(lastServiceSync),
+                    loading: sync.isSyncingClosed,
+                    onSync: _triggerClosedSync,
+                  ),
+                  const SizedBox(height: 8),
+                  _SyncRow(
+                    label: 'Ολοκληρωμένες',
+                    lastSync: _formatDate(lastServiceSync),
+                    loading: sync.isSyncingCompleted,
+                    onSync: _triggerCompletedSync,
+                  ),
+                  const SizedBox(height: 8),
+                  _SyncRow(
+                    label: 'Οριστικοποιημένες',
+                    lastSync: _formatDate(lastFinalizedSync),
+                    loading: sync.isSyncingFinalized,
+                    onSync: _triggerFinalizedSync,
                   ),
                 ],
               ],

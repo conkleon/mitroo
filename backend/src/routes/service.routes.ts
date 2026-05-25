@@ -130,7 +130,7 @@ router.get("/", async (req: Request, res: Response) => {
   // Filter by lifecycle status
   if (lifecycleStatus) {
     const statuses = (Array.isArray(lifecycleStatus) ? lifecycleStatus : [lifecycleStatus]) as string[];
-    const allowed = ['active', 'closed', 'completed'];
+    const allowed = ['active', 'closed', 'completed', 'finalized'];
     if (!statuses.every((s) => allowed.includes(s))) {
       res.status(400).json({ error: 'Invalid lifecycleStatus value' });
       return;

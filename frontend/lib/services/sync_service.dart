@@ -40,6 +40,30 @@ class SyncService {
     throw Exception('Sync services failed: ${res.statusCode}');
   }
 
+  Future<Map<String, dynamic>> triggerActiveSync(int deptId) async {
+    final res = await _api.post('/departments/$deptId/sync/services/active');
+    if (res.statusCode == 200) return jsonDecode(res.body);
+    throw Exception('Sync active failed: ${res.statusCode}');
+  }
+
+  Future<Map<String, dynamic>> triggerClosedSync(int deptId) async {
+    final res = await _api.post('/departments/$deptId/sync/services/closed');
+    if (res.statusCode == 200) return jsonDecode(res.body);
+    throw Exception('Sync closed failed: ${res.statusCode}');
+  }
+
+  Future<Map<String, dynamic>> triggerCompletedSync(int deptId) async {
+    final res = await _api.post('/departments/$deptId/sync/services/completed');
+    if (res.statusCode == 200) return jsonDecode(res.body);
+    throw Exception('Sync completed failed: ${res.statusCode}');
+  }
+
+  Future<Map<String, dynamic>> triggerFinalizedSync(int deptId) async {
+    final res = await _api.post('/departments/$deptId/sync/finalized');
+    if (res.statusCode == 200) return jsonDecode(res.body);
+    throw Exception('Sync finalized failed: ${res.statusCode}');
+  }
+
   Future<Map<String, dynamic>?> getSyncStatus(int deptId) async {
     final res = await _api.get('/departments/$deptId/sync/status');
     if (res.statusCode == 200) return jsonDecode(res.body);

@@ -39,6 +39,19 @@ export interface ExternalShift {
   [key: string]: unknown;
 }
 
+export interface ExternalShiftMember {
+  id: number | string;
+  member_id: number | string;
+  mission_shift_id?: number | string;
+  application_status_id?: number | string;
+  hours_volunteering?: number | string;
+  hours_sanitary?: number | string;
+  hours_training?: number | string;
+  hours_retraining?: number | string;
+  hours_tep?: number | string;
+  [key: string]: unknown;
+}
+
 export interface ExternalShiftApplication {
   id: number | string;
   mission_id?: number | string;
@@ -71,6 +84,7 @@ const MISSION_SUBMIT_VALUE = "ΔΗΜΙΟΥΡΓΙΑ";
 const MAX_OPEN_MISSION_PAGES = 200;
 const MAX_CLOSED_MISSION_PAGES = 500;
 const MAX_FINISHED_MISSION_PAGES = 500;
+const MAX_FINALIZED_MISSION_PAGES = 500;
 const MAX_SHIFT_APPLICATION_PAGES = 100;
 const MAX_VOLUNTEER_PAGES = 200;
 const EXTERNAL_DEBUG = process.env.MITROO_EXTERNAL_DEBUG === "1";
@@ -482,6 +496,40 @@ export class MitrooClient {
     return all;
   }
 
+  async fetchFinalizedMissions(): Promise<ExternalMission[]> {
+    const pageSize = 200;
+    const all: ExternalMission[] = [];
+    for (let page = 0; page < MAX_FINALIZED_MISSION_PAGES; page += 1) {
+      const skip = page * pageSize;
+      const url = `/index.php/ajaxdptadmin/GridGetMissions/finalized/?$count=true&$skip=${skip}&$top=${pageSize}`;
+      console.log(`[MitrooClient] fetchFinalizedMissions: GET ${url}`);
+      const res = await this._xhr(url);
+      console.log(`[MitrooClient] fetchFinalizedMissions: HTTP ${res.status} ok=${res.ok}`);
+      const text = await res.text();
+      console.log(`[MitrooClient] fetchFinalizedMissions: response snippet: ${text.slice(0, 300)}`);
+      try {
+        const parsed = JSON.parse(text);
+        const rows = Array.isArray(parsed) ? parsed : (parsed.result ?? []);
+        all.push(...rows);
+        if (rows.length < pageSize) return all;
+      } catch (error) {
+        console.error("[MitrooClient] fetchFinalizedMissions: failed to parse JSON response:", {
+          skip,
+          pageSize,
+          snippet: text.slice(0, 300),
+          error,
+        });
+        throw new Error(`fetchFinalizedMissions: invalid JSON response (${error})`);
+      }
+    }
+    console.warn("[MitrooClient] fetchFinalizedMissions: reached pagination safety limit", {
+      pageSize,
+      maxPages: MAX_FINALIZED_MISSION_PAGES,
+      total: all.length,
+    });
+    return all;
+  }
+
   async fetchShiftsForMission(missionId: number): Promise<ExternalShift[]> {
     const res = await this._xhr(
       `/index.php/ajaxdptadmin/mission_shifts_by_mission_with_members/${missionId}`,
@@ -517,6 +565,37 @@ export class MitrooClient {
     }
   }
 
+  async fetchShiftMembersForMission(
+    missionId: number,
+  ): Promise<Map<number, ExternalShiftMember[]>> {
+    const membersByShift = new Map<number, ExternalShiftMember[]>();
+    const res = await this._xhr(
+      `/index.php/ajaxdptadmin/mission_shifts_by_mission_with_members/${missionId}`,
+    );
+    const text = await res.text();
+    try {
+      const parsed = JSON.parse(text);
+      const shifts = Array.isArray(parsed)
+        ? parsed
+        : (parsed.mission_shifts?.data ?? parsed.result ?? []);
+      for (const shift of shifts) {
+        const shiftId = Number(shift.id);
+        if (!shiftId) continue;
+        const members: ExternalShiftMember[] =
+          shift.members ?? shift.shift_members ?? shift.applications ?? [];
+        if (members.length > 0) {
+          membersByShift.set(shiftId, members);
+        }
+      }
+    } catch {
+      console.warn(
+        `[MitrooClient] fetchShiftMembersForMission: non-JSON for mission ${missionId}:`,
+        text.slice(0, 300),
+      );
+    }
+    return membersByShift;
+  }
+
   async fetchShiftApplications(): Promise<ExternalShiftApplication[]> {
     const pageSize = 500;
     const all: ExternalShiftApplication[] = [];
@@ -549,6 +628,14 @@ export class MitrooClient {
       total: all.length,
     });
     return all;
+  }
+
+  async fetchMissionDetailHtml(missionId: number): Promise<string> {
+    const res = await this._get(`/index.php/dptadmin/mission/${missionId}`);
+    if (!res.ok) {
+      throw new Error(`fetchMissionDetailHtml failed (${res.status}) for mission ${missionId}`);
+    }
+    return res.text();
   }
 
   // ── Write-back ────────────────────────────────────────────────────────────

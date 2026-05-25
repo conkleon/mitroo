@@ -3,7 +3,15 @@ import { z } from "zod";
 import prisma from "../lib/prisma";
 import { authenticate, isMissionAdminInDepartment } from "../middleware/auth";
 import { encrypt } from "../lib/encryption";
-import { syncUsers, syncServices, syncShiftApplications } from "../lib/mitrooSync";
+import {
+  syncUsers,
+  syncAllServices,
+  syncActiveServices,
+  syncClosedServices,
+  syncCompletedServices,
+  syncFinalizedServices,
+  syncShiftApplications,
+} from "../lib/mitrooSync";
 
 const router = Router();
 router.use(authenticate);
@@ -36,6 +44,7 @@ router.get("/:id/sync/config", async (req: Request, res: Response) => {
       syncEnabled: true,
       lastUserSyncAt: true,
       lastServiceSyncAt: true,
+      lastFinalizedSyncAt: true,
       lastSyncStatus: true,
       lastSyncError: true,
     },
@@ -53,6 +62,7 @@ router.get("/:id/sync/config", async (req: Request, res: Response) => {
     syncEnabled: config.syncEnabled,
     lastUserSyncAt: config.lastUserSyncAt,
     lastServiceSyncAt: config.lastServiceSyncAt,
+    lastFinalizedSyncAt: config.lastFinalizedSyncAt,
     lastSyncStatus: config.lastSyncStatus,
     lastSyncError: config.lastSyncError,
   });
@@ -106,7 +116,43 @@ router.post("/:id/sync/services", async (req: Request, res: Response) => {
   const deptId = Number(req.params.id);
   if (!await requireSyncAdmin(req, res, deptId)) return;
 
-  const result = await syncServices(deptId);
+  const result = await syncAllServices(deptId);
+  res.json(result);
+});
+
+// ── POST /api/departments/:id/sync/services/active ──
+router.post("/:id/sync/services/active", async (req: Request, res: Response) => {
+  const deptId = Number(req.params.id);
+  if (!await requireSyncAdmin(req, res, deptId)) return;
+
+  const result = await syncActiveServices(deptId);
+  res.json(result);
+});
+
+// ── POST /api/departments/:id/sync/services/closed ──
+router.post("/:id/sync/services/closed", async (req: Request, res: Response) => {
+  const deptId = Number(req.params.id);
+  if (!await requireSyncAdmin(req, res, deptId)) return;
+
+  const result = await syncClosedServices(deptId);
+  res.json(result);
+});
+
+// ── POST /api/departments/:id/sync/services/completed ──
+router.post("/:id/sync/services/completed", async (req: Request, res: Response) => {
+  const deptId = Number(req.params.id);
+  if (!await requireSyncAdmin(req, res, deptId)) return;
+
+  const result = await syncCompletedServices(deptId);
+  res.json(result);
+});
+
+// ── POST /api/departments/:id/sync/finalized ─────
+router.post("/:id/sync/finalized", async (req: Request, res: Response) => {
+  const deptId = Number(req.params.id);
+  if (!await requireSyncAdmin(req, res, deptId)) return;
+
+  const result = await syncFinalizedServices(deptId);
   res.json(result);
 });
 
@@ -129,12 +175,13 @@ router.get("/:id/sync/status", async (req: Request, res: Response) => {
     select: {
       lastUserSyncAt: true,
       lastServiceSyncAt: true,
+      lastFinalizedSyncAt: true,
       lastSyncStatus: true,
       lastSyncError: true,
     },
   });
 
-  res.json(config ?? { lastUserSyncAt: null, lastServiceSyncAt: null, lastSyncStatus: null });
+  res.json(config ?? { lastUserSyncAt: null, lastServiceSyncAt: null, lastFinalizedSyncAt: null, lastSyncStatus: null });
 });
 
 export default router;

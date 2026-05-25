@@ -238,6 +238,7 @@ enum ServiceLifecycleStatus {
   active
   closed
   completed
+  finalized
 
   @@map("service_lifecycle_status")
 }
@@ -604,10 +605,11 @@ model DepartmentSyncConfig {
 
   syncEnabled Boolean @default(false) @map("sync_enabled")
 
-  lastUserSyncAt    DateTime? @map("last_user_sync_at")
-  lastServiceSyncAt DateTime? @map("last_service_sync_at")
-  lastSyncStatus    String?   @map("last_sync_status") @db.VarChar(20) // "success" | "failed"
-  lastSyncError     String?   @map("last_sync_error") @db.Text
+  lastUserSyncAt      DateTime? @map("last_user_sync_at")
+  lastServiceSyncAt   DateTime? @map("last_service_sync_at")
+  lastFinalizedSyncAt DateTime? @map("last_finalized_sync_at")
+  lastSyncStatus      String?   @map("last_sync_status") @db.VarChar(20) // "success" | "failed"
+  lastSyncError       String?   @map("last_sync_error") @db.Text
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
