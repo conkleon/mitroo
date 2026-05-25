@@ -9,7 +9,6 @@ import '../screens/reset_password_screen.dart';
 import '../screens/admin_panel_screen.dart';
 import '../screens/create_service_screen.dart';
 import '../screens/manage_services_screen.dart';
-import '../screens/past_services_screen.dart';
 import '../screens/service_detail_screen.dart';
 import '../screens/manage_users_screen.dart';
 import '../screens/user_detail_screen.dart';
@@ -174,18 +173,6 @@ GoRouter appRouter(AuthProvider auth) {
               return CreateServiceScreen(
                 initialDepartmentId: deptId,
                 initialDepartmentName: deptName,
-              );
-            },
-          ),
-          GoRoute(
-            path: '/admin/services/past',
-            builder: (context, state) {
-              final deptId = int.tryParse(state.uri.queryParameters['departmentId'] ?? '');
-              final deptName = state.uri.queryParameters['departmentName'] ?? 'Department';
-              return PastServicesScreen(
-                key: ValueKey('past-services-${deptId ?? 0}'),
-                departmentId: deptId ?? 0,
-                departmentName: deptName,
               );
             },
           ),

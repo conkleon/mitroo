@@ -94,7 +94,7 @@ async function requireServiceAdmin(req: Request, res: Response, departmentId: nu
 
 // ── GET /api/services ───────────────────────────
 router.get("/", async (req: Request, res: Response) => {
-  const { departmentId, includeEnrollments, fromDate, toDate, specializationId, pastOnly, includeExpired, lifecycleStatus } = req.query;
+  const { departmentId, includeEnrollments, fromDate, toDate, specializationId, pastOnly, includeExpired, lifecycleStatus, page, limit } = req.query;
   const where: any = {};
   if (departmentId) where.departmentId = Number(departmentId);
 
@@ -156,11 +156,20 @@ router.get("/", async (req: Request, res: Response) => {
     };
   }
 
-  const services = await prisma.service.findMany({
+  const pageNum = page ? parseInt(page as string, 10) : 1;
+  const limitNum = limit ? parseInt(limit as string, 10) : undefined;
+
+  const queryOptions: any = {
     where,
     include: includeBlock,
     orderBy: { startAt: "asc" },
-  });
+  };
+  if (limitNum !== undefined && pageNum > 0) {
+    queryOptions.skip = (pageNum - 1) * limitNum;
+    queryOptions.take = limitNum;
+  }
+
+  const services = await prisma.service.findMany(queryOptions);
   res.json(services);
 });
 
@@ -539,6 +548,36 @@ router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
         route: `/services/${sid}`,
       }).catch(() => {});
     }
+  } catch (err: any) {
+    if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
+    throw err;
+  }
+});
+
+// ── PATCH /api/services/:sid/users/:uid/participation ──
+router.patch("/:sid/users/:uid/participation", async (req: Request, res: Response) => {
+  try {
+    const sid = Number(req.params.sid);
+    const uid = Number(req.params.uid);
+    const service = await prisma.service.findUnique({
+      where: { id: sid },
+      select: { departmentId: true, lifecycleStatus: true },
+    });
+    if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+    if (!await requireServiceAdmin(req, res, service.departmentId)) return;
+    if (service.lifecycleStatus !== "closed" && service.lifecycleStatus !== "completed") {
+      res.status(409).json({ error: "Η υπηρεσία δεν είναι σε κατάσταση closed ή completed" });
+      return;
+    }
+    const participationSchema = z.object({ status: z.enum(["participated", "not-participated"]) });
+    const { status } = participationSchema.parse(req.body);
+    const prismaStatus = status === "not-participated" ? "not_participated" : "participated";
+    const record = await prisma.userService.update({
+      where: { userId_serviceId: { userId: uid, serviceId: sid } },
+      data: { status: prismaStatus },
+      include: { user: { select: { id: true, eame: true, forename: true, surname: true } } },
+    });
+    res.json(record);
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
     throw err;
