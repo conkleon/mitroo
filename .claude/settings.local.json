@@ -103,7 +103,20 @@
       "Bash(Select-Object -First 20)",
       "Bash(python3 *)",
       "Bash(Select-Object -Last 30)",
-      "Bash(npx ts-node *)"
+      "Bash(npx ts-node *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(Select-Object -Last 5)",
+      "PowerShell(node --version 2>&1)",
+      "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo\\\\.claude\\\\worktrees\\\\unified-services-screen\\\\backend; $env:DATABASE_URL='postgresql://mitroo:mitroo_secret_change_me@localhost:5432/mitroo?schema=public'; npx prisma migrate dev --name add_not_participated_status 2>&1)",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(Sort-Object -Descending)",
+      "PowerShell(Get-ChildItem \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\lib\\\\widgets\\\\\" 2>$null | Select-Object Name; if \\(-not \\(Test-Path \"D:\\\\Documents\\\\GitHub\\\\mitroo\\\\frontend\\\\lib\\\\widgets\\\\\"\\)\\) { Write-Output \"DIRECTORY_DOES_NOT_EXIST\" })",
+      "Bash(cd D:DocumentsGitHubmitroobackend *)",
+      "Bash(dir prisma\\\\migrations\\\\* /b)",
+      "Bash(Select-Object -Last 10 Name)",
+      "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo; git show 27bba6c:backend/src/routes/service.routes.ts | Select-Object -Index \\(155..165\\))",
+      "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo; git show 27bba6c:backend/src/routes/service.routes.ts | Select-Object -Index \\(94..100\\))",
+      "Bash(cd *)"
     ]
   }
 }

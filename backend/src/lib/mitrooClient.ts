@@ -430,6 +430,24 @@ export class MitrooClient {
     return all;
   }
 
+  /** Fetch a single page of missions for the given lifecycle status. */
+  async fetchMissionPage(status: string, skip: number, top: number): Promise<ExternalMission[]> {
+    const res = await this._xhr(
+      `/index.php/ajaxdptadmin/GridGetMissions/${status}/?$count=true&$skip=${skip}&$top=${top}`,
+    );
+    const text = await res.text();
+    try {
+      const parsed = JSON.parse(text);
+      return Array.isArray(parsed) ? parsed : (parsed.result ?? []);
+    } catch (error) {
+      console.error(`[MitrooClient] fetchMissionPage(${status}, skip=${skip}): invalid JSON`, {
+        snippet: text.slice(0, 300),
+        error,
+      });
+      throw new Error(`fetchMissionPage(${status}): invalid JSON response (${error})`);
+    }
+  }
+
   async fetchClosedMissions(): Promise<ExternalMission[]> {
     const pageSize = 200;
     const all: ExternalMission[] = [];

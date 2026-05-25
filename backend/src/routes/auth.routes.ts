@@ -481,7 +481,7 @@ router.get("/me/profile", authenticate, async (req: Request, res: Response) => {
 
   // Fetch accepted service enrolments with service dates
   const enrolments = await prisma.userService.findMany({
-    where: { userId, status: "accepted" },
+    where: { userId, status: { in: ["accepted", "participated"] } },
     select: {
       hours: true,
       hoursVol: true,

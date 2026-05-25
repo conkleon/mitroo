@@ -837,7 +837,7 @@ class _UserDetailBodyState extends State<UserDetailBody> {
 
     // Sum hours for summary
     int sumTotal = 0, sumH = 0, sumVol = 0, sumTrain = 0, sumTrainer = 0;
-    for (final s in _services.where((s) => s['status'] == 'accepted')) {
+    for (final s in _services.where((s) => s['status'] == 'accepted' || s['status'] == 'participated')) {
       sumTotal += (s['totalHours'] ?? 0) as int;
       sumH += (s['hours'] ?? 0) as int;
       sumVol += (s['hoursVol'] ?? 0) as int;
@@ -892,8 +892,10 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                     items: const [
                       DropdownMenuItem(value: 'all', child: Text('Όλες οι καταστάσεις')),
                       DropdownMenuItem(value: 'accepted', child: Text('Εγκεκριμένη')),
+                      DropdownMenuItem(value: 'participated', child: Text('Παρουσιάστηκε')),
                       DropdownMenuItem(value: 'requested', child: Text('Εκκρεμής')),
                       DropdownMenuItem(value: 'rejected', child: Text('Απορριφθείσα')),
+                      DropdownMenuItem(value: 'not-participated', child: Text('Δεν παρουσιάστηκε')),
                     ],
                     onChanged: (v) => setState(() { _svcStatusFilter = v ?? 'all'; _svcPage = 0; }),
                   ),
@@ -1038,8 +1040,11 @@ class _UserDetailBodyState extends State<UserDetailBody> {
     Color statusColor;
     switch (status) {
       case 'accepted': statusColor = const Color(0xFF059669); break;
-      case 'rejected': statusColor = Color(0xFFDC2626); break;
-      default: statusColor = Color(0xFFF59E0B);
+      case 'participated': statusColor = const Color(0xFF0891B2); break;
+      case 'rejected': statusColor = const Color(0xFFDC2626); break;
+      case 'not-participated':
+      case 'not_participated': statusColor = const Color(0xFF6B7280); break;
+      default: statusColor = const Color(0xFFF59E0B);
     }
 
     return Container(

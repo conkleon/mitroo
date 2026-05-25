@@ -912,12 +912,69 @@ export async function syncActiveServices(departmentId: number): Promise<SyncResu
   return result;
 }
 
+// ── Smart pagination: fetch missions page-by-page, stopping when a full page
+// consists entirely of already-synced missions (newest-first ordering).
+
+const SMART_SYNC_PAGE_SIZE = 200;
+const MAX_CLOSED_PAGES = 500;
+const MAX_FINISHED_PAGES = 500;
+const MAX_FINALIZED_PAGES = 500;
+
+const LIFECYCLE_ORDER = ["active", "closed", "completed", "finalized"] as const;
+
+async function fetchMissionsUntilSynced(
+  departmentId: number,
+  client: MitrooClient,
+  status: string,
+  maxPages: number,
+): Promise<ExternalMission[]> {
+  // Only treat a mission as "already synced" if it exists with this lifecycle
+  // status or a later one. Otherwise a mission synced as "active" would
+  // incorrectly block the "closed" sync from picking up its status transition.
+  const statusIdx = LIFECYCLE_ORDER.indexOf(status as (typeof LIFECYCLE_ORDER)[number]);
+  const relevantStatuses = statusIdx >= 0
+    ? (LIFECYCLE_ORDER.slice(statusIdx) as ("active" | "closed" | "completed" | "finalized")[])
+    : [status as "active" | "closed" | "completed" | "finalized"];
+
+  const existingServices = await prisma.service.findMany({
+    where: {
+      departmentId,
+      externalMissionId: { not: null },
+      lifecycleStatus: { in: relevantStatuses },
+    },
+    select: { externalMissionId: true },
+  });
+  const syncedIds = new Set(existingServices.map((s) => s.externalMissionId!));
+
+  const all: ExternalMission[] = [];
+  for (let page = 0; page < maxPages; page += 1) {
+    const skip = page * SMART_SYNC_PAGE_SIZE;
+    const rows = await client.fetchMissionPage(status, skip, SMART_SYNC_PAGE_SIZE);
+    if (rows.length === 0) break;
+
+    const allSynced = rows.every((r) => syncedIds.has(Number(r.id)));
+    all.push(...rows);
+
+    if (allSynced) {
+      console.log(
+        `[mitrooSync] fetchMissionsUntilSynced(${status}): stopping at page ${page} — all ${rows.length} missions already synced`,
+      );
+      break;
+    }
+    if (rows.length < SMART_SYNC_PAGE_SIZE) break; // last page
+  }
+  console.log(
+    `[mitrooSync] fetchMissionsUntilSynced(${status}): fetched ${all.length} mission(s) across pages`,
+  );
+  return all;
+}
+
 export async function syncClosedServices(departmentId: number): Promise<SyncResult> {
   const result: SyncResult = { created: 0, updated: 0, errors: [] };
   try {
     const client = await getClient(departmentId);
-    console.log("[mitrooSync] syncClosedServices: fetching closed missions...");
-    const missions = await client.fetchClosedMissions();
+    console.log("[mitrooSync] syncClosedServices: fetching closed missions (smart pagination)...");
+    const missions = await fetchMissionsUntilSynced(departmentId, client, "closed", MAX_CLOSED_PAGES);
     console.log(`[mitrooSync] syncClosedServices: closed=${missions.length}`);
     const shiftToServiceId = await processMissions(departmentId, missions, client, result);
     console.log(
@@ -938,8 +995,8 @@ export async function syncCompletedServices(departmentId: number): Promise<SyncR
   const result: SyncResult = { created: 0, updated: 0, errors: [] };
   try {
     const client = await getClient(departmentId);
-    console.log("[mitrooSync] syncCompletedServices: fetching finished missions...");
-    const missions = await client.fetchFinishedMissions();
+    console.log("[mitrooSync] syncCompletedServices: fetching finished missions (smart pagination)...");
+    const missions = await fetchMissionsUntilSynced(departmentId, client, "finished", MAX_FINISHED_PAGES);
     console.log(`[mitrooSync] syncCompletedServices: finished=${missions.length}`);
     const shiftToServiceId = await processMissions(departmentId, missions, client, result);
     console.log(
@@ -1445,8 +1502,8 @@ export async function syncFinalizedServices(departmentId: number): Promise<SyncR
   try {
     const client = await getClient(departmentId);
 
-    console.log("[mitrooSync] syncFinalizedServices: fetching finalized missions...");
-    const finalizedMissions = await client.fetchFinalizedMissions();
+    console.log("[mitrooSync] syncFinalizedServices: fetching finalized missions (smart pagination)...");
+    const finalizedMissions = await fetchMissionsUntilSynced(departmentId, client, "finalized", MAX_FINALIZED_PAGES);
     console.log(`[mitrooSync] syncFinalizedServices: finalized=${finalizedMissions.length}`);
 
     await processFinalizedMissions(departmentId, client, finalizedMissions, result);
@@ -2531,8 +2588,8 @@ export async function autoUpdateSyncConfig(
     console.log(`[mitrooSync] autoUpdateSyncConfig: promoted user ${userId} to missionAdmin in dept ${dept.id}`);
   }
 
-  syncAllServices(dept.id).catch((e) =>
-    console.error(`[mitrooSync] autoUpdateSyncConfig: syncAllServices failed for dept ${dept!.id}:`, e),
+  syncActiveServices(dept.id).catch((e) =>
+    console.error(`[mitrooSync] autoUpdateSyncConfig: syncActiveServices failed for dept ${dept!.id}:`, e),
   );
 }
 
@@ -2545,8 +2602,16 @@ export async function autoSyncAllDepartments(): Promise<void> {
   if (!configs.length) return;
   console.log(`[mitrooSync] autoSyncAllDepartments: syncing ${configs.length} department(s)`);
   for (const config of configs) {
-    syncAllServices(config.departmentId).catch((e) =>
-      console.error(`[mitrooSync] autoSyncAllDepartments: dept ${config.departmentId} failed:`, e),
-    );
+    const deptId = config.departmentId;
+
+    // Fire each lifecycle stage sequentially to respect shared PHP session,
+    // but don't block the cron loop on individual failures.
+    syncActiveServices(deptId)
+      .then(() => syncClosedServices(deptId))
+      .then(() => syncCompletedServices(deptId))
+      .then(() => syncFinalizedServices(deptId))
+      .catch((e) =>
+        console.error(`[mitrooSync] autoSyncAllDepartments: dept ${deptId} failed:`, e),
+      );
   }
 }

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import prisma from "../lib/prisma";
 import { authenticate, isMissionAdminInDepartment } from "../middleware/auth";
 import { sendServiceEnrollmentEmail, sendServiceStatusEmail } from "../lib/email";
@@ -92,6 +93,17 @@ async function requireServiceAdmin(req: Request, res: Response, departmentId: nu
   return true;
 }
 
+// Wire-format normalizer: Prisma enum values use underscores but the API wire
+// format uses hyphens (e.g. not_participated → not-participated).
+function normalizeServiceWireFormat(svc: any): any {
+  if (svc.userServices) {
+    for (const us of svc.userServices) {
+      us.status = (us.status as string).replace(/_/g, '-');
+    }
+  }
+  return svc;
+}
+
 // ── GET /api/services ───────────────────────────
 router.get("/", async (req: Request, res: Response) => {
   const { departmentId, includeEnrollments, fromDate, toDate, specializationId, pastOnly, includeExpired, lifecycleStatus, page, limit } = req.query;
@@ -156,8 +168,20 @@ router.get("/", async (req: Request, res: Response) => {
     };
   }
 
-  const pageNum = page ? parseInt(page as string, 10) : 1;
-  const limitNum = limit ? parseInt(limit as string, 10) : undefined;
+  const pageRaw = page ? parseInt(page as string, 10) : NaN;
+  const limitRaw = limit ? parseInt(limit as string, 10) : NaN;
+  const pageNum = isNaN(pageRaw) ? 1 : pageRaw;
+  const limitNum = isNaN(limitRaw) ? undefined : limitRaw;
+
+  // Validate pagination params if provided
+  if (limitNum !== undefined && (limitNum < 1 || !Number.isInteger(limitNum))) {
+    res.status(400).json({ error: "Invalid limit parameter" });
+    return;
+  }
+  if (page && (pageNum < 1 || !Number.isInteger(pageNum))) {
+    res.status(400).json({ error: "Invalid page parameter" });
+    return;
+  }
 
   const queryOptions: any = {
     where,
@@ -170,7 +194,7 @@ router.get("/", async (req: Request, res: Response) => {
   }
 
   const services = await prisma.service.findMany(queryOptions);
-  res.json(services);
+  res.json(services.map(normalizeServiceWireFormat));
 });
 
 // ── GET /api/services/my ────────────────────────
@@ -550,6 +574,10 @@ router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
     }
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+      res.status(404).json({ error: "Δεν βρέθηκε εγγραφή χρήστη" });
+      return;
+    }
     throw err;
   }
 });
@@ -577,9 +605,13 @@ router.patch("/:sid/users/:uid/participation", async (req: Request, res: Respons
       data: { status: prismaStatus },
       include: { user: { select: { id: true, eame: true, forename: true, surname: true } } },
     });
-    res.json(record);
+    res.json({ ...record, status: (record.status as string).replace(/_/g, '-') });
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+      res.status(404).json({ error: "Δεν βρέθηκε εγγραφή συμμετοχής" });
+      return;
+    }
     throw err;
   }
 });

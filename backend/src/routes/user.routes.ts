@@ -173,7 +173,7 @@ router.get("/stats", async (req: Request, res: Response) => {
       departments: { include: { department: { select: { id: true, name: true } } } },
       specializations: { include: { specialization: { select: { id: true, name: true } } } },
       services: {
-        where: { status: "accepted" },
+        where: { status: { in: ["accepted", "participated"] } },
         select: {
           hours: true,
           hoursVol: true,

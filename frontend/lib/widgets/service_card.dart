@@ -42,6 +42,7 @@ Color enrollmentStatusColor(String status) {
     case 'participated':
       return const Color(0xFF0891B2);
     case 'not-participated':
+    case 'not_participated':
       return const Color(0xFF6B7280);
     default:
       return const Color(0xFF6B7280);
@@ -59,6 +60,7 @@ Map<String, dynamic> enrollStatusDisplay(String status) {
     case 'participated':
       return {'label': 'Παρουσιάστηκε', 'color': const Color(0xFF0891B2)};
     case 'not-participated':
+    case 'not_participated':
       return {'label': 'Δεν παρ.', 'color': const Color(0xFF6B7280)};
     default:
       return {'label': status, 'color': const Color(0xFF6B7280)};
@@ -550,6 +552,7 @@ class ServiceCard extends StatelessWidget {
       'rejected': 2,
       'participated': 3,
       'not-participated': 4,
+      'not_participated': 4,
     };
     sorted.sort((a, b) =>
         (order[a['status']] ?? 5).compareTo(order[b['status']] ?? 5));
@@ -563,7 +566,11 @@ class ServiceCard extends StatelessWidget {
     final participatedCount =
         userServices.where((u) => u['status'] == 'participated').length;
     final notParticipatedCount =
-        userServices.where((u) => u['status'] == 'not-participated').length;
+        userServices
+            .where((u) =>
+                u['status'] == 'not-participated' ||
+                u['status'] == 'not_participated')
+            .length;
 
     return Container(
       width: double.infinity,
@@ -714,7 +721,7 @@ class ServiceCard extends StatelessWidget {
           tooltip: 'Μη συμμετοχή',
           onTap: () => onUpdateParticipation!(userId, 'not-participated'),
         ));
-      } else if (st == 'not-participated') {
+      } else if (st == 'not-participated' || st == 'not_participated') {
         actions.add(ServiceCompactIconBtn(
           icon: Icons.undo,
           color: const Color(0xFFF59E0B),
