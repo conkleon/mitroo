@@ -407,7 +407,10 @@ async function processMissions(
 
   const updateOps: Array<ReturnType<typeof prisma.service.update>> = [];
   const createOps: Array<ReturnType<typeof prisma.service.create>> = [];
-  const createShiftIds: number[] = [];
+  // Parallel to createOps: the externalShiftId for each create, or null for stubs (mission-level).
+  // Must stay in sync with createOps — one entry per push — so the index mapping after
+  // $transaction correctly associates each returned service with its shift ID.
+  const createShiftIds: (number | null)[] = [];
 
   for (const mission of missions) {
     const missionId = Number(mission.id);
@@ -457,6 +460,7 @@ async function processMissions(
               },
             }),
           );
+          createShiftIds.push(null); // stub has no shift ID — must stay in sync with createOps
           result.created++;
         }
       } catch (e: unknown) {
@@ -563,9 +567,9 @@ async function processMissions(
     const batch = createOps.slice(i, i + batchSize);
     const results = await prisma.$transaction(batch);
     for (let j = 0; j < results.length; j++) {
-      const shiftIdx = i + j;
-      if (shiftIdx < createShiftIds.length) {
-        shiftToServiceId.set(createShiftIds[shiftIdx], results[j].id);
+      const shiftId = createShiftIds[i + j];
+      if (shiftId !== null && shiftId !== undefined) {
+        shiftToServiceId.set(shiftId, results[j].id);
       }
     }
   }
@@ -928,13 +932,22 @@ async function fetchMissionsUntilSynced(
   status: string,
   maxPages: number,
 ): Promise<ExternalMission[]> {
+  // Map API URL path segment to Prisma ServiceLifecycleStatus enum value
+  const API_STATUS_MAP: Record<string, (typeof LIFECYCLE_ORDER)[number]> = {
+    open: "active",
+    closed: "closed",
+    finished: "completed",
+    finalized: "finalized",
+  };
+  const lifecycleStatus = API_STATUS_MAP[status] ?? status;
+
   // Only treat a mission as "already synced" if it exists with this lifecycle
   // status or a later one. Otherwise a mission synced as "active" would
   // incorrectly block the "closed" sync from picking up its status transition.
-  const statusIdx = LIFECYCLE_ORDER.indexOf(status as (typeof LIFECYCLE_ORDER)[number]);
+  const statusIdx = LIFECYCLE_ORDER.indexOf(lifecycleStatus);
   const relevantStatuses = statusIdx >= 0
-    ? (LIFECYCLE_ORDER.slice(statusIdx) as ("active" | "closed" | "completed" | "finalized")[])
-    : [status as "active" | "closed" | "completed" | "finalized"];
+    ? LIFECYCLE_ORDER.slice(statusIdx)
+    : [lifecycleStatus];
 
   const existingServices = await prisma.service.findMany({
     where: {

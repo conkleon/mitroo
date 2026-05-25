@@ -331,6 +331,21 @@ export class MitrooClient {
       if (primary) identity.phonePrimary = primary;
       const secondary = [phone1, phone2, mobile].find((p) => p && p !== primary);
       if (secondary) identity.phoneSecondary = secondary;
+      debugExternal("fetchProfileIdentity: extracted phones", { primary, secondary });
+    } else {
+      // Fallback: try alternative HTML patterns
+      const telMatch = html.match(
+        /class="[^"]*collections-content[^"]*"[^>]*>[\s]*([+\d][\d\s()-]*)/,
+      );
+      if (telMatch?.[1]) {
+        identity.phonePrimary = telMatch[1].trim();
+        debugExternal("fetchProfileIdentity: extracted phone via fallback", { phone: identity.phonePrimary });
+      } else {
+        debugExternal("fetchProfileIdentity: no phone numbers found in HTML", {
+          hasTelLabel: /Τηλέφωνα/.test(html),
+          snippet: html.slice(0, 500),
+        });
+      }
     }
 
     // Birth date: "DD-MM-YYYY (age ετών)"

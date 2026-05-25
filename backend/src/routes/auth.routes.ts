@@ -398,6 +398,16 @@ router.post("/login", async (req: Request, res: Response) => {
         if (profile.address) profileUpdateData.address = profile.address;
         if (Object.keys(profileUpdateData).length > 0) {
           await prisma.user.update({ where: { id: user.id }, data: profileUpdateData });
+          console.log("[auth] synced profile fields after login:", {
+            userId: user.id,
+            hasPhone: Boolean(profileUpdateData.phonePrimary),
+            fields: Object.keys(profileUpdateData),
+          });
+        } else {
+          console.log("[auth] no profile fields to sync after login (profile had no phone/birth/address)", {
+            userId: user.id,
+            profileKeys: Object.keys(profile),
+          });
         }
         if (profile.specializationNames?.length) {
           await syncProfileSpecializations(user.id, profile.specializationNames);
