@@ -18,6 +18,7 @@ export function victimToBundle(victim: VictimFull): fhir4.Bundle {
   if (victim.medicalHistory) {
     entries.push({ resource: buildCondition(victim.medicalHistory, 'problem-list-item', patientRef, 'resolved') });
   }
+  // Allergies stored as free text; using Condition (problem-list-item) per approved spec rather than AllergyIntolerance
   if (victim.allergies) {
     entries.push({ resource: buildCondition(victim.allergies, 'problem-list-item', patientRef) });
   }
@@ -47,8 +48,8 @@ export function victimToBundle(victim: VictimFull): fhir4.Bundle {
     if (vs.heartRate != null) entries.push({ resource: buildIntObs(LOINC.HEART_RATE, vs.heartRate, patientRef, dt) });
     if (vs.respiratoryRate != null) entries.push({ resource: buildIntObs(LOINC.RESPIRATORY_RATE, vs.respiratoryRate, patientRef, dt) });
     if (vs.oxygenSat != null) entries.push({ resource: buildIntObs(LOINC.OXYGEN_SAT, vs.oxygenSat, patientRef, dt) });
-    if (vs.temperature != null) entries.push({ resource: buildDecimalObs(LOINC.TEMPERATURE, vs.temperature, patientRef, dt) });
-    if (vs.bloodGlucose != null) entries.push({ resource: buildDecimalObs(LOINC.BLOOD_GLUCOSE, vs.bloodGlucose, patientRef, dt) });
+    if (vs.temperature != null) entries.push({ resource: buildDecimalObs(LOINC.TEMPERATURE, vs.temperature, '°C', 'Cel', patientRef, dt) });
+    if (vs.bloodGlucose != null) entries.push({ resource: buildDecimalObs(LOINC.BLOOD_GLUCOSE, vs.bloodGlucose, 'mmol/L', 'mmol/L', patientRef, dt) });
     if (vs.painScore != null) entries.push({ resource: buildIntObs(LOINC.PAIN_SCORE, vs.painScore, patientRef, dt) });
   }
 
@@ -137,13 +138,20 @@ function buildIntObs(loincCode: string, value: number, subjectRef: string, effec
   return obs;
 }
 
-function buildDecimalObs(loincCode: string, value: number, subjectRef: string, effectiveDateTime?: string): fhir4.Observation {
+function buildDecimalObs(
+  loincCode: string,
+  value: number,
+  unit: string,
+  ucumCode: string,
+  subjectRef: string,
+  effectiveDateTime?: string,
+): fhir4.Observation {
   const obs: fhir4.Observation = {
     resourceType: 'Observation',
     status: 'final',
     code: { coding: [{ system: FHIR_SYSTEM.LOINC, code: loincCode }] },
     subject: { reference: subjectRef },
-    valueQuantity: { value },
+    valueQuantity: { value, unit, system: FHIR_SYSTEM.UCUM, code: ucumCode },
   };
   if (effectiveDateTime) obs.effectiveDateTime = effectiveDateTime;
   return obs;
