@@ -1,9 +1,77 @@
+/// <reference path="../fhir/fhir4.d.ts" />
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
-import { authenticate, isMissionAdminInDepartment } from "../middleware/auth";
+import { authenticate, isMissionAdminInDepartment, authenticateOrApiKey } from "../middleware/auth";
+import { victimToBundle } from "../fhir/victimToBundle";
+import { bundleToVictim } from "../fhir/bundleToVictim";
 
 const router = Router();
+
+// ── FHIR routes (authenticateOrApiKey bypasses global JWT middleware) ──
+
+// ── GET /api/victims/:id/fhir ────────────────────
+router.get("/:id/fhir", authenticateOrApiKey, async (req: Request, res: Response) => {
+  const victimId = parseInt(req.params.id as string);
+  const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
+
+  if (!(await canReadVictim(victimId, userId, isAdmin))) {
+    res.status(403).json({ error: "Δεν έχετε δικαίωμα" });
+    return;
+  }
+
+  const victim = await prisma.victim.findUnique({
+    where: { id: victimId },
+    include: { vitalSigns: true, treatments: true },
+  });
+
+  if (!victim) {
+    res.status(404).json({ error: "Δεν βρέθηκε" });
+    return;
+  }
+
+  const bundle = victimToBundle(victim);
+  res.setHeader("Content-Type", "application/fhir+json");
+  res.json(bundle);
+});
+
+// ── POST /api/victims/fhir ───────────────────────
+router.post("/fhir", authenticateOrApiKey, async (req: Request, res: Response) => {
+  const body = req.body;
+
+  if (!body || body.resourceType !== "Bundle") {
+    res.status(400).json({ error: "Expected FHIR R4 Bundle" });
+    return;
+  }
+
+  let victimInput;
+  try {
+    victimInput = bundleToVictim(body as fhir4.Bundle);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message ?? "Invalid Bundle" });
+    return;
+  }
+
+  try {
+    const data = createSchema.parse(victimInput);
+    const victim = await prisma.victim.create({
+      data: {
+        ...data,
+        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
+        createdById: req.user!.userId,
+      },
+    });
+    res.status(201).json(victim);
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res.status(422).json({ error: "Μη έγκυρα δεδομένα", details: err.errors });
+      return;
+    }
+    throw err;
+  }
+});
+
 router.use(authenticate);
 
 // ── Zod schemas ──────────────────────────────────
@@ -144,7 +212,7 @@ async function canWriteVictim(
 // ── GET /api/victims ─────────────────────────────
 
 router.get("/", async (req: Request, res: Response) => {
-  const { serviceId, search, dateFrom, dateTo, status, page, limit } = req.query;
+  const { serviceId, search, dateFrom, dateTo, status, createdByIds, page, limit } = req.query;
   const userId = req.user!.userId;
   const isAdmin = req.user!.isAdmin;
 
@@ -153,6 +221,13 @@ router.get("/", async (req: Request, res: Response) => {
 
     if (serviceId) {
       where.serviceId = Number(serviceId);
+    }
+
+    if (typeof createdByIds === "string" && createdByIds.trim().length > 0) {
+      const ids = createdByIds.split(",").map((s) => Number(s.trim())).filter((n) => !isNaN(n));
+      if (ids.length > 0) {
+        where.createdById = { in: ids };
+      }
     }
 
     // Search filter — case-insensitive name contains

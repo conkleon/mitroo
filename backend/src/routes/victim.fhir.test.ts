@@ -1,6 +1,7 @@
 /// <reference path="../fhir/fhir4.d.ts" />
 import request from 'supertest';
 import express from 'express';
+import jwt from 'jsonwebtoken';
 
 jest.mock('../lib/prisma', () => ({
   __esModule: true,
@@ -118,6 +119,43 @@ describe('GET /victims/:id/fhir', () => {
 
     const patient = res.body.entry.find((e: any) => e.resource?.resourceType === 'Patient');
     expect(patient.resource.name[0].text).toBe('Test Patient');
+  });
+
+  it('returns 200 Bundle when authenticated via JWT', async () => {
+    mockVictimFindUnique.mockResolvedValue(VICTIM_DB);
+    const token = jwt.sign(
+      { userId: 1, isAdmin: false },
+      process.env.JWT_SECRET!,
+    );
+    const res = await request(buildApp())
+      .get('/victims/1/fhir')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch('application/fhir+json');
+    expect(res.body.resourceType).toBe('Bundle');
+  });
+
+  it('returns 403 when authenticated user lacks read access', async () => {
+    // First call: canReadVictim checks victim ownership (different createdById)
+    // Second call: victim fetch after access check (never reached)
+    const mockUserService = prisma.userService.findUnique as jest.Mock;
+    const mockUserDepartmentCount = prisma.userDepartment.count as jest.Mock;
+
+    // Victim belongs to user 99, not user 2; serviceId is null so no enrollment check
+    mockVictimFindUnique.mockResolvedValue({ ...VICTIM_DB, createdById: 99, serviceId: null });
+    mockUserService.mockResolvedValue(null);
+    mockUserDepartmentCount.mockResolvedValue(0);
+
+    const token = jwt.sign(
+      { userId: 2, isAdmin: false },
+      process.env.JWT_SECRET!,
+    );
+    const res = await request(buildApp())
+      .get('/victims/1/fhir')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(403);
   });
 });
 
