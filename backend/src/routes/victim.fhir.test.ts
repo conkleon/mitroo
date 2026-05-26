@@ -44,7 +44,7 @@ const VICTIM_DB = {
   gcsVerbal: 5,
   gcsMotor: 6,
   gcsTotal: 15,
-  avpu: 'A',
+  avpu: 'ALERT',
   latitude: null,
   longitude: null,
   locationNotes: null,

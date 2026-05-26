@@ -71,6 +71,13 @@ export function bundleToVictim(bundle: fhir4.Bundle): CreateVictimInput {
     observations.find(o => o.code.coding?.[0]?.code === code)?.valueInteger ?? null;
 
   // AVPU
+  const AVPU_MAP: Record<string, 'ALERT' | 'VOICE' | 'PAIN' | 'UNRESPONSIVE'> = {
+    ALERT: 'ALERT', A: 'ALERT',
+    VOICE: 'VOICE', V: 'VOICE',
+    PAIN: 'PAIN',   P: 'PAIN',
+    UNRESPONSIVE: 'UNRESPONSIVE', U: 'UNRESPONSIVE',
+  };
+
   const avpuObs = observations.find(
     o =>
       o.code.coding?.[0]?.system === FHIR_SYSTEM.SNOMED &&
@@ -108,7 +115,7 @@ export function bundleToVictim(bundle: fhir4.Bundle): CreateVictimInput {
     gcsVerbal: findIntObs(LOINC.GCS_VERBAL),
     gcsMotor: findIntObs(LOINC.GCS_MOTOR),
     gcsTotal: findIntObs(LOINC.GCS_TOTAL),
-    avpu: avpuObs?.valueCodeableConcept?.text ?? null,
+    avpu: AVPU_MAP[(avpuObs?.valueCodeableConcept?.text ?? '').toUpperCase()] ?? null,
     serviceId,
     notes: null,
   };
