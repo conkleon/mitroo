@@ -70,6 +70,27 @@ export async function isMissionAdminInDepartment(userId: number, departmentId: n
   return count > 0;
 }
 
+/**
+ * Accepts either a valid X-Api-Key header (for external FHIR integrations)
+ * or a valid JWT Bearer token. Falls through to JWT auth if API key is absent
+ * or does not match.
+ */
+export function authenticateOrApiKey(req: Request, res: Response, next: NextFunction): void {
+  const apiKey = req.headers['x-api-key'];
+  const expectedKey = process.env.FHIR_API_KEY;
+
+  if (expectedKey && apiKey === expectedKey) {
+    req.user = {
+      userId: parseInt(process.env.FHIR_SYSTEM_USER_ID ?? '0', 10),
+      isAdmin: true,
+    };
+    next();
+    return;
+  }
+
+  authenticate(req, res, next);
+}
+
 /** Require system-admin OR mission-admin over the department returned by getDeptId. */
 export function requireAdminOrMissionAdminForDept(
   getDeptId: (req: Request) => number,
