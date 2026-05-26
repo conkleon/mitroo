@@ -514,10 +514,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         userServices.where((u) => u['status'] == 'not-participated').toList();
     // Accepted + participation statuses shown together
     final allAccepted = [...accepted, ...participated, ...notParticipated];
-    final acceptedUserIds = allAccepted
-        .map((us) => (us['user']?['id'] as int?) ?? 0)
-        .where((id) => id > 0)
-        .toList();
+
 
     // Format short date for header
     String _shortDate(String? iso) {
@@ -666,11 +663,11 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                   ? _buildWideLayout(svc, requested, accepted, rejected,
                       participated, notParticipated, allAccepted, vehicleLogs, visibility,
                       responsibleUser, canManage, isAcceptedMember, isMember,
-                      lifecycleStatus, acceptedUserIds, userServices)
+                      lifecycleStatus, userServices)
                   : _buildCompactLayout(svc, requested, accepted, rejected,
                       participated, notParticipated, allAccepted, vehicleLogs, visibility,
                       responsibleUser, canManage, isAcceptedMember, isMember,
-                      lifecycleStatus, acceptedUserIds, userServices),
+                      lifecycleStatus, userServices),
             );
           },
         ),
@@ -693,7 +690,6 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     bool isAcceptedMember,
     bool isMember,
     String lifecycleStatus,
-    List<int> acceptedUserIds,
     List<dynamic> userServices,
   ) {
     final canManageParticipation = canManage &&
@@ -732,10 +728,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                       vehicleLogs: vehicleLogs, formatDate: _formatDate),
                   const SizedBox(height: 16),
                   _VictimsSection(
-                    serviceId: widget.serviceId,
                     startAt: startAt,
                     endAt: endAt,
-                    acceptedUserIds: acceptedUserIds,
                   ),
                 ],
               ),
@@ -800,7 +794,6 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     bool isAcceptedMember,
     bool isMember,
     String lifecycleStatus,
-    List<int> acceptedUserIds,
     List<dynamic> userServices,
   ) {
     final canManageParticipation = canManage &&
@@ -858,10 +851,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         _VehicleLogsCard(vehicleLogs: vehicleLogs, formatDate: _formatDate),
         const SizedBox(height: 16),
         _VictimsSection(
-          serviceId: widget.serviceId,
           startAt: startAt,
           endAt: endAt,
-          acceptedUserIds: acceptedUserIds,
         ),
       ],
     );
@@ -2130,16 +2121,12 @@ class _HeaderChip extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 
 class _VictimsSection extends StatefulWidget {
-  final int serviceId;
   final String? startAt;
   final String? endAt;
-  final List<int> acceptedUserIds;
 
   const _VictimsSection({
-    required this.serviceId,
     this.startAt,
     this.endAt,
-    this.acceptedUserIds = const [],
   });
 
   @override
@@ -2157,39 +2144,17 @@ class _VictimsSectionState extends State<_VictimsSection> {
   }
 
   Future<void> _loadVictims() async {
+    if (widget.startAt == null || widget.endAt == null) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
     final provider = context.read<VictimProvider>();
-    final seen = <int>{};
-    final merged = <Map<String, dynamic>>[];
-
-    void addUnique(List<Map<String, dynamic>> list) {
-      for (final v in list) {
-        final id = v['id'] as int;
-        if (!seen.contains(id)) {
-          seen.add(id);
-          merged.add(Map<String, dynamic>.from(v));
-        }
-      }
-    }
-
-    // Fetch directly linked victims (by serviceId)
-    await provider.fetchVictims(serviceId: widget.serviceId, limit: 100);
-    addUnique(provider.victims);
-
-    // Fetch victims documented by accepted users during the service timeframe
-    final hasTimeWindow = widget.startAt != null &&
-        widget.endAt != null &&
-        widget.acceptedUserIds.isNotEmpty;
-    if (hasTimeWindow) {
-      await provider.fetchVictims(
-        createdByIds: widget.acceptedUserIds,
-        dateFrom: widget.startAt,
-        dateTo: widget.endAt,
-        limit: 100,
-      );
-      addUnique(provider.victims);
-    }
-
-    if (mounted) setState(() { _victims = merged; _loading = false; });
+    await provider.fetchVictims(
+      dateFrom: widget.startAt,
+      dateTo: widget.endAt,
+      limit: 100,
+    );
+    if (mounted) setState(() { _victims = List<Map<String, dynamic>>.from(provider.victims); _loading = false; });
   }
 
   @override
@@ -2222,16 +2187,6 @@ class _VictimsSectionState extends State<_VictimsSection> {
                   ),
                   child: Text('${_victims.length}', style: tt.bodySmall?.copyWith(
                     color: const Color(0xFFC62828), fontWeight: FontWeight.w700)),
-                ),
-                const SizedBox(width: 10),
-                IconButton(
-                  onPressed: () => context.push('/victims/create?serviceId=${widget.serviceId}'),
-                  icon: const Icon(Icons.add_circle_outline, size: 22),
-                  tooltip: 'Προσθήκη Περιστατικού',
-                  style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFFC62828),
-                    foregroundColor: Colors.white,
-                  ),
                 ),
               ],
             ),
