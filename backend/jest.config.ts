@@ -8,9 +8,6 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  transform: {
-    '^.+\\.tsx?$': ['ts-jest', { diagnostics: { warnOnly: true } }],
-  },
 };
 
 export default config;
