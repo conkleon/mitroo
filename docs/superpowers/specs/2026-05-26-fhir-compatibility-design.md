@@ -22,7 +22,7 @@ A new `backend/src/fhir/` module contains three files:
 | `victimToBundle.ts` | Pure export mapper: `victimToBundle(victim) → fhir.Bundle` |
 | `bundleToVictim.ts` | Pure import mapper: `bundleToVictim(bundle) → CreateVictimInput` |
 
-Two endpoints are added to `victim.routes.ts`, both protected by the existing `authenticate` middleware:
+Two endpoints are added to `victim.routes.ts`. They accept **either** a valid Mitroo JWT (`authenticate` middleware) **or** a valid API key (`requireFhirApiKey` middleware), allowing both internal app users and external EHR systems to use the same endpoints:
 
 - `GET /api/victims/:id/fhir` — fetches victim with vitals and treatments, calls `victimToBundle`, responds with `Content-Type: application/fhir+json`
 - `POST /api/victims/fhir` — accepts a FHIR Bundle body, calls `bundleToVictim`, validates the result with the existing Zod `createSchema`, then creates the victim via Prisma (same code path as `POST /api/victims`)
@@ -62,6 +62,30 @@ On **import**, `bundleToVictim` extracts resources by `resourceType`, maps known
 
 ---
 
+## External Access & Authentication
+
+### Network
+In production, nginx proxies `/api/` to the backend, so the FHIR endpoints are reachable at:
+```
+https://your-domain/api/victims/:id/fhir
+https://your-domain/api/victims/fhir
+```
+No extra infrastructure is required.
+
+### API Key Auth for External Systems
+A new `requireFhirApiKey` middleware is added to `backend/src/middleware/auth.ts`. It reads the `X-Api-Key` request header and compares it against `FHIR_API_KEY` from the environment. If the header matches, the request proceeds with a synthetic admin-level identity (full read/write access, no department scoping). If it does not match, the middleware falls through to the standard JWT `authenticate` middleware — so both auth paths work on the same endpoints.
+
+**Environment:**
+```
+FHIR_API_KEY=<long random secret>   # added to .env and .env.example
+```
+
+The API key is provisioned once and shared with the external EHR system out-of-band (e.g. over a secure channel). Key rotation requires updating the env var and restarting the backend.
+
+**Error:** Missing or invalid `X-Api-Key` when no JWT is present → 401 `{ error: "Unauthorized" }` (same as existing JWT failure).
+
+---
+
 ## Dependency
 
 Add `@types/fhir` as a dev dependency for TypeScript type definitions of FHIR R4 structures. No runtime FHIR library is required.
@@ -95,7 +119,7 @@ No `OperationOutcome` responses — this is an internal EMS tool, not a public F
 |---|---|
 | `backend/src/fhir/victimToBundle.test.ts` | Full victim with all fields; victim with all-null optionals; GCS-only victim; correct LOINC codes on Observations |
 | `backend/src/fhir/bundleToVictim.test.ts` | Round-trip (export then import produces equivalent input); partial Bundle (missing Conditions/Observations); unknown resource types ignored; Encounter with unknown serviceId → null serviceId |
-| `backend/src/routes/victim.fhir.test.ts` | Auth required on both endpoints; 404 on missing victim; 403 on no access; valid Bundle creates victim; malformed Bundle returns 400 |
+| `backend/src/routes/victim.fhir.test.ts` | JWT auth works; API key auth works; missing auth → 401; invalid API key → 401; 404 on missing victim; 403 on no JWT access; valid Bundle creates victim; malformed Bundle returns 400 |
 
 ---
 
