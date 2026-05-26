@@ -66,7 +66,7 @@ describe('bundleToVictim', () => {
     expect(result.gcsVerbal).toBe(5);
     expect(result.gcsMotor).toBe(6);
     expect(result.gcsTotal).toBe(15);
-    expect(result.avpu).toBe('A');
+    expect(result.avpu).toBe('ALERT');
   });
 
   it('round-trips serviceId from Encounter', () => {

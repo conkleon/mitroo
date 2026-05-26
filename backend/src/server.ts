@@ -31,6 +31,14 @@ setInterval(cleanupExpiredChats, 15 * 60 * 1000);
 // Hourly auto-sync of all departments from original Mitroo
 setInterval(autoSyncAllDepartments, 60 * 60 * 1000);
 
+if (process.env.FHIR_API_KEY) {
+  const systemUserId = parseInt(process.env.FHIR_SYSTEM_USER_ID ?? '', 10);
+  if (!systemUserId || systemUserId <= 0) {
+    console.error('FHIR_API_KEY is set but FHIR_SYSTEM_USER_ID is missing or invalid. Set FHIR_SYSTEM_USER_ID to a valid user ID.');
+    process.exit(1);
+  }
+}
+
 httpServer.listen(PORT, () => {
   console.log(`🚀 Mitroo API running on http://localhost:${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV}`);
