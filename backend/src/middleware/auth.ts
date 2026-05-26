@@ -79,15 +79,13 @@ export async function isMissionAdminInDepartment(userId: number, departmentId: n
 export function authenticateOrApiKey(req: Request, res: Response, next: NextFunction): void {
   const apiKey = req.headers['x-api-key'];
   const expectedKey = process.env.FHIR_API_KEY;
+  const systemUserId = parseInt(process.env.FHIR_SYSTEM_USER_ID ?? '', 10);
 
-  if (expectedKey && typeof apiKey === 'string') {
+  if (expectedKey && systemUserId > 0 && typeof apiKey === 'string') {
     const a = Buffer.from(apiKey);
     const b = Buffer.from(expectedKey);
     if (a.length === b.length && timingSafeEqual(a, b)) {
-      req.user = {
-        userId: parseInt(process.env.FHIR_SYSTEM_USER_ID ?? '0', 10),
-        isAdmin: true,
-      };
+      req.user = { userId: systemUserId, isAdmin: true };
       next();
       return;
     }
