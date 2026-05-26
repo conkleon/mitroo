@@ -49,7 +49,11 @@ export function bundleToVictim(bundle: fhir4.Bundle): CreateVictimInput {
   const emergencyContact = patient.contact?.[0]?.name?.text ?? null;
   const emergencyPhone = patient.contact?.[0]?.telecom?.[0]?.value ?? null;
 
-  // Conditions
+  // Condition disambiguation matches our own victimToBundle output convention:
+  // - encounter-diagnosis → chiefComplaint
+  // - problem-list-item + resolved → medicalHistory
+  // - problem-list-item (no resolved status) → allergies
+  // Third-party bundles with different conventions may not map correctly.
   const chiefComplaintCondition = conditions.find(
     c => c.category?.[0]?.coding?.[0]?.code === 'encounter-diagnosis',
   );
@@ -74,7 +78,9 @@ export function bundleToVictim(bundle: fhir4.Bundle): CreateVictimInput {
   );
 
   // Medications
-  const medications = (medStatement as any)?.medicationCodeableConcept?.text ?? null;
+  const medications =
+    (medStatement as fhir4.MedicationStatement & { medicationCodeableConcept?: fhir4.CodeableConcept })
+      ?.medicationCodeableConcept?.text ?? null;
 
   // Encounter → serviceId
   let serviceId: number | null = null;
@@ -86,7 +92,7 @@ export function bundleToVictim(bundle: fhir4.Bundle): CreateVictimInput {
   return {
     name,
     age,
-    dateOfBirth: birthDate,
+    dateOfBirth: birthDate ? `${birthDate}T00:00:00.000Z` : null,
     gender,
     address: addr?.line?.[0] ?? null,
     city: addr?.city ?? null,

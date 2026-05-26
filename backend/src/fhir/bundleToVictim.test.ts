@@ -44,7 +44,7 @@ describe('bundleToVictim', () => {
     const result = bundleToVictim(bundle);
 
     expect(result.name).toBe('Παπαδόπουλος Γεώργιος');
-    expect(result.dateOfBirth).toBe('1980-03-15');
+    expect(result.dateOfBirth).toBe('1980-03-15T00:00:00.000Z');
     expect(result.gender).toBe('male');
     expect(result.address).toBe('Οδός Αθηνών 5');
     expect(result.city).toBe('Αθήνα');
