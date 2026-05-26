@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { timingSafeEqual } from "crypto";
 import prisma from "../lib/prisma";
 
 export interface AuthPayload {
@@ -79,13 +80,17 @@ export function authenticateOrApiKey(req: Request, res: Response, next: NextFunc
   const apiKey = req.headers['x-api-key'];
   const expectedKey = process.env.FHIR_API_KEY;
 
-  if (expectedKey && apiKey === expectedKey) {
-    req.user = {
-      userId: parseInt(process.env.FHIR_SYSTEM_USER_ID ?? '0', 10),
-      isAdmin: true,
-    };
-    next();
-    return;
+  if (expectedKey && typeof apiKey === 'string') {
+    const a = Buffer.from(apiKey);
+    const b = Buffer.from(expectedKey);
+    if (a.length === b.length && timingSafeEqual(a, b)) {
+      req.user = {
+        userId: parseInt(process.env.FHIR_SYSTEM_USER_ID ?? '0', 10),
+        isAdmin: true,
+      };
+      next();
+      return;
+    }
   }
 
   authenticate(req, res, next);

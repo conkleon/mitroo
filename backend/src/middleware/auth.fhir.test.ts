@@ -54,4 +54,22 @@ describe('authenticateOrApiKey', () => {
     expect(next).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(401);
   });
+
+  it('calls next() with JWT user when API key is wrong but valid JWT is provided', () => {
+    // Sign a valid JWT
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign({ userId: 42, isAdmin: false }, 'jwt-secret');
+
+    const req = makeReq({
+      'x-api-key': 'wrong-key',
+      authorization: `Bearer ${token}`,
+    });
+    const res = makeRes();
+    const next = jest.fn() as NextFunction;
+
+    authenticateOrApiKey(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(req.user).toEqual(expect.objectContaining({ userId: 42, isAdmin: false }));
+  });
 });
