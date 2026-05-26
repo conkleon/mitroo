@@ -32,6 +32,7 @@ class _FakeVictimProvider extends VictimProvider {
 
   @override
   Future<void> fetchVictims({
+    List<int>? createdByIds,
     int? serviceId,
     String? search,
     String? dateFrom,

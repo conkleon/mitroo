@@ -106,7 +106,7 @@ function normalizeServiceWireFormat(svc: any): any {
 
 // ── GET /api/services ───────────────────────────
 router.get("/", async (req: Request, res: Response) => {
-  const { departmentId, includeEnrollments, fromDate, toDate, specializationId, pastOnly, includeExpired, lifecycleStatus, page, limit } = req.query;
+  const { departmentId, includeEnrollments, fromDate, toDate, search, specializationId, pastOnly, includeExpired, lifecycleStatus, page, limit } = req.query;
   const where: any = {};
   if (departmentId) where.departmentId = Number(departmentId);
 
@@ -137,6 +137,22 @@ router.get("/", async (req: Request, res: Response) => {
         some: { specializationId: Number(specializationId) },
       },
     };
+  }
+
+  // Full-text search across name, location, carrier, description
+  if (search) {
+    const q = search as string;
+    where.AND = [
+      ...(where.AND ?? []),
+      {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { location: { contains: q, mode: 'insensitive' } },
+          { carrier: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+    ];
   }
 
   // Filter by lifecycle status

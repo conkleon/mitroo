@@ -448,7 +448,7 @@ export class MitrooClient {
   /** Fetch a single page of missions for the given lifecycle status. */
   async fetchMissionPage(status: string, skip: number, top: number): Promise<ExternalMission[]> {
     const res = await this._xhr(
-      `/index.php/ajaxdptadmin/GridGetMissions/${status}/?$count=true&$skip=${skip}&$top=${top}`,
+      `/index.php/ajaxdptadmin/GridGetMissions/${status}/?$count=true&$orderby=id+desc&$skip=${skip}&$top=${top}`,
     );
     const text = await res.text();
     try {

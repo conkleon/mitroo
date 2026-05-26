@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/service_provider.dart';
 import '../providers/sync_provider.dart';
@@ -28,6 +30,12 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
   bool _loading = true;
   bool _isSyncing = false;
   String _search = '';
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
+  Timer? _debounceTimer;
+  bool _filtering = false;
+  int? _selectedServiceTypeId;
+  bool _filtersExpanded = false;
   final Set<int> _expandedCards = {};
 
   @override
@@ -42,6 +50,12 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
   }
 
   @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(covariant ClosedServicesTab oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.departmentId != widget.departmentId) {
@@ -49,12 +63,30 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
     }
   }
 
+  String _buildServicesUrl() {
+    final buf = StringBuffer(
+      '/services?departmentId=${widget.departmentId}&includeEnrollments=true&includeExpired=true&lifecycleStatus=closed',
+    );
+    if (_search.isNotEmpty) buf.write('&search=${Uri.encodeComponent(_search)}');
+    if (_dateFrom != null) buf.write('&fromDate=${_fmtDate(_dateFrom!)}');
+    if (_dateTo != null) buf.write('&toDate=${_fmtEndOfDay(_dateTo!)}');
+    return buf.toString();
+  }
+
+  static String _fmtDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}T00:00:00.000';
+
+  static String _fmtEndOfDay(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}T23:59:59.999';
+
+  static String _fmtDisplay(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
       final results = await Future.wait([
-        _api.get(
-            '/services?departmentId=${widget.departmentId}&includeEnrollments=true&includeExpired=true&lifecycleStatus=closed'),
+        _api.get(_buildServicesUrl()),
         _api.get('/departments/${widget.departmentId}/members'),
       ]);
       if (results[0].statusCode == 200 && mounted) {
@@ -65,6 +97,102 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
       }
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _loadServices() async {
+    setState(() => _filtering = true);
+    try {
+      final res = await _api.get(_buildServicesUrl());
+      if (res.statusCode == 200 && mounted) {
+        setState(() => _services = jsonDecode(res.body));
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _filtering = false);
+  }
+
+  void _onSearchChanged(String v) {
+    setState(() => _search = v);
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 400), _loadServices);
+  }
+
+  Future<void> _pickDateFrom() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dateFrom ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _dateFrom = picked);
+    _loadServices();
+  }
+
+  Future<void> _pickDateTo() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _dateTo ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _dateTo = picked);
+    _loadServices();
+  }
+
+  Widget _buildDateButton({
+    required String label,
+    required bool isSet,
+    required VoidCallback onTap,
+    required VoidCallback onClear,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: isSet
+              ? const Color(0xFF7C3AED).withAlpha(15)
+              : const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSet
+                ? const Color(0xFF7C3AED).withAlpha(60)
+                : const Color(0xFFE5E7EB),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_today_outlined,
+                size: 14,
+                color: isSet
+                    ? const Color(0xFF7C3AED)
+                    : const Color(0xFF6B7280)),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: isSet
+                      ? const Color(0xFF7C3AED)
+                      : const Color(0xFF6B7280),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (isSet)
+              GestureDetector(
+                onTap: onClear,
+                child: const Icon(Icons.close,
+                    size: 14, color: Color(0xFF7C3AED)),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> sync() async {
@@ -81,18 +209,23 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
   }
 
   List<dynamic> get _filtered {
-    if (_search.isEmpty) return _services;
-    final q = _search.toLowerCase();
+    if (_selectedServiceTypeId == null) return _services;
     return _services.where((s) {
-      final name = (s['name'] ?? '').toString().toLowerCase();
-      final loc = (s['location'] ?? '').toString().toLowerCase();
-      final carrier = (s['carrier'] ?? '').toString().toLowerCase();
-      final desc = (s['description'] ?? '').toString().toLowerCase();
-      return name.contains(q) ||
-          loc.contains(q) ||
-          carrier.contains(q) ||
-          desc.contains(q);
+      final st = s['serviceType'] as Map<String, dynamic>?;
+      return st?['id'] == _selectedServiceTypeId;
     }).toList();
+  }
+
+  List<Map<String, dynamic>> get _allServiceTypes {
+    final seen = <int>{};
+    final types = <Map<String, dynamic>>[];
+    for (final svc in _services) {
+      final st = svc['serviceType'] as Map<String, dynamic>?;
+      if (st == null) continue;
+      final id = st['id'] as int?;
+      if (id != null && seen.add(id)) types.add(st);
+    }
+    return types;
   }
 
   void _localUpdateStatus(int serviceId, int userId, String newStatus) {
@@ -406,6 +539,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
   Widget build(BuildContext context) {
     super.build(context);
     final filtered = _filtered;
+    final serviceTypes = _allServiceTypes;
 
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
@@ -415,20 +549,163 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Αναζήτηση υπηρεσιών...',
-              prefixIcon: const Icon(Icons.search),
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 12),
-            ),
-            onChanged: (v) => setState(() => _search = v),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Αναζήτηση υπηρεσιών...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                  ),
+                  onChanged: _onSearchChanged,
+                ),
+              ),
+              if (serviceTypes.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () =>
+                      setState(() => _filtersExpanded = !_filtersExpanded),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: 48,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: (_filtersExpanded ||
+                              _selectedServiceTypeId != null)
+                          ? const Color(0xFF7C3AED).withAlpha(15)
+                          : const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: (_filtersExpanded ||
+                                _selectedServiceTypeId != null)
+                            ? const Color(0xFF7C3AED).withAlpha(60)
+                            : const Color(0xFFE5E7EB),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.tune_rounded,
+                          size: 16,
+                          color: (_filtersExpanded ||
+                                  _selectedServiceTypeId != null)
+                              ? const Color(0xFF7C3AED)
+                              : const Color(0xFF6B7280),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _selectedServiceTypeId != null
+                              ? 'Φίλτρα (1)'
+                              : 'Φίλτρα',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: (_filtersExpanded ||
+                                    _selectedServiceTypeId != null)
+                                ? const Color(0xFF7C3AED)
+                                : const Color(0xFF6B7280),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          child: (_filtersExpanded && serviceTypes.isNotEmpty)
+              ? Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                  child: SizedBox(
+                    height: 40,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemCount: serviceTypes.length,
+                      itemBuilder: (context, i) {
+                        final st = serviceTypes[i];
+                        final stId = st['id'] as int;
+                        final selected = _selectedServiceTypeId == stId;
+                        return GestureDetector(
+                          onTap: () => setState(() {
+                            _selectedServiceTypeId = selected ? null : stId;
+                          }),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? const Color(0xFF7C3AED)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: selected
+                                    ? const Color(0xFF7C3AED)
+                                    : const Color(0xFFD1D5DB),
+                              ),
+                            ),
+                            child: Text(
+                              st['name'] ?? '',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: selected
+                                    ? Colors.white
+                                    : const Color(0xFF374151),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildDateButton(
+                  label: _dateFrom != null ? _fmtDisplay(_dateFrom!) : 'Από ημερομηνία',
+                  isSet: _dateFrom != null,
+                  onTap: _pickDateFrom,
+                  onClear: () {
+                    setState(() => _dateFrom = null);
+                    _loadServices();
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildDateButton(
+                  label: _dateTo != null ? _fmtDisplay(_dateTo!) : 'Έως ημερομηνία',
+                  isSet: _dateTo != null,
+                  onTap: _pickDateTo,
+                  onClear: () {
+                    setState(() => _dateTo = null);
+                    _loadServices();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_filtering)
+          const LinearProgressIndicator(minHeight: 2),
         Expanded(
           child: filtered.isEmpty
               ? Center(
@@ -461,6 +738,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                         }),
                         deptMembers: _deptMembers,
                         onComplete: () => _completeService(id, name),
+                        onOpenDetail: () => context.push('/admin/services/$id'),
                         onUpdateStatus:
                             (userId, status) =>
                                 _updateEnrollmentStatus(id, userId, status),

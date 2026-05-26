@@ -61,6 +61,12 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
 
   String _statusLabel() {
     if (_service == null) return '';
+    final lcs = _service!['lifecycleStatus'] as String?;
+    if (lcs == 'finalized') return 'Οριστικοποιημένη';
+    if (lcs == 'completed') return 'Ολοκληρωμένη';
+    if (lcs == 'closed') return 'Κλειστή';
+    if (lcs == 'active') return 'Ενεργή';
+    // Fallback: date-based heuristic
     final now = DateTime.now();
     final start = DateTime.tryParse(_service!['startAt'] ?? '');
     final end = DateTime.tryParse(_service!['endAt'] ?? '');
@@ -76,8 +82,12 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         return const Color(0xFFDC2626);
       case 'Ενεργή':
         return const Color(0xFF059669);
+      case 'Κλειστή':
+        return const Color(0xFFD97706);
       case 'Ολοκληρωμένη':
         return const Color(0xFF6B7280);
+      case 'Οριστικοποιημένη':
+        return const Color(0xFF4B5563);
       default:
         return const Color(0xFF9CA3AF);
     }
@@ -128,6 +138,19 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Το μέλος αφαιρέθηκε')));
+      _load();
+    }
+  }
+
+  Future<void> _updateParticipation(int userId, String status) async {
+    final err = await context
+        .read<ServiceProvider>()
+        .updateParticipation(widget.serviceId, userId, status);
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err)));
+    } else {
       _load();
     }
   }
@@ -467,13 +490,15 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     final visibility = svc['visibility'] as List<dynamic>? ?? [];
     final dept = svc['department'] as Map<String, dynamic>? ?? {};
     final responsibleUser = svc['responsibleUser'] as Map<String, dynamic>?;
+    final lifecycleStatus = svc['lifecycleStatus'] as String? ?? 'active';
     final auth = context.read<AuthProvider>();
     final canManage = auth.isAdmin || auth.isMissionAdmin;
     final currentUserId = auth.user?['id'] as int?;
 
-    // Check if current user is an accepted member of this service
+    // Check if current user is an accepted member of this service (incl. participated/not-participated)
     final isAcceptedMember = userServices.any((us) =>
-        us['user']?['id'] == currentUserId && us['status'] == 'accepted');
+        us['user']?['id'] == currentUserId &&
+        (us['status'] == 'accepted' || us['status'] == 'participated' || us['status'] == 'not-participated'));
     final isMember = userServices.any((us) =>
         us['user']?['id'] == currentUserId);
 
@@ -483,6 +508,16 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         userServices.where((u) => u['status'] == 'accepted').toList();
     final rejected =
         userServices.where((u) => u['status'] == 'rejected').toList();
+    final participated =
+        userServices.where((u) => u['status'] == 'participated').toList();
+    final notParticipated =
+        userServices.where((u) => u['status'] == 'not-participated').toList();
+    // Accepted + participation statuses shown together
+    final allAccepted = [...accepted, ...participated, ...notParticipated];
+    final acceptedUserIds = allAccepted
+        .map((us) => (us['user']?['id'] as int?) ?? 0)
+        .where((id) => id > 0)
+        .toList();
 
     // Format short date for header
     String _shortDate(String? iso) {
@@ -498,7 +533,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         us['user']?['id'] == currentUserId && us['status'] == 'requested');
 
     return Scaffold(
-      floatingActionButton: !canManage && !isAcceptedMember
+      floatingActionButton: !canManage && !isAcceptedMember && lifecycleStatus != 'finalized'
           ? FloatingActionButton.extended(
               heroTag: 'service_detail_fab',
               onPressed: isPending ? _unenrollSelf : _enrollSelf,
@@ -609,7 +644,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                                   ),
                                   _HeaderChip(
                                     icon: Icons.people,
-                                    text: '${accepted.length} μέλη',
+                                    text: '${allAccepted.length} μέλη',
                                   ),
                                   if (requested.isNotEmpty && canManage)
                                     _HeaderChip(
@@ -629,9 +664,13 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               ],
               body: isWide
                   ? _buildWideLayout(svc, requested, accepted, rejected,
-                      vehicleLogs, visibility, responsibleUser, canManage, isAcceptedMember, isMember, userServices)
+                      participated, notParticipated, allAccepted, vehicleLogs, visibility,
+                      responsibleUser, canManage, isAcceptedMember, isMember,
+                      lifecycleStatus, acceptedUserIds, userServices)
                   : _buildCompactLayout(svc, requested, accepted, rejected,
-                      vehicleLogs, visibility, responsibleUser, canManage, isAcceptedMember, isMember, userServices),
+                      participated, notParticipated, allAccepted, vehicleLogs, visibility,
+                      responsibleUser, canManage, isAcceptedMember, isMember,
+                      lifecycleStatus, acceptedUserIds, userServices),
             );
           },
         ),
@@ -644,14 +683,26 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     List<dynamic> requested,
     List<dynamic> accepted,
     List<dynamic> rejected,
+    List<dynamic> participated,
+    List<dynamic> notParticipated,
+    List<dynamic> allAccepted,
     List<dynamic> vehicleLogs,
     List<dynamic> visibility,
     Map<String, dynamic>? responsibleUser,
     bool canManage,
     bool isAcceptedMember,
     bool isMember,
+    String lifecycleStatus,
+    List<int> acceptedUserIds,
     List<dynamic> userServices,
   ) {
+    final canManageParticipation = canManage &&
+        (lifecycleStatus == 'closed' || lifecycleStatus == 'completed');
+    final isFinalized = lifecycleStatus == 'finalized';
+    final showEnrollmentActions = canManage && !isFinalized;
+    final startAt = svc['startAt'] as String?;
+    final endAt = svc['endAt'] as String?;
+
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
@@ -668,7 +719,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                   const SizedBox(height: 16),
                   _ResponsibleUserCard(
                     responsibleUser: responsibleUser,
-                    canManage: canManage,
+                    canManage: canManage && !isFinalized,
                     onPick: _pickResponsibleUser,
                   ),
                   const SizedBox(height: 16),
@@ -680,7 +731,12 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                   _VehicleLogsCard(
                       vehicleLogs: vehicleLogs, formatDate: _formatDate),
                   const SizedBox(height: 16),
-                  _VictimsSection(serviceId: widget.serviceId),
+                  _VictimsSection(
+                    serviceId: widget.serviceId,
+                    startAt: startAt,
+                    endAt: endAt,
+                    acceptedUserIds: acceptedUserIds,
+                  ),
                 ],
               ),
             ),
@@ -701,16 +757,25 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                   ),
                   const SizedBox(height: 16),
                   _PeopleSection(
-                requested: requested,
-                accepted: accepted,
-                rejected: rejected,
-                responsibleUserId: responsibleUser?['id'] as int?,
-                canManage: canManage,
-                onAccept: (uid) => _updateUserStatus(uid, 'accepted'),
-                onReject: (uid) => _updateUserStatus(uid, 'rejected'),
-                onRemove: _removeUser,
-                onEditHours: _editUserHours,
-              ),
+                    requested: requested,
+                    accepted: allAccepted,
+                    rejected: rejected,
+                    responsibleUserId: responsibleUser?['id'] as int?,
+                    canManage: showEnrollmentActions,
+                    canManageParticipation: canManageParticipation,
+                    lifecycleStatus: lifecycleStatus,
+                    onAccept: showEnrollmentActions
+                        ? (uid) => _updateUserStatus(uid, 'accepted')
+                        : null,
+                    onReject: showEnrollmentActions
+                        ? (uid) => _updateUserStatus(uid, 'rejected')
+                        : null,
+                    onRemove: showEnrollmentActions ? _removeUser : null,
+                    onEditHours: canManage ? _editUserHours : null,
+                    onUpdateParticipation: canManageParticipation
+                        ? _updateParticipation
+                        : null,
+                  ),
                 ],
               ),
             ),
@@ -725,14 +790,26 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     List<dynamic> requested,
     List<dynamic> accepted,
     List<dynamic> rejected,
+    List<dynamic> participated,
+    List<dynamic> notParticipated,
+    List<dynamic> allAccepted,
     List<dynamic> vehicleLogs,
     List<dynamic> visibility,
     Map<String, dynamic>? responsibleUser,
     bool canManage,
     bool isAcceptedMember,
     bool isMember,
+    String lifecycleStatus,
+    List<int> acceptedUserIds,
     List<dynamic> userServices,
   ) {
+    final canManageParticipation = canManage &&
+        (lifecycleStatus == 'closed' || lifecycleStatus == 'completed');
+    final isFinalized = lifecycleStatus == 'finalized';
+    final showEnrollmentActions = canManage && !isFinalized;
+    final startAt = svc['startAt'] as String?;
+    final endAt = svc['endAt'] as String?;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
@@ -740,7 +817,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         const SizedBox(height: 16),
         _ResponsibleUserCard(
           responsibleUser: responsibleUser,
-          canManage: canManage,
+          canManage: canManage && !isFinalized,
           onPick: _pickResponsibleUser,
         ),
         const SizedBox(height: 16),
@@ -759,19 +836,33 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         const SizedBox(height: 16),
         _PeopleSection(
           requested: requested,
-          accepted: accepted,
+          accepted: allAccepted,
           rejected: rejected,
           responsibleUserId: responsibleUser?['id'] as int?,
-          canManage: canManage,
-          onAccept: (uid) => _updateUserStatus(uid, 'accepted'),
-          onReject: (uid) => _updateUserStatus(uid, 'rejected'),
-          onRemove: _removeUser,
-          onEditHours: _editUserHours,
+          canManage: showEnrollmentActions,
+          canManageParticipation: canManageParticipation,
+          lifecycleStatus: lifecycleStatus,
+          onAccept: showEnrollmentActions
+              ? (uid) => _updateUserStatus(uid, 'accepted')
+              : null,
+          onReject: showEnrollmentActions
+              ? (uid) => _updateUserStatus(uid, 'rejected')
+              : null,
+          onRemove: showEnrollmentActions ? _removeUser : null,
+          onEditHours: canManage ? _editUserHours : null,
+          onUpdateParticipation: canManageParticipation
+              ? _updateParticipation
+              : null,
         ),
         const SizedBox(height: 16),
         _VehicleLogsCard(vehicleLogs: vehicleLogs, formatDate: _formatDate),
         const SizedBox(height: 16),
-        _VictimsSection(serviceId: widget.serviceId),
+        _VictimsSection(
+          serviceId: widget.serviceId,
+          startAt: startAt,
+          endAt: endAt,
+          acceptedUserIds: acceptedUserIds,
+        ),
       ],
     );
   }
@@ -1152,10 +1243,13 @@ class _PeopleSection extends StatelessWidget {
   final List<dynamic> rejected;
   final int? responsibleUserId;
   final bool canManage;
-  final void Function(int userId) onAccept;
-  final void Function(int userId) onReject;
-  final void Function(int userId, String userName) onRemove;
-  final void Function(Map<String, dynamic> userService) onEditHours;
+  final bool canManageParticipation;
+  final String lifecycleStatus;
+  final void Function(int userId)? onAccept;
+  final void Function(int userId)? onReject;
+  final void Function(int userId, String userName)? onRemove;
+  final void Function(Map<String, dynamic> userService)? onEditHours;
+  final void Function(int userId, String status)? onUpdateParticipation;
 
   const _PeopleSection({
     required this.requested,
@@ -1163,10 +1257,13 @@ class _PeopleSection extends StatelessWidget {
     required this.rejected,
     this.responsibleUserId,
     this.canManage = true,
-    required this.onAccept,
-    required this.onReject,
-    required this.onRemove,
-    required this.onEditHours,
+    this.canManageParticipation = false,
+    this.lifecycleStatus = 'active',
+    this.onAccept,
+    this.onReject,
+    this.onRemove,
+    this.onEditHours,
+    this.onUpdateParticipation,
   });
 
   @override
@@ -1227,14 +1324,14 @@ class _PeopleSection extends StatelessWidget {
                     return _PendingUserTile(
                     userService: us,
                     isResponsible: (user['id'] as int?) == responsibleUserId,
-                    onAccept: () => onAccept(user['id'] as int),
-                    onReject: () => onReject(user['id'] as int),
+                    onAccept: onAccept != null ? () => onAccept!(user['id'] as int) : null,
+                    onReject: onReject != null ? () => onReject!(user['id'] as int) : null,
                   );
                   }),
               const SizedBox(height: 16),
             ],
 
-            // ── Accepted (visible to all) ──
+            // ── Accepted / Participated (visible to all) ──
             if (accepted.isNotEmpty) ...[
               _PeopleGroupHeader(
                 label: 'Εγκεκριμένοι',
@@ -1245,15 +1342,21 @@ class _PeopleSection extends StatelessWidget {
               const SizedBox(height: 8),
               ...accepted.map((us) {
                     final user = us['user'] as Map<String, dynamic>? ?? {};
+                    final uid = user['id'] as int;
                     final name =
                         '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
                             .trim();
+                    final participationStatus = us['status'] as String?;
                     return _AcceptedUserTile(
                     userService: us,
                     isResponsible: (user['id'] as int?) == responsibleUserId,
-                    showActions: canManage,
-                    onRemove: () => onRemove(user['id'] as int, name),
-                    onEditHours: () => onEditHours(us),
+                    showActions: canManage || canManageParticipation,
+                    participationStatus: canManageParticipation ? participationStatus : null,
+                    onToggleParticipation: onUpdateParticipation != null
+                        ? (status) => onUpdateParticipation!(uid, status)
+                        : null,
+                    onRemove: onRemove != null ? () => onRemove!(uid, name) : null,
+                    onEditHours: onEditHours != null ? () => onEditHours!(us) : null,
                   );
                   }),
               const SizedBox(height: 16),
@@ -1270,14 +1373,15 @@ class _PeopleSection extends StatelessWidget {
               const SizedBox(height: 8),
               ...rejected.map((us) {
                     final user = us['user'] as Map<String, dynamic>? ?? {};
+                    final uid = user['id'] as int;
                     final name =
                         '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
                             .trim();
                     return _RejectedUserTile(
                     userService: us,
                     isResponsible: (user['id'] as int?) == responsibleUserId,
-                    onAccept: () => onAccept(user['id'] as int),
-                    onRemove: () => onRemove(user['id'] as int, name),
+                    onAccept: onAccept != null ? () => onAccept!(uid) : null,
+                    onRemove: onRemove != null ? () => onRemove!(uid, name) : null,
                   );
                   }),
             ],
@@ -1349,14 +1453,14 @@ class _PeopleGroupHeader extends StatelessWidget {
 class _PendingUserTile extends StatelessWidget {
   final Map<String, dynamic> userService;
   final bool isResponsible;
-  final VoidCallback onAccept;
-  final VoidCallback onReject;
+  final VoidCallback? onAccept;
+  final VoidCallback? onReject;
 
   const _PendingUserTile({
     required this.userService,
     this.isResponsible = false,
-    required this.onAccept,
-    required this.onReject,
+    this.onAccept,
+    this.onReject,
   });
 
   @override
@@ -1401,20 +1505,22 @@ class _PendingUserTile extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              onPressed: onAccept,
-              icon: const Icon(Icons.check_circle, color: Color(0xFF059669)),
-              iconSize: 22,
-              tooltip: 'Έγκριση',
-              visualDensity: VisualDensity.compact,
-            ),
-            IconButton(
-              onPressed: onReject,
-              icon: const Icon(Icons.cancel, color: Color(0xFFDC2626)),
-              iconSize: 22,
-              tooltip: 'Απόρριψη',
-              visualDensity: VisualDensity.compact,
-            ),
+            if (onAccept != null)
+              IconButton(
+                onPressed: onAccept,
+                icon: const Icon(Icons.check_circle, color: Color(0xFF059669)),
+                iconSize: 22,
+                tooltip: 'Έγκριση',
+                visualDensity: VisualDensity.compact,
+              ),
+            if (onReject != null)
+              IconButton(
+                onPressed: onReject,
+                icon: const Icon(Icons.cancel, color: Color(0xFFDC2626)),
+                iconSize: 22,
+                tooltip: 'Απόρριψη',
+                visualDensity: VisualDensity.compact,
+              ),
           ],
         ),
       ),
@@ -1426,15 +1532,19 @@ class _AcceptedUserTile extends StatelessWidget {
   final Map<String, dynamic> userService;
   final bool isResponsible;
   final bool showActions;
-  final VoidCallback onRemove;
-  final VoidCallback onEditHours;
+  final String? participationStatus;
+  final void Function(String status)? onToggleParticipation;
+  final VoidCallback? onRemove;
+  final VoidCallback? onEditHours;
 
   const _AcceptedUserTile({
     required this.userService,
     this.isResponsible = false,
     this.showActions = true,
-    required this.onRemove,
-    required this.onEditHours,
+    this.participationStatus,
+    this.onToggleParticipation,
+    this.onRemove,
+    this.onEditHours,
   });
 
   @override
@@ -1496,20 +1606,27 @@ class _AcceptedUserTile extends StatelessWidget {
                   ),
                 ),
                 if (showActions) ...[
-                  IconButton(
-                    onPressed: onEditHours,
-                    icon: const Icon(Icons.timer, color: Color(0xFFDC2626)),
-                    iconSize: 20,
-                    tooltip: 'Επεξεργασία ωρών',
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  IconButton(
-                    onPressed: onRemove,
-                    icon: Icon(Icons.person_remove,
-                        color: Color(0xFFF87171), size: 20),
-                    tooltip: 'Αφαίρεση',
-                    visualDensity: VisualDensity.compact,
-                  ),
+                  if (onToggleParticipation != null)
+                    _ParticipationToggle(
+                      currentStatus: participationStatus ?? 'accepted',
+                      onToggle: onToggleParticipation!,
+                    ),
+                  if (onEditHours != null)
+                    IconButton(
+                      onPressed: onEditHours!,
+                      icon: const Icon(Icons.timer, color: Color(0xFFDC2626)),
+                      iconSize: 20,
+                      tooltip: 'Επεξεργασία ωρών',
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  if (onRemove != null)
+                    IconButton(
+                      onPressed: onRemove!,
+                      icon: Icon(Icons.person_remove,
+                          color: Color(0xFFF87171), size: 20),
+                      tooltip: 'Αφαίρεση',
+                      visualDensity: VisualDensity.compact,
+                    ),
                 ],
               ],
             ),
@@ -1541,14 +1658,14 @@ class _AcceptedUserTile extends StatelessWidget {
 class _RejectedUserTile extends StatelessWidget {
   final Map<String, dynamic> userService;
   final bool isResponsible;
-  final VoidCallback onAccept;
-  final VoidCallback onRemove;
+  final VoidCallback? onAccept;
+  final VoidCallback? onRemove;
 
   const _RejectedUserTile({
     required this.userService,
     this.isResponsible = false,
-    required this.onAccept,
-    required this.onRemove,
+    this.onAccept,
+    this.onRemove,
   });
 
   @override
@@ -1593,19 +1710,21 @@ class _RejectedUserTile extends StatelessWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              onPressed: onAccept,
-              icon: const Icon(Icons.check_circle,
-                  color: Color(0xFF059669), size: 20),
-              tooltip: 'Έγκριση',
-              visualDensity: VisualDensity.compact,
-            ),
-            IconButton(
-              onPressed: onRemove,
-              icon: Icon(Icons.delete, color: Color(0xFFF87171), size: 20),
-              tooltip: 'Αφαίρεση',
-              visualDensity: VisualDensity.compact,
-            ),
+            if (onAccept != null)
+              IconButton(
+                onPressed: onAccept,
+                icon: const Icon(Icons.check_circle,
+                    color: Color(0xFF059669), size: 20),
+                tooltip: 'Έγκριση',
+                visualDensity: VisualDensity.compact,
+              ),
+            if (onRemove != null)
+              IconButton(
+                onPressed: onRemove,
+                icon: Icon(Icons.delete, color: Color(0xFFF87171), size: 20),
+                tooltip: 'Αφαίρεση',
+                visualDensity: VisualDensity.compact,
+              ),
           ],
         ),
       ),
@@ -1897,6 +2016,35 @@ class _ResponsibleBadge extends StatelessWidget {
   }
 }
 
+class _ParticipationToggle extends StatelessWidget {
+  final String currentStatus;
+  final void Function(String status) onToggle;
+
+  const _ParticipationToggle({
+    required this.currentStatus,
+    required this.onToggle,
+  });
+
+  bool get _isParticipated =>
+      currentStatus == 'participated' || currentStatus == 'accepted';
+
+  @override
+  Widget build(BuildContext context) {
+    final next = _isParticipated ? 'not-participated' : 'participated';
+    final color = _isParticipated ? const Color(0xFF059669) : const Color(0xFFF87171);
+    final icon = _isParticipated ? Icons.thumb_up_alt : Icons.thumb_down_alt;
+    final tooltip = _isParticipated ? 'Παρών — κλικ για Απουσία' : 'Απών — κλικ για Παρουσία';
+
+    return IconButton(
+      onPressed: () => onToggle(next),
+      icon: Icon(icon, color: color),
+      iconSize: 20,
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
 class _MiniHoursBadge extends StatelessWidget {
   final String label;
   final int value;
@@ -1983,24 +2131,70 @@ class _HeaderChip extends StatelessWidget {
 
 class _VictimsSection extends StatefulWidget {
   final int serviceId;
-  const _VictimsSection({required this.serviceId});
+  final String? startAt;
+  final String? endAt;
+  final List<int> acceptedUserIds;
+
+  const _VictimsSection({
+    required this.serviceId,
+    this.startAt,
+    this.endAt,
+    this.acceptedUserIds = const [],
+  });
 
   @override
   State<_VictimsSection> createState() => _VictimsSectionState();
 }
 
 class _VictimsSectionState extends State<_VictimsSection> {
+  List<Map<String, dynamic>> _victims = [];
+  bool _loading = true;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<VictimProvider>().fetchVictims(serviceId: widget.serviceId));
+    _loadVictims();
+  }
+
+  Future<void> _loadVictims() async {
+    final provider = context.read<VictimProvider>();
+    final seen = <int>{};
+    final merged = <Map<String, dynamic>>[];
+
+    void addUnique(List<Map<String, dynamic>> list) {
+      for (final v in list) {
+        final id = v['id'] as int;
+        if (!seen.contains(id)) {
+          seen.add(id);
+          merged.add(Map<String, dynamic>.from(v));
+        }
+      }
+    }
+
+    // Fetch directly linked victims (by serviceId)
+    await provider.fetchVictims(serviceId: widget.serviceId, limit: 100);
+    addUnique(provider.victims);
+
+    // Fetch victims documented by accepted users during the service timeframe
+    final hasTimeWindow = widget.startAt != null &&
+        widget.endAt != null &&
+        widget.acceptedUserIds.isNotEmpty;
+    if (hasTimeWindow) {
+      await provider.fetchVictims(
+        createdByIds: widget.acceptedUserIds,
+        dateFrom: widget.startAt,
+        dateTo: widget.endAt,
+        limit: 100,
+      );
+      addUnique(provider.victims);
+    }
+
+    if (mounted) setState(() { _victims = merged; _loading = false; });
   }
 
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final provider = context.watch<VictimProvider>();
-    final victims = provider.victims;
 
     return Card(
       elevation: 2,
@@ -2026,7 +2220,7 @@ class _VictimsSectionState extends State<_VictimsSection> {
                     color: const Color(0xFFC62828).withAlpha(20),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text('${victims.length}', style: tt.bodySmall?.copyWith(
+                  child: Text('${_victims.length}', style: tt.bodySmall?.copyWith(
                     color: const Color(0xFFC62828), fontWeight: FontWeight.w700)),
                 ),
                 const SizedBox(width: 10),
@@ -2041,7 +2235,12 @@ class _VictimsSectionState extends State<_VictimsSection> {
                 ),
               ],
             ),
-            if (victims.isEmpty)
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            else if (_victims.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Center(
@@ -2056,7 +2255,7 @@ class _VictimsSectionState extends State<_VictimsSection> {
               )
             else ...[
               const Divider(height: 20),
-              ...victims.take(5).map((v) {
+              ..._victims.take(5).map((v) {
                 final name = v['name'] ?? '';
                 final age = v['age'];
                 final createdAt = v['createdAt'] as String?;
@@ -2087,10 +2286,10 @@ class _VictimsSectionState extends State<_VictimsSection> {
                   onTap: () => context.push('/victims/${v['id']}'),
                 );
               }),
-              if (victims.length > 5)
+              if (_victims.length > 5)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text('...και ${victims.length - 5} ακόμα',
+                  child: Text('...και ${_victims.length - 5} ακόμα',
                       style: tt.bodySmall?.copyWith(color: Color(0xFF6B7280))),
                 ),
             ],

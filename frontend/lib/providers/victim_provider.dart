@@ -55,6 +55,7 @@ class VictimProvider extends ChangeNotifier {
     String? dateFrom,
     String? dateTo,
     String? status,
+    List<int>? createdByIds,
     int page = 1,
     int limit = 20,
   }) async {
@@ -67,6 +68,9 @@ class VictimProvider extends ChangeNotifier {
       if (dateFrom != null && dateFrom.isNotEmpty) params['dateFrom'] = dateFrom;
       if (dateTo != null && dateTo.isNotEmpty) params['dateTo'] = dateTo;
       if (status != null && status != 'all') params['status'] = status;
+      if (createdByIds != null && createdByIds.isNotEmpty) {
+        params['createdByIds'] = createdByIds.join(',');
+      }
       params['page'] = page.toString();
       params['limit'] = limit.toString();
 

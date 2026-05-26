@@ -116,7 +116,9 @@
       "Bash(Select-Object -Last 10 Name)",
       "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo; git show 27bba6c:backend/src/routes/service.routes.ts | Select-Object -Index \\(155..165\\))",
       "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo; git show 27bba6c:backend/src/routes/service.routes.ts | Select-Object -Index \\(94..100\\))",
-      "Bash(cd *)"
+      "Bash(cd *)",
+      "Bash(npx jest *)",
+      "Bash(findstr /r \"fhir\" tsconfig.json)"
     ]
   }
 }
