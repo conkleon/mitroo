@@ -226,6 +226,67 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
     }
   }
 
+  Widget _hourCard({
+    required TextEditingController ctrl,
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String subtitle,
+  }) {
+    return Container(
+      width: 150,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: color.withAlpha(20),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(height: 8),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+          const SizedBox(height: 2),
+          Text(subtitle,
+              style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF))),
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: ctrl,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 20, fontWeight: FontWeight.w800, color: color),
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: color.withAlpha(60))),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: color.withAlpha(60))),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: color, width: 2)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
@@ -419,69 +480,34 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
 
               // ── Hours ──
               Text('Προεπιλεγμένες Ώρες', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _hoursCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Ώρες',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _hoursVolCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Εθελ.',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _hoursTrainingCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Εκπαίδ.',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _hoursTrainersCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Εκπαιδευτές',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _hoursTEPCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'ΤΕΠ',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 4),
+              Text('Ώρες που αποδίδονται αυτόματα σε κάθε συμμετέχοντα',
+                  style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _hourCard(ctrl: _hoursCtrl, icon: Icons.access_time_rounded,
+                        color: const Color(0xFF3B82F6), label: 'Υπηρεσία', subtitle: 'Ώρες υπηρεσίας'),
+                    _hourCard(ctrl: _hoursVolCtrl, icon: Icons.volunteer_activism,
+                        color: const Color(0xFF10B981), label: 'Εθελοντικές', subtitle: 'Ώρες εθελοντισμού'),
+                    _hourCard(ctrl: _hoursTrainingCtrl, icon: Icons.school_rounded,
+                        color: const Color(0xFF8B5CF6), label: 'Εκπαίδευση', subtitle: 'Ώρες ως εκπαιδευόμενος'),
+                    _hourCard(ctrl: _hoursTrainersCtrl, icon: Icons.co_present,
+                        color: const Color(0xFFF59E0B), label: 'Εκπαιδευτές', subtitle: 'Ώρες ως εκπαιδευτής'),
+                    _hourCard(ctrl: _hoursTEPCtrl, icon: Icons.local_hospital_rounded,
+                        color: const Color(0xFFEF4444), label: 'ΤΕΠ', subtitle: 'Ώρες τμήματος επειγόντων'),
+                  ],
+                ),
               ),
               const SizedBox(height: 32),
 
