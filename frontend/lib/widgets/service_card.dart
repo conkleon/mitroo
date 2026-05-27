@@ -645,50 +645,68 @@ class ServiceCard extends StatelessWidget {
                 ),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (st == 'requested')
                     Container(
                         width: 3,
-                        height: 28,
+                        height: 40,
                         color: const Color(0xFFF59E0B)),
                   if (st == 'requested') const SizedBox(width: 6),
-                  CircleAvatar(
-                    radius: 11,
-                    backgroundColor: stColor.withAlpha(30),
-                    child: Text(
-                      uName.isNotEmpty ? uName[0].toUpperCase() : '?',
-                      style: TextStyle(
-                          color: stColor,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11),
-                    ),
+                  Builder(
+                    builder: (ctx) {
+                      final scale = MediaQuery.textScalerOf(ctx).scale(1);
+                      final r = (11 * scale).clamp(11.0, 18.0);
+                      return CircleAvatar(
+                        radius: r,
+                        backgroundColor: stColor.withAlpha(30),
+                        child: Text(
+                          uName.isNotEmpty ? uName[0].toUpperCase() : '?',
+                          textScaler: TextScaler.noScaling,
+                          style: TextStyle(
+                              color: stColor,
+                              fontWeight: FontWeight.w700,
+                              fontSize: (11 * scale).clamp(11.0, 15.0)),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(uName,
-                        style: const TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                  ),
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: stColor.withAlpha(20),
-                      borderRadius: BorderRadius.circular(4),
+                    child: LayoutBuilder(
+                      builder: (ctx, constraints) {
+                        final scale = MediaQuery.textScalerOf(ctx).scale(1);
+                        final actions = hasActions
+                            ? _buildEnrollmentActions(
+                                us, st, serviceId, userId, uName)
+                            : null;
+                        final nameText = Text(uName,
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis);
+                        if (actions == null) return nameText;
+                        if (constraints.maxWidth < 160 * scale) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              nameText,
+                              const SizedBox(height: 2),
+                              actions,
+                            ],
+                          );
+                        }
+                        return Row(
+                          children: [
+                            Expanded(child: nameText),
+                            const SizedBox(width: 4),
+                            actions,
+                          ],
+                        );
+                      },
                     ),
-                    child: Text(stLabel,
-                        style: TextStyle(
-                            color: stColor,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700)),
                   ),
-                  if (hasActions) ...[
-                    const SizedBox(width: 4),
-                    _buildEnrollmentActions(us, st, serviceId, userId, uName),
-                  ],
                 ],
               ),
             );
