@@ -589,9 +589,12 @@ export class MitrooClient {
     try {
       const parsed2 = JSON.parse(text2);
       // Response: { status: 1, data: { count: N, data: [...] } }
+      // Also handle { status: 1, data: [...] } (data directly as array)
       return Array.isArray(parsed2)
         ? parsed2
-        : (parsed2.data?.data ?? parsed2.mission_shifts?.data ?? parsed2.result ?? []);
+        : Array.isArray(parsed2.data)
+          ? parsed2.data
+          : (parsed2.data?.data ?? parsed2.mission_shifts?.data ?? parsed2.result ?? []);
     } catch {
       console.error(`[MitrooClient] fetchShiftsForMission (fallback): unexpected response for mission ${missionId}:`, text2.slice(0, 300));
       throw new Error("fetchShiftsForMission: invalid JSON response from both endpoints");

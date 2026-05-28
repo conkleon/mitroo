@@ -195,12 +195,17 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
     );
   }
 
+  Future<void> reload() async {
+    await _load();
+  }
+
   Future<void> sync() async {
     if (_isSyncing) return;
     if (mounted) setState(() => _isSyncing = true);
     try {
       final sync = context.read<SyncProvider>();
       await sync.syncClosed(widget.departmentId);
+      await sync.syncCompleted(widget.departmentId);
     } catch (_) {}
     if (mounted) {
       setState(() => _isSyncing = false);

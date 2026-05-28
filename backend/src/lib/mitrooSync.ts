@@ -363,6 +363,7 @@ function parseApplicationsFromHtml(html: string): Map<number, ParsedApplication[
 async function buildServiceMap(departmentId: number): Promise<{
   byShiftId: Map<number, number>;
   byMissionId: Map<number, number>;
+  byMissionIdAll: Map<number, number[]>;
 }> {
   const allServices = await prisma.service.findMany({
     where: { departmentId },
@@ -370,11 +371,17 @@ async function buildServiceMap(departmentId: number): Promise<{
   });
   const byShiftId = new Map<number, number>();
   const byMissionId = new Map<number, number>();
+  const byMissionIdAll = new Map<number, number[]>();
   for (const s of allServices) {
     if (s.externalShiftId != null) byShiftId.set(s.externalShiftId, s.id);
     else if (s.externalMissionId != null) byMissionId.set(s.externalMissionId, s.id);
+    if (s.externalMissionId != null) {
+      const arr = byMissionIdAll.get(s.externalMissionId) ?? [];
+      arr.push(s.id);
+      byMissionIdAll.set(s.externalMissionId, arr);
+    }
   }
-  return { byShiftId, byMissionId };
+  return { byShiftId, byMissionId, byMissionIdAll };
 }
 
 async function batchFetchUsers(externalIds: Set<number>): Promise<Map<number, number>> {
@@ -402,7 +409,7 @@ async function processMissions(
   result: SyncResult,
 ): Promise<Map<number, number>> {
   const typeIdMap = await getServiceTypeIdMap();
-  const { byShiftId, byMissionId } = await buildServiceMap(departmentId);
+  const { byShiftId, byMissionId, byMissionIdAll } = await buildServiceMap(departmentId);
   const shiftToServiceId = new Map(byShiftId);
 
   const updateOps: Array<ReturnType<typeof prisma.service.update>> = [];
@@ -415,6 +422,16 @@ async function processMissions(
   for (const mission of missions) {
     const missionId = Number(mission.id);
     const lifecycleStatus = mapMissionStatus(mission.mission_status_id);
+
+    // Upfront lifecycle update — covers services with externalShiftId set that would
+    // be missed when fetchShiftsForMission returns empty (common for closed/completed missions).
+    const upfrontUpdate = await prisma.service.updateMany({
+      where: { externalMissionId: missionId, lifecycleStatus: { not: lifecycleStatus } },
+      data: { lifecycleStatus },
+    });
+    if (upfrontUpdate.count > 0) {
+      result.updated += upfrontUpdate.count;
+    }
 
     let shifts: ExternalShift[] = [];
     try {
@@ -446,22 +463,38 @@ async function processMissions(
           );
           result.updated++;
         } else {
-          createOps.push(
-            prisma.service.create({
-              data: {
-                departmentId,
-                name,
-                externalMissionId: missionId,
-                startAt,
-                endAt,
-                location,
-                serviceTypeId,
-                lifecycleStatus,
-              },
-            }),
-          );
-          createShiftIds.push(null); // stub has no shift ID — must stay in sync with createOps
-          result.created++;
+          // fetchShiftsForMission returned empty — fall back to updating any service
+          // already associated with this mission (including shift-based services).
+          // This handles completed missions where the shifts endpoint returns nothing.
+          const fallbackIds = byMissionIdAll.get(missionId) ?? [];
+          if (fallbackIds.length > 0) {
+            for (const svcId of fallbackIds) {
+              updateOps.push(
+                prisma.service.update({
+                  where: { id: svcId },
+                  data: { name, startAt, endAt, location, serviceTypeId, lifecycleStatus },
+                }),
+              );
+              result.updated++;
+            }
+          } else {
+            createOps.push(
+              prisma.service.create({
+                data: {
+                  departmentId,
+                  name,
+                  externalMissionId: missionId,
+                  startAt,
+                  endAt,
+                  location,
+                  serviceTypeId,
+                  lifecycleStatus,
+                },
+              }),
+            );
+            createShiftIds.push(null); // stub has no shift ID — must stay in sync with createOps
+            result.created++;
+          }
         }
       } catch (e: unknown) {
         result.errors.push(`mission_id=${missionId} (stub): ${e}`);
@@ -986,9 +1019,15 @@ export async function syncClosedServices(departmentId: number): Promise<SyncResu
   const result: SyncResult = { created: 0, updated: 0, errors: [] };
   try {
     const client = await getClient(departmentId);
-    console.log("[mitrooSync] syncClosedServices: fetching closed missions (smart pagination)...");
-    const missions = await fetchMissionsUntilSynced(departmentId, client, "closed", MAX_CLOSED_PAGES);
+    console.log("[mitrooSync] syncClosedServices: fetching closed missions...");
+    const missions = await client.fetchClosedMissions();
     console.log(`[mitrooSync] syncClosedServices: closed=${missions.length}`);
+    if (missions.length > 0) {
+      const ids = missions.map((m) => Number(m.id));
+      console.log(`[mitrooSync] syncClosedServices: ID range [${Math.min(...ids)}, ${Math.max(...ids)}]`);
+      const t = missions.find((m) => Number(m.id) === 19114);
+      console.log(`[mitrooSync] syncClosedServices: mission 19114 present=${t ? `YES status_id=${t.mission_status_id}` : 'NO'}`);
+    }
     const shiftToServiceId = await processMissions(departmentId, missions, client, result);
     console.log(
       `[mitrooSync] syncClosedServices: services done — created=${result.created} updated=${result.updated} errors=${result.errors.length}`,
@@ -1008,9 +1047,15 @@ export async function syncCompletedServices(departmentId: number): Promise<SyncR
   const result: SyncResult = { created: 0, updated: 0, errors: [] };
   try {
     const client = await getClient(departmentId);
-    console.log("[mitrooSync] syncCompletedServices: fetching finished missions (smart pagination)...");
-    const missions = await fetchMissionsUntilSynced(departmentId, client, "finished", MAX_FINISHED_PAGES);
+    console.log("[mitrooSync] syncCompletedServices: fetching finished missions...");
+    const missions = await client.fetchFinishedMissions();
     console.log(`[mitrooSync] syncCompletedServices: finished=${missions.length}`);
+    if (missions.length > 0) {
+      const ids = missions.map((m) => Number(m.id));
+      console.log(`[mitrooSync] syncCompletedServices: ID range [${Math.min(...ids)}, ${Math.max(...ids)}]`);
+      const t = missions.find((m) => Number(m.id) === 19114);
+      console.log(`[mitrooSync] syncCompletedServices: mission 19114 present=${t ? `YES status_id=${t.mission_status_id}` : 'NO'}`);
+    }
     const shiftToServiceId = await processMissions(departmentId, missions, client, result);
     console.log(
       `[mitrooSync] syncCompletedServices: services done — created=${result.created} updated=${result.updated} errors=${result.errors.length}`,
@@ -1099,6 +1144,18 @@ async function processFinalizedMissions(
   for (const mission of missions) {
     const missionId = Number(mission.id);
     const lifecycleStatus = mapMissionStatus(mission.mission_status_id);
+
+    // Always update lifecycle status on all services already tracked for this mission.
+    // This covers the case where fetchShiftsForMission returns empty (common for finalized
+    // missions) but the service was previously created with an externalShiftId.
+    const upfrontUpdate = await prisma.service.updateMany({
+      where: { externalMissionId: missionId, lifecycleStatus: { not: lifecycleStatus } },
+      data: { lifecycleStatus },
+    });
+    if (upfrontUpdate.count > 0) {
+      result.updated += upfrontUpdate.count;
+      console.log(`[mitrooSync] processFinalizedMissions: mission_id=${missionId}: upfront lifecycle→${lifecycleStatus} for ${upfrontUpdate.count} service(s)`);
+    }
 
     let shifts: ExternalShift[] = [];
     try {
@@ -1515,9 +1572,15 @@ export async function syncFinalizedServices(departmentId: number): Promise<SyncR
   try {
     const client = await getClient(departmentId);
 
-    console.log("[mitrooSync] syncFinalizedServices: fetching finalized missions (smart pagination)...");
-    const finalizedMissions = await fetchMissionsUntilSynced(departmentId, client, "finalized", MAX_FINALIZED_PAGES);
+    console.log("[mitrooSync] syncFinalizedServices: fetching finalized missions...");
+    const finalizedMissions = await client.fetchFinalizedMissions();
     console.log(`[mitrooSync] syncFinalizedServices: finalized=${finalizedMissions.length}`);
+    if (finalizedMissions.length > 0) {
+      const ids = finalizedMissions.map((m) => Number(m.id));
+      console.log(`[mitrooSync] syncFinalizedServices: ID range [${Math.min(...ids)}, ${Math.max(...ids)}]`);
+      const t = finalizedMissions.find((m) => Number(m.id) === 19114);
+      console.log(`[mitrooSync] syncFinalizedServices: mission 19114 present=${t ? `YES status_id=${t.mission_status_id}` : 'NO'}`);
+    }
 
     await processFinalizedMissions(departmentId, client, finalizedMissions, result);
 

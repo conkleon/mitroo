@@ -118,7 +118,10 @@
       "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo; git show 27bba6c:backend/src/routes/service.routes.ts | Select-Object -Index \\(94..100\\))",
       "Bash(cd *)",
       "Bash(npx jest *)",
-      "Bash(findstr /r \"fhir\" tsconfig.json)"
+      "Bash(findstr /r \"fhir\" tsconfig.json)",
+      "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"mitrooSync\" })",
+      "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"mitrooSync|mitrooClient\" })",
+      "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend; npx tsc --noEmit 2>&1 | Select-String -Pattern \"mitrooSync|mitrooClient\" | ForEach-Object { $_.ToString\\(\\) })"
     ]
   }
 }

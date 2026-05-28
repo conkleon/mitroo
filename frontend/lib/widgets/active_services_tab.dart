@@ -57,7 +57,7 @@ class ActiveServicesTabState extends State<ActiveServicesTab>
     try {
       final results = await Future.wait([
         _api.get(
-            '/services?departmentId=${widget.departmentId}&includeEnrollments=true&lifecycleStatus=active'),
+            '/services?departmentId=${widget.departmentId}&includeEnrollments=true&lifecycleStatus=active&includeExpired=true'),
         _api.get('/departments/${widget.departmentId}/members'),
       ]);
       if (results[0].statusCode == 200 && mounted) {

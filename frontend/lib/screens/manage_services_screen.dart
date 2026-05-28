@@ -51,12 +51,16 @@ class _ManageServicesScreenState extends State<ManageServicesScreen>
           break;
         case 1:
           await _closedKey.currentState?.sync();
+          await _completedKey.currentState?.reload();
           break;
         case 2:
           await _completedKey.currentState?.sync();
+          await _closedKey.currentState?.reload();
           break;
         case 3:
           await _finalizedKey.currentState?.sync();
+          await _closedKey.currentState?.reload();
+          await _completedKey.currentState?.reload();
           break;
       }
     } catch (_) {}

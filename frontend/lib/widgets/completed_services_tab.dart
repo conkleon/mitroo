@@ -236,6 +236,10 @@ class CompletedServicesTabState extends State<CompletedServicesTab>
     return types;
   }
 
+  Future<void> reload() async {
+    await _load();
+  }
+
   Future<void> sync() async {
     if (_isSyncing) return;
     if (mounted) setState(() => _isSyncing = true);
