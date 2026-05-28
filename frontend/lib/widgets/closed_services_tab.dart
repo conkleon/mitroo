@@ -263,6 +263,48 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
     });
   }
 
+  void _localAddEnrollment(
+      int serviceId, int userId, Map<String, dynamic> member) {
+    setState(() {
+      for (final svc in _services) {
+        if ((svc['id'] as int?) == serviceId) {
+          final us = (svc['userServices'] as List<dynamic>? ?? []);
+          us.add({
+            'userId': userId,
+            'status': 'accepted',
+            'hours': 0,
+            'hoursVol': 0,
+            'hoursTraining': 0,
+            'hoursTrainers': 0,
+            'user': member['user'],
+          });
+          (svc['_count'] as Map<String, dynamic>?)?['userServices'] =
+              us.length;
+          break;
+        }
+      }
+    });
+  }
+
+  void _localUpdateHours(
+      int serviceId, int userId, Map<String, dynamic> hours) {
+    setState(() {
+      for (final svc in _services) {
+        if ((svc['id'] as int?) == serviceId) {
+          final us = (svc['userServices'] as List<dynamic>? ?? []);
+          for (final e in us) {
+            final uid = e['userId'] as int? ?? (e['user']?['id'] as int?);
+            if (uid == userId) {
+              hours.forEach((k, v) => e[k] = v);
+              break;
+            }
+          }
+          break;
+        }
+      }
+    });
+  }
+
   void _localSetResponsible(int serviceId, Map<String, dynamic>? user) {
     setState(() {
       for (final svc in _services) {
@@ -335,6 +377,94 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Σφάλμα αφαίρεσης εγγραφής')));
+    }
+  }
+
+  Future<void> _directEnroll(
+      int serviceId, Map<String, dynamic> member) async {
+    final userId = member['user']['id'] as int;
+    final err = await context
+        .read<ServiceProvider>()
+        .enrollUser(serviceId, userId, status: 'accepted');
+    if (!mounted) return;
+    if (err == null) {
+      _localAddEnrollment(serviceId, userId, member);
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err)));
+    }
+  }
+
+  Future<void> _updateEnrollmentHours(
+      int serviceId, int userId, Map<String, dynamic> currentUs) async {
+    final hrsCtrl =
+        TextEditingController(text: '${currentUs['hours'] ?? 0}');
+    final volCtrl =
+        TextEditingController(text: '${currentUs['hoursVol'] ?? 0}');
+    final trnCtrl =
+        TextEditingController(text: '${currentUs['hoursTraining'] ?? 0}');
+    final trnrCtrl =
+        TextEditingController(text: '${currentUs['hoursTrainers'] ?? 0}');
+
+    final user = currentUs['user'] as Map<String, dynamic>?;
+    final uName = user != null
+        ? '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim()
+        : 'Unknown';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Ώρες — $uName'),
+        content: SizedBox(
+          width: 300,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ServiceHoursField(controller: hrsCtrl, label: 'Ώρες'),
+              const SizedBox(height: 8),
+              ServiceHoursField(controller: volCtrl, label: 'Εθελοντικές'),
+              const SizedBox(height: 8),
+              ServiceHoursField(
+                  controller: trnCtrl, label: 'Επανεκπαίδευση'),
+              const SizedBox(height: 8),
+              ServiceHoursField(
+                  controller: trnrCtrl, label: 'Εκπαιδευτές'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Αποθήκευση')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final hours = {
+        'hours': int.tryParse(hrsCtrl.text) ?? 0,
+        'hoursVol': int.tryParse(volCtrl.text) ?? 0,
+        'hoursTraining': int.tryParse(trnCtrl.text) ?? 0,
+        'hoursTrainers': int.tryParse(trnrCtrl.text) ?? 0,
+      };
+      final res = await _api.patch(
+          '/services/$serviceId/users/$userId/hours',
+          body: hours);
+      if (res.statusCode == 200) {
+        _localUpdateHours(serviceId, userId, hours);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Αποτυχία ενημέρωσης ωρών')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Σφάλμα ενημέρωσης ωρών')));
+      }
     }
   }
 
@@ -744,8 +874,13 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                                 _updateEnrollmentStatus(id, userId, status),
                         onUpdateParticipation: (userId, status) =>
                             _updateParticipation(id, userId, status),
+                        onUpdateHours:
+                            (svcId, userId, us) =>
+                                _updateEnrollmentHours(svcId, userId, us),
                         onRemoveEnrollment: (userId, uName) =>
                             _removeEnrollment(id, userId, uName),
+                        onDirectEnroll:
+                            (member) => _directEnroll(id, member),
                         onAssignResponsible: () => _showResponsiblePicker(svc),
                       );
                     },

@@ -96,13 +96,13 @@ export interface SyncResult {
 //   1 = ΑΡΧΙΚΗ (pending/initial), 3 = accepted, 4 = rejected (cancelled by admin),
 //   6 = ΠΑΡΟΥΣΙΑΣΤΗΚΕ (participated), 7 = ΔΕΝ ΠΑΡΟΥΣΙΑΣΤΗΚΕ (no-show → rejected).
 // Any other status (e.g. cancelled-by-member) is not imported to avoid phantom "applied for" records.
-const mapApplicationStatus = (statusId: unknown): "requested" | "accepted" | "rejected" | "participated" | null => {
+const mapApplicationStatus = (statusId: unknown): "requested" | "accepted" | "rejected" | "participated" | "not_participated" | null => {
   const id = Number(statusId);
   if (id === 1) return "requested";
   if (id === 3) return "accepted";
   if (id === 4) return "rejected";
   if (id === 6) return "participated";
-  if (id === 7) return "rejected";
+  if (id === 7) return "not_participated";
   return null;
 };
 
@@ -244,7 +244,7 @@ const remapDefaultHoursByMissionType = (
 interface ParsedApplication {
   applicationId: number;
   memberId: number;
-  status: "requested" | "accepted" | "rejected" | "participated";
+  status: "requested" | "accepted" | "rejected" | "participated" | "not_participated";
   hoursVolunteering: number;
   hoursSanitary: number;
   hoursTraining: number;
@@ -254,7 +254,7 @@ interface ParsedApplication {
 
 const mapApplicationLabelToStatus = (
   label: string,
-): "requested" | "accepted" | "rejected" | "participated" | null => {
+): "requested" | "accepted" | "rejected" | "participated" | "not_participated" | null => {
   const trimmed = label.trim().toUpperCase();
   if (trimmed.startsWith("ΠΑΡΟΥΣΙΑΣΤΗΚΕ")) return "participated";
   if (trimmed.startsWith("ΟΡΙΣΤΙΚΟΠΟΙΗΜΕΝΗ")) return "participated";
@@ -262,7 +262,7 @@ const mapApplicationLabelToStatus = (
   if (trimmed.startsWith("ΔΟΚ.") || trimmed.startsWith("ΔΟΚΙΜΗ")) return "accepted";
   if (trimmed.startsWith("ΝΕΑ") || trimmed.startsWith("ΑΡΧΙΚΗ")) return "requested";
   if (trimmed.startsWith("ΜΗ ΕΓΚΕΚΡΙΜΕΝΗ") || trimmed.startsWith("ΑΠΟΡΡΙΦΘΗΚΕ")) return "rejected";
-  if (trimmed.startsWith("ΔΕΝ ΠΑΡΟΥΣΙΑΣΤΗΚΕ")) return "rejected";
+  if (trimmed.startsWith("ΔΕΝ ΠΑΡΟΥΣΙΑΣΤΗΚΕ")) return "not_participated";
   if (trimmed.startsWith("ΑΚΥΡΩΜΕΝΗ")) return "rejected";
   return null;
 };
@@ -1483,7 +1483,7 @@ async function processFinalizedMissions(
 async function upsertUserService(
   serviceId: number,
   userId: number,
-  status: "requested" | "accepted" | "rejected" | "participated",
+  status: "requested" | "accepted" | "rejected" | "participated" | "not_participated",
   hours: number,
   hoursVol: number,
   hoursTraining: number,
@@ -1603,7 +1603,7 @@ export async function syncShiftApplications(departmentId: number): Promise<SyncR
     const createData: Array<{
       userId: number;
       serviceId: number;
-      status: "requested" | "accepted" | "rejected" | "participated";
+      status: "requested" | "accepted" | "rejected" | "participated" | "not_participated";
       hours: number;
       hoursVol: number;
       hoursTraining: number;
@@ -1862,6 +1862,7 @@ export async function writeBackAssignment(serviceId: number, userId: number): Pr
         externalShiftId: true,
         externalMissionId: true,
         departmentId: true,
+        lifecycleStatus: true,
         defaultHours: true,
         defaultHoursVol: true,
         defaultHoursTraining: true,
@@ -1910,11 +1911,20 @@ export async function writeBackAssignment(serviceId: number, userId: number): Pr
       });
     };
 
+    const isClosedOrCompleted = service.lifecycleStatus === "closed" || service.lifecycleStatus === "completed";
+    const approveApplication = async (applicationId: number) => {
+      if (isClosedOrCompleted) {
+        await client.markShiftApplicationParticipated(applicationId);
+      } else {
+        await client.approveShiftApplication(applicationId);
+      }
+    };
+
     if (userService?.externalApplicationId) {
-      await client.approveShiftApplication(userService.externalApplicationId);
+      await approveApplication(userService.externalApplicationId);
       await pushHours(userService.externalApplicationId);
       console.log(
-        `[mitrooSync] writeBackAssignment: approved application ${userService.externalApplicationId}`,
+        `[mitrooSync] writeBackAssignment: approved application ${userService.externalApplicationId} (status=${isClosedOrCompleted ? 6 : 3})`,
       );
     } else if (user?.externalId) {
       console.log(`[mitrooSync] writeBackAssignment: adding user ${user.externalId} to shift ${service.externalShiftId}`);
@@ -1937,10 +1947,10 @@ export async function writeBackAssignment(serviceId: number, userId: number): Pr
           where: { userId_serviceId: { userId, serviceId } },
           data: { externalApplicationId: applicationId },
         });
-        await client.approveShiftApplication(applicationId);
+        await approveApplication(applicationId);
         await pushHours(applicationId);
         console.log(
-          `[mitrooSync] writeBackAssignment: added+approved+hours for application ${applicationId}, user ${userId}`,
+          `[mitrooSync] writeBackAssignment: added+approved+hours for application ${applicationId}, user ${userId} (status=${isClosedOrCompleted ? 6 : 3})`,
         );
       } else {
         console.warn(
@@ -2033,7 +2043,7 @@ export async function writeBackRejection(
         }),
     prisma.service.findUnique({
       where: { id: serviceId },
-      select: { externalShiftId: true, departmentId: true },
+      select: { externalShiftId: true, departmentId: true, lifecycleStatus: true },
     }),
     prisma.user.findUnique({
       where: { id: userId },
@@ -2079,8 +2089,13 @@ export async function writeBackRejection(
       return;
     }
 
-    console.log(`[mitrooSync] writeBackRejection: calling cancelShiftApplication(${applicationId})`);
-    await client.cancelShiftApplication(applicationId);
+    const useNotParticipated = service.lifecycleStatus === "closed" || service.lifecycleStatus === "completed";
+    console.log(`[mitrooSync] writeBackRejection: calling ${useNotParticipated ? "markShiftApplicationNotParticipated" : "cancelShiftApplication"}(${applicationId})`);
+    if (useNotParticipated) {
+      await client.markShiftApplicationNotParticipated(applicationId);
+    } else {
+      await client.cancelShiftApplication(applicationId);
+    }
 
     // Clear externalApplicationId so a subsequent acceptance creates a fresh application
     // rather than trying to approve the now-cancelled one.
@@ -2094,6 +2109,59 @@ export async function writeBackRejection(
     console.log(`[mitrooSync] writeBackRejection: SUCCESS — cancelled application ${applicationId} for user ${userId}`);
   } catch (e) {
     console.error(`[mitrooSync] writeBackRejection: FAILED for service ${serviceId}, user ${userId}:`, e);
+  }
+}
+
+export async function writeBackParticipation(serviceId: number, userId: number): Promise<void> {
+  console.log(`[mitrooSync] writeBackParticipation: START serviceId=${serviceId} userId=${userId}`);
+
+  const [userService, service, user] = await Promise.all([
+    prisma.userService.findUnique({
+      where: { userId_serviceId: { userId, serviceId } },
+      select: { externalApplicationId: true },
+    }),
+    prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { externalShiftId: true, departmentId: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { externalId: true },
+    }),
+  ]);
+
+  if (!service?.externalShiftId) {
+    console.log(`[mitrooSync] writeBackParticipation: SKIP — service has no externalShiftId`);
+    return;
+  }
+
+  const config = await prisma.departmentSyncConfig.findUnique({
+    where: { departmentId: service.departmentId },
+    select: { syncEnabled: true },
+  });
+  if (!config?.syncEnabled) {
+    console.log(`[mitrooSync] writeBackParticipation: SKIP — sync not enabled for department ${service.departmentId}`);
+    return;
+  }
+
+  try {
+    const client = await getClient(service.departmentId);
+
+    let applicationId = userService?.externalApplicationId ?? null;
+    if (!applicationId && user?.externalId) {
+      applicationId = await client.findApplicationIdForMember(service.externalShiftId, user.externalId);
+    }
+
+    if (!applicationId) {
+      console.log(`[mitrooSync] writeBackParticipation: SKIP — no application found for user ${userId}`);
+      return;
+    }
+
+    console.log(`[mitrooSync] writeBackParticipation: calling markShiftApplicationParticipated(${applicationId})`);
+    await client.markShiftApplicationParticipated(applicationId);
+    console.log(`[mitrooSync] writeBackParticipation: SUCCESS — marked participated application ${applicationId} for user ${userId}`);
+  } catch (e) {
+    console.error(`[mitrooSync] writeBackParticipation: FAILED for service ${serviceId}, user ${userId}:`, e);
   }
 }
 

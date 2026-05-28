@@ -10,6 +10,7 @@ import {
   writeBackNewService,
   writeBackAssignment,
   writeBackRejection,
+  writeBackParticipation,
   writeBackHoursUpdate,
   writeBackServiceDelete,
   writeBackEnrollmentRequest,
@@ -622,6 +623,12 @@ router.patch("/:sid/users/:uid/participation", async (req: Request, res: Respons
       include: { user: { select: { id: true, eame: true, forename: true, surname: true } } },
     });
     res.json({ ...record, status: (record.status as string).replace(/_/g, '-') });
+
+    if (status === "not-participated") {
+      writeBackRejection(sid, uid).catch((e) => console.error("[service] writeBackRejection (not-participated) error:", e));
+    } else if (status === "participated") {
+      writeBackParticipation(sid, uid).catch((e) => console.error("[service] writeBackParticipation error:", e));
+    }
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
