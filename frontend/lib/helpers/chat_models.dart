@@ -41,8 +41,8 @@ class ChatSummary {
       lastMessage: json['lastMessage'] != null
           ? LastMessage.fromJson(json['lastMessage'] as Map<String, dynamic>)
           : null,
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '')?.toLocal() ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '')?.toLocal() ?? DateTime.now(),
     );
   }
 }
@@ -64,7 +64,7 @@ class LastMessage {
     return LastMessage(
       id: (json['id'] as num?)?.toInt() ?? 0,
       text: json['text'] as String? ?? '',
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '')?.toLocal() ?? DateTime.now(),
       user: LastMessageUser.fromJson((json['user'] as Map<String, dynamic>?) ?? {}),
     );
   }
@@ -115,7 +115,7 @@ class ChatMessage {
       chatId: (json['chatId'] as num?)?.toInt() ?? 0,
       userId: (json['userId'] as num?)?.toInt() ?? 0,
       text: json['text'] as String? ?? '',
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '')?.toLocal() ?? DateTime.now(),
       user: ChatUser.fromJson((json['user'] as Map<String, dynamic>?) ?? {}),
       attachments: (json['attachments'] as List<dynamic>?)
               ?.map((a) => ChatAttachment.fromJson(a as Map<String, dynamic>))

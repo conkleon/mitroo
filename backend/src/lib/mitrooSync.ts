@@ -306,8 +306,14 @@ function parseApplicationsFromHtml(html: string): Map<number, ParsedApplication[
     if (!memberMatch) { skippedNoMemberId++; continue; }
     const memberId = Number(memberMatch[1]);
 
-    // Parse status label from <span class='task-cat...'>
-    const statusMatch = rowHtml.match(/<span[^>]*class=['"]task-cat[^'"]*['"][^>]*>([^<]*)<\/span>/i);
+    // Parse status from the specific shift_application_status_{appId} div.
+    // Searching the whole row would match the "ΔΟΚ." probationary badge span first,
+    // which maps to "accepted" and corrupts the status for probationary members.
+    const statusDivMatch = rowHtml.match(
+      new RegExp(`<div[^>]*id=["']shift_application_status_${appId}["'][^>]*>([^]*?)<\\/div>`, "i"),
+    );
+    if (!statusDivMatch) { skippedNoStatus++; continue; }
+    const statusMatch = statusDivMatch[1].match(/<span[^>]*class=['"]task-cat[^'"]*['"][^>]*>([^<]*)<\/span>/i);
     if (!statusMatch) { skippedNoStatus++; continue; }
     const rawStatusText = statusMatch[1].trim();
     const status = mapApplicationLabelToStatus(rawStatusText);
@@ -1631,7 +1637,11 @@ export async function syncShiftApplications(departmentId: number): Promise<SyncR
 
     const [services, users] = await Promise.all([
       prisma.service.findMany({
-        where: { departmentId, externalShiftId: { in: shiftIds } },
+        // Only sync grid applications for active services — closed/completed/finalized
+        // missions use HTML scraping as the source of truth. The grid may return a stale
+        // status_id (e.g. 3 = accepted) for cancelled applications in closed missions,
+        // which would incorrectly override the "rejected" status set by the HTML scrape.
+        where: { departmentId, externalShiftId: { in: shiftIds }, lifecycleStatus: "active" },
         select: { id: true, externalShiftId: true },
       }),
       prisma.user.findMany({
