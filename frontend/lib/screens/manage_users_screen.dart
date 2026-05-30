@@ -561,8 +561,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                               _headerCell('Total', 'totalHours'),
                               _headerCell('Year', 'yearHours'),
                               _headerCell('Vol', 'yearVolHours'),
-                              _headerCell('Train', 'yearTrainingHours'),
-                              _headerCell('Trainer', 'yearTrainerHours'),
+                              _headerCell('Trng', 'yearTrainingHours'),
+                              _headerCell('Trnr', 'yearTrainerHours'),
                               const SizedBox(width: 32), // chevron space
                             ]),
                           ),

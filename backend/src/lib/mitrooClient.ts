@@ -338,8 +338,14 @@ export class MitrooClient {
         /class="[^"]*collections-content[^"]*"[^>]*>[\s]*([+\d][\d\s()-]*)/,
       );
       if (telMatch?.[1]) {
-        identity.phonePrimary = telMatch[1].trim();
-        debugExternal("fetchProfileIdentity: extracted phone via fallback", { phone: identity.phonePrimary });
+        const candidate = telMatch[1].trim();
+        // Skip date-like strings (DD-MM-YYYY) that can appear in birthdate fields
+        if (!/^\d{2}-\d{2}-\d{4}/.test(candidate)) {
+          identity.phonePrimary = candidate;
+          debugExternal("fetchProfileIdentity: extracted phone via fallback", { phone: identity.phonePrimary });
+        } else {
+          debugExternal("fetchProfileIdentity: fallback matched a date, skipping", { candidate });
+        }
       } else {
         debugExternal("fetchProfileIdentity: no phone numbers found in HTML", {
           hasTelLabel: /Τηλέφωνα/.test(html),

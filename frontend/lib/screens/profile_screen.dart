@@ -624,7 +624,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             _svcHeaderCell('Total', 'totalHours'),
                             _svcHeaderCell('Hrs', 'hours'),
                             _svcHeaderCell('Vol', 'hoursVol'),
-                            _svcHeaderCell('Train', 'hoursTraining'),
+                            _svcHeaderCell('Trng', 'hoursTraining'),
                             _svcHeaderCell('Trnr', 'hoursTrainers'),
                           ]),
                         ),
