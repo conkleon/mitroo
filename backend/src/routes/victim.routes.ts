@@ -79,7 +79,7 @@ router.use(authenticate);
 const createSchema = z.object({
   name: z.string().min(1).max(255),
   age: z.number().int().optional().nullable(),
-  dateOfBirth: z.string().datetime().optional().nullable(),
+  dateOfBirth: z.string().refine(s => !isNaN(Date.parse(s)), { message: "Invalid date" }).optional().nullable(),
   gender: z.enum(["male", "female", "other", "unknown"]).optional().nullable(),
   address: z.string().optional().nullable(),
   city: z.string().max(255).optional().nullable(),
@@ -112,7 +112,7 @@ const vitalSignSchema = z.object({
   temperature: z.number().optional().nullable(),
   bloodGlucose: z.number().optional().nullable(),
   painScore: z.number().int().optional().nullable(),
-  measuredAt: z.string().datetime().optional(),
+  measuredAt: z.string().refine(s => !isNaN(Date.parse(s)), { message: "Invalid date" }).optional(),
   notes: z.string().optional().nullable(),
   measuredBy: z.string().max(255).optional().nullable(),
 });
@@ -123,7 +123,7 @@ const treatmentSchema = z.object({
   notes: z.string().optional().nullable(),
   itemId: z.number().int().optional().nullable(),
   consumedNote: z.string().optional().nullable(),
-  performedAt: z.string().datetime().optional(),
+  performedAt: z.string().refine(s => !isNaN(Date.parse(s)), { message: "Invalid date" }).optional(),
   performedBy: z.string().max(255).optional().nullable(),
 });
 
@@ -571,13 +571,9 @@ router.delete("/:id/vital-signs/:vsId", async (req: Request, res: Response) => {
     return;
   }
 
-  try {
-    await prisma.vitalSign.delete({ where: { id: vsId, victimId } });
-    res.status(204).end();
-  } catch (err: any) {
-    if (err?.code === "P2025") { res.status(404).json({ error: "Δεν βρέθηκε" }); return; }
-    throw err;
-  }
+  const { count: vsCount } = await prisma.vitalSign.deleteMany({ where: { id: vsId, victimId } });
+  if (vsCount === 0) { res.status(404).json({ error: "Δεν βρέθηκε" }); return; }
+  res.status(204).end();
 });
 
 // ── POST /api/victims/:id/treatments ──────────────
@@ -627,13 +623,9 @@ router.delete("/:id/treatments/:tId", async (req: Request, res: Response) => {
     return;
   }
 
-  try {
-    await prisma.treatment.delete({ where: { id: tId, victimId } });
-    res.status(204).end();
-  } catch (err: any) {
-    if (err?.code === "P2025") { res.status(404).json({ error: "Δεν βρέθηκε" }); return; }
-    throw err;
-  }
+  const { count: tCount } = await prisma.treatment.deleteMany({ where: { id: tId, victimId } });
+  if (tCount === 0) { res.status(404).json({ error: "Δεν βρέθηκε" }); return; }
+  res.status(204).end();
 });
 
 export default router;
