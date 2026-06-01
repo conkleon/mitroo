@@ -501,7 +501,7 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
                     _hourCard(ctrl: _hoursVolCtrl, icon: Icons.volunteer_activism,
                         color: const Color(0xFF10B981), label: 'Εθελοντικές', subtitle: 'Ώρες εθελοντισμού'),
                     _hourCard(ctrl: _hoursTrainingCtrl, icon: Icons.school_rounded,
-                        color: const Color(0xFF8B5CF6), label: 'Εκπαίδευση', subtitle: 'Ώρες ως εκπαιδευόμενος'),
+                        color: const Color(0xFF8B5CF6), label: 'Επανεκπαίδευση', subtitle: 'Ώρες ως εκπαιδευόμενος'),
                     _hourCard(ctrl: _hoursTrainersCtrl, icon: Icons.co_present,
                         color: const Color(0xFFF59E0B), label: 'Εκπαιδευτές', subtitle: 'Ώρες ως εκπαιδευτής'),
                     _hourCard(ctrl: _hoursTEPCtrl, icon: Icons.local_hospital_rounded,
