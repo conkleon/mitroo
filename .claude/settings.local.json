@@ -121,7 +121,8 @@
       "Bash(findstr /r \"fhir\" tsconfig.json)",
       "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"mitrooSync\" })",
       "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"mitrooSync|mitrooClient\" })",
-      "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend; npx tsc --noEmit 2>&1 | Select-String -Pattern \"mitrooSync|mitrooClient\" | ForEach-Object { $_.ToString\\(\\) })"
+      "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend; npx tsc --noEmit 2>&1 | Select-String -Pattern \"mitrooSync|mitrooClient\" | ForEach-Object { $_.ToString\\(\\) })",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

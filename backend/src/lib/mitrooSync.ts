@@ -523,8 +523,8 @@ async function processMissions(
         const rawHours: DefaultHours = {
           defaultHours: parseHours(shift.hours_sanitary),
           defaultHoursVol: parseHours(shift.hours_volunteering),
-          defaultHoursTraining: parseHours(shift.hours_training),
-          defaultHoursTrainers: parseHours(shift.hours_retraining),
+          defaultHoursTraining: parseHours(shift.hours_retraining),
+          defaultHoursTrainers: parseHours(shift.hours_training),
           defaultHoursTEP: parseHours(shift.hours_tep),
         };
         const mappedHours = remapDefaultHoursByMissionType(
@@ -900,8 +900,8 @@ async function syncApplicationsViaHtml(
               app.status,
               app.hoursSanitary,
               app.hoursVolunteering,
-              app.hoursTraining,
               app.hoursRetraining,
+              app.hoursTraining,
               app.hoursTEP,
               app.applicationId,
               result,
@@ -1314,8 +1314,8 @@ async function processFinalizedMissions(
         const rawHours: DefaultHours = {
           defaultHours: parseHours(shift.hours_sanitary),
           defaultHoursVol: parseHours(shift.hours_volunteering),
-          defaultHoursTraining: parseHours(shift.hours_training),
-          defaultHoursTrainers: parseHours(shift.hours_retraining),
+          defaultHoursTraining: parseHours(shift.hours_retraining),
+          defaultHoursTrainers: parseHours(shift.hours_training),
           defaultHoursTEP: parseHours(shift.hours_tep),
         };
         const mappedHours = remapDefaultHoursByMissionType(
@@ -1399,8 +1399,8 @@ async function processFinalizedMissions(
 
               const hours = parseHours(member.hours_sanitary);
               const hoursVol = parseHours(member.hours_volunteering);
-              const hoursTraining = parseHours(member.hours_training);
-              const hoursTrainers = parseHours(member.hours_retraining);
+              const hoursTraining = parseHours(member.hours_retraining);
+              const hoursTrainers = parseHours(member.hours_training);
               const hoursTEP = parseHours(member.hours_tep);
 
               await upsertUserService(
@@ -1427,8 +1427,8 @@ async function processFinalizedMissions(
 
               await upsertUserService(
                 serviceId, userId, app.status,
-                app.hoursSanitary, app.hoursVolunteering, app.hoursTraining,
-                app.hoursRetraining, app.hoursTEP,
+                app.hoursSanitary, app.hoursVolunteering, app.hoursRetraining,
+                app.hoursTraining, app.hoursTEP,
                 app.applicationId, result,
               );
               missionHtmlAppsProcessed++;
