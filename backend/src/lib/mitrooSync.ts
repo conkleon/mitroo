@@ -1519,8 +1519,8 @@ async function processFinalizedMissions(
           if (!userId) { missionHtmlAppsSkippedNoUser++; continue; }
           await upsertUserService(
             svcId, userId, app.status,
-            app.hoursSanitary, app.hoursVolunteering, app.hoursTraining,
-            app.hoursRetraining, app.hoursTEP,
+            app.hoursSanitary, app.hoursVolunteering, app.hoursRetraining,
+            app.hoursTraining, app.hoursTEP,
             app.applicationId, result,
           );
           missionHtmlAppsProcessed++;
