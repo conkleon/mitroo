@@ -237,6 +237,36 @@ const remapDefaultHoursByMissionType = (
   return hours;
 };
 
+/** Apply the same mission-type-based hour remapping to individual user hours
+ *  that is already applied to service-level default hours. The external system
+ *  stores all hours for a mission in a single category-appropriate field, so
+ *  individual user hours must be redistributed based on mission type to land in
+ *  the correct local DB column (e.g. volunteer missions → hoursVol). */
+function remapUserHours(
+  missionTypeId: unknown,
+  hours: number,
+  hoursVol: number,
+  hoursTraining: number,
+  hoursTrainers: number,
+  hoursTEP: number,
+): { hours: number; hoursVol: number; hoursTraining: number; hoursTrainers: number; hoursTEP: number } {
+  const raw: DefaultHours = {
+    defaultHours: hours,
+    defaultHoursVol: hoursVol,
+    defaultHoursTraining: hoursTraining,
+    defaultHoursTrainers: hoursTrainers,
+    defaultHoursTEP: hoursTEP,
+  };
+  const mapped = remapDefaultHoursByMissionType(missionTypeId, raw);
+  return {
+    hours: mapped.defaultHours,
+    hoursVol: mapped.defaultHoursVol,
+    hoursTraining: mapped.defaultHoursTraining,
+    hoursTrainers: mapped.defaultHoursTrainers,
+    hoursTEP: mapped.defaultHoursTEP,
+  };
+}
+
 // ── HTML scraping for mission detail pages ──────────────────────────────────
 // Used as a fallback for finished/finalized missions where _with_members returns
 // empty and grid_get_shiftapplications doesn't include them.
@@ -334,7 +364,9 @@ function parseApplicationsFromHtml(html: string): Map<number, ParsedApplication[
     };
 
     const hoursVolunteering = extractHours(/class="[^"]*hours_volunteering[^"]*"[^>]*>([\d.]+)<\/td>/i);
-    const hoursSanitary = extractHours(/class="[^"]*hours_sanitary[^"]*"[^>]*>([\d.]+)<\/td>/i);
+    const hoursSanitaryRaw = extractHours(/class="[^"]*hours_sanitary[^"]*"[^>]*>([\d.]+)<\/td>/i);
+    const hoursLifeguard = extractHours(/class="[^"]*hours_lifeguard[^"]*"[^>]*>([\d.]+)<\/td>/i);
+    const hoursSanitary = hoursSanitaryRaw + hoursLifeguard;
     const hoursTraining = extractHours(/class="[^"]*hours_training[^"]*"[^>]*>([\d.]+)<\/td>/i);
     const hoursRetraining = extractHours(/class="[^"]*hours_retraining[^"]*"[^>]*>([\d.]+)<\/td>/i);
     const hoursTEP = extractHours(/class="[^"]*hours_tep[^"]*"[^>]*>([\d.]+)<\/td>/i);
@@ -521,7 +553,7 @@ async function processMissions(
         const startAt = parseAthensDatetime(shift.shift_start_date as string | undefined);
         const endAt = parseAthensDatetime(shift.shift_end_date as string | undefined);
         const rawHours: DefaultHours = {
-          defaultHours: parseHours(shift.hours_sanitary),
+          defaultHours: parseHours(shift.hours_sanitary) + parseHours(shift.hours_lifeguard),
           defaultHoursVol: parseHours(shift.hours_volunteering),
           defaultHoursTraining: parseHours(shift.hours_retraining),
           defaultHoursTrainers: parseHours(shift.hours_training),
@@ -894,15 +926,23 @@ async function syncApplicationsViaHtml(
           try {
             const userId = userByExternal.get(app.memberId);
             if (!userId) { skippedNoUser++; continue; }
-            await upsertUserService(
-              serviceId,
-              userId,
-              app.status,
+            const remapped = remapUserHours(
+              mission.mission_type_id,
               app.hoursSanitary,
               app.hoursVolunteering,
               app.hoursRetraining,
               app.hoursTraining,
               app.hoursTEP,
+            );
+            await upsertUserService(
+              serviceId,
+              userId,
+              app.status,
+              remapped.hours,
+              remapped.hoursVol,
+              remapped.hoursTraining,
+              remapped.hoursTrainers,
+              remapped.hoursTEP,
               app.applicationId,
               result,
             );
@@ -1312,7 +1352,7 @@ async function processFinalizedMissions(
         const startAt = parseAthensDatetime(shift.shift_start_date as string | undefined);
         const endAt = parseAthensDatetime(shift.shift_end_date as string | undefined);
         const rawHours: DefaultHours = {
-          defaultHours: parseHours(shift.hours_sanitary),
+          defaultHours: parseHours(shift.hours_sanitary) + parseHours(shift.hours_lifeguard),
           defaultHoursVol: parseHours(shift.hours_volunteering),
           defaultHoursTraining: parseHours(shift.hours_retraining),
           defaultHoursTrainers: parseHours(shift.hours_training),
@@ -1397,15 +1437,18 @@ async function processFinalizedMissions(
               const status = mapApplicationStatus(member.application_status_id);
               if (status === null) { missionMembersSkippedNoStatus++; continue; }
 
-              const hours = parseHours(member.hours_sanitary);
-              const hoursVol = parseHours(member.hours_volunteering);
-              const hoursTraining = parseHours(member.hours_retraining);
-              const hoursTrainers = parseHours(member.hours_training);
-              const hoursTEP = parseHours(member.hours_tep);
+              const remapped = remapUserHours(
+                mission.mission_type_id,
+                parseHours(member.hours_sanitary) + parseHours(member.hours_lifeguard),
+                parseHours(member.hours_volunteering),
+                parseHours(member.hours_retraining),
+                parseHours(member.hours_training),
+                parseHours(member.hours_tep),
+              );
 
               await upsertUserService(
                 serviceId, userId, status,
-                hours, hoursVol, hoursTraining, hoursTrainers, hoursTEP,
+                remapped.hours, remapped.hoursVol, remapped.hoursTraining, remapped.hoursTrainers, remapped.hoursTEP,
                 externalApplicationId, result,
               );
               missionMembersProcessed++;
@@ -1425,10 +1468,17 @@ async function processFinalizedMissions(
               const userId = userByExternal.get(app.memberId);
               if (!userId) { missionHtmlAppsSkippedNoUser++; continue; }
 
+              const remapped = remapUserHours(
+                mission.mission_type_id,
+                app.hoursSanitary,
+                app.hoursVolunteering,
+                app.hoursRetraining,
+                app.hoursTraining,
+                app.hoursTEP,
+              );
               await upsertUserService(
                 serviceId, userId, app.status,
-                app.hoursSanitary, app.hoursVolunteering, app.hoursRetraining,
-                app.hoursTraining, app.hoursTEP,
+                remapped.hours, remapped.hoursVol, remapped.hoursTraining, remapped.hoursTrainers, remapped.hoursTEP,
                 app.applicationId, result,
               );
               missionHtmlAppsProcessed++;
@@ -1517,10 +1567,17 @@ async function processFinalizedMissions(
         try {
           const userId = userByExternal.get(app.memberId);
           if (!userId) { missionHtmlAppsSkippedNoUser++; continue; }
+          const remapped = remapUserHours(
+            mission.mission_type_id,
+            app.hoursSanitary,
+            app.hoursVolunteering,
+            app.hoursRetraining,
+            app.hoursTraining,
+            app.hoursTEP,
+          );
           await upsertUserService(
             svcId, userId, app.status,
-            app.hoursSanitary, app.hoursVolunteering, app.hoursRetraining,
-            app.hoursTraining, app.hoursTEP,
+            remapped.hours, remapped.hoursVol, remapped.hoursTraining, remapped.hoursTrainers, remapped.hoursTEP,
             app.applicationId, result,
           );
           missionHtmlAppsProcessed++;
@@ -1642,7 +1699,7 @@ export async function syncShiftApplications(departmentId: number): Promise<SyncR
         // status_id (e.g. 3 = accepted) for cancelled applications in closed missions,
         // which would incorrectly override the "rejected" status set by the HTML scrape.
         where: { departmentId, externalShiftId: { in: shiftIds }, lifecycleStatus: "active" },
-        select: { id: true, externalShiftId: true },
+        select: { id: true, externalShiftId: true, serviceType: { select: { externalMissionTypeId: true } } },
       }),
       prisma.user.findMany({
         where: { externalId: { in: userExternalIds } },
@@ -1651,8 +1708,12 @@ export async function syncShiftApplications(departmentId: number): Promise<SyncR
     ]);
 
     const serviceByShift = new Map<number, number>();
+    const missionTypeByShift = new Map<number, number | null>();
     for (const svc of services) {
-      if (svc.externalShiftId != null) serviceByShift.set(svc.externalShiftId, svc.id);
+      if (svc.externalShiftId != null) {
+        serviceByShift.set(svc.externalShiftId, svc.id);
+        missionTypeByShift.set(svc.externalShiftId, svc.serviceType?.externalMissionTypeId ?? null);
+      }
     }
 
     const userByExternal = new Map<number, number>();
@@ -1701,11 +1762,21 @@ export async function syncShiftApplications(departmentId: number): Promise<SyncR
         const status = mapApplicationStatus(app.application_status_id);
         if (status === null) continue;
 
-        const hours = parseHours(app.hours_sanitary);
-        const hoursVol = parseHours(app.hours_volunteering);
-        const hoursTraining = parseHours(app.hours_training);
-        const hoursTrainers = parseHours(app.hours_retraining);
-        const hoursTEP = parseHours(app.hours_tep);
+        const rawHrs = parseHours(app.hours_sanitary) + parseHours(app.hours_lifeguard);
+        const rawHrsVol = parseHours(app.hours_volunteering);
+        const rawHrsTraining = parseHours(app.hours_training);
+        const rawHrsTrainers = parseHours(app.hours_retraining);
+        const rawHrsTEP = parseHours(app.hours_tep);
+
+        const missionTypeId = missionTypeByShift.get(externalShiftId) ?? undefined;
+        const { hours, hoursVol, hoursTraining, hoursTrainers, hoursTEP } = remapUserHours(
+          missionTypeId,
+          rawHrs,
+          rawHrsVol,
+          rawHrsTraining,
+          rawHrsTrainers,
+          rawHrsTEP,
+        );
 
         const key = `${userId}:${serviceId}`;
         if (existingKeys.has(key)) {
@@ -2531,7 +2602,7 @@ export async function syncUserApplications(userId: number): Promise<SyncResult> 
                     externalMissionId: missionId,
                     startAt,
                     endAt,
-                    defaultHours: parseHours(shift.hours_sanitary),
+                    defaultHours: parseHours(shift.hours_sanitary) + parseHours(shift.hours_lifeguard),
                     defaultHoursVol: parseHours(shift.hours_volunteering),
                     defaultHoursTraining: parseHours(shift.hours_training),
                     defaultHoursTrainers: parseHours(shift.hours_retraining),
@@ -2559,12 +2630,21 @@ export async function syncUserApplications(userId: number): Promise<SyncResult> 
 
           const service = await prisma.service.findFirst({
             where: { departmentId: config.departmentId, externalShiftId },
-            select: { id: true },
+            select: { id: true, serviceType: { select: { externalMissionTypeId: true } } },
           });
           if (!service) continue;
 
           const status = mapApplicationStatus(app.application_status_id);
           if (status === null) continue;
+
+          const remapped = remapUserHours(
+            service.serviceType?.externalMissionTypeId ?? undefined,
+            parseHours(app.hours_sanitary) + parseHours(app.hours_lifeguard),
+            parseHours(app.hours_volunteering),
+            parseHours(app.hours_training),
+            parseHours(app.hours_retraining),
+            parseHours(app.hours_tep),
+          );
 
           const existing = await prisma.userService.findUnique({
             where: { userId_serviceId: { userId, serviceId: service.id } },
@@ -2576,11 +2656,11 @@ export async function syncUserApplications(userId: number): Promise<SyncResult> 
               where: { userId_serviceId: { userId, serviceId: service.id } },
               data: {
                 status,
-                hours: parseHours(app.hours_sanitary),
-                hoursVol: parseHours(app.hours_volunteering),
-                hoursTraining: parseHours(app.hours_training),
-                hoursTrainers: parseHours(app.hours_retraining),
-                hoursTEP: parseHours(app.hours_tep),
+                hours: remapped.hours,
+                hoursVol: remapped.hoursVol,
+                hoursTraining: remapped.hoursTraining,
+                hoursTrainers: remapped.hoursTrainers,
+                hoursTEP: remapped.hoursTEP,
                 externalApplicationId,
               },
             });
@@ -2591,11 +2671,11 @@ export async function syncUserApplications(userId: number): Promise<SyncResult> 
                 userId,
                 serviceId: service.id,
                 status,
-                hours: parseHours(app.hours_sanitary),
-                hoursVol: parseHours(app.hours_volunteering),
-                hoursTraining: parseHours(app.hours_training),
-                hoursTrainers: parseHours(app.hours_retraining),
-                hoursTEP: parseHours(app.hours_tep),
+                hours: remapped.hours,
+                hoursVol: remapped.hoursVol,
+                hoursTraining: remapped.hoursTraining,
+                hoursTrainers: remapped.hoursTrainers,
+                hoursTEP: remapped.hoursTEP,
                 externalApplicationId,
               },
             });
