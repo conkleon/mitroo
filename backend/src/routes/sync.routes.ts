@@ -11,6 +11,7 @@ import {
   syncCompletedServices,
   syncFinalizedServices,
   syncShiftApplications,
+  diagMissionHours,
 } from "../lib/mitrooSync";
 
 const router = Router();
@@ -182,6 +183,15 @@ router.get("/:id/sync/status", async (req: Request, res: Response) => {
   });
 
   res.json(config ?? { lastUserSyncAt: null, lastServiceSyncAt: null, lastFinalizedSyncAt: null, lastSyncStatus: null });
+});
+
+// ── GET /api/departments/:id/sync/diag/:missionId ──
+router.get("/:id/sync/diag/:missionId", async (req: Request, res: Response) => {
+  const deptId = Number(req.params.id);
+  if (!await requireSyncAdmin(req, res, deptId)) return;
+  const missionId = Number(req.params.missionId);
+  const diag = await diagMissionHours(deptId, missionId);
+  res.json(diag);
 });
 
 export default router;

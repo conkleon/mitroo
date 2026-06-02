@@ -250,6 +250,16 @@ function remapUserHours(
   hoursTrainers: number,
   hoursTEP: number,
 ): { hours: number; hoursVol: number; hoursTraining: number; hoursTrainers: number; hoursTEP: number } {
+  // Type 81 (training) is the only mission type whose individual applications carry
+  // hours in more than one category (both training and retraining). Remapping would
+  // sum them into a single bucket and lose the distinction. For all other types the
+  // external system uses exactly one hour field, so summing and redistributing puts
+  // hours into the correct DB column (e.g. volunteer missions → hoursVol).
+  const id = Number(missionTypeId);
+  if (Number.isFinite(id) && TRAINING_MISSION_TYPE_IDS.has(id)) {
+    return { hours, hoursVol, hoursTraining, hoursTrainers, hoursTEP };
+  }
+
   const raw: DefaultHours = {
     defaultHours: hours,
     defaultHoursVol: hoursVol,
@@ -267,9 +277,10 @@ function remapUserHours(
   };
 }
 
-// ── HTML scraping for mission detail pages ──────────────────────────────────
+    // ── HTML scraping for mission detail pages ──────────────────────────────────
 // Used as a fallback for finished/finalized missions where _with_members returns
 // empty and grid_get_shiftapplications doesn't include them.
+
 
 interface ParsedApplication {
   applicationId: number;
@@ -381,6 +392,7 @@ function parseApplicationsFromHtml(html: string): Map<number, ParsedApplication[
       hoursRetraining,
       hoursTEP,
     };
+
 
     if (!result.has(shiftId)) result.set(shiftId, []);
     result.get(shiftId)!.push(app);
@@ -954,6 +966,7 @@ async function syncApplicationsViaHtml(
           }
         }
       }
+
       console.log(
         `[mitrooSync] syncApplicationsViaHtml: mission_id=${missionId}: ` +
         `${matchedShifts} shift(s) matched, ${unmatchedShifts} unmatched, ${createdShifts} created, ` +
@@ -1470,11 +1483,8 @@ async function processFinalizedMissions(
 
               const remapped = remapUserHours(
                 mission.mission_type_id,
-                app.hoursSanitary,
-                app.hoursVolunteering,
-                app.hoursRetraining,
-                app.hoursTraining,
-                app.hoursTEP,
+                app.hoursSanitary, app.hoursVolunteering, app.hoursRetraining,
+                app.hoursTraining, app.hoursTEP,
               );
               await upsertUserService(
                 serviceId, userId, app.status,
@@ -1569,11 +1579,8 @@ async function processFinalizedMissions(
           if (!userId) { missionHtmlAppsSkippedNoUser++; continue; }
           const remapped = remapUserHours(
             mission.mission_type_id,
-            app.hoursSanitary,
-            app.hoursVolunteering,
-            app.hoursRetraining,
-            app.hoursTraining,
-            app.hoursTEP,
+            app.hoursSanitary, app.hoursVolunteering, app.hoursRetraining,
+            app.hoursTraining, app.hoursTEP,
           );
           await upsertUserService(
             svcId, userId, app.status,
@@ -1762,21 +1769,14 @@ export async function syncShiftApplications(departmentId: number): Promise<SyncR
         const status = mapApplicationStatus(app.application_status_id);
         if (status === null) continue;
 
-        const rawHrs = parseHours(app.hours_sanitary) + parseHours(app.hours_lifeguard);
-        const rawHrsVol = parseHours(app.hours_volunteering);
-        const rawHrsTraining = parseHours(app.hours_training);
-        const rawHrsTrainers = parseHours(app.hours_retraining);
-        const rawHrsTEP = parseHours(app.hours_tep);
+        const hours = parseHours(app.hours_sanitary) + parseHours(app.hours_lifeguard);
+        const hoursVol = parseHours(app.hours_volunteering);
+        const hoursTraining = parseHours(app.hours_retraining);
+        const hoursTrainers = parseHours(app.hours_training);
+        const hoursTEP = parseHours(app.hours_tep);
 
-        const missionTypeId = missionTypeByShift.get(externalShiftId) ?? undefined;
-        const { hours, hoursVol, hoursTraining, hoursTrainers, hoursTEP } = remapUserHours(
-          missionTypeId,
-          rawHrs,
-          rawHrsVol,
-          rawHrsTraining,
-          rawHrsTrainers,
-          rawHrsTEP,
-        );
+        const mtId = missionTypeByShift.get(externalShiftId) ?? undefined;
+        const remapped = remapUserHours(mtId, hours, hoursVol, hoursTraining, hoursTrainers, hoursTEP);
 
         const key = `${userId}:${serviceId}`;
         if (existingKeys.has(key)) {
@@ -1785,11 +1785,11 @@ export async function syncShiftApplications(departmentId: number): Promise<SyncR
               where: { userId_serviceId: { userId, serviceId } },
               data: {
                 status,
-                hours,
-                hoursVol,
-                hoursTraining,
-                hoursTrainers,
-                hoursTEP,
+                hours: remapped.hours,
+                hoursVol: remapped.hoursVol,
+                hoursTraining: remapped.hoursTraining,
+                hoursTrainers: remapped.hoursTrainers,
+                hoursTEP: remapped.hoursTEP,
                 externalApplicationId,
               },
             }),
@@ -1800,11 +1800,11 @@ export async function syncShiftApplications(departmentId: number): Promise<SyncR
             userId,
             serviceId,
             status,
-            hours,
-            hoursVol,
-            hoursTraining,
-            hoursTrainers,
-            hoursTEP,
+            hours: remapped.hours,
+            hoursVol: remapped.hoursVol,
+            hoursTraining: remapped.hoursTraining,
+            hoursTrainers: remapped.hoursTrainers,
+            hoursTEP: remapped.hoursTEP,
             externalApplicationId,
           });
         }
@@ -1812,6 +1812,7 @@ export async function syncShiftApplications(departmentId: number): Promise<SyncR
         result.errors.push(`application_id=${app.id}: ${e}`);
       }
     }
+
 
     const batchSize = 200;
     for (let i = 0; i < updates.length; i += batchSize) {
@@ -1894,8 +1895,8 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
       total_participants: service.maxParticipants ?? 100,
       hours_sanitary: service.defaultHours ?? 0,
       hours_volunteering: service.defaultHoursVol ?? 0,
-      hours_training: service.defaultHoursTraining ?? 0,
-      hours_retraining: service.defaultHoursTrainers ?? 0,
+      hours_training: service.defaultHoursTrainers ?? 0,
+      hours_retraining: service.defaultHoursTraining ?? 0,
       hours_tep: service.defaultHoursTEP ?? 0,
       mission_type_id: missionTypeId,
     });
@@ -2049,8 +2050,8 @@ export async function writeBackAssignment(serviceId: number, userId: number): Pr
       await client.updateApplicationHours(applicationId, service.externalMissionId, {
         sanitary: service.defaultHours ?? 0,
         volunteering: service.defaultHoursVol ?? 0,
-        training: service.defaultHoursTraining ?? 0,
-        retraining: service.defaultHoursTrainers ?? 0,
+        training: service.defaultHoursTrainers ?? 0,
+        retraining: service.defaultHoursTraining ?? 0,
         tep: service.defaultHoursTEP ?? 0,
       });
     };
@@ -2161,8 +2162,8 @@ export async function writeBackHoursUpdate(serviceId: number, userId: number): P
     await client.updateApplicationHours(applicationId, service.externalMissionId, {
       sanitary: userService?.hours ?? 0,
       volunteering: userService?.hoursVol ?? 0,
-      training: userService?.hoursTraining ?? 0,
-      retraining: userService?.hoursTrainers ?? 0,
+      training: userService?.hoursTrainers ?? 0,
+      retraining: userService?.hoursTraining ?? 0,
       tep: userService?.hoursTEP ?? 0,
     });
     console.log(`[mitrooSync] writeBackHoursUpdate: updated hours for application ${applicationId}`);
@@ -2604,8 +2605,8 @@ export async function syncUserApplications(userId: number): Promise<SyncResult> 
                     endAt,
                     defaultHours: parseHours(shift.hours_sanitary) + parseHours(shift.hours_lifeguard),
                     defaultHoursVol: parseHours(shift.hours_volunteering),
-                    defaultHoursTraining: parseHours(shift.hours_training),
-                    defaultHoursTrainers: parseHours(shift.hours_retraining),
+                    defaultHoursTraining: parseHours(shift.hours_retraining),
+                    defaultHoursTrainers: parseHours(shift.hours_training),
                     defaultHoursTEP: parseHours(shift.hours_tep),
                   },
                 });
@@ -2641,8 +2642,8 @@ export async function syncUserApplications(userId: number): Promise<SyncResult> 
             service.serviceType?.externalMissionTypeId ?? undefined,
             parseHours(app.hours_sanitary) + parseHours(app.hours_lifeguard),
             parseHours(app.hours_volunteering),
-            parseHours(app.hours_training),
             parseHours(app.hours_retraining),
+            parseHours(app.hours_training),
             parseHours(app.hours_tep),
           );
 
@@ -2825,6 +2826,172 @@ export async function autoUpdateSyncConfig(
   syncActiveServices(dept.id).catch((e) =>
     console.error(`[mitrooSync] autoUpdateSyncConfig: syncActiveServices failed for dept ${dept!.id}:`, e),
   );
+}
+
+// ── Hourly cron: sync all departments that have credentials ─────────────────
+
+// ── Targeted diagnostic: compare external data vs local DB for a single mission ──
+
+export interface MissionHourDiag {
+  missionId: number;
+  missionTypeId: unknown;
+  lifecycleStatus: string;
+  shifts: {
+    externalShiftId: number;
+    localServiceId: number | null;
+    // External API shift defaults
+    extDefaultSanitary: number;
+    extDefaultVolunteer: number;
+    extDefaultLifeguard: number;
+    extDefaultTraining: number;
+    extDefaultRetraining: number;
+    extDefaultTEP: number;
+    // HTML-scraped applications
+    htmlApps: {
+      memberId: number;
+      status: string;
+      san: number;
+      vol: number;
+      lifeguard: number;
+      training: number;
+      retraining: number;
+      tep: number;
+      rawRowHtml?: string;
+    }[];
+    // Local DB userServices
+    localUserServices: {
+      userId: number;
+      status: string;
+      hours: number;
+      hoursVol: number;
+      hoursTraining: number;
+      hoursTrainers: number;
+      hoursTEP: number;
+    }[];
+  }[];
+}
+
+export async function diagMissionHours(
+  departmentId: number,
+  missionId: number,
+): Promise<MissionHourDiag> {
+  const client = await getClient(departmentId);
+
+  const shifts = await client.fetchShiftsForMission(missionId);
+  let html = "";
+  try { html = await client.fetchMissionDetailHtml(missionId); } catch { /* ignore */ }
+  const parsedAppsByShift = parseApplicationsFromHtml(html);
+
+  const diag: MissionHourDiag = {
+    missionId,
+    missionTypeId: null,
+    lifecycleStatus: "unknown",
+    shifts: [],
+  };
+
+  // Get mission metadata from local services
+  const localServices = await prisma.service.findMany({
+    where: { departmentId, externalMissionId: missionId },
+    select: { lifecycleStatus: true, serviceType: { select: { externalMissionTypeId: true } } },
+    take: 1,
+  });
+  if (localServices.length > 0) {
+    diag.missionTypeId = localServices[0].serviceType?.externalMissionTypeId ?? null;
+    diag.lifecycleStatus = localServices[0].lifecycleStatus;
+  }
+
+  // Collect all shift IDs from API + HTML + local DB
+  const allShiftIds = new Set<number>();
+  for (const shift of shifts) allShiftIds.add(Number(shift.id));
+  for (const sid of parsedAppsByShift.keys()) allShiftIds.add(sid);
+  // Also check local DB for services attached to this mission
+  const localMissionServices = await prisma.service.findMany({
+    where: { departmentId, externalMissionId: missionId },
+    select: { id: true, externalShiftId: true },
+  });
+  for (const s of localMissionServices) {
+    if (s.externalShiftId) allShiftIds.add(s.externalShiftId);
+  }
+
+  for (const externalShiftId of allShiftIds) {
+    const apiShift = shifts.find((s) => Number(s.id) === externalShiftId);
+    const shiftDiag: MissionHourDiag["shifts"][number] = {
+      externalShiftId,
+      localServiceId: null,
+      extDefaultSanitary: apiShift ? parseHours(apiShift.hours_sanitary) : 0,
+      extDefaultVolunteer: apiShift ? parseHours(apiShift.hours_volunteering) : 0,
+      extDefaultLifeguard: apiShift ? parseHours(apiShift.hours_lifeguard) : 0,
+      extDefaultTraining: apiShift ? parseHours(apiShift.hours_training) : 0,
+      extDefaultRetraining: apiShift ? parseHours(apiShift.hours_retraining) : 0,
+      extDefaultTEP: apiShift ? parseHours(apiShift.hours_tep) : 0,
+      htmlApps: [],
+      localUserServices: [],
+    };
+
+    // Find local service
+    const localSvc = await prisma.service.findFirst({
+      where: { departmentId, externalShiftId },
+      select: { id: true },
+    });
+    if (localSvc) {
+      shiftDiag.localServiceId = localSvc.id;
+      const userServices = await prisma.userService.findMany({
+        where: { serviceId: localSvc.id },
+        select: {
+          userId: true, status: true,
+          hours: true, hoursVol: true, hoursTraining: true, hoursTrainers: true, hoursTEP: true,
+        },
+      });
+      shiftDiag.localUserServices = userServices;
+    }
+
+    // HTML apps for this shift
+    const htmlApps = parsedAppsByShift.get(externalShiftId) ?? [];
+    for (const app of htmlApps) {
+      shiftDiag.htmlApps.push({
+        memberId: app.memberId,
+        status: app.status,
+        san: app.hoursSanitary,
+        vol: app.hoursVolunteering,
+        lifeguard: 0, // not extracted separately in existing parser
+        training: app.hoursTraining,
+        retraining: app.hoursRetraining,
+        tep: app.hoursTEP,
+      });
+    }
+
+    diag.shifts.push(shiftDiag);
+  }
+
+  // Print summary to console
+  console.log(`\n=== DIAG: mission ${missionId} (type=${diag.missionTypeId} status=${diag.lifecycleStatus}) ===`);
+  for (const s of diag.shifts) {
+    const e = s;
+    const l = s.localUserServices;
+    const h = s.htmlApps;
+
+    const extTotal = e.extDefaultSanitary + e.extDefaultVolunteer + e.extDefaultLifeguard +
+      e.extDefaultTraining + e.extDefaultRetraining + e.extDefaultTEP;
+    let localTotal = 0;
+    for (const u of l) localTotal += u.hours + u.hoursVol + u.hoursTraining + u.hoursTrainers + u.hoursTEP;
+    let htmlTotal = 0;
+    for (const a of h) htmlTotal += a.san + a.vol + a.lifeguard + a.training + a.retraining + a.tep;
+
+    console.log(`  shift ${e.externalShiftId} (svc ${e.localServiceId ?? "N/A"}): ` +
+      `ext defaults = [san=${e.extDefaultSanitary} vol=${e.extDefaultVolunteer} lifeguard=${e.extDefaultLifeguard} ` +
+      `train=${e.extDefaultTraining} retrain=${e.extDefaultRetraining} tep=${e.extDefaultTEP}] (total=${extTotal})`);
+    console.log(`    HTML apps (${h.length}): total = [san=${h.reduce((t,a)=>t+a.san,0)} vol=${h.reduce((t,a)=>t+a.vol,0)} ` +
+      `train=${h.reduce((t,a)=>t+a.training,0)} retrain=${h.reduce((t,a)=>t+a.retraining,0)} tep=${h.reduce((t,a)=>t+a.tep,0)}] (sum=${htmlTotal})`);
+    console.log(`    local DB (${l.length}): total = [san=${l.reduce((t,u)=>t+u.hours,0)} vol=${l.reduce((t,u)=>t+u.hoursVol,0)} ` +
+      `train=${l.reduce((t,u)=>t+u.hoursTraining,0)} retrain=${l.reduce((t,u)=>t+u.hoursTrainers,0)} tep=${l.reduce((t,u)=>t+u.hoursTEP,0)}] (sum=${localTotal})`);
+
+    for (const u of l) {
+      const htmlApp = h.find((a) => a.memberId === u.userId || true); // rough match
+      console.log(`    user ${u.userId}: status=${u.status} local[san=${u.hours} vol=${u.hoursVol} train=${u.hoursTraining} retrain=${u.hoursTrainers} tep=${u.hoursTEP}]`);
+    }
+  }
+
+  return diag;
 }
 
 // ── Hourly cron: sync all departments that have credentials ─────────────────
