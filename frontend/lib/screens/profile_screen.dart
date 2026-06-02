@@ -20,11 +20,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Hours data
   int _totalHours = 0;
-  int _yearHours = 0;
-  int _yearServiceHours = 0;
-  int _yearVolHours = 0;
-  int _yearTrainingHours = 0;
-  int _yearTrainerHours = 0;
 
   // Services table
   List<Map<String, dynamic>> _services = [];
@@ -78,11 +73,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         setState(() {
           _totalHours = data['totalHours'] ?? 0;
-          _yearHours = data['yearHours'] ?? 0;
-          _yearServiceHours = data['yearServiceHours'] ?? 0;
-          _yearVolHours = data['yearVolHours'] ?? 0;
-          _yearTrainingHours = data['yearTrainingHours'] ?? 0;
-          _yearTrainerHours = data['yearTrainerHours'] ?? 0;
         });
       } else {
         setState(() => _error = 'Αποτυχία φόρτωσης προφίλ');
@@ -378,7 +368,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return InkWell(
-      onTap: () => context.push('/services/${svc['id']}'),
+      onTap: () => context.go('/services/${svc['id']}'),
       child: Container(
         color: even ? Colors.white : const Color(0xFFF9FAFB),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -504,113 +494,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     // Total hours (all time)
                     _HoursHighlight(label: 'Συνολικές Ώρες', hours: _totalHours, color: cs.primary),
                     const Divider(height: 24),
-                    Text('Ανάλυση $currentYear',
-                        style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF374151))),
-                    const SizedBox(height: 12),
-                    _HoursRow(label: 'Κάλυψη', hours: _yearServiceHours, icon: Icons.medical_services_outlined, color: const Color(0xFFDC2626)),
-                    const SizedBox(height: 8),
-                    _HoursRow(label: 'Εθελοντικές', hours: _yearVolHours, icon: Icons.volunteer_activism, color: const Color(0xFF059669)),
-                    const SizedBox(height: 8),
-                    _HoursRow(label: 'Επανεκπαίδευση', hours: _yearTrainingHours, icon: Icons.school_outlined, color: const Color(0xFFD97706)),
-                    const SizedBox(height: 8),
-                    _HoursRow(label: 'Εκπαιδευτές', hours: _yearTrainerHours, icon: Icons.co_present_outlined, color: const Color(0xFF7C3AED)),
-                    const Divider(height: 24),
-                    _HoursHighlight(label: 'Σύνολο $currentYear', hours: _yearHours, color: const Color(0xFF059669)),
+                    // Yearly analysis table
+                    Builder(builder: (_) {
+                      final yearly = _yearlyHours;
+                      final years = yearly.keys.toList()..sort((a, b) => b.compareTo(a));
+                      if (years.isEmpty) {
+                        return Text('Δεν υπάρχουν καταχωρημένες ώρες',
+                            style: tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF)));
+                      }
+                      const headerStyle = TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF374151));
+                      const cellStyle = TextStyle(fontSize: 12, color: Color(0xFF111827));
+                      const colWidths = [48.0, 52.0, 52.0, 48.0, 56.0, 56.0];
+                      final colLabels = ['Έτος', 'Σύνολο', 'Κάλυψη', 'Εθελ.', 'Επανεκπ.', 'Εκπαιδ.'];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Ετήσια Ανάλυση',
+                              style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF374151))),
+                          const SizedBox(height: 10),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Header row
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  decoration: const BoxDecoration(
+                                    border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB), width: 2)),
+                                  ),
+                                  child: Row(
+                                    children: List.generate(colLabels.length, (i) =>
+                                      SizedBox(
+                                        width: colWidths[i],
+                                        child: Text(colLabels[i], style: headerStyle,
+                                          textAlign: i == 0 ? TextAlign.start : TextAlign.center),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Data rows
+                                ...years.map((y) {
+                                  final data = yearly[y]!;
+                                  final vals = ['$y', '${data['total']}', '${data['hours']}', '${data['hoursVol']}', '${data['hoursTraining']}', '${data['hoursTrainers']}'];
+                                  final isCurrentYear = y == currentYear;
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                                    decoration: BoxDecoration(
+                                      color: isCurrentYear ? cs.primary.withAlpha(12) : null,
+                                      border: const Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
+                                    ),
+                                    child: Row(
+                                      children: List.generate(vals.length, (i) {
+                                        final bold = isCurrentYear || i == 0;
+                                        return SizedBox(
+                                          width: colWidths[i],
+                                          child: Text(vals[i], style: cellStyle.copyWith(
+                                            fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                                            color: isCurrentYear ? cs.primary : const Color(0xFF111827),
+                                          ), textAlign: i == 0 ? TextAlign.start : TextAlign.center),
+                                        );
+                                      }),
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
                   ],
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 16),
-
-          // ── Yearly hours overview ──
-          Builder(builder: (_) {
-            final yearly = _yearlyHours;
-            if (yearly.isEmpty) return const SizedBox.shrink();
-            final years = yearly.keys.toList()..sort((a, b) => b.compareTo(a));
-            int? expandedYear;
-            return StatefulBuilder(builder: (ctx, setYearState) {
-              return Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(children: [
-                        Icon(Icons.calendar_month, color: cs.primary, size: 22),
-                        const SizedBox(width: 8),
-                        Text('Ετήσια Ανάλυση', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                      ]),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        height: 68,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: years.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 10),
-                          itemBuilder: (_, i) {
-                            final y = years[i];
-                            final data = yearly[y]!;
-                            final isExpanded = expandedYear == y;
-                            return GestureDetector(
-                              onTap: () => setYearState(() {
-                                expandedYear = isExpanded ? null : y;
-                              }),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: isExpanded ? cs.primary.withAlpha(20) : const Color(0xFFF9FAFB),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: isExpanded ? cs.primary : const Color(0xFFE5E7EB),
-                                    width: isExpanded ? 1.5 : 1,
-                                  ),
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text('$y', style: TextStyle(
-                                      fontSize: 11, fontWeight: FontWeight.w600,
-                                      color: isExpanded ? cs.primary : const Color(0xFF6B7280),
-                                    )),
-                                    const SizedBox(height: 4),
-                                    Text('${data['total']}h', style: TextStyle(
-                                      fontSize: 16, fontWeight: FontWeight.w700,
-                                      color: isExpanded ? cs.primary : const Color(0xFF111827),
-                                    )),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      if (expandedYear != null) ...[
-                        const SizedBox(height: 14),
-                        const Divider(),
-                        const SizedBox(height: 10),
-                        Builder(builder: (_) {
-                          final data = yearly[expandedYear]!;
-                          return Column(children: [
-                            _HoursRow(label: 'Κάλυψη', hours: data['hours'] ?? 0, icon: Icons.medical_services_outlined, color: const Color(0xFFDC2626)),
-                            const SizedBox(height: 8),
-                            _HoursRow(label: 'Εθελοντικές', hours: data['hoursVol'] ?? 0, icon: Icons.volunteer_activism, color: const Color(0xFF059669)),
-                            const SizedBox(height: 8),
-                            _HoursRow(label: 'Επανεκπαίδευση', hours: data['hoursTraining'] ?? 0, icon: Icons.school_outlined, color: const Color(0xFFD97706)),
-                            const SizedBox(height: 8),
-                            _HoursRow(label: 'Εκπαιδευτές', hours: data['hoursTrainers'] ?? 0, icon: Icons.co_present_outlined, color: const Color(0xFF7C3AED)),
-                          ]);
-                        }),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            });
-          }),
           const SizedBox(height: 16),
 
           // ── Services table card ──
@@ -973,34 +931,6 @@ class _HoursHighlight extends StatelessWidget {
             style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: color),
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _HoursRow extends StatelessWidget {
-  final String label;
-  final int hours;
-  final IconData icon;
-  final Color color;
-  const _HoursRow({required this.label, required this.hours, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: color.withAlpha(25),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 16, color: color),
-        ),
-        const SizedBox(width: 10),
-        Expanded(child: Text(label, style: tt.bodyMedium)),
-        Text('$hours h', style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
       ],
     );
   }
