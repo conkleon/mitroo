@@ -34,6 +34,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _svcSortAsc = false;
   int _svcPage = 0;
   int _svcRowsPerPage = 10;
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
+
+  // ── Yearly hours computed from services ──────────
+  Map<int, Map<String, int>> get _yearlyHours {
+    final map = <int, Map<String, int>>{};
+    for (final s in _services) {
+      final status = s['status'] as String? ?? '';
+      if (status != 'accepted' && status != 'participated') continue;
+      final svc = s['service'] as Map<String, dynamic>? ?? {};
+      final startAt = DateTime.tryParse(svc['startAt']?.toString() ?? '');
+      if (startAt == null) continue;
+      final year = startAt.year;
+      map.putIfAbsent(year, () => {'total': 0, 'hours': 0, 'hoursVol': 0, 'hoursTraining': 0, 'hoursTrainers': 0});
+      final h = (s['hours'] ?? 0) as int;
+      final hv = (s['hoursVol'] ?? 0) as int;
+      final ht = (s['hoursTraining'] ?? 0) as int;
+      final htr = (s['hoursTrainers'] ?? 0) as int;
+      map[year]!['total'] = map[year]!['total']! + h + hv + ht + htr;
+      map[year]!['hours'] = map[year]!['hours']! + h;
+      map[year]!['hoursVol'] = map[year]!['hoursVol']! + hv;
+      map[year]!['hoursTraining'] = map[year]!['hoursTraining']! + ht;
+      map[year]!['hoursTrainers'] = map[year]!['hoursTrainers']! + htr;
+    }
+    return map;
+  }
 
   @override
   void initState() {
@@ -213,6 +239,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       list = list.where((s) => s['status'] == _svcStatusFilter).toList();
     }
 
+    if (_dateFrom != null) {
+      list = list.where((s) {
+        final svc = s['service'] as Map<String, dynamic>? ?? {};
+        final startAt = DateTime.tryParse(svc['startAt']?.toString() ?? '');
+        return startAt != null && !startAt.isBefore(_dateFrom!);
+      }).toList();
+    }
+    if (_dateTo != null) {
+      // Include the entire end day by comparing start of next day
+      final end = _dateTo!.add(const Duration(days: 1));
+      list = list.where((s) {
+        final svc = s['service'] as Map<String, dynamic>? ?? {};
+        final startAt = DateTime.tryParse(svc['startAt']?.toString() ?? '');
+        return startAt != null && startAt.isBefore(end);
+      }).toList();
+    }
+
     if (_svcSearch.isNotEmpty) {
       final q = _svcSearch.toLowerCase();
       list = list.where((s) {
@@ -334,10 +377,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default: statusColor = const Color(0xFFF59E0B);
     }
 
-    return Container(
-      color: even ? Colors.white : const Color(0xFFF9FAFB),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Row(children: [
+    return InkWell(
+      onTap: () => context.push('/services/${svc['id']}'),
+      child: Container(
+        color: even ? Colors.white : const Color(0xFFF9FAFB),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Row(children: [
         Expanded(
           flex: 3,
           child: Column(
@@ -373,6 +418,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _svcHoursCell(enrolment['hoursTraining']),
         _svcHoursCell(enrolment['hoursTrainers']),
       ]),
+      ),
     );
   }
 
@@ -477,6 +523,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
 
+          // ── Yearly hours overview ──
+          Builder(builder: (_) {
+            final yearly = _yearlyHours;
+            if (yearly.isEmpty) return const SizedBox.shrink();
+            final years = yearly.keys.toList()..sort((a, b) => b.compareTo(a));
+            int? expandedYear;
+            return StatefulBuilder(builder: (ctx, setYearState) {
+              return Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Icon(Icons.calendar_month, color: cs.primary, size: 22),
+                        const SizedBox(width: 8),
+                        Text('Ετήσια Ανάλυση', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      ]),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        height: 68,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: years.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 10),
+                          itemBuilder: (_, i) {
+                            final y = years[i];
+                            final data = yearly[y]!;
+                            final isExpanded = expandedYear == y;
+                            return GestureDetector(
+                              onTap: () => setYearState(() {
+                                expandedYear = isExpanded ? null : y;
+                              }),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: isExpanded ? cs.primary.withAlpha(20) : const Color(0xFFF9FAFB),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isExpanded ? cs.primary : const Color(0xFFE5E7EB),
+                                    width: isExpanded ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text('$y', style: TextStyle(
+                                      fontSize: 11, fontWeight: FontWeight.w600,
+                                      color: isExpanded ? cs.primary : const Color(0xFF6B7280),
+                                    )),
+                                    const SizedBox(height: 4),
+                                    Text('${data['total']}h', style: TextStyle(
+                                      fontSize: 16, fontWeight: FontWeight.w700,
+                                      color: isExpanded ? cs.primary : const Color(0xFF111827),
+                                    )),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      if (expandedYear != null) ...[
+                        const SizedBox(height: 14),
+                        const Divider(),
+                        const SizedBox(height: 10),
+                        Builder(builder: (_) {
+                          final data = yearly[expandedYear]!;
+                          return Column(children: [
+                            _HoursRow(label: 'Κάλυψη', hours: data['hours'] ?? 0, icon: Icons.medical_services_outlined, color: const Color(0xFFDC2626)),
+                            const SizedBox(height: 8),
+                            _HoursRow(label: 'Εθελοντικές', hours: data['hoursVol'] ?? 0, icon: Icons.volunteer_activism, color: const Color(0xFF059669)),
+                            const SizedBox(height: 8),
+                            _HoursRow(label: 'Επανεκπαίδευση', hours: data['hoursTraining'] ?? 0, icon: Icons.school_outlined, color: const Color(0xFFD97706)),
+                            const SizedBox(height: 8),
+                            _HoursRow(label: 'Εκπαιδευτές', hours: data['hoursTrainers'] ?? 0, icon: Icons.co_present_outlined, color: const Color(0xFF7C3AED)),
+                          ]);
+                        }),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            });
+          }),
+          const SizedBox(height: 16),
+
           // ── Services table card ──
           if (_services.isNotEmpty)
             Card(
@@ -556,6 +692,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           style: const TextStyle(fontSize: 12),
                           onChanged: (v) => setState(() { _svcSearch = v; _svcPage = 0; }),
                         ),
+                      ),
+                    ]),
+                    const SizedBox(height: 8),
+                    // Date range filter chips
+                    Row(children: [
+                      _DateFilterChip(
+                        label: 'Από',
+                        date: _dateFrom,
+                        onClear: () => setState(() { _dateFrom = null; _svcPage = 0; }),
+                        onPick: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _dateFrom ?? DateTime.now(),
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            helpText: 'Από ημερομηνία',
+                            cancelText: 'Άκυρο',
+                            confirmText: 'Επιλογή',
+                          );
+                          if (picked != null) setState(() { _dateFrom = picked; _svcPage = 0; });
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _DateFilterChip(
+                        label: 'Έως',
+                        date: _dateTo,
+                        onClear: () => setState(() { _dateTo = null; _svcPage = 0; }),
+                        onPick: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _dateTo ?? DateTime.now(),
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            helpText: 'Έως ημερομηνία',
+                            cancelText: 'Άκυρο',
+                            confirmText: 'Επιλογή',
+                          );
+                          if (picked != null) setState(() { _dateTo = picked; _svcPage = 0; });
+                        },
                       ),
                     ]),
                     const SizedBox(height: 8),
@@ -879,6 +1054,63 @@ class _HoursChip extends StatelessWidget {
         const SizedBox(width: 4),
         Text(label, style: TextStyle(fontSize: 10, color: color.withAlpha(180))),
       ]),
+    );
+  }
+}
+
+class _DateFilterChip extends StatelessWidget {
+  final String label;
+  final DateTime? date;
+  final VoidCallback onClear;
+  final VoidCallback onPick;
+  const _DateFilterChip({
+    required this.label,
+    required this.date,
+    required this.onClear,
+    required this.onPick,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasDate = date != null;
+    return InkWell(
+      onTap: onPick,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: hasDate ? const Color(0xFFFEE2E2) : const Color(0xFFF9FAFB),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: hasDate ? const Color(0xFFFCA5A5) : const Color(0xFFE5E7EB),
+          ),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(
+            Icons.calendar_today,
+            size: 13,
+            color: hasDate ? const Color(0xFFDC2626) : const Color(0xFF9CA3AF),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            hasDate
+                ? '${date!.day}/${date!.month}/${date!.year}'
+                : label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: hasDate ? FontWeight.w600 : FontWeight.w400,
+              color: hasDate ? const Color(0xFFDC2626) : const Color(0xFF6B7280),
+            ),
+          ),
+          if (hasDate) ...[
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: onClear,
+              child: const Icon(Icons.close, size: 14, color: Color(0xFFDC2626)),
+            ),
+          ],
+        ]),
+      ),
     );
   }
 }
