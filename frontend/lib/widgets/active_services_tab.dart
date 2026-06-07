@@ -424,6 +424,12 @@ class ActiveServicesTabState extends State<ActiveServicesTab>
     setState(() => _syncingServiceIds.add(serviceId));
     try {
       await _api.post('/services/$serviceId/sync', body: {});
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Αποτυχία συγχρονισμού υπηρεσίας')),
+        );
+      }
     } finally {
       setState(() => _syncingServiceIds.remove(serviceId));
       _load();
