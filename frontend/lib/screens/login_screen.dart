@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' as math;
 import '../providers/auth_provider.dart';
 import '../providers/pwa_provider.dart';
@@ -201,7 +202,10 @@ class _LoginScreenState extends State<LoginScreen>
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () => context.go('/forgot-password'),
+                        onPressed: () => launchUrl(
+                          Uri.parse(
+                              'https://mitroo.redcross.gr/index.php/auth/forgot_password'),
+                        ),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 4, vertical: 2),

@@ -1188,9 +1188,8 @@ class _ServicesScreenState extends State<ServicesScreen>
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    final carrier = (svc['carrier'] as String? ?? '').isNotEmpty
-        ? svc['carrier'] as String
-        : (svc['name'] as String? ?? 'Υπηρεσία');
+    final name = svc['name'] as String? ?? 'Υπηρεσία';
+    final carrier = svc['carrier'] as String? ?? '';
     final timeRange = _timeRange(svc);
     final location = svc['location'] as String? ?? '';
     final description = svc['description'] as String? ?? '';
@@ -1243,13 +1242,17 @@ class _ServicesScreenState extends State<ServicesScreen>
 
               // Title
               Text(
-                carrier,
+                name,
                 style: tt.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF1F2937),
                 ),
               ),
               const SizedBox(height: 12),
+
+              // Carrier
+              if (carrier.isNotEmpty)
+                _sheetInfoRow(Icons.business_outlined, 'Φορέας', carrier, cs),
 
               // Time
               if (timeRange.isNotEmpty)
@@ -1486,9 +1489,8 @@ class _ServiceAccordion extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    final carrier = (svc['carrier'] as String? ?? '').isNotEmpty
-        ? svc['carrier'] as String
-        : (svc['name'] as String? ?? 'Υπηρεσία');
+    final name = svc['name'] as String? ?? 'Υπηρεσία';
+    final carrier = svc['carrier'] as String? ?? '';
     final timeRange = _timeRange(svc);
     final location = svc['location'] as String? ?? '';
     final description = svc['description'] as String? ?? '';
@@ -1566,32 +1568,20 @@ class _ServiceAccordion extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                carrier,
+                                name,
                                 style: tt.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w700,
                                   color: accentColor,
                                 ),
                               ),
-                              if (timeRange.isNotEmpty) ...
-                                [
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    timeRange,
-                                    style: tt.bodySmall?.copyWith(
-                                      color: accentColor.withAlpha(180),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              if (description.isNotEmpty) ...[
+                              if (timeRange.isNotEmpty) ...[
                                 const SizedBox(height: 2),
                                 Text(
-                                  description,
+                                  timeRange,
                                   style: tt.bodySmall?.copyWith(
-                                    color: accentColor.withAlpha(150),
+                                    color: accentColor.withAlpha(180),
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ],
@@ -1674,6 +1664,10 @@ class _ServiceAccordion extends StatelessWidget {
                         ),
                       );
                     }),
+
+                    // Carrier
+                    if (carrier.isNotEmpty)
+                      _DetailRow(icon: Icons.business_outlined, label: 'Φορέας', value: carrier),
 
                     // Location
                     if (location.isNotEmpty)
@@ -1957,13 +1951,9 @@ class _CalendarServiceCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    final carrier = svc['carrier'] as String? ?? '';
-    final displayTitle = carrier.isNotEmpty
-        ? carrier
-        : (svc['name'] as String? ?? 'Υπηρεσία');
+    final displayTitle = svc['name'] as String? ?? 'Υπηρεσία';
     final timeRange = _timeRange(svc, timeOnly: true);
     final location = svc['location'] as String? ?? '';
-    final description = svc['description'] as String? ?? '';
     final enrollCount = ((svc['_count'] as Map?)?['userServices'] ?? 0) as int;
 
     // Enrollment status for current user
@@ -2055,32 +2045,6 @@ class _CalendarServiceCard extends StatelessWidget {
                               ),
                             ],
                           ),
-                          if (carrier.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                const Icon(Icons.business_outlined, size: 13, color: Color(0xFF6B7280)),
-                                const SizedBox(width: 3),
-                                Text(
-                                  'Φορέας: ',
-                                  style: tt.bodySmall?.copyWith(
-                                    color: const Color(0xFF6B7280),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                Flexible(
-                                  child: Text(
-                                    carrier,
-                                    style: tt.bodySmall?.copyWith(
-                                      color: const Color(0xFF6B7280),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
                           if (timeRange.isNotEmpty) ...[
                             const SizedBox(height: 2),
                             Row(
@@ -2110,29 +2074,6 @@ class _CalendarServiceCard extends StatelessWidget {
                                       color: const Color(0xFF6B7280),
                                     ),
                                     maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          if (description.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 1),
-                                  child: Icon(Icons.info_outline, size: 13, color: Color(0xFF9CA3AF)),
-                                ),
-                                const SizedBox(width: 3),
-                                Flexible(
-                                  child: Text(
-                                    description,
-                                    style: tt.bodySmall?.copyWith(
-                                      color: const Color(0xFF6B7280),
-                                    ),
-                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),

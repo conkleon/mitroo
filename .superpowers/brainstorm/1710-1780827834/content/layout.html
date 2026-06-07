@@ -1,0 +1,106 @@
+<h2>Services Screen Layout</h2>
+<p class="subtitle">The current filter button + bubbles get replaced by a service-type tab bar. Two style options for how those tabs look.</p>
+
+<div class="split" style="gap: 24px; align-items: flex-start;">
+
+  <!-- OPTION A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)" style="flex:1; cursor:pointer;">
+    <div class="card-body">
+      <div class="letter" style="display:inline-block;margin-bottom:8px;">A</div>
+      <h3 style="margin:0 0 12px;">Pill-style tabs (same as current List/Calendar)</h3>
+      <div class="mockup" style="font-size:12px;">
+        <div class="mockup-header">Services Screen</div>
+        <div class="mockup-body" style="padding:10px; background:#f9fafb;">
+
+          <!-- Top bar -->
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+            <div style="background:#e8f0fe; border-radius:8px; padding:5px 10px; font-size:11px; color:#1a73e8; font-weight:600;">📋 Οι υπηρεσίες μου</div>
+            <div style="flex:1;"></div>
+            <div style="background:#e8f0fe; border-radius:8px; padding:5px 8px; font-size:11px;">📦</div>
+            <div style="background:#1a73e8; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:700;">Α</div>
+          </div>
+
+          <!-- View toggle: List / Calendar -->
+          <div style="display:flex; background:white; border:1px solid #e5e7eb; border-radius:10px; padding:3px; margin-bottom:8px;">
+            <div style="flex:1; text-align:center; padding:5px; border-radius:7px; font-size:11px; color:#6b7280;">📋 Λίστα</div>
+            <div style="flex:1; text-align:center; padding:5px; border-radius:7px; background:#1a73e8; color:white; font-size:11px; font-weight:700;">📅 Ημερολόγιο</div>
+          </div>
+
+          <!-- Service-type tabs (pill style, same look) -->
+          <div style="display:flex; background:white; border:1px solid #e5e7eb; border-radius:10px; padding:3px; margin-bottom:10px;">
+            <div style="flex:1; text-align:center; padding:5px; border-radius:7px; background:#1a73e8; color:white; font-size:11px; font-weight:700;">Κάλυψη</div>
+            <div style="flex:1; text-align:center; padding:5px; border-radius:7px; font-size:11px; color:#6b7280;">Εκπαίδευση</div>
+            <div style="flex:1; text-align:center; padding:5px; border-radius:7px; font-size:11px; color:#6b7280;">ΤΕΠ</div>
+          </div>
+
+          <!-- Service cards placeholder -->
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:8px; padding:8px; margin-bottom:6px; font-size:11px; color:#374151;">
+            <div style="font-weight:700;">Κάλυψη Α΄ Βοηθειών</div>
+            <div style="color:#6b7280;">09:00 → 17:00 · Αθήνα</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:8px; padding:8px; font-size:11px; color:#374151;">
+            <div style="font-weight:700;">Κάλυψη Εκδήλωσης</div>
+            <div style="color:#6b7280;">10:00 → 14:00 · Πειραιάς</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pros-cons" style="margin-top:12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Visually consistent with view toggle</li><li>Clean, familiar look</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Two similar-looking tab bars may confuse which controls what</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)" style="flex:1; cursor:pointer;">
+    <div class="card-body">
+      <div class="letter" style="display:inline-block;margin-bottom:8px;">B</div>
+      <h3 style="margin:0 0 12px;">Underline tabs (distinct from view toggle)</h3>
+      <div class="mockup" style="font-size:12px;">
+        <div class="mockup-header">Services Screen</div>
+        <div class="mockup-body" style="padding:10px; background:#f9fafb;">
+
+          <!-- Top bar -->
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+            <div style="background:#e8f0fe; border-radius:8px; padding:5px 10px; font-size:11px; color:#1a73e8; font-weight:600;">📋 Οι υπηρεσίες μου</div>
+            <div style="flex:1;"></div>
+            <div style="background:#e8f0fe; border-radius:8px; padding:5px 8px; font-size:11px;">📦</div>
+            <div style="background:#1a73e8; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:700;">Α</div>
+          </div>
+
+          <!-- View toggle: List / Calendar (pill style) -->
+          <div style="display:flex; background:white; border:1px solid #e5e7eb; border-radius:10px; padding:3px; margin-bottom:0px;">
+            <div style="flex:1; text-align:center; padding:5px; border-radius:7px; font-size:11px; color:#6b7280;">📋 Λίστα</div>
+            <div style="flex:1; text-align:center; padding:5px; border-radius:7px; background:#1a73e8; color:white; font-size:11px; font-weight:700;">📅 Ημερολόγιο</div>
+          </div>
+
+          <!-- Service-type tabs (underline style) -->
+          <div style="display:flex; border-bottom:2px solid #e5e7eb; margin-bottom:10px; background:white;">
+            <div style="padding:8px 12px; font-size:11px; color:#1a73e8; font-weight:700; border-bottom:2px solid #1a73e8; margin-bottom:-2px;">Κάλυψη</div>
+            <div style="padding:8px 12px; font-size:11px; color:#6b7280;">Εκπαίδευση</div>
+            <div style="padding:8px 12px; font-size:11px; color:#6b7280;">ΤΕΠ</div>
+          </div>
+
+          <!-- Service cards placeholder -->
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:8px; padding:8px; margin-bottom:6px; font-size:11px; color:#374151;">
+            <div style="font-weight:700;">Κάλυψη Α΄ Βοηθειών</div>
+            <div style="color:#6b7280;">09:00 → 17:00 · Αθήνα</div>
+          </div>
+          <div style="background:white; border:1px solid #e5e7eb; border-radius:8px; padding:8px; font-size:11px; color:#374151;">
+            <div style="font-weight:700;">Κάλυψη Εκδήλωσης</div>
+            <div style="color:#6b7280;">10:00 → 14:00 · Πειραιάς</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pros-cons" style="margin-top:12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Visually distinct — clearer role of each control</li><li>Common pattern for category filtering</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Two different tab styles adds visual complexity</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">In both options: if only one service type exists, the tab bar is hidden entirely. Scrollable if many types.</p>
