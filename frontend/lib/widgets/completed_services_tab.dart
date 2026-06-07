@@ -270,6 +270,38 @@ class CompletedServicesTabState extends State<CompletedServicesTab>
     }
   }
 
+  Future<void> _deleteService(int id, String name) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Διαγραφή Υπηρεσίας'),
+        content: Text(
+            'Είστε σίγουροι ότι θέλετε να διαγράψετε "$name";\nΔεν μπορεί να αναιρεθεί.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            child: const Text('Διαγραφή'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final err = await context.read<ServiceProvider>().deleteService(id);
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Η υπηρεσία διαγράφηκε')));
+      _load(silent: true);
+    }
+  }
+
   void _localUpdateStatus(int serviceId, int userId, String newStatus) {
     setState(() {
       for (final svc in _services) {
@@ -601,6 +633,7 @@ class CompletedServicesTabState extends State<CompletedServicesTab>
                       }
                       final svc = filtered[i] as Map<String, dynamic>;
                       final id = svc['id'] as int;
+                      final name = svc['name'] as String? ?? '';
                       return ServiceCard(
                         service: svc,
                         isExpanded: _expandedCards.contains(id),
@@ -616,6 +649,9 @@ class CompletedServicesTabState extends State<CompletedServicesTab>
                             _updateHours(svcId, userId, us),
                         onSync: () => _syncSingleService(id),
                         isSyncing: _syncingServiceIds.contains(id),
+                        onDelete: svc['externalMissionId'] == null
+                            ? () => _deleteService(id, name)
+                            : null,
                       );
                     },
                   ),
