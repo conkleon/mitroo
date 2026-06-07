@@ -276,7 +276,6 @@ router.post("/login", async (req: Request, res: Response) => {
       const token = jwt.sign(
         { userId: externalResult.user!.id, isAdmin: externalResult.user!.isAdmin },
         process.env.JWT_SECRET!,
-        { expiresIn: process.env.JWT_EXPIRES_IN || "7d" } as jwt.SignOptions,
       );
 
       // Await credential save + missionAdmin assignment before responding so the
@@ -313,7 +312,6 @@ router.post("/login", async (req: Request, res: Response) => {
     const token = jwt.sign(
       { userId: user.id, isAdmin: user.isAdmin },
       process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" } as jwt.SignOptions,
     );
 
     res.json({
