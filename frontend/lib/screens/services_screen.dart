@@ -272,7 +272,7 @@ class _ServicesScreenState extends State<ServicesScreen>
       countPerType[id] = (countPerType[id] ?? 0) + 1;
     }
     final serviceTypes = serviceTypeMap.entries.toList()
-      ..sort((a, b) => a.value.compareTo(b.value));
+      ..sort((a, b) => (countPerType[b.key] ?? 0).compareTo(countPerType[a.key] ?? 0));
     final showTypeTabs = serviceTypes.length >= 2;
     final effectiveTypeId = showTypeTabs
         ? (serviceTypes.any((e) => e.key == _selectedServiceTypeId)
@@ -420,23 +420,36 @@ class _ServicesScreenState extends State<ServicesScreen>
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
                   child: Container(
-                    height: 44,
+                    height: 48,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      color: const Color(0xFFE9EBF0),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(15),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
                     child: TabBar(
                       controller: _tabController,
                       indicator: BoxDecoration(
                         color: cs.primary,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(11),
+                        boxShadow: [
+                          BoxShadow(
+                            color: cs.primary.withAlpha(60),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       indicatorSize: TabBarIndicatorSize.tab,
                       labelColor: Colors.white,
-                      unselectedLabelColor: const Color(0xFF6B7280),
+                      unselectedLabelColor: const Color(0xFF374151),
                       labelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w700),
-                      unselectedLabelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w500),
+                      unselectedLabelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w600),
                       dividerHeight: 0,
                       indicatorPadding: const EdgeInsets.all(3),
                       tabs: const [
@@ -472,47 +485,86 @@ class _ServicesScreenState extends State<ServicesScreen>
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                     child: Container(
-                      height: 44,
+                      height: 48,
                       clipBehavior: Clip.hardEdge,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                        color: const Color(0xFFE9EBF0),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(15),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
                       ),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.all(3),
-                        child: Row(
-                          children: serviceTypes.map((entry) {
-                            final typeId = entry.key;
-                            final typeName = entry.value;
-                            final count = countPerType[typeId] ?? 0;
-                            final selected = effectiveTypeId == typeId;
-                            return GestureDetector(
-                              onTap: () => setState(() => _selectedServiceTypeId = typeId),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      child: Stack(
+                        children: [
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.all(4),
+                            child: Row(
+                              children: serviceTypes.map((entry) {
+                                final typeId = entry.key;
+                                final typeName = entry.value;
+                                final count = countPerType[typeId] ?? 0;
+                                final selected = effectiveTypeId == typeId;
+                                return GestureDetector(
+                                  onTap: () => setState(() => _selectedServiceTypeId = typeId),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: selected ? cs.primary : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(11),
+                                      boxShadow: selected
+                                          ? [
+                                              BoxShadow(
+                                                color: cs.primary.withAlpha(60),
+                                                blurRadius: 6,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    child: Text(
+                                      '$typeName ($count)',
+                                      style: selected
+                                          ? tt.labelSmall?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            )
+                                          : tt.labelSmall?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: const Color(0xFF374151),
+                                            ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: 48,
+                            child: IgnorePointer(
+                              child: Container(
                                 decoration: BoxDecoration(
-                                  color: selected ? cs.primary : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  '$typeName ($count)',
-                                  style: selected
-                                      ? tt.labelMedium?.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                        )
-                                      : tt.labelMedium?.copyWith(
-                                          fontWeight: FontWeight.w500,
-                                          color: const Color(0xFF6B7280),
-                                        ),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                    colors: [
+                                      const Color(0xFFE9EBF0).withAlpha(0),
+                                      const Color(0xFFE9EBF0),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            );
-                          }).toList(),
-                        ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
