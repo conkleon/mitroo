@@ -711,20 +711,19 @@ router.patch("/:id/responsible", async (req: Request, res: Response) => {
 router.post("/:id/sync", async (req: Request, res: Response) => {
   const sid = Number(req.params.id);
   if (!Number.isFinite(sid)) { res.status(400).json({ error: "Invalid service ID" }); return; }
-  const svc = await prisma.service.findUnique({
-    where: { id: sid },
-    select: { departmentId: true, externalMissionId: true },
-  });
-  if (!svc) { res.status(404).json({ error: "Service not found" }); return; }
-  if (!svc.externalMissionId) { res.status(400).json({ error: "Service has no external mission ID" }); return; }
-  const userId = req.user!.userId;
-  const isAdmin = req.user!.isAdmin;
-  if (!isAdmin) {
-    const allowed = await isMissionAdminInDepartment(userId, svc.departmentId);
-    if (!allowed) { res.status(403).json({ error: "Δεν έχετε δικαίωμα" }); return; }
+  try {
+    const svc = await prisma.service.findUnique({
+      where: { id: sid },
+      select: { departmentId: true, externalMissionId: true },
+    });
+    if (!svc) { res.status(404).json({ error: "Service not found" }); return; }
+    if (!svc.externalMissionId) { res.status(400).json({ error: "Service has no external mission ID" }); return; }
+    if (!await requireServiceAdmin(req, res, svc.departmentId)) return;
+    const result = await syncSingleService(sid);
+    res.json({ ok: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ error: "Sync failed", details: err?.message });
   }
-  const result = await syncSingleService(sid);
-  res.json({ ok: true, ...result });
 });
 
 export default router;
