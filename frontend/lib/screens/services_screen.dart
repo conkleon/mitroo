@@ -473,6 +473,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                     child: Container(
                       height: 44,
+                      clipBehavior: Clip.hardEdge,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
