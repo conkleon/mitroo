@@ -170,6 +170,8 @@ class ServiceCard extends StatelessWidget {
   final void Function(Map<String, dynamic> member)? onDirectEnroll;
   final void Function(int userId, String newStatus)? onUpdateParticipation;
   final VoidCallback? onAssignResponsible;
+  final VoidCallback? onSync;
+  final bool isSyncing;
 
   const ServiceCard({
     super.key,
@@ -188,6 +190,8 @@ class ServiceCard extends StatelessWidget {
     this.onDirectEnroll,
     this.onUpdateParticipation,
     this.onAssignResponsible,
+    this.onSync,
+    this.isSyncing = false,
   });
 
   @override
@@ -202,8 +206,6 @@ class ServiceCard extends StatelessWidget {
     final st = service['serviceType'] as Map<String, dynamic>?;
     final visSpecs = st?['specializations'] as List<dynamic>? ?? [];
     final userServices = service['userServices'] as List<dynamic>? ?? [];
-    final requestedCount =
-        userServices.where((us) => us['status'] == 'requested').length;
     final description = (service['description'] ?? '') as String;
 
     return Card(
@@ -231,8 +233,7 @@ class ServiceCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildCardContent(
-                          tt, name, description, location, enrolledCount,
-                          requestedCount, visSpecs),
+                          tt, name, description, location, visSpecs),
                     ),
                     const SizedBox(width: 4),
                     _buildActionColumn(context, enrolledCount, name, id),
@@ -258,8 +259,6 @@ class ServiceCard extends StatelessWidget {
     String name,
     String description,
     String location,
-    int enrolledCount,
-    int requestedCount,
     List<dynamic> visSpecs,
   ) {
     return Column(
@@ -304,31 +303,6 @@ class ServiceCard extends StatelessWidget {
             const SizedBox(width: 2),
             Text(fmtServiceDate(service['startAt']),
                 style: const TextStyle(fontSize: 10, color: Color(0xFF4B5563))),
-            const SizedBox(width: 8),
-            const Icon(Icons.people, size: 11, color: Color(0xFFDC2626)),
-            const SizedBox(width: 2),
-            Text('$enrolledCount',
-                style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFDC2626))),
-            if (requestedCount > 0) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFF59E0B)),
-                ),
-                child: Text('$requestedCount εκκρ.',
-                    style: const TextStyle(
-                        color: Color(0xFFB45309),
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700)),
-              ),
-            ],
             if (visSpecs.isNotEmpty) ...[
               const SizedBox(width: 6),
               ...visSpecs.take(2).map((v) => Padding(
@@ -535,6 +509,33 @@ class ServiceCard extends StatelessWidget {
                   padding: EdgeInsets.zero,
                 ),
             ],
+          ),
+        ],
+        if (service['externalMissionId'] != null) ...[
+          const SizedBox(height: 4),
+          Tooltip(
+            message: 'Συγχρονισμός με Mitroo',
+            child: GestureDetector(
+              onTap: isSyncing ? null : onSync,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0891B2).withAlpha(15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFF0891B2).withAlpha(40)),
+                ),
+                child: isSyncing
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: Color(0xFF0891B2),
+                        ),
+                      )
+                    : const Icon(Icons.sync, size: 14, color: Color(0xFF0891B2)),
+              ),
+            ),
           ),
         ],
       ],
