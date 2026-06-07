@@ -3016,3 +3016,60 @@ export async function autoSyncAllDepartments(): Promise<void> {
       );
   }
 }
+
+export async function syncSingleService(serviceId: number): Promise<SyncResult> {
+  const result: SyncResult = { created: 0, updated: 0, errors: [] };
+  let service: { externalMissionId: number | null; departmentId: number; lifecycleStatus: string } | null = null;
+  try {
+    service = await prisma.service.findUnique({
+      where: { id: serviceId },
+      select: { externalMissionId: true, departmentId: true, lifecycleStatus: true },
+    });
+
+    if (!service?.externalMissionId) {
+      result.errors.push("No external mission ID on this service");
+      return result;
+    }
+
+    const { externalMissionId, departmentId, lifecycleStatus } = service;
+
+    const client = await getClient(departmentId);
+
+    const statusMap: Record<string, string> = {
+      active: "open",
+      closed: "closed",
+      completed: "finished",
+      finalized: "finalized",
+    };
+    const extStatus = statusMap[lifecycleStatus] ?? "open";
+
+    const PAGE_SIZE = 200;
+    let mission: import("./mitrooClient").ExternalMission | undefined;
+    for (let page = 0; page < 500 && !mission; page++) {
+      const rows = await client.fetchMissionPage(extStatus, page * PAGE_SIZE, PAGE_SIZE);
+      if (rows.length === 0) break;
+      mission = rows.find((r) => Number(r.id) === externalMissionId);
+      if (rows.length < PAGE_SIZE) break;
+    }
+
+    if (!mission) {
+      result.errors.push(`Mission ${externalMissionId} not found in external system (status=${extStatus})`);
+      return result;
+    }
+
+    await processMissions(departmentId, [mission], client, result);
+
+    const appResult = await syncShiftApplications(departmentId);
+    result.created += appResult.created;
+    result.updated += appResult.updated;
+    result.errors.push(...appResult.errors);
+
+    await setSyncStatus(departmentId, "service", "success");
+  } catch (e: unknown) {
+    const msg = String(e);
+    result.errors.push(msg);
+    console.error("[mitrooSync] syncSingleService: FATAL error:", e);
+    await setSyncStatus(service?.departmentId ?? 0, "service", "failed", msg).catch(() => {});
+  }
+  return result;
+}
