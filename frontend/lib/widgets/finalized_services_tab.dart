@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../providers/service_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/api_client.dart';
 import 'service_card.dart';
@@ -252,6 +253,38 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
     }
   }
 
+  Future<void> _deleteService(int id, String name) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Διαγραφή Υπηρεσίας'),
+        content: Text(
+            'Είστε σίγουροι ότι θέλετε να διαγράψετε "$name";\nΔεν μπορεί να αναιρεθεί.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            child: const Text('Διαγραφή'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final err = await context.read<ServiceProvider>().deleteService(id);
+    if (!mounted) return;
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Η υπηρεσία διαγράφηκε')));
+      _load(silent: true);
+    }
+  }
+
   Future<void> reload() async {
     await _load();
   }
@@ -480,6 +513,7 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
                       }
                       final svc = filtered[i] as Map<String, dynamic>;
                       final id = svc['id'] as int;
+                      final name = svc['name'] as String? ?? '';
                       return ServiceCard(
                         service: svc,
                         isExpanded: _expandedCards.contains(id),
@@ -491,6 +525,9 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
                         onOpenDetail: () => context.push('/admin/services/$id'),
                         onSync: () => _syncSingleService(id),
                         isSyncing: _syncingServiceIds.contains(id),
+                        onDelete: svc['externalMissionId'] == null
+                            ? () => _deleteService(id, name)
+                            : null,
                       );
                     },
                   ),
