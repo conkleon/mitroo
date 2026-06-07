@@ -192,7 +192,7 @@ class ServiceCard extends StatelessWidget {
     this.onAssignResponsible,
     this.onSync,
     this.isSyncing = false,
-  });
+  }) : assert(!isSyncing || onSync != null, 'isSyncing requires onSync to be set');
 
   @override
   Widget build(BuildContext context) {
@@ -515,8 +515,9 @@ class ServiceCard extends StatelessWidget {
           const SizedBox(height: 4),
           Tooltip(
             message: 'Συγχρονισμός με Mitroo',
-            child: GestureDetector(
+            child: InkWell(
               onTap: isSyncing ? null : onSync,
+              borderRadius: BorderRadius.circular(6),
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
