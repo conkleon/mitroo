@@ -64,7 +64,7 @@ class ServicesScreen extends StatefulWidget {
 
 class _ServicesScreenState extends State<ServicesScreen>
     with TickerProviderStateMixin {
-  int? _selectedSpecId; // null = show all, otherwise filter by specialization id
+  int? _selectedServiceTypeId;
   final Set<int> _expandedIds = {};
   final _api = ApiClient();
   List<Map<String, dynamic>> _myEquipment = [];
@@ -77,7 +77,6 @@ class _ServicesScreenState extends State<ServicesScreen>
 
   // SpeedDial state
   bool _fabOpen = false;
-  bool _filtersExpanded = false;
   late final AnimationController _fabController;
   late final Animation<double> _fabRotate;
   late final Animation<double> _fabScale;
@@ -182,27 +181,14 @@ class _ServicesScreenState extends State<ServicesScreen>
     }
   }
 
-  // ── Filter: by specialization via service type chain ────────
-  List<dynamic> get _filteredServices {
-    final all = context.read<ServiceProvider>().services;
-    if (_selectedSpecId == null) return all;
+  // ── Filter: by service type ────────
+  List<dynamic> _getFilteredServices(List<dynamic> all, int? typeId) {
+    if (typeId == null) return all;
     return all.where((s) {
       final st = s['serviceType'] as Map<String, dynamic>?;
       if (st == null) return false;
-      final specs2 = st['specializations'] as List<dynamic>? ?? [];
-      return specs2.any((row) => row['specializationId'] == _selectedSpecId ||
-          row['specialization']?['id'] == _selectedSpecId);
+      return (st['id'] as int) == typeId;
     }).toList();
-  }
-
-  int _countForSpec(int specId) {
-    return context.read<ServiceProvider>().services.where((s) {
-      final st = s['serviceType'] as Map<String, dynamic>?;
-      if (st == null) return false;
-      final specs2 = st['specializations'] as List<dynamic>? ?? [];
-      return specs2.any((row) => row['specializationId'] == specId ||
-          row['specialization']?['id'] == specId);
-    }).length;
   }
 
   // ── Apply (request enrollment) ──────────────────
@@ -273,27 +259,28 @@ class _ServicesScreenState extends State<ServicesScreen>
         ? auth.displayName
         : (auth.user?['eame'] ?? 'Χρήστης');
 
-    final userSpecs = auth.specializations; // [{id, name, description}, ...]
-
-    // Build dynamic spec filters from services that actually exist
     final allServices = svcProv.services;
-    final specMap = <int, String>{}; // id -> name
+
+    // Build service-type tab data
+    final serviceTypeMap = <int, String>{};
+    final countPerType = <int, int>{};
     for (final svc in allServices) {
       final st = svc['serviceType'] as Map<String, dynamic>?;
       if (st == null) continue;
-      final specs2 = st['specializations'] as List<dynamic>? ?? [];
-      for (final row in specs2) {
-        final spec = row['specialization'] as Map<String, dynamic>?;
-        if (spec != null) {
-          specMap[spec['id'] as int] = spec['name'] as String? ?? '';
-        }
-      }
+      final id = st['id'] as int;
+      serviceTypeMap.putIfAbsent(id, () => st['name'] as String? ?? '');
+      countPerType[id] = (countPerType[id] ?? 0) + 1;
     }
-    // Sort by name for consistent order
-    final dynamicSpecs = specMap.entries.toList()
+    final serviceTypes = serviceTypeMap.entries.toList()
       ..sort((a, b) => a.value.compareTo(b.value));
+    final showTypeTabs = serviceTypes.length >= 2;
+    final effectiveTypeId = showTypeTabs
+        ? (serviceTypes.any((e) => e.key == _selectedServiceTypeId)
+            ? _selectedServiceTypeId
+            : serviceTypes.first.key)
+        : null;
 
-    final filtered = _filteredServices;
+    final filtered = _getFilteredServices(allServices, effectiveTypeId);
 
     final isAdmin = auth.isAdmin || auth.isMissionAdmin;
 
@@ -428,158 +415,107 @@ class _ServicesScreenState extends State<ServicesScreen>
                 ),
               ),
 
-              // ── Tab bar + filter toggle (inline) ─────
+              // ── View toggle: Λίστα / Ημερολόγιο ─────
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
-                          ),
-                          child: TabBar(
-                            controller: _tabController,
-                            indicator: BoxDecoration(
-                              color: cs.primary,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            indicatorSize: TabBarIndicatorSize.tab,
-                            labelColor: Colors.white,
-                            unselectedLabelColor: const Color(0xFF6B7280),
-                            labelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w700),
-                            unselectedLabelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w500),
-                            dividerHeight: 0,
-                            indicatorPadding: const EdgeInsets.all(3),
-                            tabs: const [
-                              Tab(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.list_alt_rounded, size: 16),
-                                    SizedBox(width: 6),
-                                    Text('Λίστα'),
-                                  ],
-                                ),
-                              ),
-                              Tab(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.calendar_month_rounded, size: 16),
-                                    SizedBox(width: 6),
-                                    Text('Ημερολόγιο'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicator: BoxDecoration(
+                        color: cs.primary,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () => setState(() => _filtersExpanded = !_filtersExpanded),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          height: 44,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: (_filtersExpanded || _selectedSpecId != null)
-                                ? cs.primary.withAlpha(15)
-                                : const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: (_filtersExpanded || _selectedSpecId != null)
-                                  ? cs.primary.withAlpha(60)
-                                  : const Color(0xFFE5E7EB),
-                            ),
-                          ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: const Color(0xFF6B7280),
+                      labelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+                      unselectedLabelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w500),
+                      dividerHeight: 0,
+                      indicatorPadding: const EdgeInsets.all(3),
+                      tabs: const [
+                        Tab(
                           child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.tune_rounded,
-                                size: 16,
-                                color: (_filtersExpanded || _selectedSpecId != null)
-                                    ? cs.primary
-                                    : const Color(0xFF6B7280),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                _selectedSpecId != null ? 'Φίλτρα (1)' : 'Φίλτρα',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: (_filtersExpanded || _selectedSpecId != null)
-                                      ? cs.primary
-                                      : const Color(0xFF6B7280),
-                                ),
-                              ),
+                              Icon(Icons.list_alt_rounded, size: 16),
+                              SizedBox(width: 6),
+                              Text('Λίστα'),
                             ],
                           ),
                         ),
-                      ),
-                    ],
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.calendar_month_rounded, size: 16),
+                              SizedBox(width: 6),
+                              Text('Ημερολόγιο'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
 
-              // ── Specialization filter bubbles (collapsible) ────────
-              SliverToBoxAdapter(
-                child: AnimatedSize(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  child: (_filtersExpanded && dynamicSpecs.isNotEmpty)
-                      ? Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 4),
-                          child: SizedBox(
-                            height: 40,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
-                              separatorBuilder: (_, __) => const SizedBox(width: 8),
-                              itemCount: dynamicSpecs.length,
-                              itemBuilder: (context, i) {
-                                final specId = dynamicSpecs[i].key;
-                                final specName = dynamicSpecs[i].value;
-                                final count = _countForSpec(specId);
-                                final selected = _selectedSpecId == specId;
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedSpecId = selected ? null : specId;
-                                    });
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: selected ? cs.primary : Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: selected ? cs.primary : const Color(0xFFD1D5DB),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '$specName ($count)',
-                                      style: tt.labelMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: selected ? Colors.white : const Color(0xFF374151),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        )
-                      : const SizedBox.shrink(),
+              // ── Service-type tab bar (hidden when < 2 types) ─────
+              if (showTypeTabs)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                    child: Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.all(3),
+                        child: Row(
+                          children: serviceTypes.map((entry) {
+                            final typeId = entry.key;
+                            final typeName = entry.value;
+                            final count = countPerType[typeId] ?? 0;
+                            final selected = effectiveTypeId == typeId;
+                            return GestureDetector(
+                              onTap: () => setState(() => _selectedServiceTypeId = typeId),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: selected ? cs.primary : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '$typeName ($count)',
+                                  style: selected
+                                      ? tt.labelMedium?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        )
+                                      : tt.labelMedium?.copyWith(
+                                          fontWeight: FontWeight.w500,
+                                          color: const Color(0xFF6B7280),
+                                        ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
 
               // ═══ TAB 0: LIST VIEW ═══════════════════════
               if (_tabController.index == 0) ...[
