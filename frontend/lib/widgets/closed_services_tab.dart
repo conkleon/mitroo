@@ -37,6 +37,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
   int? _selectedServiceTypeId;
   bool _filtersExpanded = false;
   final Set<int> _expandedCards = {};
+  final Set<int> _syncingServiceIds = {};
 
   @override
   bool get wantKeepAlive => true;
@@ -508,6 +509,22 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
     }
   }
 
+  Future<void> _syncSingleService(int serviceId) async {
+    setState(() => _syncingServiceIds.add(serviceId));
+    try {
+      await _api.post('/services/$serviceId/sync', body: {});
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Αποτυχία συγχρονισμού υπηρεσίας')),
+        );
+      }
+    } finally {
+      setState(() => _syncingServiceIds.remove(serviceId));
+      _load();
+    }
+  }
+
   Future<void> _assignResponsible(int serviceId, int? userId) async {
     final err = await context
         .read<ServiceProvider>()
@@ -887,6 +904,8 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                         onDirectEnroll:
                             (member) => _directEnroll(id, member),
                         onAssignResponsible: () => _showResponsiblePicker(svc),
+                        onSync: () => _syncSingleService(id),
+                        isSyncing: _syncingServiceIds.contains(id),
                       );
                     },
                   ),
