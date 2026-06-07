@@ -26,6 +26,7 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
   final _api = ApiClient();
   List<dynamic> _services = [];
   bool _loading = true;
+  final Set<int> _syncingServiceIds = {};
   bool _isSyncing = false;
   bool _loadingMore = false;
   bool _hasMore = true;
@@ -233,6 +234,22 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
       if (id != null && seen.add(id)) types.add(st);
     }
     return types;
+  }
+
+  Future<void> _syncSingleService(int serviceId) async {
+    setState(() => _syncingServiceIds.add(serviceId));
+    try {
+      await _api.post('/services/$serviceId/sync', body: {});
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Αποτυχία συγχρονισμού υπηρεσίας')),
+        );
+      }
+    } finally {
+      setState(() => _syncingServiceIds.remove(serviceId));
+      _load();
+    }
   }
 
   Future<void> reload() async {
@@ -472,6 +489,8 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
                               : _expandedCards.add(id);
                         }),
                         onOpenDetail: () => context.push('/admin/services/$id'),
+                        onSync: () => _syncSingleService(id),
+                        isSyncing: _syncingServiceIds.contains(id),
                       );
                     },
                   ),
