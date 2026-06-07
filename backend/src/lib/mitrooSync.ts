@@ -3041,10 +3041,14 @@ export async function syncSingleService(serviceId: number): Promise<SyncResult> 
       completed: "finished",
       finalized: "finalized",
     };
-    const extStatus = statusMap[lifecycleStatus] ?? "open";
+    const extStatus = statusMap[lifecycleStatus];
+    if (!extStatus) {
+      result.errors.push(`Unknown lifecycleStatus: ${lifecycleStatus}`);
+      return result;
+    }
 
     const PAGE_SIZE = 200;
-    let mission: import("./mitrooClient").ExternalMission | undefined;
+    let mission: ExternalMission | undefined;
     for (let page = 0; page < 500 && !mission; page++) {
       const rows = await client.fetchMissionPage(extStatus, page * PAGE_SIZE, PAGE_SIZE);
       if (rows.length === 0) break;
