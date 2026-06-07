@@ -33,6 +33,7 @@ class CompletedServicesTabState extends State<CompletedServicesTab>
   int _page = 1;
   static const int _limit = 20;
   final Set<int> _expandedCards = {};
+  final Set<int> _syncingServiceIds = {};
   String _search = '';
   DateTime? _dateFrom;
   DateTime? _dateTo;
@@ -250,6 +251,22 @@ class CompletedServicesTabState extends State<CompletedServicesTab>
     if (mounted) {
       setState(() => _isSyncing = false);
       _load();
+    }
+  }
+
+  Future<void> _syncSingleService(int serviceId) async {
+    setState(() => _syncingServiceIds.add(serviceId));
+    try {
+      await _api.post('/services/$serviceId/sync', body: {});
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Αποτυχία συγχρονισμού υπηρεσίας')),
+        );
+      }
+    } finally {
+      setState(() => _syncingServiceIds.remove(serviceId));
+      _load(silent: true);
     }
   }
 
@@ -597,6 +614,8 @@ class CompletedServicesTabState extends State<CompletedServicesTab>
                             _updateParticipation(id, userId, status),
                         onUpdateHours: (svcId, userId, us) =>
                             _updateHours(svcId, userId, us),
+                        onSync: () => _syncSingleService(id),
+                        isSyncing: _syncingServiceIds.contains(id),
                       );
                     },
                   ),
