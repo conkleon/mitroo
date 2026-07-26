@@ -456,6 +456,14 @@ router.get("/direct/candidates", async (req: Request, res: Response) => {
 // ── GET /api/chats/:id ───────────────────────────
 router.get("/:id", async (req: Request, res: Response) => {
   const chatId = Number(req.params.id);
+  const userId = req.user!.userId;
+  const member = await prisma.chatMember.findUnique({
+    where: { chatId_userId: { chatId, userId } },
+  });
+  if (!member) {
+    res.status(403).json({ error: "Not a member of this chat" });
+    return;
+  }
   const chat = await prisma.chat.findUnique({
     where: { id: chatId },
     include: {
@@ -479,6 +487,14 @@ router.get("/:id", async (req: Request, res: Response) => {
 // ── GET /api/chats/:id/messages ──────────────────
 router.get("/:id/messages", async (req: Request, res: Response) => {
   const chatId = Number(req.params.id);
+  const userId = req.user!.userId;
+  const member = await prisma.chatMember.findUnique({
+    where: { chatId_userId: { chatId, userId } },
+  });
+  if (!member) {
+    res.status(403).json({ error: "Not a member of this chat" });
+    return;
+  }
   const limit = Math.min(Number(req.query.limit) || 50, 100);
   const before = req.query.before ? Number(req.query.before) : undefined;
 

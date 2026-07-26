@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_client.dart';
+import '../utils/api_error.dart';
 
 class ServiceProvider extends ChangeNotifier {
   final _api = ApiClient();
@@ -98,7 +99,7 @@ class ServiceProvider extends ChangeNotifier {
     try {
       final res = await _api.delete('/services/$id');
       if (res.statusCode == 204) { await fetchServices(); return null; }
-      return 'Failed';
+      return extractApiError(res, 'Failed');
     } catch (e) { return 'Error: $e'; }
   }
 
@@ -165,7 +166,7 @@ class ServiceProvider extends ChangeNotifier {
     try {
       final res = await _api.delete('/services/$serviceId/users/$userId');
       if (res.statusCode == 204) return null;
-      return 'Failed';
+      return extractApiError(res, 'Failed');
     } catch (e) { return 'Error: $e'; }
   }
 

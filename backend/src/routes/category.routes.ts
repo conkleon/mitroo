@@ -6,11 +6,11 @@ import { authenticate } from "../middleware/auth";
 const router = Router();
 router.use(authenticate);
 
-/** Check whether the caller is a global admin or has `itemAdmin` / `missionAdmin` role in any department. */
-async function isItemManager(req: Request): Promise<boolean> {
+/** Check whether the caller is a global admin or has `itemAdmin` / `missionAdmin` role in the given department. */
+async function canManageItemInDepartment(req: Request, departmentId: number): Promise<boolean> {
   if (req.user?.isAdmin) return true;
   const count = await prisma.userDepartment.count({
-    where: { userId: req.user!.userId, role: { in: ["itemAdmin", "missionAdmin"] } },
+    where: { userId: req.user!.userId, departmentId, role: { in: ["itemAdmin", "missionAdmin"] } },
   });
   return count > 0;
 }
@@ -44,12 +44,12 @@ router.get("/", async (req: Request, res: Response) => {
 
 // ── POST /api/item-categories ──
 router.post("/", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
-    res.status(403).json({ error: "Item admin access required" });
-    return;
-  }
   try {
     const body = createSchema.parse(req.body);
+    if (!(await canManageItemInDepartment(req, body.departmentId))) {
+      res.status(403).json({ error: "Item admin access required" });
+      return;
+    }
     const category = await prisma.itemCategory.create({
       data: body,
       include: {
@@ -73,7 +73,12 @@ router.post("/", async (req: Request, res: Response) => {
 
 // ── PATCH /api/item-categories/:id ──
 router.patch("/:id", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
+  const existing = await prisma.itemCategory.findUnique({
+    where: { id: Number(req.params.id) },
+    select: { departmentId: true },
+  });
+  if (!existing) { res.status(404).json({ error: "Category not found" }); return; }
+  if (!(await canManageItemInDepartment(req, existing.departmentId))) {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }
@@ -103,7 +108,12 @@ router.patch("/:id", async (req: Request, res: Response) => {
 
 // ── DELETE /api/item-categories/:id ──
 router.delete("/:id", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
+  const existing = await prisma.itemCategory.findUnique({
+    where: { id: Number(req.params.id) },
+    select: { departmentId: true },
+  });
+  if (!existing) { res.status(404).json({ error: "Category not found" }); return; }
+  if (!(await canManageItemInDepartment(req, existing.departmentId))) {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }

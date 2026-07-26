@@ -1,6 +1,14 @@
 // Client for the original Mitroo system (mitroo.redcross.gr).
 // Uses cookie+CSRF session auth — no REST API, all server-side PHP/CodeIgniter.
 
+/** Thrown when the original Mitroo system explicitly rejects a request; `.message` is its own error text. */
+export class MitrooRemoteError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MitrooRemoteError";
+  }
+}
+
 export interface ExternalVolunteer {
   id: string | number;
   first_name: string;
@@ -124,6 +132,32 @@ export class MitrooClient {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl.replace(/\/$/, "");
+  }
+
+  /**
+   * Parse a Mitroo JSON response body, throwing a plain Error (not a remote
+   * rejection) if the body isn't valid JSON — that's a transport/shape
+   * problem, not something Mitroo "said".
+   */
+  private parseJsonOrThrow(text: string, context: string): any {
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error(`${context}: invalid JSON response: ${text.slice(0, 200)}`);
+    }
+  }
+
+  /**
+   * Throws MitrooRemoteError when Mitroo's own status field indicates failure.
+   * Must be called on already-parsed JSON, outside any try/catch that would
+   * also swallow it — a status!==1 body is still an HTTP 200, so relying on
+   * res.ok to detect it silently drops the failure.
+   */
+  private assertMitrooStatusOk(json: any, context: string): void {
+    if (json.status !== 1) {
+      const msg = (json.title as string) || `Άγνωστο σφάλμα (${context}, status=${json.status})`;
+      throw new MitrooRemoteError(msg);
+    }
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -893,17 +927,8 @@ export class MitrooClient {
     });
     const res = await this._post("/ajaxdptadmin/MissionChangeStatus", body);
     const text = await res.text();
-    try {
-      const json = JSON.parse(text);
-      if (json.status !== 1) {
-        throw new Error(`changeMissionStatus: server returned status ${json.status}`);
-      }
-    } catch (e) {
-      if (!res.ok) {
-        throw new Error(`changeMissionStatus failed (${res.status}): ${text.slice(0, 200)}`);
-      }
-      throw e;
-    }
+    const json = this.parseJsonOrThrow(text, "changeMissionStatus");
+    this.assertMitrooStatusOk(json, "changeMissionStatus");
   }
 
   async findApplicationIdForMember(shiftId: number, memberId: number): Promise<number | null> {
@@ -955,11 +980,10 @@ export class MitrooClient {
     });
     const res = await this._post("/ajaxdptadmin/ShiftApplicationUpdateHours", body);
     const text = await res.text();
-    try {
-      const json = JSON.parse(text);
-      if (!json.status) throw new Error(`updateApplicationHours: server returned status=false`);
-    } catch (e) {
-      if (!res.ok) throw new Error(`updateApplicationHours failed (${res.status}): ${text.slice(0, 200)}`);
+    const json = this.parseJsonOrThrow(text, "updateApplicationHours");
+    if (!json.status) {
+      const msg = (json.title as string) || "Άγνωστο σφάλμα (updateApplicationHours)";
+      throw new MitrooRemoteError(msg);
     }
   }
 
@@ -976,17 +1000,18 @@ export class MitrooClient {
       body,
     );
     const text = await res.text();
+    let json: any;
     try {
-      const json = JSON.parse(text);
-      if (json.status !== 1) {
-        // status 0 often means the user already has an application for this shift
-        const msg = (json.title as string) || String(json.status);
-        throw new Error(`addUserToShift: ${msg} (status=${json.status})`);
-      }
-      return json.application_id ?? json.id ?? null;
+      json = JSON.parse(text);
     } catch (e) {
-      throw new Error(`addUserToShift failed: ${e}`);
+      throw new Error(`addUserToShift: invalid JSON response: ${text.slice(0, 200)}`);
     }
+    if (json.status !== 1) {
+      // status 0 often means the user already has an application for this shift
+      const msg = (json.title as string) || `Άγνωστο σφάλμα (status=${json.status})`;
+      throw new MitrooRemoteError(msg);
+    }
+    return json.application_id ?? json.id ?? null;
   }
 
   async approveShiftApplication(applicationId: number): Promise<void> {
@@ -994,16 +1019,8 @@ export class MitrooClient {
       `/ajaxdptadmin/ShiftApplicationStatusChange/${applicationId}/3`,
     );
     const text = await res.text();
-    try {
-      const json = JSON.parse(text);
-      if (json.status !== 1) {
-        throw new Error(`approveShiftApplication: server returned status ${json.status}`);
-      }
-    } catch (e) {
-      if (!res.ok) {
-        throw new Error(`approveShiftApplication failed (${res.status}): ${text.slice(0, 200)}`);
-      }
-    }
+    const json = this.parseJsonOrThrow(text, "approveShiftApplication");
+    this.assertMitrooStatusOk(json, "approveShiftApplication");
   }
 
   async markShiftApplicationParticipated(applicationId: number): Promise<void> {
@@ -1011,16 +1028,8 @@ export class MitrooClient {
       `/ajaxdptadmin/ShiftApplicationStatusChange/${applicationId}/6`,
     );
     const text = await res.text();
-    try {
-      const json = JSON.parse(text);
-      if (json.status !== 1) {
-        throw new Error(`markShiftApplicationParticipated: server returned status ${json.status}`);
-      }
-    } catch (e) {
-      if (!res.ok) {
-        throw new Error(`markShiftApplicationParticipated failed (${res.status}): ${text.slice(0, 200)}`);
-      }
-    }
+    const json = this.parseJsonOrThrow(text, "markShiftApplicationParticipated");
+    this.assertMitrooStatusOk(json, "markShiftApplicationParticipated");
   }
 
   async markShiftApplicationNotParticipated(applicationId: number): Promise<void> {
@@ -1028,16 +1037,8 @@ export class MitrooClient {
       `/ajaxdptadmin/ShiftApplicationStatusChange/${applicationId}/7`,
     );
     const text = await res.text();
-    try {
-      const json = JSON.parse(text);
-      if (json.status !== 1) {
-        throw new Error(`markShiftApplicationNotParticipated: server returned status ${json.status}`);
-      }
-    } catch (e) {
-      if (!res.ok) {
-        throw new Error(`markShiftApplicationNotParticipated failed (${res.status}): ${text.slice(0, 200)}`);
-      }
-    }
+    const json = this.parseJsonOrThrow(text, "markShiftApplicationNotParticipated");
+    this.assertMitrooStatusOk(json, "markShiftApplicationNotParticipated");
   }
 
   async cancelShiftApplication(applicationId: number): Promise<void> {
@@ -1045,16 +1046,8 @@ export class MitrooClient {
       `/ajaxdptadmin/ShiftApplicationStatusChange/${applicationId}/4`,
     );
     const text = await res.text();
-    try {
-      const json = JSON.parse(text);
-      if (json.status !== 1) {
-        throw new Error(`cancelShiftApplication: server returned status ${json.status}`);
-      }
-    } catch (e) {
-      if (!res.ok) {
-        throw new Error(`cancelShiftApplication failed (${res.status}): ${text.slice(0, 200)}`);
-      }
-    }
+    const json = this.parseJsonOrThrow(text, "cancelShiftApplication");
+    this.assertMitrooStatusOk(json, "cancelShiftApplication");
   }
 
   async cancelMemberShiftApplication(applicationId: number): Promise<void> {
@@ -1067,17 +1060,8 @@ export class MitrooClient {
     const res = await this._post("/ajaxcommon/member_shift_application_cancel", body);
     const text = await res.text();
     console.log(`[mitrooClient] cancelMemberShiftApplication: HTTP ${res.status} response body=${text.slice(0, 500)}`);
-    try {
-      const json = JSON.parse(text);
-      if (json.status !== 1) {
-        throw new Error(`cancelMemberShiftApplication: server returned status ${json.status}, title=${json.title ?? "N/A"}`);
-      }
-    } catch (e) {
-      if (!res.ok) {
-        throw new Error(`cancelMemberShiftApplication failed (${res.status}): ${text.slice(0, 200)}`);
-      }
-      throw e;
-    }
+    const json = this.parseJsonOrThrow(text, "cancelMemberShiftApplication");
+    this.assertMitrooStatusOk(json, "cancelMemberShiftApplication");
   }
 
   // ── Private HTTP helpers ──────────────────────────────────────────────────

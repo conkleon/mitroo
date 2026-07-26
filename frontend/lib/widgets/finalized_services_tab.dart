@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../providers/service_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/api_client.dart';
+import '../utils/api_error.dart';
 import 'service_card.dart';
 
 class FinalizedServicesTab extends StatefulWidget {
@@ -240,7 +241,13 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
   Future<void> _syncSingleService(int serviceId) async {
     setState(() => _syncingServiceIds.add(serviceId));
     try {
-      await _api.post('/services/$serviceId/sync', body: {});
+      final res = await _api.post('/services/$serviceId/sync', body: {});
+      if (res.statusCode != 200 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text(extractApiError(res, 'Αποτυχία συγχρονισμού υπηρεσίας')),
+        ));
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -43,6 +43,7 @@ class MitrooApp extends StatefulWidget {
   State<MitrooApp> createState() => _MitrooAppState();
 }
 
+
 class _MitrooAppState extends State<MitrooApp> {
   static const _primaryRed = Color(0xFFC62828);
   static const _accentRed = Color(0xFFE53935);

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import prisma from "../lib/prisma";
-import { authenticate } from "../middleware/auth";
+import { authenticate, requireAdmin } from "../middleware/auth";
 
 const router = Router();
 router.use(authenticate);
@@ -42,7 +42,7 @@ function toPrismaData(data: Partial<z.infer<typeof createSchema>>): any {
 }
 
 // ── POST /api/specializations ───────────────────
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requireAdmin, async (req: Request, res: Response) => {
   try {
     const data = createSchema.parse(req.body);
     const spec = await prisma.specialization.create({ data: toPrismaData(data) });
@@ -71,7 +71,7 @@ router.get("/:id", async (req: Request, res: Response) => {
 });
 
 // ── PATCH /api/specializations/:id ──────────────
-router.patch("/:id", async (req: Request, res: Response) => {
+router.patch("/:id", requireAdmin, async (req: Request, res: Response) => {
   try {
     const data = createSchema.partial().parse(req.body);
     const spec = await prisma.specialization.update({ where: { id: Number(req.params.id) }, data: toPrismaData(data) });
@@ -83,7 +83,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
 });
 
 // ── DELETE /api/specializations/:id ─────────────
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", requireAdmin, async (req: Request, res: Response) => {
   await prisma.specialization.delete({ where: { id: Number(req.params.id) } });
   res.status(204).end();
 });

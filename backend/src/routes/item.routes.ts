@@ -8,13 +8,22 @@ router.use(authenticate);
 
 // ── Helpers ─────────────────────────────────────
 
-/** Check whether the caller is a global admin or has `itemAdmin` / `missionAdmin` role in any department. */
-async function isItemManager(req: Request): Promise<boolean> {
+/** Check whether the caller is a global admin or has `itemAdmin` / `missionAdmin` role in the given department. */
+async function canManageItemInDepartment(req: Request, departmentId: number): Promise<boolean> {
   if (req.user?.isAdmin) return true;
   const count = await prisma.userDepartment.count({
-    where: { userId: req.user!.userId, role: { in: ["itemAdmin", "missionAdmin"] } },
+    where: { userId: req.user!.userId, departmentId, role: { in: ["itemAdmin", "missionAdmin"] } },
   });
   return count > 0;
+}
+
+/** Department IDs where the caller has `itemAdmin` / `missionAdmin` role. */
+async function getManagedDepartmentIds(userId: number): Promise<number[]> {
+  const rows = await prisma.userDepartment.findMany({
+    where: { userId, role: { in: ["itemAdmin", "missionAdmin"] } },
+    select: { departmentId: true },
+  });
+  return rows.map((r) => r.departmentId);
 }
 
 /** Recursively collect all descendant item IDs inside a container (BFS). */
@@ -126,7 +135,8 @@ function csvRow(item: any): string {
 // GET /api/items/export/csv
 // ?template=true — returns a single example row instead of all items
 router.get("/export/csv", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
+  const managedDeptIds = req.user!.isAdmin ? null : await getManagedDepartmentIds(req.user!.userId);
+  if (managedDeptIds !== null && managedDeptIds.length === 0) {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }
@@ -148,6 +158,7 @@ router.get("/export/csv", async (req: Request, res: Response) => {
   }
 
   const items = await prisma.item.findMany({
+    where: managedDeptIds ? { departmentId: { in: managedDeptIds } } : undefined,
     include: {
       containedBy: { select: { id: true, name: true } },
       assignedTo: { select: { id: true, forename: true, surname: true } },
@@ -172,11 +183,6 @@ const importSchema = z.object({
 
 // POST /api/items/import/csv
 router.post("/import/csv", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
-    res.status(403).json({ error: "Item admin access required" });
-    return;
-  }
-
   let body: { departmentId: number; rows: Record<string, unknown>[] };
   try {
     body = importSchema.parse(req.body);
@@ -191,6 +197,10 @@ router.post("/import/csv", async (req: Request, res: Response) => {
   }
 
   const { departmentId, rows } = body;
+  if (!(await canManageItemInDepartment(req, departmentId))) {
+    res.status(403).json({ error: "Item admin access required" });
+    return;
+  }
 
   // Resolve category cache: name → categoryId for this department
   const catCache = new Map<string, number>();
@@ -344,12 +354,12 @@ router.get("/barcode/:code", async (req: Request, res: Response) => {
 
 // ── POST /api/items ─────────────────────────────
 router.post("/", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
-    res.status(403).json({ error: "Item admin access required" });
-    return;
-  }
   try {
     const body = createSchema.parse(req.body);
+    if (!(await canManageItemInDepartment(req, body.departmentId))) {
+      res.status(403).json({ error: "Item admin access required" });
+      return;
+    }
     const data: any = { ...body };
     // Convert ISO string to Date
     if (data.expirationDate) data.expirationDate = new Date(data.expirationDate);
@@ -381,12 +391,23 @@ router.get("/:id", async (req: Request, res: Response) => {
 
 // ── PATCH /api/items/:id ────────────────────────
 router.patch("/:id", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
-    res.status(403).json({ error: "Item admin access required" });
-    return;
-  }
   try {
+    const existing = await prisma.item.findUnique({
+      where: { id: Number(req.params.id) },
+      select: { departmentId: true },
+    });
+    if (!existing) { res.status(404).json({ error: "Item not found" }); return; }
+    if (!(await canManageItemInDepartment(req, existing.departmentId))) {
+      res.status(403).json({ error: "Item admin access required" });
+      return;
+    }
     const body = createSchema.partial().parse(req.body);
+    if (body.departmentId !== undefined && body.departmentId !== existing.departmentId) {
+      if (!(await canManageItemInDepartment(req, body.departmentId))) {
+        res.status(403).json({ error: "Item admin access required for target department" });
+        return;
+      }
+    }
     const data: any = { ...body };
     if (data.expirationDate !== undefined) {
       data.expirationDate = data.expirationDate ? new Date(data.expirationDate) : null;
@@ -412,7 +433,12 @@ router.patch("/:id", async (req: Request, res: Response) => {
 
 // ── DELETE /api/items/:id ───────────────────────
 router.delete("/:id", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
+  const existing = await prisma.item.findUnique({
+    where: { id: Number(req.params.id) },
+    select: { departmentId: true },
+  });
+  if (!existing) { res.status(404).json({ error: "Item not found" }); return; }
+  if (!(await canManageItemInDepartment(req, existing.departmentId))) {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }
@@ -492,10 +518,6 @@ router.post("/:id/self-unassign", async (req: Request, res: Response) => {
 
 // POST /api/items/:id/assign-user
 router.post("/:id/assign-user", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
-    res.status(403).json({ error: "Item admin access required" });
-    return;
-  }
   try {
     const { userId } = assignUserSchema.parse(req.body);
     const [existingItem, user] = await Promise.all([
@@ -504,6 +526,10 @@ router.post("/:id/assign-user", async (req: Request, res: Response) => {
     ]);
     if (!existingItem) { res.status(404).json({ error: "Item not found" }); return; }
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
+    if (!(await canManageItemInDepartment(req, existingItem.departmentId))) {
+      res.status(403).json({ error: "Item admin access required" });
+      return;
+    }
     const item = await prisma.$transaction(async (tx) => {
       const result = await tx.item.update({
         where: { id: Number(req.params.id) },
@@ -530,13 +556,13 @@ router.post("/:id/assign-user", async (req: Request, res: Response) => {
 
 // DELETE /api/items/:id/assign-user
 router.delete("/:id/assign-user", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
-    res.status(403).json({ error: "Item admin access required" });
-    return;
-  }
   const itemId = Number(req.params.id);
   const existing = await prisma.item.findUnique({ where: { id: itemId } });
   if (!existing) { res.status(404).json({ error: "Item not found" }); return; }
+  if (!(await canManageItemInDepartment(req, existing.departmentId))) {
+    res.status(403).json({ error: "Item admin access required" });
+    return;
+  }
   const item = await prisma.$transaction(async (tx) => {
     const assignedUserId = existing.assignedToId;
     if (assignedUserId) {
@@ -567,7 +593,12 @@ router.delete("/:id/assign-user", async (req: Request, res: Response) => {
 
 // PATCH /api/items/:id/move
 router.patch("/:id/move", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
+  const existing = await prisma.item.findUnique({
+    where: { id: Number(req.params.id) },
+    select: { departmentId: true },
+  });
+  if (!existing) { res.status(404).json({ error: "Item not found" }); return; }
+  if (!(await canManageItemInDepartment(req, existing.departmentId))) {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }
@@ -596,10 +627,6 @@ router.patch("/:id/move", async (req: Request, res: Response) => {
 
 // POST /api/items/assign
 router.post("/assign", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
-    res.status(403).json({ error: "Item admin access required" });
-    return;
-  }
   try {
     const data = assignServiceSchema.parse(req.body);
     const [service, user, item] = await Promise.all([
@@ -610,6 +637,10 @@ router.post("/assign", async (req: Request, res: Response) => {
     if (!service) { res.status(404).json({ error: "Service not found" }); return; }
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
     if (!item) { res.status(404).json({ error: "Item not found" }); return; }
+    if (!(await canManageItemInDepartment(req, item.departmentId))) {
+      res.status(403).json({ error: "Item admin access required" });
+      return;
+    }
     const record = await prisma.itemService.create({
       data,
       include: { item: true, service: { select: { id: true, name: true } }, user: { select: { id: true, forename: true, surname: true } } },
@@ -624,24 +655,27 @@ router.post("/assign", async (req: Request, res: Response) => {
 
 // ── DELETE /api/items/assign/:id
 router.delete("/assign/:id", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
+  const existing = await prisma.itemService.findUnique({
+    where: { id: Number(req.params.id) },
+    include: { item: { select: { departmentId: true } } },
+  });
+  if (!existing) { res.status(404).json({ error: "Assignment not found" }); return; }
+  if (!(await canManageItemInDepartment(req, existing.item.departmentId))) {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }
-  const existing = await prisma.itemService.findUnique({ where: { id: Number(req.params.id) } });
-  if (!existing) { res.status(404).json({ error: "Assignment not found" }); return; }
   await prisma.itemService.delete({ where: { id: Number(req.params.id) } });
   res.status(204).end();
 });
 
 // ── PATCH /api/items/:id/toggle-availability ──────────
 router.patch("/:id/toggle-availability", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
+  const item = await prisma.item.findUnique({ where: { id: Number(req.params.id) } });
+  if (!item) { res.status(404).json({ error: "Item not found" }); return; }
+  if (!(await canManageItemInDepartment(req, item.departmentId))) {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }
-  const item = await prisma.item.findUnique({ where: { id: Number(req.params.id) } });
-  if (!item) { res.status(404).json({ error: "Item not found" }); return; }
   const updated = await prisma.item.update({
     where: { id: item.id },
     data: { availableForAssignment: !item.availableForAssignment },
@@ -673,13 +707,12 @@ router.post("/:id/comments", async (req: Request, res: Response) => {
   }
 
   // Allow: admin, itemAdmin, or user who has this item assigned
-  const isManager = await isItemManager(req);
-  if (!isManager) {
-    const item = await prisma.item.findUnique({ where: { id: itemId } });
-    if (!item || item.assignedToId !== userId) {
-      res.status(403).json({ error: "Only assigned user or item admin can comment" });
-      return;
-    }
+  const item = await prisma.item.findUnique({ where: { id: itemId } });
+  if (!item) { res.status(404).json({ error: "Item not found" }); return; }
+  const isManager = await canManageItemInDepartment(req, item.departmentId);
+  if (!isManager && item.assignedToId !== userId) {
+    res.status(403).json({ error: "Only assigned user or item admin can comment" });
+    return;
   }
 
   const comment = await prisma.itemComment.create({
@@ -691,7 +724,12 @@ router.post("/:id/comments", async (req: Request, res: Response) => {
 
 // DELETE /api/items/:id/comments/:commentId
 router.delete("/:id/comments/:commentId", async (req: Request, res: Response) => {
-  if (!(await isItemManager(req))) {
+  const comment = await prisma.itemComment.findUnique({
+    where: { id: Number(req.params.commentId) },
+    select: { item: { select: { departmentId: true } } },
+  });
+  if (!comment) { res.status(404).json({ error: "Comment not found" }); return; }
+  if (!(await canManageItemInDepartment(req, comment.item.departmentId))) {
     res.status(403).json({ error: "Item admin access required" });
     return;
   }

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/service_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/api_client.dart';
+import '../utils/api_error.dart';
 import 'service_card.dart';
 
 class ActiveServicesTab extends StatefulWidget {
@@ -293,8 +294,8 @@ class ActiveServicesTabState extends State<ActiveServicesTab>
       if (res.statusCode == 200) {
         _localUpdateHours(serviceId, userId, hours);
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Αποτυχία ενημέρωσης ωρών')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(extractApiError(res, 'Αποτυχία ενημέρωσης ωρών'))));
       }
     } catch (_) {
       if (mounted) {
@@ -331,8 +332,8 @@ class ActiveServicesTabState extends State<ActiveServicesTab>
     if (err == null) {
       _localRemoveEnrollment(serviceId, userId);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Σφάλμα αφαίρεσης εγγραφής')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err)));
     }
   }
 
@@ -380,9 +381,9 @@ class ActiveServicesTabState extends State<ActiveServicesTab>
         _services.removeWhere((s) => (s as Map)['id'] == serviceId);
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Αποτυχία κλεισίματος υπηρεσίας')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(extractApiError(res, 'Αποτυχία κλεισίματος υπηρεσίας')),
+      ));
     }
   }
 
@@ -423,7 +424,13 @@ class ActiveServicesTabState extends State<ActiveServicesTab>
   Future<void> _syncSingleService(int serviceId) async {
     setState(() => _syncingServiceIds.add(serviceId));
     try {
-      await _api.post('/services/$serviceId/sync', body: {});
+      final res = await _api.post('/services/$serviceId/sync', body: {});
+      if (res.statusCode != 200 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text(extractApiError(res, 'Αποτυχία συγχρονισμού υπηρεσίας')),
+        ));
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -772,7 +779,9 @@ class ActiveServicesTabState extends State<ActiveServicesTab>
                         onClose: () => _closeService(id, name),
                         onEdit: () => context.push(
                             '/admin/services/$id/edit?departmentId=${widget.departmentId}&departmentName=${Uri.encodeComponent(widget.departmentName)}'),
-                        onDelete: () => _deleteService(id, name),
+                        onDelete: svc['externalMissionId'] == null
+                            ? () => _deleteService(id, name)
+                            : null,
                         onOpenDetail: () => context.push('/admin/services/$id'),
                         onUpdateStatus:
                             (userId, status) =>

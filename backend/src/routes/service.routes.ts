@@ -13,12 +13,13 @@ import {
   writeBackParticipation,
   writeBackHoursUpdate,
   writeBackServiceDelete,
-  writeBackEnrollmentRequest,
+  syncEnrollmentRequestOrThrow,
   writeBackUnenroll,
   writeBackServiceClose,
   writeBackServiceComplete,
   syncSingleService,
 } from "../lib/mitrooSync";
+import { MitrooRemoteError } from "../lib/mitrooClient";
 
 async function addToMissionChat(serviceId: number, userId: number): Promise<void> {
   const missionChat = await prisma.chat.findFirst({
@@ -296,10 +297,25 @@ router.post("/", async (req: Request, res: Response) => {
       },
       include: { department: { select: { id: true, name: true } } },
     });
-    res.status(201).json(service);
 
-    // Fire-and-forget: create corresponding mission+shift in original Mitroo
-    writeBackNewService(service.id).catch(() => {});
+    // Create the corresponding mission+shift in the original Mitroo system.
+    // If that fails, don't keep the local service either.
+    try {
+      await writeBackNewService(service.id);
+    } catch (syncErr) {
+      await prisma.service.delete({ where: { id: service.id } }).catch(() => {});
+      const message = syncErr instanceof MitrooRemoteError
+        ? syncErr.message
+        : "Η δημιουργία απέτυχε στο σύστημα Mitroo";
+      res.status(502).json({ error: message });
+      return;
+    }
+
+    const created = await prisma.service.findUnique({
+      where: { id: service.id },
+      include: { department: { select: { id: true, name: true } } },
+    });
+    res.status(201).json(created);
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
     throw err;
@@ -307,7 +323,13 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // ── GET /api/services/:id ───────────────────────
+// Visible to global admins, or to users whose department matches the service's
+// department AND (the service type is default-visible or matches one of the
+// user's specializations) — mirrors GET /services/my.
 router.get("/:id", async (req: Request, res: Response) => {
+  const userId = req.user!.userId;
+  const isAdmin = req.user!.isAdmin;
+
   const service = await prisma.service.findUnique({
     where: { id: Number(req.params.id) },
     include: {
@@ -334,6 +356,27 @@ router.get("/:id", async (req: Request, res: Response) => {
     },
   });
   if (!service) { res.status(404).json({ error: "Service not found" }); return; }
+
+  if (!isAdmin) {
+    const [inDept, userSpecs] = await Promise.all([
+      prisma.userDepartment.count({ where: { userId, departmentId: service.departmentId } }),
+      prisma.userSpecialization.findMany({ where: { userId }, select: { specializationId: true } }),
+    ]);
+    if (inDept === 0) {
+      res.status(403).json({ error: "Δεν έχετε δικαίωμα" });
+      return;
+    }
+    const specIds = userSpecs.map((s) => s.specializationId);
+    const visible =
+      !service.serviceTypeId ||
+      service.serviceType?.isDefaultVisible ||
+      service.serviceType?.specializations.some((s) => specIds.includes(s.specializationId));
+    if (!visible) {
+      res.status(403).json({ error: "Δεν έχετε δικαίωμα" });
+      return;
+    }
+  }
+
   res.json(service);
 });
 
@@ -378,6 +421,16 @@ router.post("/:id/close", async (req: Request, res: Response) => {
     return;
   }
 
+  try {
+    await writeBackServiceClose(serviceId);
+  } catch (syncErr) {
+    const message = syncErr instanceof MitrooRemoteError
+      ? syncErr.message
+      : "Το κλείσιμο απέτυχε στο σύστημα Mitroo";
+    res.status(502).json({ error: message });
+    return;
+  }
+
   await prisma.service.update({
     where: { id: serviceId },
     data: { lifecycleStatus: "closed" },
@@ -392,10 +445,6 @@ router.post("/:id/close", async (req: Request, res: Response) => {
       route: `/services/${serviceId}`,
     }).catch(() => {});
   }
-
-  writeBackServiceClose(serviceId).catch((e) =>
-    console.error("[service] writeBackServiceClose error:", e)
-  );
 
   res.json({ lifecycleStatus: "closed" });
 });
@@ -414,6 +463,11 @@ router.post("/:id/complete", async (req: Request, res: Response) => {
     return;
   }
 
+  const acceptedUserIds = (await prisma.userService.findMany({
+    where: { serviceId, status: "accepted" },
+    select: { userId: true },
+  })).map((us) => us.userId);
+
   await prisma.$transaction([
     prisma.userService.updateMany({
       where: { serviceId, status: "accepted" },
@@ -425,9 +479,26 @@ router.post("/:id/complete", async (req: Request, res: Response) => {
     }),
   ]);
 
-  writeBackServiceComplete(serviceId).catch((e) =>
-    console.error("[service] writeBackServiceComplete error:", e)
-  );
+  try {
+    await writeBackServiceComplete(serviceId);
+  } catch (syncErr) {
+    // Remote system rejected the completion — roll back the local state too.
+    await prisma.$transaction([
+      prisma.userService.updateMany({
+        where: { serviceId, userId: { in: acceptedUserIds }, status: "participated" },
+        data: { status: "accepted" },
+      }),
+      prisma.service.update({
+        where: { id: serviceId },
+        data: { lifecycleStatus: "closed" },
+      }),
+    ]);
+    const message = syncErr instanceof MitrooRemoteError
+      ? syncErr.message
+      : "Η ολοκλήρωση απέτυχε στο σύστημα Mitroo";
+    res.status(502).json({ error: message });
+    return;
+  }
 
   res.json({ lifecycleStatus: "completed" });
 });
@@ -439,8 +510,12 @@ router.delete("/:id", async (req: Request, res: Response) => {
   if (!await requireServiceAdmin(req, res, service.departmentId)) return;
   try {
     await writeBackServiceDelete(Number(req.params.id));
-  } catch (e) {
-    console.error("[service] writeBackServiceDelete error:", e);
+  } catch (syncErr) {
+    const message = syncErr instanceof MitrooRemoteError
+      ? syncErr.message
+      : "Η διαγραφή απέτυχε στο σύστημα Mitroo";
+    res.status(502).json({ error: message });
+    return;
   }
   await prisma.service.delete({ where: { id: Number(req.params.id) } });
   res.status(204).end();
@@ -473,7 +548,25 @@ router.post("/:id/enroll", async (req: Request, res: Response) => {
       return;
     }
 
-    const record = await prisma.userService.create({
+    // For self-requests, if this service exists in the original Mitroo system,
+    // the request must be accepted there too before we accept it locally.
+    // If the remote system rejects it, surface its original message and do
+    // not create the local enrollment record either.
+    let externalApplicationId: number | undefined;
+    if (isSelfRequest) {
+      try {
+        const applicationId = await syncEnrollmentRequestOrThrow(serviceId, targetUserId);
+        if (applicationId != null) externalApplicationId = applicationId;
+      } catch (syncErr) {
+        const message = syncErr instanceof MitrooRemoteError
+          ? syncErr.message
+          : "Η αίτηση απέτυχε στο σύστημα Mitroo";
+        res.status(502).json({ error: message });
+        return;
+      }
+    }
+
+    let record = await prisma.userService.create({
       data: {
         userId: targetUserId,
         serviceId,
@@ -483,25 +576,34 @@ router.post("/:id/enroll", async (req: Request, res: Response) => {
         hoursTraining: service.defaultHoursTraining,
         hoursTrainers: service.defaultHoursTrainers,
         hoursTEP: service.defaultHoursTEP,
+        ...(externalApplicationId != null ? { externalApplicationId } : {}),
       },
       include: {
         user: { select: { id: true, eame: true, forename: true, surname: true, email: true } },
       },
     });
 
-    res.status(201).json(record);
-
-    // Fire-and-forget: sync enrollment to original Mitroo
-    if (status === "requested") {
-      writeBackEnrollmentRequest(serviceId, targetUserId).catch((e) =>
-        console.error("[service] writeBackEnrollmentRequest error:", e),
-      );
-    }
-
-    // Fire-and-forget: sync accepted admin enrollment to original Mitroo
+    // Admin directly enrolling someone as "accepted" — sync to Mitroo before
+    // committing locally; if it fails there, undo the local enrollment too.
     if (status === "accepted") {
-      writeBackAssignment(serviceId, targetUserId).catch((e) => console.error("[service] writeBackAssignment error:", e));
+      try {
+        await writeBackAssignment(serviceId, targetUserId);
+        record = await prisma.userService.update({
+          where: { userId_serviceId: { userId: targetUserId, serviceId } },
+          data: {},
+          include: { user: { select: { id: true, eame: true, forename: true, surname: true, email: true } } },
+        });
+      } catch (syncErr) {
+        await prisma.userService.delete({ where: { userId_serviceId: { userId: targetUserId, serviceId } } }).catch(() => {});
+        const message = syncErr instanceof MitrooRemoteError
+          ? syncErr.message
+          : "Η αποδοχή απέτυχε στο σύστημα Mitroo";
+        res.status(502).json({ error: message });
+        return;
+      }
     }
+
+    res.status(201).json(record);
 
     // Fire-and-forget: notify missionAdmins (excluding the requester themselves)
     if (status === "requested") {
@@ -546,10 +648,17 @@ router.delete("/:id/unenroll", async (req: Request, res: Response) => {
     return;
   }
   const externalApplicationId = record.externalApplicationId ?? null;
+  try {
+    await writeBackUnenroll(serviceId, userId, externalApplicationId);
+  } catch (syncErr) {
+    const message = syncErr instanceof MitrooRemoteError
+      ? syncErr.message
+      : "Η ακύρωση απέτυχε στο σύστημα Mitroo";
+    res.status(502).json({ error: message });
+    return;
+  }
   await prisma.userService.delete({ where: { userId_serviceId: { userId, serviceId } } });
   res.status(204).end();
-  writeBackUnenroll(serviceId, userId, externalApplicationId)
-    .catch((e) => console.error("[service] writeBackUnenroll error:", e));
 });
 
 // ── PATCH /api/services/:sid/users/:uid/status ──
@@ -561,6 +670,37 @@ router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
     if (!service) { res.status(404).json({ error: "Service not found" }); return; }
     if (!await requireServiceAdmin(req, res, service.departmentId)) return;
     const { status } = statusSchema.parse(req.body);
+
+    const existing = await prisma.userService.findUnique({
+      where: { userId_serviceId: { userId: uid, serviceId: sid } },
+      select: { userId: true },
+    });
+    if (!existing) { res.status(404).json({ error: "Δεν βρέθηκε εγγραφή χρήστη" }); return; }
+
+    // Sync to the original Mitroo system before committing the status change
+    // locally; if it fails there, don't apply the change here either.
+    if (status === "accepted") {
+      try {
+        await writeBackAssignment(sid, uid);
+      } catch (syncErr) {
+        const message = syncErr instanceof MitrooRemoteError
+          ? syncErr.message
+          : "Η αποδοχή απέτυχε στο σύστημα Mitroo";
+        res.status(502).json({ error: message });
+        return;
+      }
+    } else if (status === "rejected") {
+      try {
+        await writeBackRejection(sid, uid);
+      } catch (syncErr) {
+        const message = syncErr instanceof MitrooRemoteError
+          ? syncErr.message
+          : "Η απόρριψη απέτυχε στο σύστημα Mitroo";
+        res.status(502).json({ error: message });
+        return;
+      }
+    }
+
     const record = await prisma.userService.update({
       where: { userId_serviceId: { userId: uid, serviceId: sid } },
       data: { status },
@@ -569,12 +709,9 @@ router.patch("/:sid/users/:uid/status", async (req: Request, res: Response) => {
 
     res.json(record);
 
-    // Fire-and-forget: approve shift application in original Mitroo when accepted
     if (status === "accepted") {
-      writeBackAssignment(sid, uid).catch((e) => console.error("[service] writeBackAssignment error:", e));
       addToMissionChat(sid, uid).catch((e) => console.error("[service] addToMissionChat error:", e));
     } else if (status === "rejected") {
-      writeBackRejection(sid, uid).catch((e) => console.error("[service] writeBackRejection error:", e));
       // Remove user from the mission chat for this service
       removeFromMissionChat(sid, uid).catch((e) => console.error("[service] removeFromMissionChat error:", e));
     }
@@ -618,18 +755,41 @@ router.patch("/:sid/users/:uid/participation", async (req: Request, res: Respons
     const participationSchema = z.object({ status: z.enum(["participated", "not-participated"]) });
     const { status } = participationSchema.parse(req.body);
     const prismaStatus = status === "not-participated" ? "not_participated" : "participated";
+
+    const existing = await prisma.userService.findUnique({
+      where: { userId_serviceId: { userId: uid, serviceId: sid } },
+      select: { userId: true },
+    });
+    if (!existing) { res.status(404).json({ error: "Δεν βρέθηκε εγγραφή συμμετοχής" }); return; }
+
+    if (status === "not-participated") {
+      try {
+        await writeBackRejection(sid, uid);
+      } catch (syncErr) {
+        const message = syncErr instanceof MitrooRemoteError
+          ? syncErr.message
+          : "Η ενημέρωση απέτυχε στο σύστημα Mitroo";
+        res.status(502).json({ error: message });
+        return;
+      }
+    } else {
+      try {
+        await writeBackParticipation(sid, uid);
+      } catch (syncErr) {
+        const message = syncErr instanceof MitrooRemoteError
+          ? syncErr.message
+          : "Η ενημέρωση απέτυχε στο σύστημα Mitroo";
+        res.status(502).json({ error: message });
+        return;
+      }
+    }
+
     const record = await prisma.userService.update({
       where: { userId_serviceId: { userId: uid, serviceId: sid } },
       data: { status: prismaStatus },
       include: { user: { select: { id: true, eame: true, forename: true, surname: true } } },
     });
     res.json({ ...record, status: (record.status as string).replace(/_/g, '-') });
-
-    if (status === "not-participated") {
-      writeBackRejection(sid, uid).catch((e) => console.error("[service] writeBackRejection (not-participated) error:", e));
-    } else if (status === "participated") {
-      writeBackParticipation(sid, uid).catch((e) => console.error("[service] writeBackParticipation error:", e));
-    }
   } catch (err: any) {
     if (err instanceof z.ZodError) { res.status(400).json({ error: "Validation failed", details: err.errors }); return; }
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
@@ -642,12 +802,21 @@ router.patch("/:sid/users/:uid/participation", async (req: Request, res: Respons
 
 // ── PATCH /api/services/:sid/users/:uid/hours ───
 router.patch("/:sid/users/:uid/hours", async (req: Request, res: Response) => {
-  const service = await prisma.service.findUnique({ where: { id: Number(req.params.sid) }, select: { departmentId: true } });
+  const sid = Number(req.params.sid);
+  const uid = Number(req.params.uid);
+  const service = await prisma.service.findUnique({ where: { id: sid }, select: { departmentId: true } });
   if (!service) { res.status(404).json({ error: "Service not found" }); return; }
   if (!await requireServiceAdmin(req, res, service.departmentId)) return;
   const { hours, hoursVol, hoursTraining, hoursTrainers, hoursTEP } = req.body;
+
+  const previous = await prisma.userService.findUnique({
+    where: { userId_serviceId: { userId: uid, serviceId: sid } },
+    select: { hours: true, hoursVol: true, hoursTraining: true, hoursTrainers: true, hoursTEP: true },
+  });
+  if (!previous) { res.status(404).json({ error: "Δεν βρέθηκε εγγραφή συμμετοχής" }); return; }
+
   const record = await prisma.userService.update({
-    where: { userId_serviceId: { userId: Number(req.params.uid), serviceId: Number(req.params.sid) } },
+    where: { userId_serviceId: { userId: uid, serviceId: sid } },
     data: {
       ...(typeof hours === "number" && { hours }),
       ...(typeof hoursVol === "number" && { hoursVol }),
@@ -656,10 +825,24 @@ router.patch("/:sid/users/:uid/hours", async (req: Request, res: Response) => {
       ...(typeof hoursTEP === "number" && { hoursTEP }),
     },
   });
-  res.json(record);
 
-  writeBackHoursUpdate(Number(req.params.sid), Number(req.params.uid))
-    .catch((e) => console.error("[service] writeBackHoursUpdate error:", e));
+  // writeBackHoursUpdate reads the new hours values back from the DB, so the
+  // local update must happen first — roll it back if the remote sync fails.
+  try {
+    await writeBackHoursUpdate(sid, uid);
+  } catch (syncErr) {
+    await prisma.userService.update({
+      where: { userId_serviceId: { userId: uid, serviceId: sid } },
+      data: previous,
+    }).catch(() => {});
+    const message = syncErr instanceof MitrooRemoteError
+      ? syncErr.message
+      : "Η ενημέρωση ωρών απέτυχε στο σύστημα Mitroo";
+    res.status(502).json({ error: message });
+    return;
+  }
+
+  res.json(record);
 });
 
 // ── DELETE /api/services/:sid/users/:uid ────────
@@ -676,18 +859,27 @@ router.delete("/:sid/users/:uid", async (req: Request, res: Response) => {
     where: { userId_serviceId: { userId: uid, serviceId: sid } },
     select: { externalApplicationId: true },
   });
-  const externalApplicationId = record?.externalApplicationId ?? null;
+  if (!record) { res.status(404).json({ error: "Δεν βρέθηκε εγγραφή χρήστη" }); return; }
+  const externalApplicationId = record.externalApplicationId ?? null;
   console.log(`[service] DELETE /${sid}/users/${uid} — externalApplicationId from DB = ${externalApplicationId}`);
+
+  try {
+    await writeBackRejection(sid, uid, externalApplicationId);
+  } catch (syncErr) {
+    const message = syncErr instanceof MitrooRemoteError
+      ? syncErr.message
+      : "Η αφαίρεση απέτυχε στο σύστημα Mitroo";
+    res.status(502).json({ error: message });
+    return;
+  }
 
   await prisma.userService.delete({
     where: { userId_serviceId: { userId: uid, serviceId: sid } },
   });
   res.status(204).end();
-  console.log(`[service] DELETE /${sid}/users/${uid} — record deleted, firing writeBackRejection`);
+  console.log(`[service] DELETE /${sid}/users/${uid} — record deleted`);
 
-  // Fire-and-forget: sync removal to original Mitroo + cleanup chat
-  writeBackRejection(sid, uid, externalApplicationId)
-    .catch((e) => console.error("[service] writeBackRejection error:", e));
+  // Cleanup chat membership — internal, not a Mitroo interaction.
   removeFromMissionChat(sid, uid)
     .catch((e) => console.error("[service] removeFromMissionChat error:", e));
 });

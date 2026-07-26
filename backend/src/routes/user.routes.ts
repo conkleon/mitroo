@@ -359,7 +359,8 @@ router.patch("/:id", async (req: Request, res: Response) => {
     const targetUserId = Number(req.params.id);
     const data = updateSchema.parse(req.body);
     const scope = await getAccessScope(req);
-    const writeAllowed = await canWriteUserByScope(scope, targetUserId);
+    const isSelf = targetUserId === req.user!.userId;
+    const writeAllowed = isSelf || await canWriteUserByScope(scope, targetUserId);
     if (!writeAllowed) {
       res.status(403).json({ error: "Access denied" });
       return;

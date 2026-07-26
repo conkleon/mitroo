@@ -2,7 +2,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import prisma from "./prisma";
 import { encrypt, decrypt } from "./encryption";
-import { MitrooClient, ExternalMission, ExternalShift, ExternalShiftMember } from "./mitrooClient";
+import { MitrooClient, MitrooRemoteError, ExternalMission, ExternalShift, ExternalShiftMember } from "./mitrooClient";
 
 const EXTERNAL_BASE_URL =
   process.env.MITROO_EXTERNAL_BASE_URL ?? "https://mitroo.redcross.gr";
@@ -1913,6 +1913,7 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
     );
   } catch (e) {
     console.error(`[mitrooSync] writeBackNewService failed for service ${serviceId}:`, e);
+    throw e;
   }
 }
 
@@ -1990,6 +1991,7 @@ export async function writeBackServiceDelete(serviceId: number): Promise<void> {
     );
   } catch (e) {
     console.error(`[mitrooSync] writeBackServiceDelete failed for service ${serviceId}:`, e);
+    throw e;
   }
 }
 
@@ -2101,6 +2103,7 @@ export async function writeBackAssignment(serviceId: number, userId: number): Pr
         console.warn(
           `[mitrooSync] writeBackAssignment: could not resolve application ID for user ${userId} — manual approval needed in original Mitroo`,
         );
+        throw new MitrooRemoteError("Δεν βρέθηκε αίτηση συμμετοχής στο σύστημα Mitroo");
       }
     } else {
       console.log(`[mitrooSync] writeBackAssignment: skipped — user has no externalId`);
@@ -2110,6 +2113,7 @@ export async function writeBackAssignment(serviceId: number, userId: number): Pr
       `[mitrooSync] writeBackAssignment failed for service ${serviceId}, user ${userId}:`,
       e,
     );
+    throw e;
   }
 }
 
@@ -2169,6 +2173,7 @@ export async function writeBackHoursUpdate(serviceId: number, userId: number): P
     console.log(`[mitrooSync] writeBackHoursUpdate: updated hours for application ${applicationId}`);
   } catch (e) {
     console.error(`[mitrooSync] writeBackHoursUpdate failed for service ${serviceId}, user ${userId}:`, e);
+    throw e;
   }
 }
 
@@ -2254,6 +2259,7 @@ export async function writeBackRejection(
     console.log(`[mitrooSync] writeBackRejection: SUCCESS — cancelled application ${applicationId} for user ${userId}`);
   } catch (e) {
     console.error(`[mitrooSync] writeBackRejection: FAILED for service ${serviceId}, user ${userId}:`, e);
+    throw e;
   }
 }
 
@@ -2307,12 +2313,25 @@ export async function writeBackParticipation(serviceId: number, userId: number):
     console.log(`[mitrooSync] writeBackParticipation: SUCCESS — marked participated application ${applicationId} for user ${userId}`);
   } catch (e) {
     console.error(`[mitrooSync] writeBackParticipation: FAILED for service ${serviceId}, user ${userId}:`, e);
+    throw e;
   }
 }
 
 // ── Write-back: enrollment request → create shift application ─────────────
-
-export async function writeBackEnrollmentRequest(serviceId: number, userId: number): Promise<void> {
+//
+// Unlike the other write-back functions (which are fire-and-forget, applied
+// after the local record already exists), this one is called synchronously
+// BEFORE the local UserService record is created. If the service is tracked
+// in the original Mitroo system and sync is enabled, the enrollment request
+// must succeed there too — otherwise the caller must reject the request
+// locally as well and surface the original Mitroo error message.
+//
+// Returns:
+//   - null if the service/user isn't synced or department sync is disabled
+//     (nothing to check — the enrollment is purely local)
+//   - the external application ID to store, on success
+// Throws MitrooRemoteError (with the original Mitroo message) on failure.
+export async function syncEnrollmentRequestOrThrow(serviceId: number, userId: number): Promise<number | null> {
   const [service, user] = await Promise.all([
     prisma.service.findUnique({
       where: { id: serviceId },
@@ -2325,61 +2344,56 @@ export async function writeBackEnrollmentRequest(serviceId: number, userId: numb
   ]);
 
   if (!service?.externalShiftId) {
-    console.log(`[mitrooSync] writeBackEnrollmentRequest: skipped — service has no externalShiftId`);
-    return;
+    console.log(`[mitrooSync] syncEnrollmentRequestOrThrow: skipped — service has no externalShiftId`);
+    return null;
   }
   if (!user?.externalId) {
-    console.log(`[mitrooSync] writeBackEnrollmentRequest: skipped — user has no externalId`);
-    return;
+    console.log(`[mitrooSync] syncEnrollmentRequestOrThrow: skipped — user has no externalId`);
+    return null;
   }
 
   const config = await prisma.departmentSyncConfig.findUnique({
     where: { departmentId: service.departmentId },
     select: { syncEnabled: true },
   });
-  if (!config?.syncEnabled) return;
+  if (!config?.syncEnabled) return null;
 
+  const client = await getClient(service.departmentId);
+
+  let applicationId: number | null = null;
+  let addError: unknown = null;
   try {
-    const client = await getClient(service.departmentId);
-
-    let applicationId: number | null = null;
-
-    try {
-      applicationId = await client.addUserToShift(service.externalShiftId, user.externalId);
-    } catch (addErr) {
-      // addUserToShift may throw when the user already has an application for this shift.
-      // Fall through to try finding the existing application ID.
-      console.warn(
-        `[mitrooSync] writeBackEnrollmentRequest: addUserToShift threw, will try findApplicationIdForMember: ${addErr}`,
-      );
-    }
-
-    if (!applicationId) {
-      applicationId = await client.findApplicationIdForMember(
-        service.externalShiftId,
-        user.externalId,
-      );
-    }
-
-    if (applicationId) {
-      await prisma.userService.update({
-        where: { userId_serviceId: { userId, serviceId } },
-        data: { externalApplicationId: applicationId },
-      });
-      console.log(
-        `[mitrooSync] writeBackEnrollmentRequest: saved application ${applicationId} for user ${userId} in shift ${service.externalShiftId}`,
-      );
-    } else {
-      console.log(
-        `[mitrooSync] writeBackEnrollmentRequest: could not create or find application for user ${userId} in shift ${service.externalShiftId}`,
-      );
-    }
+    applicationId = await client.addUserToShift(service.externalShiftId, user.externalId);
   } catch (e) {
-    console.error(
-      `[mitrooSync] writeBackEnrollmentRequest failed for service ${serviceId}, user ${userId}:`,
-      e,
+    // addUserToShift may throw when the user already has an application for this shift.
+    // Fall through to try finding the existing application ID before giving up.
+    addError = e;
+    console.warn(
+      `[mitrooSync] syncEnrollmentRequestOrThrow: addUserToShift threw, will try findApplicationIdForMember: ${e}`,
     );
   }
+
+  if (!applicationId) {
+    applicationId = await client.findApplicationIdForMember(
+      service.externalShiftId,
+      user.externalId,
+    );
+  }
+
+  if (!applicationId) {
+    const message = addError instanceof MitrooRemoteError
+      ? addError.message
+      : "Η αίτηση απέτυχε στο σύστημα Mitroo";
+    console.error(
+      `[mitrooSync] syncEnrollmentRequestOrThrow: FAILED for service ${serviceId}, user ${userId}: ${message}`,
+    );
+    throw new MitrooRemoteError(message);
+  }
+
+  console.log(
+    `[mitrooSync] syncEnrollmentRequestOrThrow: resolved application ${applicationId} for user ${userId} in shift ${service.externalShiftId}`,
+  );
+  return applicationId;
 }
 
 // ── Write-back: unenroll → cancel member shift application ────────────────
@@ -2443,6 +2457,7 @@ export async function writeBackUnenroll(
       `[mitrooSync] writeBackUnenroll failed for service ${serviceId}, user ${userId}:`,
       e,
     );
+    throw e;
   }
 }
 
@@ -2450,20 +2465,28 @@ export async function writeBackUnenroll(
 
 export async function writeBackServiceClose(serviceId: number): Promise<void> {
   const MITROO_MISSION_STATUS_CLOSED = 3;
+  const service = await prisma.service.findUnique({
+    where: { id: serviceId },
+    select: { externalMissionId: true, departmentId: true, name: true },
+  });
+  if (!service?.externalMissionId) {
+    console.log(`[mitrooSync] writeBackServiceClose: service ${serviceId} has no externalMissionId — skipping`);
+    return;
+  }
+
+  const config = await prisma.departmentSyncConfig.findUnique({
+    where: { departmentId: service.departmentId },
+    select: { syncEnabled: true },
+  });
+  if (!config?.syncEnabled) return;
+
   try {
-    const service = await prisma.service.findUnique({
-      where: { id: serviceId },
-      select: { externalMissionId: true, departmentId: true, name: true },
-    });
-    if (!service?.externalMissionId) {
-      console.log(`[mitrooSync] writeBackServiceClose: service ${serviceId} has no externalMissionId — skipping`);
-      return;
-    }
     const client = await getClient(service.departmentId);
     await client.changeMissionStatus(service.externalMissionId, MITROO_MISSION_STATUS_CLOSED);
     console.log(`[mitrooSync] writeBackServiceClose: SUCCESS — mission ${service.externalMissionId} closed`);
   } catch (e) {
     console.error(`[mitrooSync] writeBackServiceClose: FAILED for service ${serviceId}:`, e);
+    throw e;
   }
 }
 
@@ -2471,37 +2494,41 @@ export async function writeBackServiceClose(serviceId: number): Promise<void> {
 
 export async function writeBackServiceComplete(serviceId: number): Promise<void> {
   const MITROO_MISSION_STATUS_COMPLETED = 4;
-  try {
-    const service = await prisma.service.findUnique({
-      where: { id: serviceId },
-      select: {
-        externalMissionId: true,
-        departmentId: true,
-        userServices: {
-          where: { status: "participated" },
-          select: { externalApplicationId: true },
-        },
+  const service = await prisma.service.findUnique({
+    where: { id: serviceId },
+    select: {
+      externalMissionId: true,
+      departmentId: true,
+      userServices: {
+        where: { status: "participated" },
+        select: { externalApplicationId: true },
       },
-    });
-    if (!service?.externalMissionId) {
-      console.log(`[mitrooSync] writeBackServiceComplete: service ${serviceId} has no externalMissionId — skipping`);
-      return;
-    }
+    },
+  });
+  if (!service?.externalMissionId) {
+    console.log(`[mitrooSync] writeBackServiceComplete: service ${serviceId} has no externalMissionId — skipping`);
+    return;
+  }
+
+  const config = await prisma.departmentSyncConfig.findUnique({
+    where: { departmentId: service.departmentId },
+    select: { syncEnabled: true },
+  });
+  if (!config?.syncEnabled) return;
+
+  try {
     const client = await getClient(service.departmentId);
 
     for (const us of service.userServices) {
       if (!us.externalApplicationId) continue;
-      try {
-        await client.markShiftApplicationParticipated(us.externalApplicationId);
-      } catch (e) {
-        console.error(`[mitrooSync] writeBackServiceComplete: failed to mark application ${us.externalApplicationId}:`, e);
-      }
+      await client.markShiftApplicationParticipated(us.externalApplicationId);
     }
 
     await client.changeMissionStatus(service.externalMissionId, MITROO_MISSION_STATUS_COMPLETED);
     console.log(`[mitrooSync] writeBackServiceComplete: SUCCESS — mission ${service.externalMissionId} completed`);
   } catch (e) {
     console.error(`[mitrooSync] writeBackServiceComplete: FAILED for service ${serviceId}:`, e);
+    throw e;
   }
 }
 

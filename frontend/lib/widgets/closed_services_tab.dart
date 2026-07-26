@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../providers/service_provider.dart';
 import '../providers/sync_provider.dart';
 import '../services/api_client.dart';
+import '../utils/api_error.dart';
 import 'service_card.dart';
 
 class ClosedServicesTab extends StatefulWidget {
@@ -83,8 +84,10 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
   static String _fmtDisplay(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
-  Future<void> _load() async {
-    setState(() => _loading = true);
+  Future<void> _load({bool silent = false}) async {
+    setState(() {
+      if (silent) { _filtering = true; } else { _loading = true; }
+    });
     try {
       final results = await Future.wait([
         _api.get(_buildServicesUrl()),
@@ -97,7 +100,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
         _deptMembers = jsonDecode(results[1].body);
       }
     } catch (_) {}
-    if (mounted) setState(() => _loading = false);
+    if (mounted) setState(() { _loading = false; _filtering = false; });
   }
 
   Future<void> _loadServices() async {
@@ -381,8 +384,8 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
     if (err == null) {
       _localRemoveEnrollment(serviceId, userId);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Σφάλμα αφαίρεσης εγγραφής')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(err)));
     }
   }
 
@@ -463,8 +466,8 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
       if (res.statusCode == 200) {
         _localUpdateHours(serviceId, userId, hours);
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Αποτυχία ενημέρωσης ωρών')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(extractApiError(res, 'Αποτυχία ενημέρωσης ωρών'))));
       }
     } catch (_) {
       if (mounted) {
@@ -504,7 +507,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Αποτυχία ολοκλήρωσης υπηρεσίας')),
+        SnackBar(content: Text(extractApiError(res, 'Αποτυχία ολοκλήρωσης υπηρεσίας'))),
       );
     }
   }
@@ -512,7 +515,13 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
   Future<void> _syncSingleService(int serviceId) async {
     setState(() => _syncingServiceIds.add(serviceId));
     try {
-      await _api.post('/services/$serviceId/sync', body: {});
+      final res = await _api.post('/services/$serviceId/sync', body: {});
+      if (res.statusCode != 200 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text(extractApiError(res, 'Αποτυχία συγχρονισμού υπηρεσίας')),
+        ));
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -553,7 +562,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
     } else {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Η υπηρεσία διαγράφηκε')));
-      _load();
+      _load(silent: true);
     }
   }
 
