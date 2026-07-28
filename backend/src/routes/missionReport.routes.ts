@@ -24,53 +24,96 @@ async function getReportScope(req: Request): Promise<ReportScope> {
   return { isAdmin: false, departmentIds };
 }
 
+/**
+ * Re-validates that every supplied serviceId belongs to a department the caller
+ * administers. Responds with 403 and returns false when the check fails.
+ * Global admins are always allowed.
+ */
+async function validateServiceScope(
+  scope: ReportScope,
+  serviceIds: number[],
+  res: Response,
+): Promise<boolean> {
+  if (scope.isAdmin) return true;
+  const allowedCount = await prisma.service.count({
+    where: { id: { in: serviceIds }, departmentId: { in: scope.departmentIds } },
+  });
+  if (allowedCount !== serviceIds.length) {
+    res.status(403).json({ error: "Δεν έχετε δικαίωμα για μία ή περισσότερες αποστολές" });
+    return false;
+  }
+  return true;
+}
+
 // ── GET /api/reports/missions ───────────────────
 router.get("/missions", async (req: Request, res: Response) => {
-  const scope = await getReportScope(req);
-  if (!scope.isAdmin && scope.departmentIds.length === 0) {
-    res.status(403).json({ error: "Δεν έχετε δικαίωμα πρόσβασης σε αναφορές αποστολών" });
-    return;
+  try {
+    const scope = await getReportScope(req);
+    if (!scope.isAdmin && scope.departmentIds.length === 0) {
+      res.status(403).json({ error: "Δεν έχετε δικαίωμα πρόσβασης σε αναφορές αποστολών" });
+      return;
+    }
+
+    const departmentIdParam = req.query.departmentId ? Number(req.query.departmentId) : undefined;
+    if (
+      departmentIdParam !== undefined &&
+      !scope.isAdmin &&
+      !scope.departmentIds.includes(departmentIdParam)
+    ) {
+      res.status(403).json({ error: "Δεν έχετε δικαίωμα για αυτό το τμήμα" });
+      return;
+    }
+
+    const where: any = scope.isAdmin ? {} : { departmentId: { in: scope.departmentIds } };
+    if (departmentIdParam !== undefined) {
+      where.departmentId = departmentIdParam;
+    }
+
+    let from: Date | undefined;
+    if (req.query.from) {
+      from = new Date(req.query.from as string);
+      if (isNaN(from.getTime())) {
+        res.status(400).json({ error: "Μη έγκυρη ημερομηνία" });
+        return;
+      }
+    }
+    let to: Date | undefined;
+    if (req.query.to) {
+      to = new Date(req.query.to as string);
+      if (isNaN(to.getTime())) {
+        res.status(400).json({ error: "Μη έγκυρη ημερομηνία" });
+        return;
+      }
+    }
+    if (from) where.OR = [{ endAt: { gte: from } }, { endAt: null }];
+    if (to) where.startAt = { lte: to };
+
+    const search = (req.query.search as string | undefined)?.trim();
+    if (search) {
+      where.name = { contains: search, mode: "insensitive" };
+    }
+
+    const missions = await prisma.service.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        startAt: true,
+        endAt: true,
+        lifecycleStatus: true,
+        department: { select: { id: true, name: true } },
+      },
+      orderBy: { startAt: "desc" },
+    });
+
+    res.json(missions);
+  } catch (err: any) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: "Validation failed", details: err.errors });
+      return;
+    }
+    throw err;
   }
-
-  const departmentIdParam = req.query.departmentId ? Number(req.query.departmentId) : undefined;
-  if (
-    departmentIdParam !== undefined &&
-    !scope.isAdmin &&
-    !scope.departmentIds.includes(departmentIdParam)
-  ) {
-    res.status(403).json({ error: "Δεν έχετε δικαίωμα για αυτό το τμήμα" });
-    return;
-  }
-
-  const where: any = scope.isAdmin ? {} : { departmentId: { in: scope.departmentIds } };
-  if (departmentIdParam !== undefined) {
-    where.departmentId = departmentIdParam;
-  }
-
-  const from = req.query.from ? new Date(req.query.from as string) : undefined;
-  const to = req.query.to ? new Date(req.query.to as string) : undefined;
-  if (from) where.OR = [{ endAt: { gte: from } }, { endAt: null }];
-  if (to) where.startAt = { lte: to };
-
-  const search = (req.query.search as string | undefined)?.trim();
-  if (search) {
-    where.name = { contains: search, mode: "insensitive" };
-  }
-
-  const missions = await prisma.service.findMany({
-    where,
-    select: {
-      id: true,
-      name: true,
-      startAt: true,
-      endAt: true,
-      lifecycleStatus: true,
-      department: { select: { id: true, name: true } },
-    },
-    orderBy: { startAt: "desc" },
-  });
-
-  res.json(missions);
 });
 
 // ── POST /api/reports/generate ──────────────────
@@ -125,15 +168,7 @@ router.post("/generate", async (req: Request, res: Response) => {
       return;
     }
 
-    if (!scope.isAdmin) {
-      const allowedCount = await prisma.service.count({
-        where: { id: { in: serviceIds }, departmentId: { in: scope.departmentIds } },
-      });
-      if (allowedCount !== serviceIds.length) {
-        res.status(403).json({ error: "Δεν έχετε δικαίωμα για μία ή περισσότερες αποστολές" });
-        return;
-      }
-    }
+    if (!(await validateServiceScope(scope, serviceIds, res))) return;
 
     const structuredData: MissionReportData = await aggregateMissionReportData(serviceIds);
 
@@ -159,8 +194,11 @@ router.post("/generate", async (req: Request, res: Response) => {
 });
 
 // ── POST /api/reports/pdf ────────────────────────
+// The client only supplies the mission ids + the (possibly hand-edited) narrative.
+// The structured data is always re-aggregated server-side so the renderer can never
+// be fed an untrusted / malformed blob, and so the request body stays tiny.
 const pdfSchema = z.object({
-  structuredData: z.custom<MissionReportData>((val) => typeof val === "object" && val !== null),
+  serviceIds: z.array(z.number().int()).min(1),
   narrativeText: z.string(),
 });
 
@@ -172,7 +210,11 @@ router.post("/pdf", async (req: Request, res: Response) => {
       return;
     }
 
-    const { structuredData, narrativeText } = pdfSchema.parse(req.body);
+    const { serviceIds, narrativeText } = pdfSchema.parse(req.body);
+
+    if (!(await validateServiceScope(scope, serviceIds, res))) return;
+
+    const structuredData: MissionReportData = await aggregateMissionReportData(serviceIds);
     const buffer = await renderMissionReportPdf(structuredData, narrativeText);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", 'attachment; filename="mission-report.pdf"');

@@ -14,6 +14,10 @@ class MissionReportProvider extends ChangeNotifier {
   String? _narrativeError;
   String? _reportError;
 
+  /// Mission ids that produced [_structuredData]. Sent to the PDF endpoint so the
+  /// server re-aggregates the report itself instead of trusting a client blob.
+  List<int> _reportServiceIds = [];
+
   List<dynamic> get missions => _missions;
   bool get loadingMissions => _loadingMissions;
   bool get generating => _generating;
@@ -60,6 +64,9 @@ class MissionReportProvider extends ChangeNotifier {
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body) as Map<String, dynamic>;
         _structuredData = decoded['structuredData'] as Map<String, dynamic>;
+        _reportServiceIds = ((_structuredData!['missions'] as List<dynamic>?) ?? [])
+            .map((m) => (m as Map<String, dynamic>)['id'] as int)
+            .toList();
         _narrativeText = decoded['narrativeDraft'] as String?;
         _narrativeError = decoded['narrativeError'] as String?;
         _generating = false;
@@ -77,12 +84,12 @@ class MissionReportProvider extends ChangeNotifier {
   }
 
   Future<String?> exportPdf() async {
-    if (_structuredData == null || _narrativeText == null) {
+    if (_structuredData == null || _narrativeText == null || _reportServiceIds.isEmpty) {
       return 'Δεν υπάρχουν δεδομένα αναφοράς';
     }
     try {
       final res = await _api.post('/reports/pdf', body: {
-        'structuredData': _structuredData,
+        'serviceIds': _reportServiceIds,
         'narrativeText': _narrativeText,
       });
       if (res.statusCode == 200) {

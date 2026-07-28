@@ -77,8 +77,10 @@ export async function aggregateMissionReportData(serviceIds: number[]): Promise<
         department: { select: { name: true } },
       },
     }),
+    // Only people who actually took part count towards the report: rejected
+    // applicants and no-shows must not inflate the published headcount/hours.
     prisma.userService.findMany({
-      where: { serviceId: { in: serviceIds } },
+      where: { serviceId: { in: serviceIds }, status: { in: ["accepted", "participated"] } },
       select: {
         status: true,
         hours: true,

@@ -22,6 +22,8 @@ export class DeepSeekProvider implements AIProvider {
         messages: [{ role: "user", content: prompt }],
         temperature: 0.7,
       }),
+      // Never let a hung upstream hold the request open indefinitely.
+      signal: AbortSignal.timeout(60_000),
     });
 
     if (!response.ok) {
