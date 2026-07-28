@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/department_provider.dart';
 import '../providers/mission_report_provider.dart';
 
 class MissionReportSelectionScreen extends StatefulWidget {
@@ -28,6 +29,8 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
     Future.microtask(() {
       if (!mounted) return;
       context.read<MissionReportProvider>().fetchMissions();
+      final deptProv = context.read<DepartmentProvider>();
+      if (deptProv.departments.isEmpty) deptProv.fetchDepartments();
     });
   }
 
@@ -211,8 +214,15 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
           DropdownButtonFormField<int?>(
             value: _departmentFilter,
             decoration: const InputDecoration(labelText: 'Τμήμα (προαιρετικό)'),
-            items: const [
-              DropdownMenuItem<int?>(value: null, child: Text('Όλα τα τμήματα')),
+            items: [
+              const DropdownMenuItem<int?>(value: null, child: Text('Όλα τα τμήματα')),
+              ...context.watch<DepartmentProvider>().departments.map((d) {
+                final map = d as Map<String, dynamic>;
+                return DropdownMenuItem<int?>(
+                  value: map['id'] as int,
+                  child: Text(map['name'] as String? ?? 'Τμήμα'),
+                );
+              }),
             ],
             onChanged: (value) => setState(() => _departmentFilter = value),
           ),

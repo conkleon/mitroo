@@ -12,6 +12,7 @@ class MissionReportResultScreen extends StatefulWidget {
 class _MissionReportResultScreenState extends State<MissionReportResultScreen> {
   late final TextEditingController _narrativeController;
   String? _exportError;
+  String? _retryError;
   bool _exporting = false;
 
   @override
@@ -40,6 +41,23 @@ class _MissionReportResultScreenState extends State<MissionReportResultScreen> {
       _exporting = false;
       _exportError = error;
     });
+  }
+
+  /// Re-requests narrative generation for the same mission set, surfacing any
+  /// failure of the retry itself instead of silently swallowing it.
+  Future<void> _retryNarrative(List<dynamic> missions) async {
+    setState(() => _retryError = null);
+    final provider = context.read<MissionReportProvider>();
+    final missionIds =
+        missions.map((m) => (m as Map<String, dynamic>)['id'] as int).toList();
+    final ok = await provider.generateReport({'serviceIds': missionIds});
+    if (!mounted) return;
+    if (ok) {
+      _narrativeController.text = provider.narrativeText ?? '';
+    } else {
+      setState(() => _retryError =
+          provider.reportError ?? 'Η δημιουργία της αναφοράς απέτυχε');
+    }
   }
 
   Widget _section(String title, List<Widget> children) {
@@ -83,26 +101,27 @@ class _MissionReportResultScreenState extends State<MissionReportResultScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           _section('ΔΕΛΤΙΟ ΤΥΠΟΥ', [
+            // The AI call is not a hard blocker: on failure the admin still gets the
+            // editable field below and can either retry or write the text by hand.
             if (provider.narrativeError != null) ...[
               Text(provider.narrativeError!, style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 8),
               OutlinedButton(
-                onPressed: () async {
-                  // Re-request narrative generation with the same mission set.
-                  final missionIds = missions
-                      .map((m) => (m as Map<String, dynamic>)['id'] as int)
-                      .toList();
-                  await provider.generateReport({'serviceIds': missionIds});
-                  _narrativeController.text = provider.narrativeText ?? '';
-                },
+                onPressed: () => _retryNarrative(missions),
                 child: const Text('Δημιουργία Ξανά'),
               ),
-            ] else
-              TextField(
-                controller: _narrativeController,
-                maxLines: 8,
-                decoration: const InputDecoration(border: OutlineInputBorder()),
-              ),
+              if (_retryError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(_retryError!, style: const TextStyle(color: Colors.red)),
+                ),
+              const SizedBox(height: 12),
+            ],
+            TextField(
+              controller: _narrativeController,
+              maxLines: 8,
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+            ),
           ]),
           _section('Αποστολές', missions.map((m) {
             final map = m as Map<String, dynamic>;
