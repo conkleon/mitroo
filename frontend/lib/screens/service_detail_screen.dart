@@ -696,8 +696,6 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         (lifecycleStatus == 'closed' || lifecycleStatus == 'completed');
     final isFinalized = lifecycleStatus == 'finalized';
     final showEnrollmentActions = canManage && !isFinalized;
-    final startAt = svc['startAt'] as String?;
-    final endAt = svc['endAt'] as String?;
 
     return ListView(
       padding: const EdgeInsets.all(24),
@@ -728,8 +726,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                       vehicleLogs: vehicleLogs, formatDate: _formatDate),
                   const SizedBox(height: 16),
                   _VictimsSection(
-                    startAt: startAt,
-                    endAt: endAt,
+                    serviceId: svc['id'] as int,
                   ),
                 ],
               ),
@@ -800,8 +797,6 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         (lifecycleStatus == 'closed' || lifecycleStatus == 'completed');
     final isFinalized = lifecycleStatus == 'finalized';
     final showEnrollmentActions = canManage && !isFinalized;
-    final startAt = svc['startAt'] as String?;
-    final endAt = svc['endAt'] as String?;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -851,8 +846,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         _VehicleLogsCard(vehicleLogs: vehicleLogs, formatDate: _formatDate),
         const SizedBox(height: 16),
         _VictimsSection(
-          startAt: startAt,
-          endAt: endAt,
+          serviceId: svc['id'] as int,
         ),
       ],
     );
@@ -2121,12 +2115,10 @@ class _HeaderChip extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 
 class _VictimsSection extends StatefulWidget {
-  final String? startAt;
-  final String? endAt;
+  final int serviceId;
 
   const _VictimsSection({
-    this.startAt,
-    this.endAt,
+    required this.serviceId,
   });
 
   @override
@@ -2144,14 +2136,9 @@ class _VictimsSectionState extends State<_VictimsSection> {
   }
 
   Future<void> _loadVictims() async {
-    if (widget.startAt == null || widget.endAt == null) {
-      if (mounted) setState(() => _loading = false);
-      return;
-    }
     final provider = context.read<VictimProvider>();
     await provider.fetchVictims(
-      dateFrom: widget.startAt,
-      dateTo: widget.endAt,
+      serviceId: widget.serviceId,
       limit: 100,
     );
     if (mounted) setState(() { _victims = List<Map<String, dynamic>>.from(provider.victims); _loading = false; });

@@ -123,10 +123,7 @@ GoRouter appRouter(AuthProvider auth) {
           ),
           GoRoute(
             path: '/victims/create',
-            builder: (context, state) {
-              final serviceId = int.tryParse(state.uri.queryParameters['serviceId'] ?? '');
-              return CreateVictimScreen(prefilledServiceId: serviceId);
-            },
+            builder: (context, state) => const CreateVictimScreen(),
           ),
           GoRoute(
             path: '/victims/:id',

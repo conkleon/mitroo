@@ -93,6 +93,16 @@ router.get("/missions", async (req: Request, res: Response) => {
       where.name = { contains: search, mode: "insensitive" };
     }
 
+    let take: number | undefined;
+    if (req.query.limit) {
+      const parsed = Number(req.query.limit);
+      if (!Number.isInteger(parsed) || parsed <= 0) {
+        res.status(400).json({ error: "Μη έγκυρο όριο αποτελεσμάτων" });
+        return;
+      }
+      take = parsed;
+    }
+
     const missions = await prisma.service.findMany({
       where,
       select: {
@@ -104,6 +114,7 @@ router.get("/missions", async (req: Request, res: Response) => {
         department: { select: { id: true, name: true } },
       },
       orderBy: { startAt: "desc" },
+      ...(take !== undefined ? { take } : {}),
     });
 
     res.json(missions);

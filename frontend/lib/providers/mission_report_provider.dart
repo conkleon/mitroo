@@ -36,6 +36,7 @@ class MissionReportProvider extends ChangeNotifier {
     String? from,
     String? to,
     String? search,
+    int? limit,
   }) async {
     _loadingMissions = true;
     notifyListeners();
@@ -45,6 +46,7 @@ class MissionReportProvider extends ChangeNotifier {
       if (from != null) params['from'] = from;
       if (to != null) params['to'] = to;
       if (search != null && search.isNotEmpty) params['search'] = search;
+      if (limit != null) params['limit'] = limit.toString();
       final query = params.isEmpty ? '' : '?${Uri(queryParameters: params).query}';
       final res = await _api.get('/reports/missions$query');
       if (res.statusCode == 200) {

@@ -8,6 +8,52 @@ import { bundleToVictim } from "../fhir/bundleToVictim";
 
 const router = Router();
 
+// Grace period around a mission's active window within which a victim report
+// created by an assigned user is still considered "on that mission".
+const MISSION_ATTACH_BUFFER_MS = 60 * 60 * 1000;
+
+/**
+ * Finds the mission the reporting user should be attached to: the accepted
+ * assignment whose active window (startAt..endAt, or startAt.. if still
+ * ongoing) is closest to `at`, within MISSION_ATTACH_BUFFER_MS. Returns null
+ * if the user has no accepted assignment near that time.
+ */
+async function resolveServiceIdForVictim(userId: number, at: Date): Promise<number | null> {
+  const accepted = await prisma.userService.findMany({
+    where: { userId, status: "accepted" },
+    select: { service: { select: { id: true, startAt: true, endAt: true } } },
+  });
+
+  const now = at.getTime();
+  let bestId: number | null = null;
+  let bestDistance = Infinity;
+  let bestStart = -Infinity;
+
+  for (const { service } of accepted) {
+    if (!service.startAt) continue;
+    const start = service.startAt.getTime();
+    const end = service.endAt ? service.endAt.getTime() : null;
+
+    let distance: number;
+    if (now < start) {
+      distance = start - now;
+    } else if (end !== null && now > end) {
+      distance = now - end;
+    } else {
+      distance = 0;
+    }
+
+    if (distance > MISSION_ATTACH_BUFFER_MS) continue;
+    if (distance < bestDistance || (distance === bestDistance && start > bestStart)) {
+      bestId = service.id;
+      bestDistance = distance;
+      bestStart = start;
+    }
+  }
+
+  return bestId;
+}
+
 // ── FHIR routes (authenticateOrApiKey bypasses global JWT middleware) ──
 
 // ── GET /api/victims/:id/fhir ────────────────────
@@ -372,11 +418,14 @@ router.post("/", async (req: Request, res: Response) => {
       ? (data.dateOfBirth ? new Date(data.dateOfBirth) : null)
       : undefined;
 
+    const serviceId = await resolveServiceIdForVictim(req.user!.userId, new Date());
+
     const victim = await prisma.victim.create({
       data: {
         ...data,
         dateOfBirth,
         gcsTotal,
+        serviceId,
         createdById: req.user!.userId,
       },
       select: { id: true },

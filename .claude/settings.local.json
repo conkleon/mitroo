@@ -123,7 +123,15 @@
       "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"mitrooSync|mitrooClient\" })",
       "PowerShell(cd D:\\\\Documents\\\\GitHub\\\\mitroo\\\\backend; npx tsc --noEmit 2>&1 | Select-String -Pattern \"mitrooSync|mitrooClient\" | ForEach-Object { $_.ToString\\(\\) })",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "PowerShell(Select-String *)"
+      "PowerShell(Select-String *)",
+      "Skill(claude-api)",
+      "Bash(npm list *)",
+      "Bash(echo \"EXIT CODE: $?\")",
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(echo \"exit=$?\")",
+      "PowerShell(Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{N='UsedGB';E={[math]::Round\\($_.Used/1GB,2\\)}}, @{N='FreeGB';E={[math]::Round\\($_.Free/1GB,2\\)}})",
+      "PowerShell($env:TEMP=\"E:\\\\Temp\"; $env:TMP=\"E:\\\\Temp\"; [System.Environment]::GetEnvironmentVariable\\('TEMP','User'\\); [System.Environment]::GetEnvironmentVariable\\('TMP','User'\\); Get-ChildItem \"C:\\\\Users\\\\conkl\\\\AppData\\\\Local\\\\Temp\" -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum | Select-Object Count, @{N='SizeGB';E={[math]::Round\\($_.Sum/1GB,2\\)}})",
+      "Bash(xargs grep -l \"supertest\\\\|prisma-mock\\\\|jest.mock.*prisma\")"
     ]
   }
 }

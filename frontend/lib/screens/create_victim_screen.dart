@@ -7,9 +7,7 @@ import '../services/api_client.dart';
 import 'dart:convert';
 
 class CreateVictimScreen extends StatefulWidget {
-  final int? prefilledServiceId;
-
-  const CreateVictimScreen({super.key, this.prefilledServiceId});
+  const CreateVictimScreen({super.key});
 
   @override
   State<CreateVictimScreen> createState() => _CreateVictimScreenState();
@@ -43,8 +41,6 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
   double _gcsMotor = 6;
   String? _avpu;
   final _locationNotesCtrl = TextEditingController();
-  int? _serviceId;
-  List<Map<String, dynamic>> _acceptedServices = [];
 
   // Step 3: Ζωτικά Σημεία
   final _systolicCtrl = TextEditingController();
@@ -67,31 +63,6 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
 
   bool _submitting = false;
   bool _treatmentItemsLoaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _serviceId = widget.prefilledServiceId;
-    _loadAcceptedServices();
-  }
-
-  Future<void> _loadAcceptedServices() async {
-    try {
-      final res = await _api.get('/services/my');
-      if (res.statusCode == 200) {
-        final all = (jsonDecode(res.body) as List).cast<Map<String, dynamic>>();
-        setState(() {
-          _acceptedServices = all.where((s) {
-            final userServices = s['userServices'];
-            if (userServices is List) {
-              return userServices.any((us) => us['status'] == 'accepted');
-            }
-            return false;
-          }).toList();
-        });
-      }
-    } catch (_) {}
-  }
 
   int get _gcsTotal => _gcsEye.round() + _gcsVerbal.round() + _gcsMotor.round();
 
@@ -117,7 +88,6 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
       'gcsTotal': _gcsTotal,
       if (_avpu != null) 'avpu': _avpu,
       if (_locationNotesCtrl.text.isNotEmpty) 'locationNotes': _locationNotesCtrl.text.trim(),
-      if (_serviceId != null) 'serviceId': _serviceId,
       if (_notesCtrl.text.isNotEmpty) 'notes': _notesCtrl.text.trim(),
     };
   }
@@ -209,20 +179,6 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
 
     List<Map<String, dynamic>> items = [];
 
-    if (_serviceId != null) {
-      try {
-        final svcRes = await _api.get('/services/$_serviceId');
-        if (svcRes.statusCode == 200) {
-          final svc = jsonDecode(svcRes.body);
-          final itemServices = svc['itemServices'] as List? ?? [];
-          for (final is_ in itemServices) {
-            final item = is_['item'];
-            if (item != null) items.add(item as Map<String, dynamic>);
-          }
-        }
-      } catch (_) {}
-    }
-
     try {
       final profileRes = await _api.get('/auth/me');
       if (profileRes.statusCode == 200) {
@@ -292,8 +248,6 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final prefilled = widget.prefilledServiceId != null;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Νέο Περιστατικό')),
       body: Stepper(
@@ -465,23 +419,6 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
                   decoration: const InputDecoration(labelText: 'Σημειώσεις τοποθεσίας'),
                   maxLines: 2,
                 ),
-                const SizedBox(height: 12),
-                if (prefilled && widget.prefilledServiceId != null)
-                  Text('Υπηρεσία: Προσυμπληρωμένη', style: GoogleFonts.inter(color: const Color(0xFF6B7280)))
-                else ...[
-                  DropdownButtonFormField<int>(
-                    value: _serviceId,
-                    decoration: const InputDecoration(labelText: 'Υπηρεσία'),
-                    items: [
-                      const DropdownMenuItem<int>(value: null, child: Text('Καμία')),
-                      ..._acceptedServices.map((s) => DropdownMenuItem<int>(
-                        value: s['id'],
-                        child: Text(s['name'] ?? 'Υπηρεσία ${s['id']}'),
-                      )),
-                    ],
-                    onChanged: (v) => setState(() => _serviceId = v),
-                  ),
-                ],
               ],
             ),
           ),
@@ -622,7 +559,6 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
                 if (_chiefComplaintCtrl.text.isNotEmpty) _SummaryRow(label: 'Κύριο σύμπτωμα', value: _chiefComplaintCtrl.text),
                 _SummaryRow(label: 'GCS', value: '$_gcsTotal (E$_gcsEye / V$_gcsVerbal / M$_gcsMotor)'),
                 if (_avpu != null) _SummaryRow(label: 'AVPU', value: _avpu!),
-                if (_serviceId != null) _SummaryRow(label: 'Συνδεδεμένη υπηρεσία', value: 'ID $_serviceId'),
                 if (_notesCtrl.text.isNotEmpty) _SummaryRow(label: 'Σημειώσεις', value: _notesCtrl.text),
                 const SizedBox(height: 12),
                 const Text('Ζωτικά Σημεία:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
