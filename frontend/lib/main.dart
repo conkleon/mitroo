@@ -20,6 +20,7 @@ import 'providers/category_provider.dart';
 import 'providers/sync_provider.dart';
 import 'providers/chat_provider.dart';
 import 'providers/victim_provider.dart';
+import 'providers/mission_report_provider.dart';
 import 'providers/connectivity_provider.dart';
 import 'providers/pwa_provider.dart';
 import 'services/pwa_service.dart';
@@ -91,6 +92,7 @@ class _MitrooAppState extends State<MitrooApp> {
         ChangeNotifierProvider(create: (_) => SyncProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => VictimProvider()),
+        ChangeNotifierProvider(create: (_) => MissionReportProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
       ],
       child: MaterialApp.router(
