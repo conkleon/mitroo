@@ -33,6 +33,7 @@ import '../screens/victims_screen.dart';
 import '../screens/create_victim_screen.dart';
 import '../screens/victim_detail_screen.dart';
 import '../screens/mission_report_selection_screen.dart';
+import '../screens/mission_report_result_screen.dart';
 
 GoRouter appRouter(AuthProvider auth) {
   return GoRouter(
@@ -237,6 +238,10 @@ GoRouter appRouter(AuthProvider auth) {
           GoRoute(
             path: '/admin/mission-report',
             builder: (context, state) => const MissionReportSelectionScreen(),
+          ),
+          GoRoute(
+            path: '/admin/mission-report/result',
+            builder: (context, state) => const MissionReportResultScreen(),
           ),
           GoRoute(
             path: '/admin/training-applications',
