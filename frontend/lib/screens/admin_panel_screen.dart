@@ -155,6 +155,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                                 onTap: () =>
                                     context.push('/admin/departments'),
                               ),
+                              _AdminTileData(
+                                icon: Icons.campaign,
+                                iconColor: const Color(0xFF059669),
+                                bgColor: const Color(0xFFD1FAE5),
+                                title: 'Αναφορά Αποστολών',
+                                subtitle:
+                                    'Δημιουργία αναφοράς με τεχνητή νοημοσύνη',
+                                onTap: () =>
+                                    context.push('/admin/mission-report'),
+                              ),
                               if (isSysAdmin) ...[
                                 _AdminTileData(
                                   icon: Icons.school,
