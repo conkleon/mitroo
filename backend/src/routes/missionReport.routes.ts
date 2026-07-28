@@ -166,6 +166,12 @@ const pdfSchema = z.object({
 
 router.post("/pdf", async (req: Request, res: Response) => {
   try {
+    const scope = await getReportScope(req);
+    if (!scope.isAdmin && scope.departmentIds.length === 0) {
+      res.status(403).json({ error: "Δεν έχετε δικαίωμα πρόσβασης σε αναφορές αποστολών" });
+      return;
+    }
+
     const { structuredData, narrativeText } = pdfSchema.parse(req.body);
     const buffer = await renderMissionReportPdf(structuredData, narrativeText);
     res.setHeader("Content-Type", "application/pdf");
