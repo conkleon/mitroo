@@ -24,6 +24,7 @@ import syncRoutes from "./routes/sync.routes";
 import chatRoutes from "./routes/chat.routes";
 import serviceTypeRoutes from "./routes/serviceType.routes";
 import victimRoutes from "./routes/victim.routes";
+import missionReportRoutes from "./routes/missionReport.routes";
 
 const app = express();
 
@@ -55,6 +56,7 @@ app.use("/api/departments", syncRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/service-types", serviceTypeRoutes);
 app.use("/api/victims", victimRoutes);
+app.use("/api/reports", missionReportRoutes);
 
 // ── Error handling ──────────────────────────────
 app.use(notFound);
