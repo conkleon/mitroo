@@ -97,7 +97,7 @@ function migrateFile(filePath, stats) {
     return `AppFontWeight.${token}`;
   });
 
-  src = src.replace(/fontSize:\s*(\d+)\b(?!\.\d)/g, (match, digits) => {
+  src = src.replace(/\bfontSize:\s*(\d+)\b(?!\.\d)/g, (match, digits) => {
     const token = SIZE_MAP[Number(digits)];
     if (!token) {
       stats.unmapped.add(`${path.relative(LIB_DIR, filePath)}: fontSize: ${digits}`);
@@ -126,7 +126,7 @@ function migrateFile(filePath, stats) {
       const insertAt = m.index + m[0].length;
       src = src.slice(0, insertAt) + IMPORT_LINE + '\n' + src.slice(insertAt);
     } else {
-      src = IMPORT_LINE + '\n\n' + src;
+      throw new Error(`No plain import line found to anchor the theme import in ${filePath} — insert it manually.`);
     }
   }
 
