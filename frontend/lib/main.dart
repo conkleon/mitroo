@@ -24,6 +24,7 @@ import 'providers/mission_report_provider.dart';
 import 'providers/connectivity_provider.dart';
 import 'providers/pwa_provider.dart';
 import 'services/pwa_service.dart';
+import 'theme/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,9 +47,6 @@ class MitrooApp extends StatefulWidget {
 
 
 class _MitrooAppState extends State<MitrooApp> {
-  static const _primaryRed = Color(0xFFC62828);
-  static const _accentRed = Color(0xFFE53935);
-
   late final AuthProvider _authProvider;
   late final PwaProvider _pwaProvider;
   late final GoRouter _router;
@@ -102,12 +100,12 @@ class _MitrooAppState extends State<MitrooApp> {
           useMaterial3: true,
           brightness: Brightness.light,
           colorScheme: ColorScheme.fromSeed(
-            seedColor: _primaryRed,
+            seedColor: AppColors.brandPrimary,
             brightness: Brightness.light,
-            primary: _primaryRed,
-            secondary: _accentRed,
+            primary: AppColors.brandPrimary,
+            secondary: AppColors.brandAccent,
             surface: Colors.white,
-            onSurface: const Color(0xFF1A1C1E),
+            onSurface: AppColors.ink,
           ),
           scaffoldBackgroundColor: Colors.white,
           textTheme: baseTextTheme,
@@ -115,7 +113,7 @@ class _MitrooAppState extends State<MitrooApp> {
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
-              side: const BorderSide(color: Color(0xFFE5E7EB)),
+              side: const BorderSide(color: AppColors.gray200),
             ),
             color: Colors.white,
             surfaceTintColor: Colors.transparent,
@@ -129,32 +127,32 @@ class _MitrooAppState extends State<MitrooApp> {
             titleTextStyle: GoogleFonts.inter(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF1A1C1E),
+              color: AppColors.ink,
               letterSpacing: -0.5,
             ),
-            iconTheme: const IconThemeData(color: Color(0xFFC62828)),
+            iconTheme: const IconThemeData(color: AppColors.brandPrimary),
           ),
           navigationBarTheme: NavigationBarThemeData(
             backgroundColor: Colors.white,
             elevation: 0,
             height: 56,
-            indicatorColor: _primaryRed.withAlpha(25),
+            indicatorColor: AppColors.brandPrimary.withAlpha(25),
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
                 return baseTextTheme.labelSmall?.copyWith(
-                  color: _primaryRed,
+                  color: AppColors.brandPrimary,
                   fontWeight: FontWeight.w600,
                 );
               }
               return baseTextTheme.labelSmall?.copyWith(
-                color: const Color(0xFF6B7280),
+                color: AppColors.gray500,
               );
             }),
             iconTheme: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
-                return const IconThemeData(color: Color(0xFFC62828), size: 24);
+                return const IconThemeData(color: AppColors.brandPrimary, size: 24);
               }
-              return const IconThemeData(color: Color(0xFF6B7280), size: 24);
+              return const IconThemeData(color: AppColors.gray500, size: 24);
             }),
           ),
           inputDecorationTheme: InputDecorationTheme(
@@ -162,21 +160,21 @@ class _MitrooAppState extends State<MitrooApp> {
             fillColor: Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              borderSide: const BorderSide(color: AppColors.borderSubtle),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              borderSide: const BorderSide(color: AppColors.borderSubtle),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: _primaryRed, width: 1.5),
+              borderSide: const BorderSide(color: AppColors.brandPrimary, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
           filledButtonTheme: FilledButtonThemeData(
             style: FilledButton.styleFrom(
-              backgroundColor: _primaryRed,
+              backgroundColor: AppColors.brandPrimary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -185,14 +183,14 @@ class _MitrooAppState extends State<MitrooApp> {
             ),
           ),
           floatingActionButtonTheme: FloatingActionButtonThemeData(
-            backgroundColor: _primaryRed,
+            backgroundColor: AppColors.brandPrimary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
           ),
           dividerTheme: const DividerThemeData(
-            color: Color(0xFFE8ECF0),
+            color: AppColors.divider,
             thickness: 1,
           ),
         ),
