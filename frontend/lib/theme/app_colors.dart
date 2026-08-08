@@ -96,8 +96,10 @@ class AppColors {
   static const Color violet700 = Color(0xFF6D28D9);
   static const Color violet800 = Color(0xFF5B21B6);
 
-  // Semantic aliases (point at the tokens above; use where the meaning is
-  // consistent, e.g. status chips / role badges).
+  // Semantic aliases (point at the tokens above).
+  // Prefer these semantic names for status chips, role badges, and text
+  // hierarchy where the meaning is consistent; use the palette shades
+  // (e.g. AppColors.red600) directly everywhere else.
   static const Color success = emerald600;
   static const Color successBg = emerald100;
   static const Color danger = red600;

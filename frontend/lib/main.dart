@@ -112,7 +112,7 @@ class _MitrooAppState extends State<MitrooApp> {
           cardTheme: CardThemeData(
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppRadius.r14,
               side: const BorderSide(color: AppColors.gray200),
             ),
             color: Colors.white,
@@ -125,8 +125,8 @@ class _MitrooAppState extends State<MitrooApp> {
             scrolledUnderElevation: 0,
             centerTitle: false,
             titleTextStyle: GoogleFonts.inter(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
+              fontSize: AppFontSize.xl5,
+              fontWeight: AppFontWeight.bold,
               color: AppColors.ink,
               letterSpacing: -0.5,
             ),
@@ -141,7 +141,7 @@ class _MitrooAppState extends State<MitrooApp> {
               if (states.contains(WidgetState.selected)) {
                 return baseTextTheme.labelSmall?.copyWith(
                   color: AppColors.brandPrimary,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.semibold,
                 );
               }
               return baseTextTheme.labelSmall?.copyWith(
@@ -159,15 +159,15 @@ class _MitrooAppState extends State<MitrooApp> {
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.r12,
               borderSide: const BorderSide(color: AppColors.borderSubtle),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.r12,
               borderSide: const BorderSide(color: AppColors.borderSubtle),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.r12,
               borderSide: const BorderSide(color: AppColors.brandPrimary, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -177,7 +177,7 @@ class _MitrooAppState extends State<MitrooApp> {
               backgroundColor: AppColors.brandPrimary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.r12,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
@@ -186,7 +186,7 @@ class _MitrooAppState extends State<MitrooApp> {
             backgroundColor: AppColors.brandPrimary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppRadius.r16,
             ),
           ),
           dividerTheme: const DividerThemeData(

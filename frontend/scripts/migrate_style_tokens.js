@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
+// One-off codemod that migrated ~1,800 hardcoded color/font/radius literals
+// to frontend/lib/theme/ tokens (already applied in this repo's history).
+// Kept for reference. Safe to re-run: it's a no-op once nothing matches
+// its maps, which is the current state of the tree.
+
 const fs = require('fs');
 const path = require('path');
 
