@@ -7,6 +7,8 @@ import '../providers/service_provider.dart';
 import '../providers/victim_provider.dart';
 import '../services/api_client.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 /// Full-detail view for a single service.
 /// Shows service info, enrolled users (with status management),
 /// assigned items, vehicle logs, and visibility restrictions.
@@ -79,17 +81,17 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
   Color _statusColor(String status) {
     switch (status) {
       case 'Προσεχής':
-        return const Color(0xFFDC2626);
+        return AppColors.red600;
       case 'Ενεργή':
-        return const Color(0xFF059669);
+        return AppColors.emerald600;
       case 'Κλειστή':
-        return const Color(0xFFD97706);
+        return AppColors.amber600;
       case 'Ολοκληρωμένη':
-        return const Color(0xFF6B7280);
+        return AppColors.gray500;
       case 'Οριστικοποιημένη':
-        return const Color(0xFF4B5563);
+        return AppColors.gray600;
       default:
-        return const Color(0xFF9CA3AF);
+        return AppColors.gray400;
     }
   }
 
@@ -101,8 +103,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         .updateUserStatus(widget.serviceId, userId, status);
     if (!mounted) return;
     if (err != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     } else {
       _load();
     }
@@ -120,7 +121,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Αφαίρεση'),
           ),
         ],
@@ -133,11 +134,10 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         .removeUser(widget.serviceId, userId);
     if (!mounted) return;
     if (err != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Το μέλος αφαιρέθηκε')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Το μέλος αφαιρέθηκε')));
       _load();
     }
   }
@@ -148,8 +148,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         .updateParticipation(widget.serviceId, userId, status);
     if (!mounted) return;
     if (err != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     } else {
       _load();
     }
@@ -167,7 +166,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Επιστροφή'),
           ),
         ],
@@ -183,13 +182,13 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         : await _api.post('/items/$itemId/self-unassign');
     if (!mounted) return;
     if (res.statusCode == 200) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"$itemName" επεστράφη')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('"$itemName" επεστράφη')));
       _load();
     } else {
       final body = jsonDecode(res.body);
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(body['error'] ?? 'Σφάλμα')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(body['error'] ?? 'Σφάλμα')));
     }
   }
 
@@ -227,8 +226,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               _HoursField(
                   controller: hoursTrainersCtrl, label: 'Ώρες Εκπαιδευτών'),
               const SizedBox(height: 12),
-              _HoursField(
-                  controller: hoursTEPCtrl, label: 'Ώρες ΤΕΠ'),
+              _HoursField(controller: hoursTEPCtrl, label: 'Ώρες ΤΕΠ'),
             ],
           ),
         ),
@@ -283,14 +281,15 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     final userId = auth.user?['id'] as int?;
     if (userId == null) return;
 
-    final err = await context.read<ServiceProvider>().enrollSelf(widget.serviceId, userId);
+    final err = await context
+        .read<ServiceProvider>()
+        .enrollSelf(widget.serviceId, userId);
     if (!mounted) return;
     if (err != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Η αίτηση υποβλήθηκε')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Η αίτηση υποβλήθηκε')));
       _load();
     }
   }
@@ -307,7 +306,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               child: const Text('Όχι')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Απόσυρση'),
           ),
         ],
@@ -315,14 +314,14 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     );
     if (confirmed != true || !mounted) return;
 
-    final err = await context.read<ServiceProvider>().unenrollSelf(widget.serviceId);
+    final err =
+        await context.read<ServiceProvider>().unenrollSelf(widget.serviceId);
     if (!mounted) return;
     if (err != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Η αίτηση αποσύρθηκε')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Η αίτηση αποσύρθηκε')));
       _load();
     }
   }
@@ -358,7 +357,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
           final filtered = users.where((u) {
             if (search.isEmpty) return true;
             final q = search.toLowerCase();
-            final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
+            final name =
+                '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
             final eame = (u['eame'] ?? '').toString().toLowerCase();
             return name.contains(q) || eame.contains(q);
           }).toList();
@@ -374,8 +374,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                     decoration: InputDecoration(
                       hintText: 'Αναζήτηση μελών...',
                       prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(borderRadius: AppRadius.r10),
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 10),
@@ -389,36 +388,40 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                       itemBuilder: (ctx, i) {
                         final u = filtered[i];
                         final uid = u['id'] as int;
-                        final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim();
+                        final name =
+                            '${u['forename'] ?? ''} ${u['surname'] ?? ''}'
+                                .trim();
                         final eame = u['eame'] ?? '';
                         final isSelected = uid == currentId;
 
                         return ListTile(
                           dense: true,
                           selected: isSelected,
-                          selectedTileColor: const Color(0xFFEDE9FE),
+                          selectedTileColor: AppColors.violet100,
                           leading: CircleAvatar(
                             radius: 18,
                             backgroundColor: isSelected
-                                ? const Color(0xFF7C3AED)
-                                : const Color(0xFF6B7280),
+                                ? AppColors.violet600
+                                : AppColors.gray500,
                             child: Text(
                               name.isNotEmpty ? name[0].toUpperCase() : '?',
                               style: const TextStyle(
                                   color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14),
+                                  fontWeight: AppFontWeight.semibold,
+                                  fontSize: AppFontSize.lg),
                             ),
                           ),
                           title: Text(name,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 14)),
+                                  fontWeight: AppFontWeight.semibold,
+                                  fontSize: AppFontSize.lg)),
                           subtitle: Text('@$eame',
                               style: const TextStyle(
-                                  fontSize: 12, color: Color(0xFF6B7280))),
+                                  fontSize: AppFontSize.base,
+                                  color: AppColors.gray500)),
                           trailing: isSelected
                               ? const Icon(Icons.check_circle,
-                                  color: Color(0xFF7C3AED), size: 20)
+                                  color: AppColors.violet600, size: 20)
                               : null,
                           onTap: () => Navigator.pop(ctx, uid),
                         );
@@ -431,8 +434,10 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
             actions: [
               if (currentId != null)
                 TextButton(
-                  onPressed: () => Navigator.pop(ctx, -1), // sentinel for "clear"
-                  child: const Text('Καθαρισμός', style: TextStyle(color: Color(0xFFDC2626))),
+                  onPressed: () =>
+                      Navigator.pop(ctx, -1), // sentinel for "clear"
+                  child: const Text('Καθαρισμός',
+                      style: TextStyle(color: AppColors.red600)),
                 ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, null),
@@ -452,13 +457,11 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         .setResponsibleUser(widget.serviceId, userId);
     if (!mounted) return;
     if (err != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(userId == null
-            ? 'Ο υπεύθυνος αφαιρέθηκε'
-            : 'Ορίστηκε υπεύθυνος'),
+        content: Text(
+            userId == null ? 'Ο υπεύθυνος αφαιρέθηκε' : 'Ορίστηκε υπεύθυνος'),
       ));
       _load();
     }
@@ -498,9 +501,11 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
     // Check if current user is an accepted member of this service (incl. participated/not-participated)
     final isAcceptedMember = userServices.any((us) =>
         us['user']?['id'] == currentUserId &&
-        (us['status'] == 'accepted' || us['status'] == 'participated' || us['status'] == 'not-participated'));
-    final isMember = userServices.any((us) =>
-        us['user']?['id'] == currentUserId);
+        (us['status'] == 'accepted' ||
+            us['status'] == 'participated' ||
+            us['status'] == 'not-participated'));
+    final isMember =
+        userServices.any((us) => us['user']?['id'] == currentUserId);
 
     final requested =
         userServices.where((u) => u['status'] == 'requested').toList();
@@ -514,7 +519,6 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         userServices.where((u) => u['status'] == 'not-participated').toList();
     // Accepted + participation statuses shown together
     final allAccepted = [...accepted, ...participated, ...notParticipated];
-
 
     // Format short date for header
     String _shortDate(String? iso) {
@@ -530,11 +534,13 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
         us['user']?['id'] == currentUserId && us['status'] == 'requested');
 
     return Scaffold(
-      floatingActionButton: !canManage && !isAcceptedMember && lifecycleStatus != 'finalized'
+      floatingActionButton: !canManage &&
+              !isAcceptedMember &&
+              lifecycleStatus != 'finalized'
           ? FloatingActionButton.extended(
               heroTag: 'service_detail_fab',
               onPressed: isPending ? _unenrollSelf : _enrollSelf,
-              backgroundColor: isPending ? Color(0xFFEA580C) : sColor,
+              backgroundColor: isPending ? AppColors.orange600 : sColor,
               foregroundColor: Colors.white,
               icon: Icon(isPending ? Icons.cancel_outlined : Icons.how_to_reg),
               label: Text(isPending ? 'Ακύρωση Αίτησης' : 'Εγγραφή'),
@@ -553,7 +559,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                   backgroundColor: sColor,
                   foregroundColor: Colors.white,
                   iconTheme: const IconThemeData(color: Colors.white, size: 24),
-                  actionsIconTheme: const IconThemeData(color: Colors.white, size: 24),
+                  actionsIconTheme:
+                      const IconThemeData(color: Colors.white, size: 24),
                   actions: [
                     if (canManage)
                       IconButton(
@@ -597,7 +604,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                                       svc['name'] ?? '',
                                       style: tt.headlineSmall?.copyWith(
                                           color: Colors.white,
-                                          fontWeight: FontWeight.w700),
+                                          fontWeight: AppFontWeight.bold),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -607,7 +614,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                                         horizontal: 14, vertical: 7),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withAlpha(50),
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: AppRadius.r20,
                                       border: Border.all(
                                           color: Colors.white.withAlpha(80),
                                           width: 1),
@@ -615,8 +622,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                                     child: Text(status,
                                         style: const TextStyle(
                                             color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 12,
+                                            fontWeight: AppFontWeight.bold,
+                                            fontSize: AppFontSize.base,
                                             letterSpacing: 0.5)),
                                   ),
                                 ],
@@ -626,8 +633,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                                 dept['name'] ?? '',
                                 style: TextStyle(
                                     color: Colors.white.withAlpha(220),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500),
+                                    fontSize: AppFontSize.lg,
+                                    fontWeight: AppFontWeight.medium),
                               ),
                               const SizedBox(height: 6),
                               // Quick-info chips in header
@@ -637,7 +644,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                                 children: [
                                   _HeaderChip(
                                     icon: Icons.calendar_today,
-                                    text: '${_shortDate(svc['startAt'])} — ${_shortDate(svc['endAt'])}',
+                                    text:
+                                        '${_shortDate(svc['startAt'])} — ${_shortDate(svc['endAt'])}',
                                   ),
                                   _HeaderChip(
                                     icon: Icons.people,
@@ -660,14 +668,38 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                 ),
               ],
               body: isWide
-                  ? _buildWideLayout(svc, requested, accepted, rejected,
-                      participated, notParticipated, allAccepted, vehicleLogs, visibility,
-                      responsibleUser, canManage, isAcceptedMember, isMember,
-                      lifecycleStatus, userServices)
-                  : _buildCompactLayout(svc, requested, accepted, rejected,
-                      participated, notParticipated, allAccepted, vehicleLogs, visibility,
-                      responsibleUser, canManage, isAcceptedMember, isMember,
-                      lifecycleStatus, userServices),
+                  ? _buildWideLayout(
+                      svc,
+                      requested,
+                      accepted,
+                      rejected,
+                      participated,
+                      notParticipated,
+                      allAccepted,
+                      vehicleLogs,
+                      visibility,
+                      responsibleUser,
+                      canManage,
+                      isAcceptedMember,
+                      isMember,
+                      lifecycleStatus,
+                      userServices)
+                  : _buildCompactLayout(
+                      svc,
+                      requested,
+                      accepted,
+                      rejected,
+                      participated,
+                      notParticipated,
+                      allAccepted,
+                      vehicleLogs,
+                      visibility,
+                      responsibleUser,
+                      canManage,
+                      isAcceptedMember,
+                      isMember,
+                      lifecycleStatus,
+                      userServices),
             );
           },
         ),
@@ -741,7 +773,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                   _MemberEquipmentCard(
                     userServices: userServices,
                     visible: isMember || canManage,
-                    currentUserId: context.read<AuthProvider>().user?['id'] as int?,
+                    currentUserId:
+                        context.read<AuthProvider>().user?['id'] as int?,
                     canManage: canManage,
                     onReturnItem: _returnItem,
                     onTakeItems: () => context.push('/items'),
@@ -763,9 +796,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
                         : null,
                     onRemove: showEnrollmentActions ? _removeUser : null,
                     onEditHours: canManage ? _editUserHours : null,
-                    onUpdateParticipation: canManageParticipation
-                        ? _updateParticipation
-                        : null,
+                    onUpdateParticipation:
+                        canManageParticipation ? _updateParticipation : null,
                   ),
                 ],
               ),
@@ -838,9 +870,8 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen>
               : null,
           onRemove: showEnrollmentActions ? _removeUser : null,
           onEditHours: canManage ? _editUserHours : null,
-          onUpdateParticipation: canManageParticipation
-              ? _updateParticipation
-              : null,
+          onUpdateParticipation:
+              canManageParticipation ? _updateParticipation : null,
         ),
         const SizedBox(height: 16),
         _VehicleLogsCard(vehicleLogs: vehicleLogs, formatDate: _formatDate),
@@ -871,7 +902,8 @@ class _ResponsibleUserCard extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final hasUser = responsibleUser != null;
     final name = hasUser
-        ? '${responsibleUser!['forename'] ?? ''} ${responsibleUser!['surname'] ?? ''}'.trim()
+        ? '${responsibleUser!['forename'] ?? ''} ${responsibleUser!['surname'] ?? ''}'
+            .trim()
         : '';
     final eame = hasUser ? (responsibleUser!['eame'] ?? '') : '';
 
@@ -879,8 +911,8 @@ class _ResponsibleUserCard extends StatelessWidget {
       elevation: 2,
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFF3F4F6)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray100),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -890,11 +922,11 @@ class _ResponsibleUserCard extends StatelessWidget {
             Row(
               children: [
                 const Icon(Icons.admin_panel_settings,
-                    size: 20, color: Color(0xFF7C3AED)),
+                    size: 20, color: AppColors.violet600),
                 const SizedBox(width: 8),
                 Text('Υπεύθυνος',
                     style: tt.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
                 const Spacer(),
                 if (canManage)
                   FilledButton.tonalIcon(
@@ -905,7 +937,7 @@ class _ResponsibleUserCard extends StatelessWidget {
                     ),
                     label: Text(
                       hasUser ? 'Αλλαγή' : 'Ορισμός',
-                      style: const TextStyle(fontSize: 12),
+                      style: const TextStyle(fontSize: AppFontSize.base),
                     ),
                     style: FilledButton.styleFrom(
                       visualDensity: VisualDensity.compact,
@@ -920,21 +952,21 @@ class _ResponsibleUserCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F3FF),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFDDD6FE)),
+                  color: AppColors.violet50,
+                  borderRadius: AppRadius.r10,
+                  border: Border.all(color: AppColors.violet200),
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 20,
-                      backgroundColor: const Color(0xFF7C3AED),
+                      backgroundColor: AppColors.violet600,
                       child: Text(
                         name.isNotEmpty ? name[0].toUpperCase() : '?',
                         style: const TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16),
+                            fontWeight: AppFontWeight.semibold,
+                            fontSize: AppFontSize.xl2),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -944,10 +976,12 @@ class _ResponsibleUserCard extends StatelessWidget {
                         children: [
                           Text(name,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w600, fontSize: 15)),
+                                  fontWeight: AppFontWeight.semibold,
+                                  fontSize: AppFontSize.xl)),
                           Text('@$eame',
                               style: const TextStyle(
-                                  fontSize: 12, color: Color(0xFF6B7280))),
+                                  fontSize: AppFontSize.base,
+                                  color: AppColors.gray500)),
                         ],
                       ),
                     ),
@@ -960,12 +994,11 @@ class _ResponsibleUserCard extends StatelessWidget {
                 width: double.infinity,
                 child: Column(
                   children: [
-                    Icon(Icons.person_off,
-                        size: 32, color: Color(0xFFD1D5DB)),
+                    Icon(Icons.person_off, size: 32, color: AppColors.gray300),
                     const SizedBox(height: 6),
                     Text('Δεν έχει οριστεί υπεύθυνος',
-                        style: tt.bodySmall
-                            ?.copyWith(color: Color(0xFF6B7280))),
+                        style:
+                            tt.bodySmall?.copyWith(color: AppColors.gray500)),
                   ],
                 ),
               ),
@@ -995,8 +1028,8 @@ class _ServiceInfoCard extends StatelessWidget {
       elevation: 2,
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFF3F4F6)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray100),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1004,8 +1037,8 @@ class _ServiceInfoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Πληροφορίες Υπηρεσίας',
-                style:
-                    tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                style: tt.titleMedium
+                    ?.copyWith(fontWeight: AppFontWeight.semibold)),
             const Divider(height: 20),
             if (desc.isNotEmpty) ...[
               Text(desc, style: tt.bodyMedium),
@@ -1023,14 +1056,11 @@ class _ServiceInfoCard extends StatelessWidget {
             if (location.isNotEmpty) ...[
               const SizedBox(height: 10),
               _DetailRow(
-                  icon: Icons.location_on,
-                  label: 'Τοποθεσία',
-                  value: location),
+                  icon: Icons.location_on, label: 'Τοποθεσία', value: location),
             ],
             if (carrier.isNotEmpty) ...[
               const SizedBox(height: 10),
-              _DetailRow(
-                  icon: Icons.groups, label: 'Φορέας', value: carrier),
+              _DetailRow(icon: Icons.groups, label: 'Φορέας', value: carrier),
             ],
             const SizedBox(height: 10),
             _DetailRow(
@@ -1058,18 +1088,16 @@ class _DetailRow extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     return Row(
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF6B7280)),
+        Icon(icon, size: 16, color: AppColors.gray500),
         const SizedBox(width: 8),
         SizedBox(
           width: 80,
           child: Text(label,
-              style: tt.bodySmall
-                  ?.copyWith(color: const Color(0xFF6B7280))),
+              style: tt.bodySmall?.copyWith(color: AppColors.gray500)),
         ),
         Expanded(
           child: Text(value,
-              style:
-                  tt.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+              style: tt.bodyMedium?.copyWith(fontWeight: AppFontWeight.medium)),
         ),
       ],
     );
@@ -1089,8 +1117,8 @@ class _HoursDefaultCard extends StatelessWidget {
       elevation: 2,
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFF3F4F6)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray100),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1099,33 +1127,40 @@ class _HoursDefaultCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.schedule, size: 18, color: Color(0xFFDC2626)),
+                const Icon(Icons.schedule, size: 18, color: AppColors.red600),
                 const SizedBox(width: 8),
                 Text('Προεπιλεγμένες Ώρες',
-                    style:
-                        tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                    style: tt.titleMedium
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
               ],
             ),
             const Divider(height: 20),
             Row(
               children: [
                 _HoursBadge(
-                    label: 'Κάλυψη', value: svc['defaultHours'] ?? 0, color: const Color(0xFFDC2626)),
+                    label: 'Κάλυψη',
+                    value: svc['defaultHours'] ?? 0,
+                    color: AppColors.red600),
                 const SizedBox(width: 8),
                 _HoursBadge(
-                    label: 'Εθελοντικές', value: svc['defaultHoursVol'] ?? 0, color: const Color(0xFF059669)),
+                    label: 'Εθελοντικές',
+                    value: svc['defaultHoursVol'] ?? 0,
+                    color: AppColors.emerald600),
                 const SizedBox(width: 8),
                 _HoursBadge(
                     label: 'Επανεκπ.',
-                    value: svc['defaultHoursTraining'] ?? 0, color: const Color(0xFF7C3AED)),
+                    value: svc['defaultHoursTraining'] ?? 0,
+                    color: AppColors.violet600),
                 const SizedBox(width: 8),
                 _HoursBadge(
                     label: 'Εκπαιδ.',
-                    value: svc['defaultHoursTrainers'] ?? 0, color: const Color(0xFFD97706)),
+                    value: svc['defaultHoursTrainers'] ?? 0,
+                    color: AppColors.amber600),
                 const SizedBox(width: 8),
                 _HoursBadge(
                     label: 'ΤΕΠ',
-                    value: svc['defaultHoursTEP'] ?? 0, color: const Color(0xFF0891B2)),
+                    value: svc['defaultHoursTEP'] ?? 0,
+                    color: AppColors.cyan600),
               ],
             ),
           ],
@@ -1139,7 +1174,8 @@ class _HoursBadge extends StatelessWidget {
   final String label;
   final int value;
   final Color color;
-  const _HoursBadge({required this.label, required this.value, required this.color});
+  const _HoursBadge(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -1149,18 +1185,18 @@ class _HoursBadge extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
           color: color.withAlpha(15),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.r12,
           border: Border.all(color: color.withAlpha(40)),
         ),
         child: Column(
           children: [
             Text('$value',
                 style: tt.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700, color: color)),
+                    ?.copyWith(fontWeight: AppFontWeight.bold, color: color)),
             const SizedBox(height: 2),
             Text(label,
-                style: tt.bodySmall
-                    ?.copyWith(color: color.withAlpha(180), fontSize: 10),
+                style: tt.bodySmall?.copyWith(
+                    color: color.withAlpha(180), fontSize: AppFontSize.xs),
                 textAlign: TextAlign.center),
           ],
         ),
@@ -1182,8 +1218,8 @@ class _VisibilityCard extends StatelessWidget {
       elevation: 2,
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFF3F4F6)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray100),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1192,11 +1228,12 @@ class _VisibilityCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.visibility, size: 18, color: Color(0xFF7C3AED)),
+                const Icon(Icons.visibility,
+                    size: 18, color: AppColors.violet600),
                 const SizedBox(width: 8),
                 Text('Απαιτούμενες Ειδικότητες',
                     style: tt.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
               ],
             ),
             const SizedBox(height: 12),
@@ -1208,8 +1245,8 @@ class _VisibilityCard extends StatelessWidget {
                 return Chip(
                   avatar: const Icon(Icons.school, size: 14),
                   label: Text(spec?['name'] ?? ''),
-                  backgroundColor: const Color(0xFFEDE9FE),
-                  labelStyle: const TextStyle(fontSize: 12),
+                  backgroundColor: AppColors.violet100,
+                  labelStyle: const TextStyle(fontSize: AppFontSize.base),
                 );
               }).toList(),
             ),
@@ -1262,8 +1299,8 @@ class _PeopleSection extends StatelessWidget {
       elevation: 2,
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFF3F4F6)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray100),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1272,24 +1309,24 @@ class _PeopleSection extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.people, size: 20, color: Color(0xFFDC2626)),
+                const Icon(Icons.people, size: 20, color: AppColors.red600),
                 const SizedBox(width: 8),
                 Text('Μέλη Υπηρεσίας',
                     style: tt.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
                 const Spacer(),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDC2626).withAlpha(15),
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.red600.withAlpha(15),
+                    borderRadius: AppRadius.r12,
                   ),
                   child: Text('$totalPeople σύνολο',
                       style: const TextStyle(
-                          color: Color(0xFFDC2626),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600)),
+                          color: AppColors.red600,
+                          fontSize: AppFontSize.base,
+                          fontWeight: AppFontWeight.semibold)),
                 ),
               ],
             ),
@@ -1300,19 +1337,23 @@ class _PeopleSection extends StatelessWidget {
               _PeopleGroupHeader(
                 label: 'Εκκρεμείς Αιτήσεις',
                 count: requested.length,
-                color: const Color(0xFFD97706),
+                color: AppColors.amber600,
                 icon: Icons.hourglass_top,
               ),
               const SizedBox(height: 8),
               ...requested.map((us) {
-                    final user = us['user'] as Map<String, dynamic>? ?? {};
-                    return _PendingUserTile(
-                    userService: us,
-                    isResponsible: (user['id'] as int?) == responsibleUserId,
-                    onAccept: onAccept != null ? () => onAccept!(user['id'] as int) : null,
-                    onReject: onReject != null ? () => onReject!(user['id'] as int) : null,
-                  );
-                  }),
+                final user = us['user'] as Map<String, dynamic>? ?? {};
+                return _PendingUserTile(
+                  userService: us,
+                  isResponsible: (user['id'] as int?) == responsibleUserId,
+                  onAccept: onAccept != null
+                      ? () => onAccept!(user['id'] as int)
+                      : null,
+                  onReject: onReject != null
+                      ? () => onReject!(user['id'] as int)
+                      : null,
+                );
+              }),
               const SizedBox(height: 16),
             ],
 
@@ -1321,29 +1362,31 @@ class _PeopleSection extends StatelessWidget {
               _PeopleGroupHeader(
                 label: 'Εγκεκριμένοι',
                 count: accepted.length,
-                color: const Color(0xFF059669),
+                color: AppColors.emerald600,
                 icon: Icons.check_circle,
               ),
               const SizedBox(height: 8),
               ...accepted.map((us) {
-                    final user = us['user'] as Map<String, dynamic>? ?? {};
-                    final uid = user['id'] as int;
-                    final name =
-                        '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
-                            .trim();
-                    final participationStatus = us['status'] as String?;
-                    return _AcceptedUserTile(
-                    userService: us,
-                    isResponsible: (user['id'] as int?) == responsibleUserId,
-                    showActions: canManage || canManageParticipation,
-                    participationStatus: canManageParticipation ? participationStatus : null,
-                    onToggleParticipation: onUpdateParticipation != null
-                        ? (status) => onUpdateParticipation!(uid, status)
-                        : null,
-                    onRemove: onRemove != null ? () => onRemove!(uid, name) : null,
-                    onEditHours: onEditHours != null ? () => onEditHours!(us) : null,
-                  );
-                  }),
+                final user = us['user'] as Map<String, dynamic>? ?? {};
+                final uid = user['id'] as int;
+                final name =
+                    '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
+                final participationStatus = us['status'] as String?;
+                return _AcceptedUserTile(
+                  userService: us,
+                  isResponsible: (user['id'] as int?) == responsibleUserId,
+                  showActions: canManage || canManageParticipation,
+                  participationStatus:
+                      canManageParticipation ? participationStatus : null,
+                  onToggleParticipation: onUpdateParticipation != null
+                      ? (status) => onUpdateParticipation!(uid, status)
+                      : null,
+                  onRemove:
+                      onRemove != null ? () => onRemove!(uid, name) : null,
+                  onEditHours:
+                      onEditHours != null ? () => onEditHours!(us) : null,
+                );
+              }),
               const SizedBox(height: 16),
             ],
 
@@ -1352,23 +1395,23 @@ class _PeopleSection extends StatelessWidget {
               _PeopleGroupHeader(
                 label: 'Απορριφθέντες',
                 count: rejected.length,
-                color: Color(0xFFDC2626),
+                color: AppColors.red600,
                 icon: Icons.cancel,
               ),
               const SizedBox(height: 8),
               ...rejected.map((us) {
-                    final user = us['user'] as Map<String, dynamic>? ?? {};
-                    final uid = user['id'] as int;
-                    final name =
-                        '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
-                            .trim();
-                    return _RejectedUserTile(
-                    userService: us,
-                    isResponsible: (user['id'] as int?) == responsibleUserId,
-                    onAccept: onAccept != null ? () => onAccept!(uid) : null,
-                    onRemove: onRemove != null ? () => onRemove!(uid, name) : null,
-                  );
-                  }),
+                final user = us['user'] as Map<String, dynamic>? ?? {};
+                final uid = user['id'] as int;
+                final name =
+                    '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
+                return _RejectedUserTile(
+                  userService: us,
+                  isResponsible: (user['id'] as int?) == responsibleUserId,
+                  onAccept: onAccept != null ? () => onAccept!(uid) : null,
+                  onRemove:
+                      onRemove != null ? () => onRemove!(uid, name) : null,
+                );
+              }),
             ],
 
             if (totalPeople == 0)
@@ -1378,11 +1421,11 @@ class _PeopleSection extends StatelessWidget {
                   child: Column(
                     children: [
                       Icon(Icons.people_outline,
-                          size: 48, color: Color(0xFFD1D5DB)),
+                          size: 48, color: AppColors.gray300),
                       const SizedBox(height: 8),
                       Text('Κανένα μέλος',
                           style: tt.bodyMedium
-                              ?.copyWith(color: Color(0xFF6B7280))),
+                              ?.copyWith(color: AppColors.gray500)),
                     ],
                   ),
                 ),
@@ -1416,17 +1459,19 @@ class _PeopleGroupHeader extends StatelessWidget {
         const SizedBox(width: 6),
         Text(label,
             style: tt.titleSmall
-                ?.copyWith(fontWeight: FontWeight.w600, color: color)),
+                ?.copyWith(fontWeight: AppFontWeight.semibold, color: color)),
         const SizedBox(width: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
             color: color.withAlpha(20),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppRadius.r10,
           ),
           child: Text('$count',
               style: TextStyle(
-                  color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+                  color: color,
+                  fontSize: AppFontSize.sm,
+                  fontWeight: AppFontWeight.semibold)),
         ),
       ],
     );
@@ -1451,32 +1496,34 @@ class _PendingUserTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = userService['user'] as Map<String, dynamic>? ?? {};
-    final name =
-        '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
+    final name = '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
     final eame = user['eame'] ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF7ED),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFED7AA)),
+        color: AppColors.orange50,
+        borderRadius: AppRadius.r10,
+        border: Border.all(color: AppColors.orange300),
       ),
       child: ListTile(
         dense: true,
         leading: CircleAvatar(
           radius: 18,
-          backgroundColor: const Color(0xFFD97706),
-          child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : '?',
+          backgroundColor: AppColors.amber600,
+          child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
               style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                  color: Colors.white,
+                  fontWeight: AppFontWeight.semibold,
+                  fontSize: AppFontSize.lg)),
         ),
         title: Row(
           children: [
             Flexible(
               child: Text(name,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: const TextStyle(
+                      fontWeight: AppFontWeight.semibold,
+                      fontSize: AppFontSize.lg),
                   overflow: TextOverflow.ellipsis),
             ),
             if (isResponsible) ...[
@@ -1486,14 +1533,16 @@ class _PendingUserTile extends StatelessWidget {
           ],
         ),
         subtitle: Text(eame,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+            style: const TextStyle(
+                fontSize: AppFontSize.base, color: AppColors.gray500)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (onAccept != null)
               IconButton(
                 onPressed: onAccept,
-                icon: const Icon(Icons.check_circle, color: Color(0xFF059669)),
+                icon:
+                    const Icon(Icons.check_circle, color: AppColors.emerald600),
                 iconSize: 22,
                 tooltip: 'Έγκριση',
                 visualDensity: VisualDensity.compact,
@@ -1501,7 +1550,7 @@ class _PendingUserTile extends StatelessWidget {
             if (onReject != null)
               IconButton(
                 onPressed: onReject,
-                icon: const Icon(Icons.cancel, color: Color(0xFFDC2626)),
+                icon: const Icon(Icons.cancel, color: AppColors.red600),
                 iconSize: 22,
                 tooltip: 'Απόρριψη',
                 visualDensity: VisualDensity.compact,
@@ -1535,22 +1584,25 @@ class _AcceptedUserTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = userService['user'] as Map<String, dynamic>? ?? {};
-    final name =
-        '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
+    final name = '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
     final eame = user['eame'] ?? '';
     final hours = userService['hours'] ?? 0;
     final hoursVol = userService['hoursVol'] ?? 0;
     final hoursTraining = userService['hoursTraining'] ?? 0;
     final hoursTrainers = userService['hoursTrainers'] ?? 0;
     final hoursTEP = userService['hoursTEP'] ?? 0;
-    final totalHours = (hours as int) + (hoursVol as int) + (hoursTraining as int) + (hoursTrainers as int) + (hoursTEP as int);
+    final totalHours = (hours as int) +
+        (hoursVol as int) +
+        (hoursTraining as int) +
+        (hoursTrainers as int) +
+        (hoursTEP as int);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFBBF7D0)),
+        color: AppColors.green50,
+        borderRadius: AppRadius.r12,
+        border: Border.all(color: AppColors.green200),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1560,11 +1612,12 @@ class _AcceptedUserTile extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: const Color(0xFF059669),
-                  child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                  backgroundColor: AppColors.emerald600,
+                  child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
                       style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                          color: Colors.white,
+                          fontWeight: AppFontWeight.semibold,
+                          fontSize: AppFontSize.lg)),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -1575,7 +1628,9 @@ class _AcceptedUserTile extends StatelessWidget {
                         children: [
                           Flexible(
                             child: Text(name,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                style: const TextStyle(
+                                    fontWeight: AppFontWeight.semibold,
+                                    fontSize: AppFontSize.lg),
                                 overflow: TextOverflow.ellipsis),
                           ),
                           if (isResponsible) ...[
@@ -1586,7 +1641,9 @@ class _AcceptedUserTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(eame,
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                          style: const TextStyle(
+                              fontSize: AppFontSize.base,
+                              color: AppColors.gray500)),
                     ],
                   ),
                 ),
@@ -1599,7 +1656,7 @@ class _AcceptedUserTile extends StatelessWidget {
                   if (onEditHours != null)
                     IconButton(
                       onPressed: onEditHours!,
-                      icon: const Icon(Icons.timer, color: Color(0xFFDC2626)),
+                      icon: const Icon(Icons.timer, color: AppColors.red600),
                       iconSize: 20,
                       tooltip: 'Επεξεργασία ωρών',
                       visualDensity: VisualDensity.compact,
@@ -1608,7 +1665,7 @@ class _AcceptedUserTile extends StatelessWidget {
                     IconButton(
                       onPressed: onRemove!,
                       icon: Icon(Icons.person_remove,
-                          color: Color(0xFFF87171), size: 20),
+                          color: AppColors.red400, size: 20),
                       tooltip: 'Αφαίρεση',
                       visualDensity: VisualDensity.compact,
                     ),
@@ -1621,15 +1678,28 @@ class _AcceptedUserTile extends StatelessWidget {
                 children: [
                   const SizedBox(width: 46), // align with name
                   if (hours > 0)
-                    _MiniHoursBadge(label: 'Κάλ.', value: hours, color: const Color(0xFFDC2626)),
+                    _MiniHoursBadge(
+                        label: 'Κάλ.', value: hours, color: AppColors.red600),
                   if (hoursVol > 0)
-                    _MiniHoursBadge(label: 'Εθελ.', value: hoursVol, color: const Color(0xFF059669)),
+                    _MiniHoursBadge(
+                        label: 'Εθελ.',
+                        value: hoursVol,
+                        color: AppColors.emerald600),
                   if (hoursTraining > 0)
-                    _MiniHoursBadge(label: 'Επαν.', value: hoursTraining, color: const Color(0xFF7C3AED)),
+                    _MiniHoursBadge(
+                        label: 'Επαν.',
+                        value: hoursTraining,
+                        color: AppColors.violet600),
                   if (hoursTrainers > 0)
-                    _MiniHoursBadge(label: 'Εκπ.', value: hoursTrainers, color: const Color(0xFFD97706)),
+                    _MiniHoursBadge(
+                        label: 'Εκπ.',
+                        value: hoursTrainers,
+                        color: AppColors.amber600),
                   if (hoursTEP > 0)
-                    _MiniHoursBadge(label: 'ΤΕΠ', value: hoursTEP, color: const Color(0xFF0891B2)),
+                    _MiniHoursBadge(
+                        label: 'ΤΕΠ',
+                        value: hoursTEP,
+                        color: AppColors.cyan600),
                 ],
               ),
             ],
@@ -1656,32 +1726,34 @@ class _RejectedUserTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = userService['user'] as Map<String, dynamic>? ?? {};
-    final name =
-        '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
+    final name = '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
     final eame = user['eame'] ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFECACA)),
+        color: AppColors.red50,
+        borderRadius: AppRadius.r10,
+        border: Border.all(color: AppColors.red200),
       ),
       child: ListTile(
         dense: true,
         leading: CircleAvatar(
           radius: 18,
-          backgroundColor: Color(0xFFF87171),
-          child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : '?',
+          backgroundColor: AppColors.red400,
+          child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?',
               style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+                  color: Colors.white,
+                  fontWeight: AppFontWeight.semibold,
+                  fontSize: AppFontSize.lg)),
         ),
         title: Row(
           children: [
             Flexible(
               child: Text(name,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: const TextStyle(
+                      fontWeight: AppFontWeight.semibold,
+                      fontSize: AppFontSize.lg),
                   overflow: TextOverflow.ellipsis),
             ),
             if (isResponsible) ...[
@@ -1691,7 +1763,8 @@ class _RejectedUserTile extends StatelessWidget {
           ],
         ),
         subtitle: Text(eame,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+            style: const TextStyle(
+                fontSize: AppFontSize.base, color: AppColors.gray500)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1699,14 +1772,14 @@ class _RejectedUserTile extends StatelessWidget {
               IconButton(
                 onPressed: onAccept,
                 icon: const Icon(Icons.check_circle,
-                    color: Color(0xFF059669), size: 20),
+                    color: AppColors.emerald600, size: 20),
                 tooltip: 'Έγκριση',
                 visualDensity: VisualDensity.compact,
               ),
             if (onRemove != null)
               IconButton(
                 onPressed: onRemove,
-                icon: Icon(Icons.delete, color: Color(0xFFF87171), size: 20),
+                icon: Icon(Icons.delete, color: AppColors.red400, size: 20),
                 tooltip: 'Αφαίρεση',
                 visualDensity: VisualDensity.compact,
               ),
@@ -1760,8 +1833,8 @@ class _MemberEquipmentCard extends StatelessWidget {
       elevation: 2,
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFF3F4F6)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray100),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1771,22 +1844,23 @@ class _MemberEquipmentCard extends StatelessWidget {
             Row(
               children: [
                 const Icon(Icons.inventory_2,
-                    size: 18, color: Color(0xFF7C3AED)),
+                    size: 18, color: AppColors.violet600),
                 const SizedBox(width: 8),
                 Text('Εξοπλισμός μελών',
                     style: tt.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED).withAlpha(20),
-                    borderRadius: BorderRadius.circular(10),
+                    color: AppColors.violet600.withAlpha(20),
+                    borderRadius: AppRadius.r10,
                   ),
                   child: Text('${memberItems.length}',
                       style: tt.bodySmall?.copyWith(
-                          color: const Color(0xFF7C3AED),
-                          fontWeight: FontWeight.w700)),
+                          color: AppColors.violet600,
+                          fontWeight: AppFontWeight.bold)),
                 ),
                 const SizedBox(width: 10),
                 IconButton(
@@ -1794,7 +1868,7 @@ class _MemberEquipmentCard extends StatelessWidget {
                   icon: const Icon(Icons.add_circle_outline, size: 22),
                   tooltip: 'Προσθήκη Εξοπλισμού',
                   style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFFDC2626),
+                    backgroundColor: AppColors.red600,
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -1807,16 +1881,17 @@ class _MemberEquipmentCard extends StatelessWidget {
                   child: Column(
                     children: [
                       Icon(Icons.inventory_2_outlined,
-                          size: 40, color: Color(0xFFD1D5DB)),
+                          size: 40, color: AppColors.gray300),
                       const SizedBox(height: 8),
                       Text('Κανένα αντικείμενο',
-                          style: tt.bodySmall
-                              ?.copyWith(color: Color(0xFF9CA3AF))),
+                          style:
+                              tt.bodySmall?.copyWith(color: AppColors.gray400)),
                       const SizedBox(height: 4),
                       Text(
                           'Τα μέλη μπορούν να πάρουν εξοπλισμό από τα Αντικείμενα',
                           style: tt.bodySmall?.copyWith(
-                              color: Color(0xFF9CA3AF), fontSize: 11)),
+                              color: AppColors.gray400,
+                              fontSize: AppFontSize.sm)),
                     ],
                   ),
                 ),
@@ -1828,8 +1903,7 @@ class _MemberEquipmentCard extends StatelessWidget {
                 final item = entry['item'] as Map<String, dynamic>;
                 final isContainer = item['isContainer'] == true;
                 final userName =
-                    '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
-                        .trim();
+                    '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
 
                 final isOwn = user['id'] == currentUserId;
                 final canReturn = isOwn || canManage;
@@ -1840,21 +1914,21 @@ class _MemberEquipmentCard extends StatelessWidget {
                   contentPadding: EdgeInsets.zero,
                   leading: CircleAvatar(
                     radius: 18,
-                    backgroundColor: (isContainer
-                            ? const Color(0xFF2563EB)
-                            : const Color(0xFFDC2626))
-                        .withAlpha(25),
+                    backgroundColor:
+                        (isContainer ? AppColors.blue600 : AppColors.red600)
+                            .withAlpha(25),
                     child: Icon(
-                      isContainer ? Icons.check_box_outline_blank : Icons.circle_outlined,
-                      color: isContainer
-                          ? const Color(0xFF2563EB)
-                          : const Color(0xFFDC2626),
+                      isContainer
+                          ? Icons.check_box_outline_blank
+                          : Icons.circle_outlined,
+                      color: isContainer ? AppColors.blue600 : AppColors.red600,
                       size: 18,
                     ),
                   ),
                   title: Text(item['name'] ?? '',
                       style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w600)),
+                          fontSize: AppFontSize.lg,
+                          fontWeight: AppFontWeight.semibold)),
                   subtitle: Text(
                     [
                       userName,
@@ -1862,17 +1936,19 @@ class _MemberEquipmentCard extends StatelessWidget {
                       if (item['location'] != null) item['location'],
                     ].join(' · '),
                     style: const TextStyle(
-                        fontSize: 11, color: Color(0xFF6B7280)),
+                        fontSize: AppFontSize.sm, color: AppColors.gray500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   trailing: canReturn && itemId != null
                       ? TextButton.icon(
-                          onPressed: () => onReturnItem(itemId, item['name'] ?? ''),
+                          onPressed: () =>
+                              onReturnItem(itemId, item['name'] ?? ''),
                           icon: const Icon(Icons.undo, size: 16),
-                          label: const Text('Επιστροφή', style: TextStyle(fontSize: 12)),
+                          label: const Text('Επιστροφή',
+                              style: TextStyle(fontSize: AppFontSize.base)),
                           style: TextButton.styleFrom(
-                            foregroundColor: Color(0xFFDC2626),
+                            foregroundColor: AppColors.red600,
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1895,8 +1971,7 @@ class _VehicleLogsCard extends StatelessWidget {
   final List<dynamic> vehicleLogs;
   final String Function(String?) formatDate;
 
-  const _VehicleLogsCard(
-      {required this.vehicleLogs, required this.formatDate});
+  const _VehicleLogsCard({required this.vehicleLogs, required this.formatDate});
 
   @override
   Widget build(BuildContext context) {
@@ -1905,8 +1980,8 @@ class _VehicleLogsCard extends StatelessWidget {
       elevation: 2,
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFF3F4F6)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray100),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1916,15 +1991,14 @@ class _VehicleLogsCard extends StatelessWidget {
             Row(
               children: [
                 const Icon(Icons.directions_car,
-                    size: 18, color: Color(0xFFD97706)),
+                    size: 18, color: AppColors.amber600),
                 const SizedBox(width: 8),
                 Text('Αρχεία Οχημάτων',
                     style: tt.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
                 const Spacer(),
                 Text('${vehicleLogs.length}',
-                    style: tt.bodySmall?.copyWith(
-                        color: const Color(0xFF6B7280))),
+                    style: tt.bodySmall?.copyWith(color: AppColors.gray500)),
               ],
             ),
             if (vehicleLogs.isEmpty)
@@ -1932,31 +2006,29 @@ class _VehicleLogsCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Center(
                   child: Text('Κανένα αρχείο οχήματος',
-                      style: tt.bodySmall
-                          ?.copyWith(color: Color(0xFF9CA3AF))),
+                      style: tt.bodySmall?.copyWith(color: AppColors.gray400)),
                 ),
               )
             else ...[
               const Divider(height: 20),
               ...vehicleLogs.map((log) {
-                final vehicle =
-                    log['vehicle'] as Map<String, dynamic>? ?? {};
+                final vehicle = log['vehicle'] as Map<String, dynamic>? ?? {};
                 return ListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(Icons.directions_car,
-                      size: 20, color: Color(0xFF4B5563)),
+                      size: 20, color: AppColors.gray600),
                   title: Text(vehicle['name'] ?? '',
-                      style: const TextStyle(fontSize: 14)),
+                      style: const TextStyle(fontSize: AppFontSize.lg)),
                   subtitle: Text(
                     '${formatDate(log['startAt'])} → ${formatDate(log['endAt'])}',
                     style: const TextStyle(
-                        fontSize: 11, color: Color(0xFF6B7280)),
+                        fontSize: AppFontSize.sm, color: AppColors.gray500),
                   ),
                   trailing: Text(
                     '${log['meterStart']}→${log['meterEnd']}',
                     style: const TextStyle(
-                        fontSize: 11, color: Color(0xFF6B7280)),
+                        fontSize: AppFontSize.sm, color: AppColors.gray500),
                   ),
                 );
               }),
@@ -1978,21 +2050,21 @@ class _ResponsibleBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: const Color(0xFF7C3AED).withAlpha(20),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFF7C3AED).withAlpha(60)),
+        color: AppColors.violet600.withAlpha(20),
+        borderRadius: AppRadius.r6,
+        border: Border.all(color: AppColors.violet600.withAlpha(60)),
       ),
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.star_rounded, size: 12, color: Color(0xFF7C3AED)),
+          Icon(Icons.star_rounded, size: 12, color: AppColors.violet600),
           SizedBox(width: 2),
           Text(
             'Υπεύθυνος',
             style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF7C3AED),
+              fontSize: AppFontSize.xs,
+              fontWeight: AppFontWeight.semibold,
+              color: AppColors.violet600,
             ),
           ),
         ],
@@ -2016,9 +2088,11 @@ class _ParticipationToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final next = _isParticipated ? 'not-participated' : 'participated';
-    final color = _isParticipated ? const Color(0xFF059669) : const Color(0xFFF87171);
+    final color = _isParticipated ? AppColors.emerald600 : AppColors.red400;
     final icon = _isParticipated ? Icons.thumb_up_alt : Icons.thumb_down_alt;
-    final tooltip = _isParticipated ? 'Παρών — κλικ για Απουσία' : 'Απών — κλικ για Παρουσία';
+    final tooltip = _isParticipated
+        ? 'Παρών — κλικ για Απουσία'
+        : 'Απών — κλικ για Παρουσία';
 
     return IconButton(
       onPressed: () => onToggle(next),
@@ -2034,7 +2108,8 @@ class _MiniHoursBadge extends StatelessWidget {
   final String label;
   final int value;
   final Color color;
-  const _MiniHoursBadge({required this.label, required this.value, required this.color});
+  const _MiniHoursBadge(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -2043,14 +2118,14 @@ class _MiniHoursBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withAlpha(20),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.r8,
         border: Border.all(color: color.withAlpha(50)),
       ),
       child: Text(
         '$label ${value}ω',
         style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
+          fontSize: AppFontSize.xs,
+          fontWeight: AppFontWeight.semibold,
           color: color,
         ),
       ),
@@ -2088,7 +2163,7 @@ class _HeaderChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(30),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.r16,
         border: Border.all(color: Colors.white.withAlpha(50)),
       ),
       child: Row(
@@ -2100,8 +2175,8 @@ class _HeaderChip extends StatelessWidget {
             text,
             style: TextStyle(
               color: Colors.white.withAlpha(222),
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
+              fontSize: AppFontSize.sm,
+              fontWeight: AppFontWeight.medium,
             ),
           ),
         ],
@@ -2141,7 +2216,11 @@ class _VictimsSectionState extends State<_VictimsSection> {
       serviceId: widget.serviceId,
       limit: 100,
     );
-    if (mounted) setState(() { _victims = List<Map<String, dynamic>>.from(provider.victims); _loading = false; });
+    if (mounted)
+      setState(() {
+        _victims = List<Map<String, dynamic>>.from(provider.victims);
+        _loading = false;
+      });
   }
 
   @override
@@ -2152,8 +2231,8 @@ class _VictimsSectionState extends State<_VictimsSection> {
       elevation: 2,
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFF3F4F6)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray100),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -2162,18 +2241,24 @@ class _VictimsSectionState extends State<_VictimsSection> {
           children: [
             Row(
               children: [
-                const Icon(Icons.personal_injury_outlined, size: 18, color: Color(0xFFC62828)),
+                const Icon(Icons.personal_injury_outlined,
+                    size: 18, color: AppColors.brandPrimary),
                 const SizedBox(width: 8),
-                Text('Περιστατικά', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Περιστατικά',
+                    style: tt.titleMedium
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFC62828).withAlpha(20),
-                    borderRadius: BorderRadius.circular(10),
+                    color: AppColors.brandPrimary.withAlpha(20),
+                    borderRadius: AppRadius.r10,
                   ),
-                  child: Text('${_victims.length}', style: tt.bodySmall?.copyWith(
-                    color: const Color(0xFFC62828), fontWeight: FontWeight.w700)),
+                  child: Text('${_victims.length}',
+                      style: tt.bodySmall?.copyWith(
+                          color: AppColors.brandPrimary,
+                          fontWeight: AppFontWeight.bold)),
                 ),
               ],
             ),
@@ -2188,9 +2273,12 @@ class _VictimsSectionState extends State<_VictimsSection> {
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.personal_injury_outlined, size: 40, color: Color(0xFFD1D5DB)),
+                      Icon(Icons.personal_injury_outlined,
+                          size: 40, color: AppColors.gray300),
                       const SizedBox(height: 8),
-                      Text('Κανένα περιστατικό', style: tt.bodySmall?.copyWith(color: Color(0xFF9CA3AF))),
+                      Text('Κανένα περιστατικό',
+                          style:
+                              tt.bodySmall?.copyWith(color: AppColors.gray400)),
                     ],
                   ),
                 ),
@@ -2209,21 +2297,26 @@ class _VictimsSectionState extends State<_VictimsSection> {
                   leading: CircleAvatar(
                     radius: 18,
                     backgroundColor: isFinalized
-                        ? const Color(0xFFF59E0B).withAlpha(25)
-                        : const Color(0xFFC62828).withAlpha(25),
+                        ? AppColors.amber500.withAlpha(25)
+                        : AppColors.brandPrimary.withAlpha(25),
                     child: Icon(
                       isFinalized ? Icons.lock : Icons.personal_injury,
                       size: 18,
-                      color: isFinalized ? const Color(0xFFF59E0B) : const Color(0xFFC62828),
+                      color: isFinalized
+                          ? AppColors.amber500
+                          : AppColors.brandPrimary,
                     ),
                   ),
                   title: Text(
                     [name, if (age != null) '$age ετών'].join(', '),
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                        fontSize: AppFontSize.lg,
+                        fontWeight: AppFontWeight.semibold),
                   ),
                   subtitle: Text(
                     createdAt != null ? _formatDt(createdAt) : '',
-                    style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+                    style: const TextStyle(
+                        fontSize: AppFontSize.sm, color: AppColors.gray500),
                   ),
                   onTap: () => context.push('/victims/${v['id']}'),
                 );
@@ -2232,7 +2325,7 @@ class _VictimsSectionState extends State<_VictimsSection> {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text('...και ${_victims.length - 5} ακόμα',
-                      style: tt.bodySmall?.copyWith(color: Color(0xFF6B7280))),
+                      style: tt.bodySmall?.copyWith(color: AppColors.gray500)),
                 ),
             ],
           ],

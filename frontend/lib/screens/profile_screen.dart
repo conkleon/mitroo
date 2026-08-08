@@ -6,6 +6,8 @@ import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
 import '../services/pwa_service.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -42,7 +44,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final startAt = DateTime.tryParse(svc['startAt']?.toString() ?? '');
       if (startAt == null) continue;
       final year = startAt.year;
-      map.putIfAbsent(year, () => {'total': 0, 'hours': 0, 'hoursVol': 0, 'hoursTraining': 0, 'hoursTrainers': 0});
+      map.putIfAbsent(
+          year,
+          () => {
+                'total': 0,
+                'hours': 0,
+                'hoursVol': 0,
+                'hoursTraining': 0,
+                'hoursTrainers': 0
+              });
       final h = (s['hours'] ?? 0) as int;
       final hv = (s['hoursVol'] ?? 0) as int;
       final ht = (s['hoursTraining'] ?? 0) as int;
@@ -86,7 +96,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final svcRes = await _api.get('/users/$userId/services');
           if (svcRes.statusCode == 200) {
             setState(() {
-              _services = (jsonDecode(svcRes.body) as List).cast<Map<String, dynamic>>();
+              _services = (jsonDecode(svcRes.body) as List)
+                  .cast<Map<String, dynamic>>();
             });
           }
         }
@@ -119,7 +130,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (dialogError != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Text(dialogError!, style: TextStyle(color: Color(0xFFB91C1C), fontSize: 13)),
+                    child: Text(dialogError!,
+                        style: TextStyle(
+                            color: AppColors.red700, fontSize: AppFontSize.md)),
                   ),
                 TextFormField(
                   controller: currentCtrl,
@@ -128,7 +141,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     labelText: 'Τρέχων Κωδικός',
                     prefixIcon: Icon(Icons.lock_outline),
                   ),
-                  validator: (v) => (v == null || v.isEmpty) ? 'Υποχρεωτικό' : null,
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Υποχρεωτικό' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
@@ -161,7 +175,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: busy ? null : () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            TextButton(
+                onPressed: busy ? null : () => Navigator.pop(ctx),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: busy
                   ? null
@@ -172,7 +188,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         dialogError = null;
                       });
                       try {
-                        final res = await _api.post('/auth/change-password', body: {
+                        final res =
+                            await _api.post('/auth/change-password', body: {
                           'currentPassword': currentCtrl.text,
                           'newPassword': newCtrl.text,
                         });
@@ -180,13 +197,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           if (ctx.mounted) Navigator.pop(ctx);
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Ο κωδικός άλλαξε επιτυχώς')),
+                              const SnackBar(
+                                  content: Text('Ο κωδικός άλλαξε επιτυχώς')),
                             );
                           }
                         } else {
                           final body = jsonDecode(res.body);
                           setDialogState(() {
-                            dialogError = body['error'] ?? 'Αποτυχία αλλαγής κωδικού';
+                            dialogError =
+                                body['error'] ?? 'Αποτυχία αλλαγής κωδικού';
                             busy = false;
                           });
                         }
@@ -198,7 +217,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       }
                     },
               child: busy
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text('Αλλαγή'),
             ),
           ],
@@ -252,7 +274,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final svc = s['service'] as Map<String, dynamic>? ?? {};
         final name = (svc['name'] ?? '').toString().toLowerCase();
         final loc = (svc['location'] ?? '').toString().toLowerCase();
-        final dept = (svc['department']?['name'] ?? '').toString().toLowerCase();
+        final dept =
+            (svc['department']?['name'] ?? '').toString().toLowerCase();
         return name.contains(q) || loc.contains(q) || dept.contains(q);
       }).toList();
     }
@@ -266,19 +289,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           cmp = na.compareTo(nb);
           break;
         case 'totalHours':
-          cmp = ((a['totalHours'] ?? 0) as int).compareTo((b['totalHours'] ?? 0) as int);
+          cmp = ((a['totalHours'] ?? 0) as int)
+              .compareTo((b['totalHours'] ?? 0) as int);
           break;
         case 'hours':
           cmp = ((a['hours'] ?? 0) as int).compareTo((b['hours'] ?? 0) as int);
           break;
         case 'hoursVol':
-          cmp = ((a['hoursVol'] ?? 0) as int).compareTo((b['hoursVol'] ?? 0) as int);
+          cmp = ((a['hoursVol'] ?? 0) as int)
+              .compareTo((b['hoursVol'] ?? 0) as int);
           break;
         case 'hoursTraining':
-          cmp = ((a['hoursTraining'] ?? 0) as int).compareTo((b['hoursTraining'] ?? 0) as int);
+          cmp = ((a['hoursTraining'] ?? 0) as int)
+              .compareTo((b['hoursTraining'] ?? 0) as int);
           break;
         case 'hoursTrainers':
-          cmp = ((a['hoursTrainers'] ?? 0) as int).compareTo((b['hoursTrainers'] ?? 0) as int);
+          cmp = ((a['hoursTrainers'] ?? 0) as int)
+              .compareTo((b['hoursTrainers'] ?? 0) as int);
           break;
         default:
           final da = a['service']?['startAt'] ?? '';
@@ -314,12 +341,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Text(label,
                 style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                    color: isActive ? const Color(0xFFDC2626) : const Color(0xFF374151))),
+                    fontSize: AppFontSize.xs,
+                    fontWeight:
+                        isActive ? AppFontWeight.bold : AppFontWeight.semibold,
+                    color: isActive ? AppColors.red600 : AppColors.gray700)),
             if (isActive)
               Icon(_svcSortAsc ? Icons.arrow_upward : Icons.arrow_downward,
-                  size: 10, color: const Color(0xFFDC2626)),
+                  size: 10, color: AppColors.red600),
           ],
         ),
       ),
@@ -332,9 +360,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Text(
         h > 0 ? '$h' : '—',
         style: TextStyle(
-          fontSize: 11,
-          fontWeight: h > 0 && bold ? FontWeight.w700 : (h > 0 ? FontWeight.w600 : FontWeight.w400),
-          color: h > 0 ? const Color(0xFF111827) : const Color(0xFFD1D5DB),
+          fontSize: AppFontSize.sm,
+          fontWeight: h > 0 && bold
+              ? AppFontWeight.bold
+              : (h > 0 ? AppFontWeight.semibold : AppFontWeight.regular),
+          color: h > 0 ? AppColors.gray900 : AppColors.gray300,
         ),
         textAlign: TextAlign.center,
       ),
@@ -359,55 +389,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     Color statusColor;
     switch (status) {
-      case 'accepted': statusColor = const Color(0xFF059669); break;
-      case 'participated': statusColor = const Color(0xFF0891B2); break;
-      case 'rejected': statusColor = const Color(0xFFDC2626); break;
+      case 'accepted':
+        statusColor = AppColors.emerald600;
+        break;
+      case 'participated':
+        statusColor = AppColors.cyan600;
+        break;
+      case 'rejected':
+        statusColor = AppColors.red600;
+        break;
       case 'not-participated':
-      case 'not_participated': statusColor = const Color(0xFF6B7280); break;
-      default: statusColor = const Color(0xFFF59E0B);
+      case 'not_participated':
+        statusColor = AppColors.gray500;
+        break;
+      default:
+        statusColor = AppColors.amber500;
     }
 
     return InkWell(
       onTap: () => context.go('/services/${svc['id']}'),
       child: Container(
-        color: even ? Colors.white : const Color(0xFFF9FAFB),
+        color: even ? Colors.white : AppColors.gray50,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Row(children: [
-        Expanded(
-          flex: 3,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-              if (dept.isNotEmpty)
-                Text(dept, style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)), maxLines: 1, overflow: TextOverflow.ellipsis),
-            ],
-          ),
-        ),
-        Expanded(
-          flex: 2,
-          child: Text(dateStr, style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280))),
-        ),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: BoxDecoration(
-              color: statusColor.withAlpha(20),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              status.isNotEmpty ? status[0].toUpperCase() + status.substring(1) : '',
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: statusColor),
-              textAlign: TextAlign.center,
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    style: const TextStyle(
+                        fontSize: AppFontSize.base,
+                        fontWeight: AppFontWeight.semibold),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                if (dept.isNotEmpty)
+                  Text(dept,
+                      style: const TextStyle(
+                          fontSize: AppFontSize.xs, color: AppColors.gray400),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+              ],
             ),
           ),
-        ),
-        _svcHoursCell(enrolment['totalHours'], bold: true),
-        _svcHoursCell(enrolment['hours']),
-        _svcHoursCell(enrolment['hoursVol']),
-        _svcHoursCell(enrolment['hoursTraining']),
-        _svcHoursCell(enrolment['hoursTrainers']),
-      ]),
+          Expanded(
+            flex: 2,
+            child: Text(dateStr,
+                style: const TextStyle(
+                    fontSize: AppFontSize.xs, color: AppColors.gray500)),
+          ),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                color: statusColor.withAlpha(20),
+                borderRadius: AppRadius.r4,
+              ),
+              child: Text(
+                status.isNotEmpty
+                    ? status[0].toUpperCase() + status.substring(1)
+                    : '',
+                style: TextStyle(
+                    fontSize: AppFontSize.xxs,
+                    fontWeight: AppFontWeight.semibold,
+                    color: statusColor),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          _svcHoursCell(enrolment['totalHours'], bold: true),
+          _svcHoursCell(enrolment['hours']),
+          _svcHoursCell(enrolment['hoursVol']),
+          _svcHoursCell(enrolment['hoursTraining']),
+          _svcHoursCell(enrolment['hoursTrainers']),
+        ]),
       ),
     );
   }
@@ -418,8 +473,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = auth.user;
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    final String name = auth.displayName.isNotEmpty ? auth.displayName : (user?['eame'] ?? 'Χρήστης').toString();
-    final initials = name.split(' ').where((w) => w.isNotEmpty).map((w) => w[0].toUpperCase()).take(2).join();
+    final String name = auth.displayName.isNotEmpty
+        ? auth.displayName
+        : (user?['eame'] ?? 'Χρήστης').toString();
+    final initials = name
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .map((w) => w[0].toUpperCase())
+        .take(2)
+        .join();
     final currentYear = DateTime.now().year;
 
     return Scaffold(
@@ -444,25 +506,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     backgroundColor: cs.primary,
                     child: Text(
                       initials,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 28),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: AppFontWeight.bold,
+                          fontSize: AppFontSize.display),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(name, style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(name,
+                      style: tt.titleLarge
+                          ?.copyWith(fontWeight: AppFontWeight.bold)),
                   const SizedBox(height: 4),
                   Text(
                     user?['email'] ?? '',
-                    style: tt.bodyMedium?.copyWith(color: const Color(0xFF6B7280)),
+                    style: tt.bodyMedium?.copyWith(color: AppColors.gray500),
                   ),
                   if (auth.isAdmin) ...[
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEE2E2),
-                        borderRadius: BorderRadius.circular(20),
+                        color: AppColors.red100,
+                        borderRadius: AppRadius.r20,
                       ),
-                      child: Text('Διαχειριστής', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600, fontSize: 12)),
+                      child: Text('Διαχειριστής',
+                          style: TextStyle(
+                              color: cs.primary,
+                              fontWeight: AppFontWeight.semibold,
+                              fontSize: AppFontSize.base)),
                     ),
                   ],
                 ],
@@ -482,35 +554,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       Icon(Icons.schedule, color: cs.primary, size: 22),
                       const SizedBox(width: 8),
-                      Text('Ώρες', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      Text('Ώρες',
+                          style: tt.titleMedium
+                              ?.copyWith(fontWeight: AppFontWeight.semibold)),
                     ],
                   ),
                   const SizedBox(height: 16),
                   if (_loading)
-                    const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
+                    const Center(
+                        child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: CircularProgressIndicator()))
                   else if (_error != null)
-                    Center(child: Text(_error!, style: TextStyle(color: Color(0xFFDC2626))))
+                    Center(
+                        child: Text(_error!,
+                            style: TextStyle(color: AppColors.red600)))
                   else ...[
                     // Total hours (all time)
-                    _HoursHighlight(label: 'Συνολικές Ώρες', hours: _totalHours, color: cs.primary),
+                    _HoursHighlight(
+                        label: 'Συνολικές Ώρες',
+                        hours: _totalHours,
+                        color: cs.primary),
                     const Divider(height: 24),
                     // Yearly analysis table
                     Builder(builder: (_) {
                       final yearly = _yearlyHours;
-                      final years = yearly.keys.toList()..sort((a, b) => b.compareTo(a));
+                      final years = yearly.keys.toList()
+                        ..sort((a, b) => b.compareTo(a));
                       if (years.isEmpty) {
                         return Text('Δεν υπάρχουν καταχωρημένες ώρες',
-                            style: tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF)));
+                            style: tt.bodySmall
+                                ?.copyWith(color: AppColors.gray400));
                       }
-                      const headerStyle = TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF374151));
-                      const cellStyle = TextStyle(fontSize: 12, color: Color(0xFF111827));
+                      const headerStyle = TextStyle(
+                          fontSize: AppFontSize.sm,
+                          fontWeight: AppFontWeight.bold,
+                          color: AppColors.gray700);
+                      const cellStyle = TextStyle(
+                          fontSize: AppFontSize.base, color: AppColors.gray900);
                       const colWidths = [48.0, 52.0, 52.0, 48.0, 56.0, 56.0];
-                      final colLabels = ['Έτος', 'Σύνολο', 'Κάλυψη', 'Εθελ.', 'Επανεκπ.', 'Εκπαιδ.'];
+                      final colLabels = [
+                        'Έτος',
+                        'Σύνολο',
+                        'Κάλυψη',
+                        'Εθελ.',
+                        'Επανεκπ.',
+                        'Εκπαιδ.'
+                      ];
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Ετήσια Ανάλυση',
-                              style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF374151))),
+                              style: tt.titleSmall?.copyWith(
+                                  fontWeight: AppFontWeight.semibold,
+                                  color: AppColors.gray700)),
                           const SizedBox(height: 10),
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
@@ -519,16 +616,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               children: [
                                 // Header row
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 8),
                                   decoration: const BoxDecoration(
-                                    border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB), width: 2)),
+                                    border: Border(
+                                        bottom: BorderSide(
+                                            color: AppColors.gray200,
+                                            width: 2)),
                                   ),
                                   child: Row(
-                                    children: List.generate(colLabels.length, (i) =>
-                                      SizedBox(
+                                    children: List.generate(
+                                      colLabels.length,
+                                      (i) => SizedBox(
                                         width: colWidths[i],
-                                        child: Text(colLabels[i], style: headerStyle,
-                                          textAlign: i == 0 ? TextAlign.start : TextAlign.center),
+                                        child: Text(colLabels[i],
+                                            style: headerStyle,
+                                            textAlign: i == 0
+                                                ? TextAlign.start
+                                                : TextAlign.center),
                                       ),
                                     ),
                                   ),
@@ -536,23 +641,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 // Data rows
                                 ...years.map((y) {
                                   final data = yearly[y]!;
-                                  final vals = ['$y', '${data['total']}', '${data['hours']}', '${data['hoursVol']}', '${data['hoursTraining']}', '${data['hoursTrainers']}'];
+                                  final vals = [
+                                    '$y',
+                                    '${data['total']}',
+                                    '${data['hours']}',
+                                    '${data['hoursVol']}',
+                                    '${data['hoursTraining']}',
+                                    '${data['hoursTrainers']}'
+                                  ];
                                   final isCurrentYear = y == currentYear;
                                   return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 7),
                                     decoration: BoxDecoration(
-                                      color: isCurrentYear ? cs.primary.withAlpha(12) : null,
-                                      border: const Border(bottom: BorderSide(color: Color(0xFFF3F4F6))),
+                                      color: isCurrentYear
+                                          ? cs.primary.withAlpha(12)
+                                          : null,
+                                      border: const Border(
+                                          bottom: BorderSide(
+                                              color: AppColors.gray100)),
                                     ),
                                     child: Row(
                                       children: List.generate(vals.length, (i) {
                                         final bold = isCurrentYear || i == 0;
                                         return SizedBox(
                                           width: colWidths[i],
-                                          child: Text(vals[i], style: cellStyle.copyWith(
-                                            fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-                                            color: isCurrentYear ? cs.primary : const Color(0xFF111827),
-                                          ), textAlign: i == 0 ? TextAlign.start : TextAlign.center),
+                                          child: Text(vals[i],
+                                              style: cellStyle.copyWith(
+                                                fontWeight: bold
+                                                    ? AppFontWeight.bold
+                                                    : AppFontWeight.medium,
+                                                color: isCurrentYear
+                                                    ? cs.primary
+                                                    : AppColors.gray900,
+                                              ),
+                                              textAlign: i == 0
+                                                  ? TextAlign.start
+                                                  : TextAlign.center),
                                         );
                                       }),
                                     ),
@@ -574,7 +699,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // ── Services table card ──
           if (_services.isNotEmpty)
             Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.r16),
               elevation: 0,
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -584,16 +709,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Row(children: [
                       Icon(Icons.work_history, color: cs.primary, size: 22),
                       const SizedBox(width: 10),
-                      Text('Υπηρεσίες / Αποστολές', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                      Text('Υπηρεσίες / Αποστολές',
+                          style: tt.titleMedium
+                              ?.copyWith(fontWeight: AppFontWeight.bold)),
                       const Spacer(),
                       Text('${_services.length} total',
-                          style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                          style:
+                              tt.bodySmall?.copyWith(color: AppColors.gray500)),
                     ]),
                     const SizedBox(height: 8),
                     // Summary chips
                     Builder(builder: (_) {
-                      int sumTotal = 0, sumH = 0, sumVol = 0, sumTrain = 0, sumTrainer = 0;
-                      for (final s in _services.where((s) => s['status'] == 'accepted' || s['status'] == 'participated')) {
+                      int sumTotal = 0,
+                          sumH = 0,
+                          sumVol = 0,
+                          sumTrain = 0,
+                          sumTrainer = 0;
+                      for (final s in _services.where((s) =>
+                          s['status'] == 'accepted' ||
+                          s['status'] == 'participated')) {
                         sumTotal += (s['totalHours'] ?? 0) as int;
                         sumH += (s['hours'] ?? 0) as int;
                         sumVol += (s['hoursVol'] ?? 0) as int;
@@ -601,11 +735,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         sumTrainer += (s['hoursTrainers'] ?? 0) as int;
                       }
                       return Wrap(spacing: 8, runSpacing: 6, children: [
-                        _HoursChip('Total', sumTotal, const Color(0xFFDC2626)),
-                        _HoursChip('Hours', sumH, const Color(0xFF059669)),
-                        _HoursChip('Vol', sumVol, const Color(0xFF7C3AED)),
-                        _HoursChip('Training', sumTrain, const Color(0xFFD97706)),
-                        _HoursChip('Trainer', sumTrainer, const Color(0xFFDC2626)),
+                        _HoursChip('Total', sumTotal, AppColors.red600),
+                        _HoursChip('Hours', sumH, AppColors.emerald600),
+                        _HoursChip('Vol', sumVol, AppColors.violet600),
+                        _HoursChip('Training', sumTrain, AppColors.amber600),
+                        _HoursChip('Trainer', sumTrainer, AppColors.red600),
                       ]);
                     }),
                     const SizedBox(height: 12),
@@ -614,24 +748,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF9FAFB),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                          color: AppColors.gray50,
+                          borderRadius: AppRadius.r8,
+                          border: Border.all(color: AppColors.gray200),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
                             value: _svcStatusFilter,
                             isDense: true,
-                            style: const TextStyle(fontSize: 12, color: Color(0xFF374151)),
+                            style: const TextStyle(
+                                fontSize: AppFontSize.base,
+                                color: AppColors.gray700),
                             items: const [
-                              DropdownMenuItem(value: 'all', child: Text('Όλες οι καταστάσεις')),
-                              DropdownMenuItem(value: 'accepted', child: Text('Εγκεκριμένη')),
-                              DropdownMenuItem(value: 'participated', child: Text('Παρουσιάστηκε')),
-                              DropdownMenuItem(value: 'requested', child: Text('Εκκρεμής')),
-                              DropdownMenuItem(value: 'rejected', child: Text('Απορριφθείσα')),
-                              DropdownMenuItem(value: 'not-participated', child: Text('Δεν παρουσιάστηκε')),
+                              DropdownMenuItem(
+                                  value: 'all',
+                                  child: Text('Όλες οι καταστάσεις')),
+                              DropdownMenuItem(
+                                  value: 'accepted',
+                                  child: Text('Εγκεκριμένη')),
+                              DropdownMenuItem(
+                                  value: 'participated',
+                                  child: Text('Παρουσιάστηκε')),
+                              DropdownMenuItem(
+                                  value: 'requested', child: Text('Εκκρεμής')),
+                              DropdownMenuItem(
+                                  value: 'rejected',
+                                  child: Text('Απορριφθείσα')),
+                              DropdownMenuItem(
+                                  value: 'not-participated',
+                                  child: Text('Δεν παρουσιάστηκε')),
                             ],
-                            onChanged: (v) => setState(() { _svcStatusFilter = v ?? 'all'; _svcPage = 0; }),
+                            onChanged: (v) => setState(() {
+                              _svcStatusFilter = v ?? 'all';
+                              _svcPage = 0;
+                            }),
                           ),
                         ),
                       ),
@@ -641,14 +791,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           decoration: InputDecoration(
                             hintText: 'Αναζήτηση υπηρεσιών...',
                             prefixIcon: const Icon(Icons.search, size: 18),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            border:
+                                OutlineInputBorder(borderRadius: AppRadius.r8),
                             filled: true,
-                            fillColor: const Color(0xFFF9FAFB),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            fillColor: AppColors.gray50,
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 8),
                             isDense: true,
                           ),
-                          style: const TextStyle(fontSize: 12),
-                          onChanged: (v) => setState(() { _svcSearch = v; _svcPage = 0; }),
+                          style: const TextStyle(fontSize: AppFontSize.base),
+                          onChanged: (v) => setState(() {
+                            _svcSearch = v;
+                            _svcPage = 0;
+                          }),
                         ),
                       ),
                     ]),
@@ -658,36 +813,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _DateFilterChip(
                         label: 'Από',
                         date: _dateFrom,
-                        onClear: () => setState(() { _dateFrom = null; _svcPage = 0; }),
+                        onClear: () => setState(() {
+                          _dateFrom = null;
+                          _svcPage = 0;
+                        }),
                         onPick: () async {
                           final picked = await showDatePicker(
                             context: context,
                             initialDate: _dateFrom ?? DateTime.now(),
                             firstDate: DateTime(2000),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
                             helpText: 'Από ημερομηνία',
                             cancelText: 'Άκυρο',
                             confirmText: 'Επιλογή',
                           );
-                          if (picked != null) setState(() { _dateFrom = picked; _svcPage = 0; });
+                          if (picked != null)
+                            setState(() {
+                              _dateFrom = picked;
+                              _svcPage = 0;
+                            });
                         },
                       ),
                       const SizedBox(width: 8),
                       _DateFilterChip(
                         label: 'Έως',
                         date: _dateTo,
-                        onClear: () => setState(() { _dateTo = null; _svcPage = 0; }),
+                        onClear: () => setState(() {
+                          _dateTo = null;
+                          _svcPage = 0;
+                        }),
                         onPick: () async {
                           final picked = await showDatePicker(
                             context: context,
                             initialDate: _dateTo ?? DateTime.now(),
                             firstDate: DateTime(2000),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            lastDate:
+                                DateTime.now().add(const Duration(days: 365)),
                             helpText: 'Έως ημερομηνία',
                             cancelText: 'Άκυρο',
                             confirmText: 'Επιλογή',
                           );
-                          if (picked != null) setState(() { _dateTo = picked; _svcPage = 0; });
+                          if (picked != null)
+                            setState(() {
+                              _dateTo = picked;
+                              _svcPage = 0;
+                            });
                         },
                       ),
                     ]),
@@ -695,51 +866,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     // Pagination
                     Builder(builder: (_) {
                       final processed = _processedServices;
-                      final totalPages = processed.isEmpty ? 1 : (processed.length / _svcRowsPerPage).ceil();
+                      final totalPages = processed.isEmpty
+                          ? 1
+                          : (processed.length / _svcRowsPerPage).ceil();
                       final pageStart = _svcPage * _svcRowsPerPage;
-                      final pageEnd = (pageStart + _svcRowsPerPage).clamp(0, processed.length);
+                      final pageEnd = (pageStart + _svcRowsPerPage)
+                          .clamp(0, processed.length);
                       final pageItems = processed.sublist(pageStart, pageEnd);
                       return Column(children: [
                         Row(children: [
                           Text('${processed.length} shown',
-                              style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+                              style: const TextStyle(
+                                  fontSize: AppFontSize.sm,
+                                  color: AppColors.gray500)),
                           const Spacer(),
-                          const Text('Γραμμές: ', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+                          const Text('Γραμμές: ',
+                              style: TextStyle(
+                                  fontSize: AppFontSize.sm,
+                                  color: AppColors.gray500)),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF9FAFB),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: const Color(0xFFE5E7EB)),
+                              color: AppColors.gray50,
+                              borderRadius: AppRadius.r4,
+                              border: Border.all(color: AppColors.gray200),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<int>(
                                 value: _svcRowsPerPage,
                                 isDense: true,
-                                style: const TextStyle(fontSize: 11, color: Color(0xFF374151)),
+                                style: const TextStyle(
+                                    fontSize: AppFontSize.sm,
+                                    color: AppColors.gray700),
                                 items: const [
                                   DropdownMenuItem(value: 5, child: Text('5')),
-                                  DropdownMenuItem(value: 10, child: Text('10')),
-                                  DropdownMenuItem(value: 25, child: Text('25')),
-                                  DropdownMenuItem(value: 50, child: Text('50')),
+                                  DropdownMenuItem(
+                                      value: 10, child: Text('10')),
+                                  DropdownMenuItem(
+                                      value: 25, child: Text('25')),
+                                  DropdownMenuItem(
+                                      value: 50, child: Text('50')),
                                 ],
-                                onChanged: (v) => setState(() { _svcRowsPerPage = v ?? 10; _svcPage = 0; }),
+                                onChanged: (v) => setState(() {
+                                  _svcRowsPerPage = v ?? 10;
+                                  _svcPage = 0;
+                                }),
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.chevron_left, size: 18),
-                            onPressed: _svcPage > 0 ? () => setState(() => _svcPage--) : null,
+                            onPressed: _svcPage > 0
+                                ? () => setState(() => _svcPage--)
+                                : null,
                             visualDensity: VisualDensity.compact,
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
                           Text('${_svcPage + 1}/${totalPages.clamp(1, 999)}',
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                              style: const TextStyle(
+                                  fontSize: AppFontSize.sm,
+                                  fontWeight: AppFontWeight.semibold)),
                           IconButton(
                             icon: const Icon(Icons.chevron_right, size: 18),
-                            onPressed: _svcPage < totalPages - 1 ? () => setState(() => _svcPage++) : null,
+                            onPressed: _svcPage < totalPages - 1
+                                ? () => setState(() => _svcPage++)
+                                : null,
                             visualDensity: VisualDensity.compact,
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
@@ -748,8 +941,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 4),
                         // Table header
                         Container(
-                          color: const Color(0xFFEEF0F4),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          color: AppColors.surfaceTint,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 5),
                           child: Row(children: [
                             _svcHeaderCell('Service', 'name', flex: 3),
                             _svcHeaderCell('Date', 'date', flex: 2),
@@ -764,10 +958,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         if (pageItems.isEmpty)
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 24),
-                            child: Center(child: Text('Δεν βρέθηκαν υπηρεσίες', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13))),
+                            child: Center(
+                                child: Text('Δεν βρέθηκαν υπηρεσίες',
+                                    style: TextStyle(
+                                        color: AppColors.gray400,
+                                        fontSize: AppFontSize.md))),
                           )
                         else
-                          ...pageItems.asMap().entries.map((e) => _buildSvcRow(e.value, e.key.isEven)),
+                          ...pageItems
+                              .asMap()
+                              .entries
+                              .map((e) => _buildSvcRow(e.value, e.key.isEven)),
                       ]);
                     }),
                   ],
@@ -783,22 +984,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Στοιχεία', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                  Text('Στοιχεία',
+                      style: tt.titleMedium
+                          ?.copyWith(fontWeight: AppFontWeight.semibold)),
                   const SizedBox(height: 16),
-                  _DetailRow(icon: Icons.badge_outlined, label: 'EAME', value: user?['eame'] ?? '-'),
+                  _DetailRow(
+                      icon: Icons.badge_outlined,
+                      label: 'EAME',
+                      value: user?['eame'] ?? '-'),
                   const Divider(height: 24),
-                  _DetailRow(icon: Icons.person_outline, label: 'Όνομα', value: user?['forename'] ?? '-'),
+                  _DetailRow(
+                      icon: Icons.person_outline,
+                      label: 'Όνομα',
+                      value: user?['forename'] ?? '-'),
                   const Divider(height: 24),
-                  _DetailRow(icon: Icons.person_outline, label: 'Επώνυμο', value: user?['surname'] ?? '-'),
+                  _DetailRow(
+                      icon: Icons.person_outline,
+                      label: 'Επώνυμο',
+                      value: user?['surname'] ?? '-'),
                   const Divider(height: 24),
-                  _DetailRow(icon: Icons.email_outlined, label: 'Email', value: user?['email'] ?? '-'),
+                  _DetailRow(
+                      icon: Icons.email_outlined,
+                      label: 'Email',
+                      value: user?['email'] ?? '-'),
                   if (user?['phonePrimary'] != null) ...[
                     const Divider(height: 24),
-                    _DetailRow(icon: Icons.phone_outlined, label: 'Τηλέφωνο', value: user?['phonePrimary'] ?? '-'),
+                    _DetailRow(
+                        icon: Icons.phone_outlined,
+                        label: 'Τηλέφωνο',
+                        value: user?['phonePrimary'] ?? '-'),
                   ],
                   if (user?['address'] != null) ...[
                     const Divider(height: 24),
-                    _DetailRow(icon: Icons.home_outlined, label: 'Διεύθυνση', value: user?['address'] ?? '-'),
+                    _DetailRow(
+                        icon: Icons.home_outlined,
+                        label: 'Διεύθυνση',
+                        value: user?['address'] ?? '-'),
                   ],
                 ],
               ),
@@ -807,14 +1028,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
 
           // ── Departments card ──
-          if (user?['departments'] != null && (user!['departments'] as List).isNotEmpty)
+          if (user?['departments'] != null &&
+              (user!['departments'] as List).isNotEmpty)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Τμήματα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                    Text('Τμήματα',
+                        style: tt.titleMedium
+                            ?.copyWith(fontWeight: AppFontWeight.semibold)),
                     const SizedBox(height: 12),
                     ...(user['departments'] as List).map((d) {
                       final dept = d['department'];
@@ -826,17 +1050,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: cs.primary.withAlpha(20),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: AppRadius.r10,
                               ),
-                              child: Icon(Icons.business, color: cs.primary, size: 18),
+                              child: Icon(Icons.business,
+                                  color: cs.primary, size: 18),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(dept?['name'] ?? '', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w500)),
-                                  Text(d['role'] ?? '', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                                  Text(dept?['name'] ?? '',
+                                      style: tt.titleSmall?.copyWith(
+                                          fontWeight: AppFontWeight.medium)),
+                                  Text(d['role'] ?? '',
+                                      style: tt.bodySmall
+                                          ?.copyWith(color: AppColors.gray500)),
                                 ],
                               ),
                             ),
@@ -859,7 +1088,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label: const Text('Αλλαγή Κωδικού'),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.r12),
               ),
             ),
           ),
@@ -874,7 +1103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label: const Text('Έλεγχος για ενημερώσεις'),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.r12),
               ),
             ),
           ),
@@ -891,10 +1120,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: const Icon(Icons.logout, size: 18),
               label: const Text('Αποσύνδεση'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: Color(0xFFDC2626),
-                side: BorderSide(color: Color(0xFFFCA5A5)),
+                foregroundColor: AppColors.red600,
+                side: BorderSide(color: AppColors.red300),
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.r12),
               ),
             ),
           ),
@@ -911,7 +1140,8 @@ class _HoursHighlight extends StatelessWidget {
   final String label;
   final int hours;
   final Color color;
-  const _HoursHighlight({required this.label, required this.hours, required this.color});
+  const _HoursHighlight(
+      {required this.label, required this.hours, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -919,16 +1149,18 @@ class _HoursHighlight extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+        Text(label,
+            style: tt.titleSmall?.copyWith(fontWeight: AppFontWeight.semibold)),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
             color: color.withAlpha(25),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.r20,
           ),
           child: Text(
             '$hours h',
-            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: color),
+            style: tt.titleSmall
+                ?.copyWith(fontWeight: AppFontWeight.bold, color: color),
           ),
         ),
       ],
@@ -940,22 +1172,26 @@ class _DetailRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _DetailRow({required this.icon, required this.label, required this.value});
+  const _DetailRow(
+      {required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     return Row(
       children: [
-        Icon(icon, size: 20, color: const Color(0xFF6B7280)),
+        Icon(icon, size: 20, color: AppColors.gray500),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+              Text(label,
+                  style: tt.bodySmall?.copyWith(color: AppColors.gray500)),
               const SizedBox(height: 2),
-              Text(value, style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+              Text(value,
+                  style: tt.bodyMedium
+                      ?.copyWith(fontWeight: AppFontWeight.medium)),
             ],
           ),
         ),
@@ -976,13 +1212,19 @@ class _HoursChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withAlpha(15),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.r8,
         border: Border.all(color: color.withAlpha(40)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Text('$value', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+        Text('$value',
+            style: TextStyle(
+                fontSize: AppFontSize.md,
+                fontWeight: AppFontWeight.bold,
+                color: color)),
         const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 10, color: color.withAlpha(180))),
+        Text(label,
+            style: TextStyle(
+                fontSize: AppFontSize.xs, color: color.withAlpha(180))),
       ]),
     );
   }
@@ -1005,38 +1247,37 @@ class _DateFilterChip extends StatelessWidget {
     final hasDate = date != null;
     return InkWell(
       onTap: onPick,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: AppRadius.r20,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: hasDate ? const Color(0xFFFEE2E2) : const Color(0xFFF9FAFB),
-          borderRadius: BorderRadius.circular(20),
+          color: hasDate ? AppColors.red100 : AppColors.gray50,
+          borderRadius: AppRadius.r20,
           border: Border.all(
-            color: hasDate ? const Color(0xFFFCA5A5) : const Color(0xFFE5E7EB),
+            color: hasDate ? AppColors.red300 : AppColors.gray200,
           ),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(
             Icons.calendar_today,
             size: 13,
-            color: hasDate ? const Color(0xFFDC2626) : const Color(0xFF9CA3AF),
+            color: hasDate ? AppColors.red600 : AppColors.gray400,
           ),
           const SizedBox(width: 6),
           Text(
-            hasDate
-                ? '${date!.day}/${date!.month}/${date!.year}'
-                : label,
+            hasDate ? '${date!.day}/${date!.month}/${date!.year}' : label,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: hasDate ? FontWeight.w600 : FontWeight.w400,
-              color: hasDate ? const Color(0xFFDC2626) : const Color(0xFF6B7280),
+              fontSize: AppFontSize.sm,
+              fontWeight:
+                  hasDate ? AppFontWeight.semibold : AppFontWeight.regular,
+              color: hasDate ? AppColors.red600 : AppColors.gray500,
             ),
           ),
           if (hasDate) ...[
             const SizedBox(width: 6),
             GestureDetector(
               onTap: onClear,
-              child: const Icon(Icons.close, size: 14, color: Color(0xFFDC2626)),
+              child: const Icon(Icons.close, size: 14, color: AppColors.red600),
             ),
           ],
         ]),

@@ -12,6 +12,8 @@ import 'scanner_screen.dart';
 import 'my_equipment_sheet.dart';
 import 'item_detail_screen.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class ItemsScreen extends StatefulWidget {
   final int? initialDepartmentId;
   const ItemsScreen({super.key, this.initialDepartmentId});
@@ -74,9 +76,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
       final auth = context.read<AuthProvider>();
       final canManage = auth.isAdmin || auth.isItemAdmin;
       await context.read<ItemProvider>().fetchItems(
-        available: canManage ? null : true,
-        limit: 10000,
-      );
+            available: canManage ? null : true,
+            limit: 10000,
+          );
       await Future.wait([
         context.read<CategoryProvider>().fetchCategories(),
         context.read<DepartmentProvider>().fetchDepartments(),
@@ -145,7 +147,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
     }
 
     if (_selectedCategoryId != null) {
-      list = list.where((item) => item['categoryId'] == _selectedCategoryId).toList();
+      list = list
+          .where((item) => item['categoryId'] == _selectedCategoryId)
+          .toList();
     }
 
     if (_search.isNotEmpty) {
@@ -155,8 +159,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
         final desc = (item['description'] ?? '').toString().toLowerCase();
         final barcode = (item['barCode'] ?? '').toString().toLowerCase();
         final loc = (item['location'] ?? '').toString().toLowerCase();
-        final deptName = (item['department']?['name'] ?? '').toString().toLowerCase();
-        return name.contains(q) || desc.contains(q) || barcode.contains(q) || loc.contains(q) || deptName.contains(q);
+        final deptName =
+            (item['department']?['name'] ?? '').toString().toLowerCase();
+        return name.contains(q) ||
+            desc.contains(q) ||
+            barcode.contains(q) ||
+            loc.contains(q) ||
+            deptName.contains(q);
       }).toList();
     }
 
@@ -164,19 +173,25 @@ class _ItemsScreenState extends State<ItemsScreen> {
       int cmp;
       switch (_sortField) {
         case 'category':
-          cmp = ((a['category']?['name'] ?? '') as String).toLowerCase()
-              .compareTo(((b['category']?['name'] ?? '') as String).toLowerCase());
+          cmp = ((a['category']?['name'] ?? '') as String)
+              .toLowerCase()
+              .compareTo(
+                  ((b['category']?['name'] ?? '') as String).toLowerCase());
           break;
         case 'location':
-          cmp = ((a['location'] ?? '') as String).toLowerCase()
+          cmp = ((a['location'] ?? '') as String)
+              .toLowerCase()
               .compareTo(((b['location'] ?? '') as String).toLowerCase());
           break;
         case 'quantity':
-          cmp = ((a['quantity'] ?? 0) as int).compareTo((b['quantity'] ?? 0) as int);
+          cmp = ((a['quantity'] ?? 0) as int)
+              .compareTo((b['quantity'] ?? 0) as int);
           break;
         case 'department':
-          cmp = ((a['department']?['name'] ?? '') as String).toLowerCase()
-              .compareTo(((b['department']?['name'] ?? '') as String).toLowerCase());
+          cmp = ((a['department']?['name'] ?? '') as String)
+              .toLowerCase()
+              .compareTo(
+                  ((b['department']?['name'] ?? '') as String).toLowerCase());
           break;
         case 'available':
           cmp = ((a['availableForAssignment'] == true) ? 0 : 1)
@@ -187,10 +202,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
               .compareTo((b['isContainer'] == true) ? 0 : 1);
           break;
         case 'assignedTo':
-          cmp = _assignedName(a).toLowerCase().compareTo(_assignedName(b).toLowerCase());
+          cmp = _assignedName(a)
+              .toLowerCase()
+              .compareTo(_assignedName(b).toLowerCase());
           break;
         default:
-          cmp = ((a['name'] ?? '') as String).toLowerCase()
+          cmp = ((a['name'] ?? '') as String)
+              .toLowerCase()
               .compareTo(((b['name'] ?? '') as String).toLowerCase());
       }
       return _sortAsc ? cmp : -cmp;
@@ -284,7 +302,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
     _exitSelectionMode();
     _fetch();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(fail == 0 ? '$ok αντικείμενα ενημερώθηκαν' : '$ok ενημερώθηκαν, $fail αποτυχίες'),
+      content: Text(fail == 0
+          ? '$ok αντικείμενα ενημερώθηκαν'
+          : '$ok ενημερώθηκαν, $fail αποτυχίες'),
     ));
   }
 
@@ -294,12 +314,15 @@ class _ItemsScreenState extends State<ItemsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Διαγραφή Αντικειμένων'),
-        content: Text('Διαγραφή $count αντικειμένων; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.'),
+        content: Text(
+            'Διαγραφή $count αντικειμένων; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Διαγραφή'),
           ),
         ],
@@ -317,7 +340,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
     _exitSelectionMode();
     _fetch();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(fail == 0 ? '$ok αντικείμενα διαγράφηκαν' : '$ok διαγράφηκαν, $fail αποτυχίες'),
+      content: Text(fail == 0
+          ? '$ok αντικείμενα διαγράφηκαν'
+          : '$ok διαγράφηκαν, $fail αποτυχίες'),
     ));
   }
 
@@ -330,8 +355,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r12,
+        border: Border.all(color: AppColors.gray200),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int?>(
@@ -339,16 +364,22 @@ class _ItemsScreenState extends State<ItemsScreen> {
           isExpanded: true,
           isDense: true,
           icon: const Icon(Icons.filter_list, size: 18),
-          hint: const Text('Όλα τα Τμήματα', style: TextStyle(fontSize: 13)),
-          style: const TextStyle(fontSize: 13, color: Color(0xFF374151)),
+          hint: const Text('Όλα τα Τμήματα',
+              style: TextStyle(fontSize: AppFontSize.md)),
+          style: const TextStyle(
+              fontSize: AppFontSize.md, color: AppColors.gray700),
           items: [
-            const DropdownMenuItem<int?>(value: null, child: Text('Όλα τα Τμήματα')),
+            const DropdownMenuItem<int?>(
+                value: null, child: Text('Όλα τα Τμήματα')),
             ...depts.map((d) => DropdownMenuItem<int?>(
                   value: d['id'] as int?,
                   child: Text(d['name'] ?? 'Τμήμα'),
                 )),
           ],
-          onChanged: (v) => setState(() { _deptFilter = v; _page = 0; }),
+          onChanged: (v) => setState(() {
+            _deptFilter = v;
+            _page = 0;
+          }),
         ),
       ),
     );
@@ -360,20 +391,23 @@ class _ItemsScreenState extends State<ItemsScreen> {
     final selected = _selectedCategoryId == key;
     final c = color ?? Theme.of(context).colorScheme.primary;
     return GestureDetector(
-      onTap: () => setState(() { _selectedCategoryId = key; _page = 0; }),
+      onTap: () => setState(() {
+        _selectedCategoryId = key;
+        _page = 0;
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected ? c : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? c : const Color(0xFFD1D5DB)),
+          borderRadius: AppRadius.r20,
+          border: Border.all(color: selected ? c : AppColors.gray300),
         ),
         child: Text(label,
             style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : const Color(0xFF374151))),
+                fontSize: AppFontSize.base,
+                fontWeight: AppFontWeight.semibold,
+                color: selected ? Colors.white : AppColors.gray700)),
       ),
     );
   }
@@ -391,12 +425,13 @@ class _ItemsScreenState extends State<ItemsScreen> {
           children: [
             Text(label,
                 style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                    color: isActive ? const Color(0xFFDC2626) : const Color(0xFF374151))),
+                    fontSize: AppFontSize.sm,
+                    fontWeight:
+                        isActive ? AppFontWeight.bold : AppFontWeight.semibold,
+                    color: isActive ? AppColors.red600 : AppColors.gray700)),
             if (isActive)
               Icon(_sortAsc ? Icons.arrow_upward : Icons.arrow_downward,
-                  size: 12, color: const Color(0xFFDC2626)),
+                  size: 12, color: AppColors.red600),
           ],
         ),
       ),
@@ -410,14 +445,15 @@ class _ItemsScreenState extends State<ItemsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r6,
+        border: Border.all(color: AppColors.gray200),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
           value: _rowsPerPage,
           isDense: true,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF374151)),
+          style: const TextStyle(
+              fontSize: AppFontSize.base, color: AppColors.gray700),
           items: const [
             DropdownMenuItem(value: 10, child: Text('10')),
             DropdownMenuItem(value: 25, child: Text('25')),
@@ -444,10 +480,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
   Widget _buildThumbnail(Map<String, dynamic> item) {
     final path = _thumbPath(item);
     final isContainer = item['isContainer'] == true;
-    final accentColor = isContainer ? const Color(0xFF2563EB) : const Color(0xFFDC2626);
+    final accentColor = isContainer ? AppColors.blue600 : AppColors.red600;
     if (path != null) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: AppRadius.r6,
         child: Image.network(
           '${ApiClient.uploadsBaseUrl}$path',
           width: 32,
@@ -466,7 +502,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
       height: 32,
       decoration: BoxDecoration(
         color: accentColor.withAlpha(25),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: AppRadius.r6,
       ),
       child: Icon(
         isContainer ? Icons.check_box_outline_blank : Icons.circle_outlined,
@@ -506,10 +542,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           color: isSelected
-              ? const Color(0xFFEEF2FF)
+              ? AppColors.indigo50
               : even
                   ? Colors.white
-                  : const Color(0xFFF9FAFB),
+                  : AppColors.gray50,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(children: [
             if (_selectionMode)
@@ -517,7 +553,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                 value: isSelected,
                 onChanged: (_) => _toggleSelect(itemId),
                 visualDensity: VisualDensity.compact,
-                activeColor: const Color(0xFF7C3AED),
+                activeColor: AppColors.violet600,
               )
             else ...[
               _buildThumbnail(item),
@@ -531,30 +567,41 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   Row(children: [
                     Flexible(
                       child: Text(name,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                          style: const TextStyle(
+                              fontSize: AppFontSize.md,
+                              fontWeight: AppFontWeight.semibold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
                     ),
                     if (childCount > 0) ...[
                       const SizedBox(width: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB).withAlpha(25),
-                          borderRadius: BorderRadius.circular(4),
+                          color: AppColors.blue600.withAlpha(25),
+                          borderRadius: AppRadius.r4,
                         ),
                         child: Text('$childCount',
-                            style: const TextStyle(fontSize: 10, color: Color(0xFF2563EB), fontWeight: FontWeight.w600)),
+                            style: const TextStyle(
+                                fontSize: AppFontSize.xs,
+                                color: AppColors.blue600,
+                                fontWeight: AppFontWeight.semibold)),
                       ),
                     ],
                   ]),
                   if (barcode != null && barcode.isNotEmpty)
                     Text(barcode,
-                        style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)),
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                        style: const TextStyle(
+                            fontSize: AppFontSize.xs, color: AppColors.gray400),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
                   if (assignedTo != null)
                     Text(
-                      '${assignedTo['surname'] ?? ''} ${assignedTo['forename'] ?? ''}'.trim(),
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF374151)),
+                      '${assignedTo['surname'] ?? ''} ${assignedTo['forename'] ?? ''}'
+                          .trim(),
+                      style: const TextStyle(
+                          fontSize: AppFontSize.sm, color: AppColors.gray700),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -564,25 +611,39 @@ class _ItemsScreenState extends State<ItemsScreen> {
             Expanded(
               flex: canManage ? 2 : 3,
               child: Text(categoryName,
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF374151)),
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                  style: const TextStyle(
+                      fontSize: AppFontSize.sm, color: AppColors.gray700),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
             ),
             Expanded(
               flex: canManage ? 2 : 3,
               child: Text(location ?? '—',
-                  style: TextStyle(fontSize: 11, color: location != null ? const Color(0xFF374151) : const Color(0xFFD1D5DB)),
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                  style: TextStyle(
+                      fontSize: AppFontSize.sm,
+                      color: location != null
+                          ? AppColors.gray700
+                          : AppColors.gray300),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
             ),
             if (canManage)
               Expanded(
                 child: Text('$quantity',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                        fontSize: AppFontSize.base,
+                        fontWeight: AppFontWeight.semibold),
                     textAlign: TextAlign.center),
               ),
             if (canManage)
               IconButton(
-                icon: Icon(isAvailable ? Icons.visibility : Icons.visibility_off_outlined,
-                    size: 16, color: isAvailable ? const Color(0xFF059669) : const Color(0xFFD1D5DB)),
+                icon: Icon(
+                    isAvailable
+                        ? Icons.visibility
+                        : Icons.visibility_off_outlined,
+                    size: 16,
+                    color:
+                        isAvailable ? AppColors.emerald600 : AppColors.gray300),
                 onPressed: () async {
                   await context.read<ItemProvider>().toggleAvailability(itemId);
                   if (mounted) _fetch();
@@ -599,7 +660,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   onPressed: () => _selfAssignItem(item),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
-                    textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                    textStyle: const TextStyle(
+                        fontSize: AppFontSize.sm,
+                        fontWeight: AppFontWeight.semibold),
                     minimumSize: Size.zero,
                   ),
                   child: const Text('Λήψη'),
@@ -624,19 +687,39 @@ class _ItemsScreenState extends State<ItemsScreen> {
     bool autoFilling = false;
     int? selectedCategoryId;
     final depts = context.read<DepartmentProvider>().departments;
-    int? selectedDeptId = _deptFilter ?? (depts.isNotEmpty ? depts.first['id'] as int : null);
+    int? selectedDeptId =
+        _deptFilter ?? (depts.isNotEmpty ? depts.first['id'] as int : null);
 
     Future<void> scanBarcode(StateSetter setSt) async {
-      final result = await Navigator.of(context, rootNavigator: true).push<ScanResult>(
+      final result =
+          await Navigator.of(context, rootNavigator: true).push<ScanResult>(
         MaterialPageRoute(builder: (_) => const ScannerScreen()),
       );
       if (result == null || !mounted) return;
       barcodeCtrl.text = result.value;
-      await _autoFillFromBarcode(barcodeCtrl.text.trim(), setSt, nameCtrl, descCtrl, locationCtrl, (v) => isContainer = v, (v) => expirationDate = v, () => autoFilling, (v) => autoFilling = v);
+      await _autoFillFromBarcode(
+          barcodeCtrl.text.trim(),
+          setSt,
+          nameCtrl,
+          descCtrl,
+          locationCtrl,
+          (v) => isContainer = v,
+          (v) => expirationDate = v,
+          () => autoFilling,
+          (v) => autoFilling = v);
     }
 
     Future<void> onBarcodeSubmitted(StateSetter setSt) async {
-      await _autoFillFromBarcode(barcodeCtrl.text.trim(), setSt, nameCtrl, descCtrl, locationCtrl, (v) => isContainer = v, (v) => expirationDate = v, () => autoFilling, (v) => autoFilling = v);
+      await _autoFillFromBarcode(
+          barcodeCtrl.text.trim(),
+          setSt,
+          nameCtrl,
+          descCtrl,
+          locationCtrl,
+          (v) => isContainer = v,
+          (v) => expirationDate = v,
+          () => autoFilling,
+          (v) => autoFilling = v);
     }
 
     showDialog(
@@ -648,7 +731,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Όνομα')),
+                TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: 'Όνομα')),
                 const SizedBox(height: 12),
                 TextField(
                   controller: barcodeCtrl,
@@ -660,7 +745,11 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         if (autoFilling)
                           const Padding(
                             padding: EdgeInsets.only(right: 8),
-                            child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                            child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2)),
                           ),
                         IconButton(
                           icon: const Icon(Icons.qr_code_scanner),
@@ -673,20 +762,28 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   onSubmitted: (_) => onBarcodeSubmitted(setSt),
                 ),
                 const SizedBox(height: 12),
-                TextField(controller: locationCtrl, decoration: const InputDecoration(labelText: 'Τοποθεσία')),
+                TextField(
+                    controller: locationCtrl,
+                    decoration: const InputDecoration(labelText: 'Τοποθεσία')),
                 const SizedBox(height: 12),
-                TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Περιγραφή'), maxLines: 2),
+                TextField(
+                    controller: descCtrl,
+                    decoration: const InputDecoration(labelText: 'Περιγραφή'),
+                    maxLines: 2),
                 const SizedBox(height: 12),
                 Builder(
                   builder: (_) {
-                    final depts = context.read<DepartmentProvider>().departments;
+                    final depts =
+                        context.read<DepartmentProvider>().departments;
                     return DropdownButtonFormField<int>(
                       value: selectedDeptId,
                       decoration: const InputDecoration(labelText: 'Τμήμα'),
-                      items: depts.map<DropdownMenuItem<int>>((d) => DropdownMenuItem(
-                        value: d['id'] as int,
-                        child: Text(d['name'] ?? ''),
-                      )).toList(),
+                      items: depts
+                          .map<DropdownMenuItem<int>>((d) => DropdownMenuItem(
+                                value: d['id'] as int,
+                                child: Text(d['name'] ?? ''),
+                              ))
+                          .toList(),
                       onChanged: (v) => setSt(() => selectedDeptId = v),
                     );
                   },
@@ -699,11 +796,12 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       value: selectedCategoryId,
                       decoration: const InputDecoration(labelText: 'Κατηγορία'),
                       items: [
-                        const DropdownMenuItem<int?>(value: null, child: Text('Χωρίς κατηγορία')),
+                        const DropdownMenuItem<int?>(
+                            value: null, child: Text('Χωρίς κατηγορία')),
                         ...cats.map((c) => DropdownMenuItem<int?>(
-                          value: c['id'] as int,
-                          child: Text('${c['name']}'),
-                        )),
+                              value: c['id'] as int,
+                              child: Text('${c['name']}'),
+                            )),
                       ],
                       onChanged: (v) => setSt(() => selectedCategoryId = v),
                     );
@@ -730,9 +828,11 @@ class _ItemsScreenState extends State<ItemsScreen> {
                             context: ctx,
                             firstDate: DateTime.now(),
                             lastDate: DateTime(2100),
-                            initialDate: expirationDate ?? DateTime.now().add(const Duration(days: 365)),
+                            initialDate: expirationDate ??
+                                DateTime.now().add(const Duration(days: 365)),
                           );
-                          if (picked != null) setSt(() => expirationDate = picked);
+                          if (picked != null)
+                            setSt(() => expirationDate = picked);
                         },
                       ),
                       if (expirationDate != null)
@@ -754,21 +854,35 @@ class _ItemsScreenState extends State<ItemsScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
                 if (selectedDeptId == null) return;
-                final data = <String, dynamic>{'name': nameCtrl.text.trim(), 'isContainer': isContainer, 'quantity': quantity, 'departmentId': selectedDeptId};
-                if (barcodeCtrl.text.isNotEmpty) data['barCode'] = barcodeCtrl.text.trim();
-                if (locationCtrl.text.isNotEmpty) data['location'] = locationCtrl.text.trim();
-                if (descCtrl.text.isNotEmpty) data['description'] = descCtrl.text.trim();
-                if (expirationDate != null) data['expirationDate'] = expirationDate!.toIso8601String();
-                if (selectedCategoryId != null) data['categoryId'] = selectedCategoryId;
+                final data = <String, dynamic>{
+                  'name': nameCtrl.text.trim(),
+                  'isContainer': isContainer,
+                  'quantity': quantity,
+                  'departmentId': selectedDeptId
+                };
+                if (barcodeCtrl.text.isNotEmpty)
+                  data['barCode'] = barcodeCtrl.text.trim();
+                if (locationCtrl.text.isNotEmpty)
+                  data['location'] = locationCtrl.text.trim();
+                if (descCtrl.text.isNotEmpty)
+                  data['description'] = descCtrl.text.trim();
+                if (expirationDate != null)
+                  data['expirationDate'] = expirationDate!.toIso8601String();
+                if (selectedCategoryId != null)
+                  data['categoryId'] = selectedCategoryId;
                 final err = await context.read<ItemProvider>().create(data);
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (err != null) {
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                  if (mounted)
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text(err)));
                 } else {
                   _fetch();
                 }
@@ -813,7 +927,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Συμπληρώθηκε από "${item['name']}" (${results.length} αποτέλεσμα${results.length > 1 ? 'τα' : ''})'),
+          content: Text(
+              'Συμπληρώθηκε από "${item['name']}" (${results.length} αποτέλεσμα${results.length > 1 ? 'τα' : ''})'),
           duration: const Duration(seconds: 3),
         ),
       );
@@ -836,7 +951,11 @@ class _ItemsScreenState extends State<ItemsScreen> {
     );
     if (result == null || !mounted) return;
 
-    final isQr = choice == ScanChoice.qrCode ? true : choice == ScanChoice.barcode ? false : result.isQr;
+    final isQr = choice == ScanChoice.qrCode
+        ? true
+        : choice == ScanChoice.barcode
+            ? false
+            : result.isQr;
     await _handleScanResult(result.value, isQr);
   }
 
@@ -855,7 +974,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
       if (!mounted) return;
       if (results.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Δεν βρέθηκαν αντικείμενα για barcode "$value"')),
+          SnackBar(
+              content: Text('Δεν βρέθηκαν αντικείμενα για barcode "$value"')),
         );
       } else {
         _showBarcodeResults(results, value);
@@ -896,8 +1016,14 @@ class _ItemsScreenState extends State<ItemsScreen> {
                 children: [
                   SegmentedButton<bool>(
                     segments: const [
-                      ButtonSegment(value: true, label: Text('QR Code'), icon: Icon(Icons.qr_code)),
-                      ButtonSegment(value: false, label: Text('Barcode'), icon: Icon(Icons.barcode_reader)),
+                      ButtonSegment(
+                          value: true,
+                          label: Text('QR Code'),
+                          icon: Icon(Icons.qr_code)),
+                      ButtonSegment(
+                          value: false,
+                          label: Text('Barcode'),
+                          icon: Icon(Icons.barcode_reader)),
                     ],
                     selected: {isQr},
                     onSelectionChanged: (v) => setSt(() => isQr = v.first),
@@ -916,18 +1042,23 @@ class _ItemsScreenState extends State<ItemsScreen> {
                           ? item['id'].toString()
                           : (item['barCode'] ?? '').toString();
                     },
-                    fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                    fieldViewBuilder:
+                        (context, controller, focusNode, onSubmitted) {
                       return TextField(
                         controller: controller,
                         focusNode: focusNode,
                         decoration: InputDecoration(
                           labelText: isQr ? 'ID Αντικειμένου' : 'Τιμή Barcode',
-                          hintText: isQr ? 'Εισάγετε αριθμό ID' : 'Εισάγετε barcode',
-                          prefixIcon: Icon(isQr ? Icons.tag : Icons.barcode_reader),
+                          hintText:
+                              isQr ? 'Εισάγετε αριθμό ID' : 'Εισάγετε barcode',
+                          prefixIcon:
+                              Icon(isQr ? Icons.tag : Icons.barcode_reader),
                           helperText: 'Πληκτρολογήστε 3+ χαρακτήρες',
-                          helperStyle: const TextStyle(fontSize: 11),
+                          helperStyle:
+                              const TextStyle(fontSize: AppFontSize.sm),
                         ),
-                        keyboardType: isQr ? TextInputType.number : TextInputType.text,
+                        keyboardType:
+                            isQr ? TextInputType.number : TextInputType.text,
                         onChanged: (v) => selectedValue = v,
                       );
                     },
@@ -936,14 +1067,18 @@ class _ItemsScreenState extends State<ItemsScreen> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Άκυρο')),
               FilledButton.icon(
                 icon: const Icon(Icons.search, size: 18),
                 label: const Text('Αναζήτηση'),
                 onPressed: () async {
                   final value = selectedValue.trim();
                   if (value.isEmpty) return;
-                  final cleanValue = value.contains(' – ') ? value.split(' – ').first.trim() : value;
+                  final cleanValue = value.contains(' – ')
+                      ? value.split(' – ').first.trim()
+                      : value;
                   Navigator.pop(ctx);
                   await _handleScanResult(cleanValue, isQr);
                 },
@@ -976,7 +1111,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
               children: [
                 Text(
                   '${results.length} αντικείμενο${results.length == 1 ? '' : 'α'} βρέθηκαν',
-                  style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+                  style: tt.bodySmall?.copyWith(color: AppColors.gray500),
                 ),
                 const SizedBox(height: 8),
                 Flexible(
@@ -996,22 +1131,26 @@ class _ItemsScreenState extends State<ItemsScreen> {
                           'Assigned: ${assigned['forename']} ${assigned['surname']}',
                       ];
                       return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 4),
                         leading: CircleAvatar(
                           backgroundColor: (isContainer
-                                  ? const Color(0xFF2563EB)
-                                  : const Color(0xFFDC2626))
+                                  ? AppColors.blue600
+                                  : AppColors.red600)
                               .withAlpha(25),
                           child: Icon(
-                            isContainer ? Icons.check_box_outline_blank : Icons.circle_outlined,
+                            isContainer
+                                ? Icons.check_box_outline_blank
+                                : Icons.circle_outlined,
                             color: isContainer
-                                ? const Color(0xFF2563EB)
-                                : const Color(0xFFDC2626),
+                                ? AppColors.blue600
+                                : AppColors.red600,
                             size: 20,
                           ),
                         ),
                         title: Text(item['name'] ?? '',
-                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                            style: const TextStyle(
+                                fontWeight: AppFontWeight.semibold)),
                         subtitle: subtitleParts.isNotEmpty
                             ? Text(subtitleParts.join(' · '),
                                 maxLines: 1, overflow: TextOverflow.ellipsis)
@@ -1048,7 +1187,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
         title: const Text('Λήψη Εξοπλισμού'),
         content: Text('Ανάθεση του "$itemName" σε εσάς;'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
           FilledButton.icon(
             icon: const Icon(Icons.check, size: 18),
             label: const Text('Λήψη'),
@@ -1079,7 +1220,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
     final auth = context.watch<AuthProvider>();
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    final name = auth.displayName.isNotEmpty ? auth.displayName : (auth.user?['eame'] ?? 'User');
+    final name = auth.displayName.isNotEmpty
+        ? auth.displayName
+        : (auth.user?['eame'] ?? 'User');
     final canManage = auth.isAdmin || auth.isItemAdmin;
     final processed = _processed;
     final totalPages = (processed.length / _rowsPerPage).ceil();
@@ -1102,52 +1245,62 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   child: Row(children: [
                     Material(
                       color: cs.primary.withAlpha(15),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.r12,
                       child: InkWell(
                         onTap: _showMyEquipmentSheet,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.r12,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.inventory_2_outlined, size: 18, color: cs.primary),
+                              Icon(Icons.inventory_2_outlined,
+                                  size: 18, color: cs.primary),
                               const SizedBox(width: 8),
                               Text('Τα αντικείμενά μου',
                                   style: tt.labelLarge?.copyWith(
-                                      fontWeight: FontWeight.w700, color: cs.primary)),
+                                      fontWeight: AppFontWeight.bold,
+                                      color: cs.primary)),
                               if (_myEquipment.isNotEmpty) ...[
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 7, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF059669).withAlpha(20),
-                                    borderRadius: BorderRadius.circular(8),
+                                    color: AppColors.emerald600.withAlpha(20),
+                                    borderRadius: AppRadius.r8,
                                   ),
                                   child: Text(
                                     '${_myEquipment.length}',
                                     style: const TextStyle(
-                                        fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF059669)),
+                                        fontSize: AppFontSize.sm,
+                                        fontWeight: AppFontWeight.bold,
+                                        color: AppColors.emerald600),
                                   ),
                                 ),
                               ],
                               if (_myVehiclesCount > 0) ...[
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 7, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: Colors.orange.withAlpha(25),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: AppRadius.r8,
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.directions_car, size: 12, color: Color(0xFF9A3412)),
+                                      Icon(Icons.directions_car,
+                                          size: 12, color: AppColors.orange800),
                                       const SizedBox(width: 3),
                                       Text(
                                         '$_myVehiclesCount',
                                         style: TextStyle(
-                                            fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF9A3412)),
+                                            fontSize: AppFontSize.sm,
+                                            fontWeight: AppFontWeight.bold,
+                                            color: AppColors.orange800),
                                       ),
                                     ],
                                   ),
@@ -1175,7 +1328,10 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         backgroundColor: cs.primary,
                         child: Text(
                           name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: AppFontWeight.semibold,
+                              fontSize: AppFontSize.lg),
                         ),
                       ),
                     ),
@@ -1184,48 +1340,61 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
                 // ── Search + filter toggle ──
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: _searchCtrl,
                           decoration: InputDecoration(
-                            hintText: canManage ? 'Αναζήτηση αντικειμένων...' : 'Αναζήτηση διαθέσιμου εξοπλισμού...',
+                            hintText: canManage
+                                ? 'Αναζήτηση αντικειμένων...'
+                                : 'Αναζήτηση διαθέσιμου εξοπλισμού...',
                             prefixIcon: const Icon(Icons.search, size: 20),
                             suffixIcon: _search.isNotEmpty
                                 ? IconButton(
                                     icon: const Icon(Icons.clear, size: 18),
                                     onPressed: () {
                                       _searchCtrl.clear();
-                                      setState(() { _search = ''; _page = 0; });
+                                      setState(() {
+                                        _search = '';
+                                        _page = 0;
+                                      });
                                     },
                                   )
                                 : null,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            border:
+                                OutlineInputBorder(borderRadius: AppRadius.r12),
                             filled: true,
                             fillColor: Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
                             isDense: true,
                           ),
-                          onChanged: (v) => setState(() { _search = v; _page = 0; }),
+                          onChanged: (v) => setState(() {
+                            _search = v;
+                            _page = 0;
+                          }),
                         ),
                       ),
                       const SizedBox(width: 8),
                       GestureDetector(
-                        onTap: () => setState(() => _filtersExpanded = !_filtersExpanded),
+                        onTap: () => setState(
+                            () => _filtersExpanded = !_filtersExpanded),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: (_filtersExpanded || _activeFilterCount > 0)
                                 ? cs.primary.withAlpha(15)
-                                : const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(12),
+                                : AppColors.gray100,
+                            borderRadius: AppRadius.r12,
                             border: Border.all(
-                              color: (_filtersExpanded || _activeFilterCount > 0)
-                                  ? cs.primary.withAlpha(60)
-                                  : const Color(0xFFE5E7EB),
+                              color:
+                                  (_filtersExpanded || _activeFilterCount > 0)
+                                      ? cs.primary.withAlpha(60)
+                                      : AppColors.gray200,
                             ),
                           ),
                           child: Stack(
@@ -1234,25 +1403,27 @@ class _ItemsScreenState extends State<ItemsScreen> {
                               Icon(
                                 Icons.tune_rounded,
                                 size: 20,
-                                color: (_filtersExpanded || _activeFilterCount > 0)
-                                    ? cs.primary
-                                    : const Color(0xFF6B7280),
+                                color:
+                                    (_filtersExpanded || _activeFilterCount > 0)
+                                        ? cs.primary
+                                        : AppColors.gray500,
                               ),
                               if (_activeFilterCount > 0)
                                 Positioned(
-                                  right: -4, top: -4,
+                                  right: -4,
+                                  top: -4,
                                   child: Container(
                                     padding: const EdgeInsets.all(3),
                                     decoration: const BoxDecoration(
-                                      color: Color(0xFFC62828),
+                                      color: AppColors.brandPrimary,
                                       shape: BoxShape.circle,
                                     ),
                                     child: Text(
                                       '$_activeFilterCount',
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w700,
+                                        fontSize: AppFontSize.xxs,
+                                        fontWeight: AppFontWeight.bold,
                                       ),
                                     ),
                                   ),
@@ -1284,18 +1455,20 @@ class _ItemsScreenState extends State<ItemsScreen> {
                                   height: 34,
                                   child: ListView(
                                     scrollDirection: Axis.horizontal,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16),
                                     children: [
                                       _chip('Όλα (${_processed.length})', null),
                                       const SizedBox(width: 6),
                                       ...cats.map((c) {
                                         final catId = c['id'] as int;
                                         return Padding(
-                                          padding: const EdgeInsets.only(right: 6),
+                                          padding:
+                                              const EdgeInsets.only(right: 6),
                                           child: _chip(
                                             '${c['name']} (${_countCat(catId)})',
                                             catId,
-                                            color: const Color(0xFF7C3AED),
+                                            color: AppColors.violet600,
                                           ),
                                         );
                                       }),
@@ -1314,34 +1487,52 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       ? const Center(child: CircularProgressIndicator())
                       : processed.isEmpty
                           ? Center(
-                              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                Icon(Icons.inventory_2_outlined, size: 64, color: const Color(0xFFD1D5DB)),
-                                const SizedBox(height: 12),
-                                Text('Δεν βρέθηκαν αντικείμενα',
-                                    style: tt.bodyLarge?.copyWith(color: const Color(0xFF6B7280))),
-                              ]),
+                              child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.inventory_2_outlined,
+                                        size: 64, color: AppColors.gray300),
+                                    const SizedBox(height: 12),
+                                    Text('Δεν βρέθηκαν αντικείμενα',
+                                        style: tt.bodyLarge?.copyWith(
+                                            color: AppColors.gray500)),
+                                  ]),
                             )
                           : Column(children: [
                               // ── Pagination ──
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 4),
                                 child: Row(children: [
                                   Text('${processed.length} αντικείμενα',
-                                      style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                                      style: tt.bodySmall
+                                          ?.copyWith(color: AppColors.gray500)),
                                   const Spacer(),
-                                  const Text('Γραμμές: ', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                                  const Text('Γραμμές: ',
+                                      style: TextStyle(
+                                          fontSize: AppFontSize.base,
+                                          color: AppColors.gray500)),
                                   _pageDropdown(),
                                   const SizedBox(width: 12),
                                   IconButton(
-                                    icon: const Icon(Icons.chevron_left, size: 20),
-                                    onPressed: _page > 0 ? () => setState(() => _page--) : null,
+                                    icon: const Icon(Icons.chevron_left,
+                                        size: 20),
+                                    onPressed: _page > 0
+                                        ? () => setState(() => _page--)
+                                        : null,
                                     visualDensity: VisualDensity.compact,
                                   ),
-                                  Text('${_page + 1} / ${totalPages.clamp(1, 999)}',
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                                  Text(
+                                      '${_page + 1} / ${totalPages.clamp(1, 999)}',
+                                      style: const TextStyle(
+                                          fontSize: AppFontSize.base,
+                                          fontWeight: AppFontWeight.semibold)),
                                   IconButton(
-                                    icon: const Icon(Icons.chevron_right, size: 20),
-                                    onPressed: _page < totalPages - 1 ? () => setState(() => _page++) : null,
+                                    icon: const Icon(Icons.chevron_right,
+                                        size: 20),
+                                    onPressed: _page < totalPages - 1
+                                        ? () => setState(() => _page++)
+                                        : null,
                                     visualDensity: VisualDensity.compact,
                                   ),
                                 ]),
@@ -1349,27 +1540,34 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
                               // ── Header ──
                               Container(
-                                color: const Color(0xFFEEF0F4),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                color: AppColors.surfaceTint,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 6),
                                 child: Row(children: [
                                   if (_selectionMode)
                                     Padding(
                                       padding: const EdgeInsets.only(right: 8),
                                       child: Checkbox(
                                         value: pageItems.isNotEmpty &&
-                                            pageItems.every((i) => _selectedIds.contains(i['id'] as int)),
+                                            pageItems.every((i) => _selectedIds
+                                                .contains(i['id'] as int)),
                                         tristate: false,
-                                        onChanged: (_) => _toggleSelectAll(pageItems),
+                                        onChanged: (_) =>
+                                            _toggleSelectAll(pageItems),
                                         visualDensity: VisualDensity.compact,
-                                        activeColor: const Color(0xFF7C3AED),
+                                        activeColor: AppColors.violet600,
                                       ),
                                     )
                                   else
                                     const SizedBox(width: 8),
-                                  _headerCell('Όνομα', 'name', flex: canManage ? 3 : 4),
-                                  _headerCell('Κατ.', 'category', flex: canManage ? 2 : 3),
-                                  _headerCell('Τοποθεσία', 'location', flex: canManage ? 2 : 3),
-                                  if (canManage) _headerCell('Ποσ.', 'quantity'),
+                                  _headerCell('Όνομα', 'name',
+                                      flex: canManage ? 3 : 4),
+                                  _headerCell('Κατ.', 'category',
+                                      flex: canManage ? 2 : 3),
+                                  _headerCell('Τοποθεσία', 'location',
+                                      flex: canManage ? 2 : 3),
+                                  if (canManage)
+                                    _headerCell('Ποσ.', 'quantity'),
                                   SizedBox(width: canManage ? 32 : 80),
                                 ]),
                               ),
@@ -1381,7 +1579,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
                                   child: ListView.builder(
                                     padding: const EdgeInsets.only(bottom: 120),
                                     itemCount: pageItems.length,
-                                    itemBuilder: (context, i) => _buildRow(pageItems[i], i.isEven),
+                                    itemBuilder: (context, i) =>
+                                        _buildRow(pageItems[i], i.isEven),
                                   ),
                                 ),
                               ),
@@ -1428,8 +1627,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1B4B),
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.indigo950,
+              borderRadius: AppRadius.r16,
               boxShadow: [
                 BoxShadow(
                     color: Colors.black.withAlpha(60),
@@ -1449,7 +1648,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
               Text(
                 '${_selectedIds.length} επιλεγμένα',
                 style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                    color: Colors.white,
+                    fontWeight: AppFontWeight.semibold,
+                    fontSize: AppFontSize.md),
               ),
               const Spacer(),
               _BulkAction(
@@ -1460,7 +1661,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
               _BulkAction(
                 icon: Icons.delete_outline,
                 label: 'Διαγραφή',
-                color: const Color(0xFFEF4444),
+                color: AppColors.red500,
                 onTap: _bulkDelete,
               ),
             ]),
@@ -1487,7 +1688,7 @@ class _BulkAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppRadius.r8,
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1496,7 +1697,9 @@ class _BulkAction extends StatelessWidget {
           const SizedBox(height: 2),
           Text(label,
               style: TextStyle(
-                  color: color, fontSize: 10, fontWeight: FontWeight.w600)),
+                  color: color,
+                  fontSize: AppFontSize.xs,
+                  fontWeight: AppFontWeight.semibold)),
         ]),
       ),
     );

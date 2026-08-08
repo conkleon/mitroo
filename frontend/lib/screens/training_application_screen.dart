@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class TrainingApplicationScreen extends StatefulWidget {
   const TrainingApplicationScreen({super.key});
 
   @override
-  State<TrainingApplicationScreen> createState() => _TrainingApplicationScreenState();
+  State<TrainingApplicationScreen> createState() =>
+      _TrainingApplicationScreenState();
 }
 
 class _TrainingApplicationScreenState extends State<TrainingApplicationScreen> {
@@ -54,8 +57,10 @@ class _TrainingApplicationScreenState extends State<TrainingApplicationScreen> {
       final res = await _api.get('/training-applications/meta');
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        _departments = (data['departments'] as List).cast<Map<String, dynamic>>();
-        _rootSpecs = (data['rootSpecializations'] as List).cast<Map<String, dynamic>>();
+        _departments =
+            (data['departments'] as List).cast<Map<String, dynamic>>();
+        _rootSpecs =
+            (data['rootSpecializations'] as List).cast<Map<String, dynamic>>();
       }
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
@@ -124,7 +129,8 @@ class _TrainingApplicationScreenState extends State<TrainingApplicationScreen> {
       if (res.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Η αίτηση καταχωρήθηκε. Θα λάβετε επικοινωνία από το τμήμα επιλογής σας.'),
+            content: Text(
+                'Η αίτηση καταχωρήθηκε. Θα λάβετε επικοινωνία από το τμήμα επιλογής σας.'),
           ),
         );
         _formKey.currentState?.reset();
@@ -142,12 +148,15 @@ class _TrainingApplicationScreenState extends State<TrainingApplicationScreen> {
           _birthDate = null;
         });
       } else {
-        final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία υποβολής αίτησης';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err.toString())));
+        final err =
+            jsonDecode(res.body)['error'] ?? 'Αποτυχία υποβολής αίτησης';
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(err.toString())));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -165,7 +174,8 @@ class _TrainingApplicationScreenState extends State<TrainingApplicationScreen> {
     if (_rootSpecs.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Αίτηση Εκπαίδευσης')),
-        body: const Center(child: Text('Δεν υπάρχουν διαθέσιμες ριζικές ειδικεύσεις.')),
+        body: const Center(
+            child: Text('Δεν υπάρχουν διαθέσιμες ριζικές ειδικεύσεις.')),
       );
     }
 
@@ -185,10 +195,11 @@ class _TrainingApplicationScreenState extends State<TrainingApplicationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Θέλω να εκπαιδευτώ στον Ελληνικό Ερυθρό Σταυρό',
-                      style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                      style: tt.titleMedium
+                          ?.copyWith(fontWeight: AppFontWeight.bold)),
                   const SizedBox(height: 4),
                   Text('Συμπληρώστε τη φόρμα συμμετοχής εκπαίδευσης.',
-                      style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                      style: tt.bodySmall?.copyWith(color: AppColors.gray500)),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<int>(
                     value: _selectedSpecId,
@@ -202,37 +213,51 @@ class _TrainingApplicationScreenState extends State<TrainingApplicationScreen> {
                         child: Text((s['name'] ?? '').toString()),
                       );
                     }).toList(),
-                    onChanged: (value) => setState(() => _selectedSpecId = value),
+                    onChanged: (value) =>
+                        setState(() => _selectedSpecId = value),
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _forenameCtrl,
-                    decoration: const InputDecoration(labelText: 'Όνομα *', border: OutlineInputBorder()),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Υποχρεωτικό' : null,
+                    decoration: const InputDecoration(
+                        labelText: 'Όνομα *', border: OutlineInputBorder()),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Υποχρεωτικό' : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _surnameCtrl,
-                    decoration: const InputDecoration(labelText: 'Επώνυμο *', border: OutlineInputBorder()),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Υποχρεωτικό' : null,
+                    decoration: const InputDecoration(
+                        labelText: 'Επώνυμο *', border: OutlineInputBorder()),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Υποχρεωτικό' : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(labelText: 'Email *', border: OutlineInputBorder()),
-                    validator: (v) => (v == null || !v.contains('@')) ? 'Εισάγετε έγκυρο email' : null,
+                    decoration: const InputDecoration(
+                        labelText: 'Email *', border: OutlineInputBorder()),
+                    validator: (v) => (v == null || !v.contains('@'))
+                        ? 'Εισάγετε έγκυρο email'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _phonePrimaryCtrl,
-                    decoration: const InputDecoration(labelText: 'Κινητό Τηλέφωνο *', border: OutlineInputBorder()),
-                    validator: (v) => (v == null || v.trim().length < 5) ? 'Υποχρεωτικό' : null,
+                    decoration: const InputDecoration(
+                        labelText: 'Κινητό Τηλέφωνο *',
+                        border: OutlineInputBorder()),
+                    validator: (v) => (v == null || v.trim().length < 5)
+                        ? 'Υποχρεωτικό'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _phoneSecondaryCtrl,
-                    decoration: const InputDecoration(labelText: 'Δευτερεύον Τηλέφωνο', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                        labelText: 'Δευτερεύον Τηλέφωνο',
+                        border: OutlineInputBorder()),
                   ),
                   const SizedBox(height: 12),
                   Autocomplete<Map<String, dynamic>>(
@@ -240,7 +265,10 @@ class _TrainingApplicationScreenState extends State<TrainingApplicationScreen> {
                     optionsBuilder: (textEditingValue) {
                       final q = textEditingValue.text.toLowerCase().trim();
                       if (q.isEmpty) return _departments;
-                      return _departments.where((d) => (d['name'] ?? '').toString().toLowerCase().contains(q));
+                      return _departments.where((d) => (d['name'] ?? '')
+                          .toString()
+                          .toLowerCase()
+                          .contains(q));
                     },
                     onSelected: (d) {
                       setState(() {
@@ -248,8 +276,10 @@ class _TrainingApplicationScreenState extends State<TrainingApplicationScreen> {
                         _selectedDeptName = d['name']?.toString();
                       });
                     },
-                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                      if (_selectedDeptName != null && controller.text.isEmpty) {
+                    fieldViewBuilder:
+                        (context, controller, focusNode, onFieldSubmitted) {
+                      if (_selectedDeptName != null &&
+                          controller.text.isEmpty) {
                         controller.text = _selectedDeptName!;
                       }
                       return TextField(
@@ -301,18 +331,21 @@ class _TrainingApplicationScreenState extends State<TrainingApplicationScreen> {
                   TextFormField(
                     controller: _addressCtrl,
                     maxLines: 2,
-                    decoration: const InputDecoration(labelText: 'Διεύθυνση', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                        labelText: 'Διεύθυνση', border: OutlineInputBorder()),
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _extraInfoCtrl,
                     maxLines: 3,
-                    decoration: const InputDecoration(labelText: 'Επιπλέον Στοιχεία', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                        labelText: 'Επιπλέον Στοιχεία',
+                        border: OutlineInputBorder()),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Με την υποβολή θα λάβετε ενημέρωση ότι η φόρμα παραλήφθηκε και θα περιμένετε επικοινωνία από το τμήμα επιλογής σας.',
-                    style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+                    style: tt.bodySmall?.copyWith(color: AppColors.gray500),
                   ),
                   const SizedBox(height: 14),
                   SizedBox(
@@ -321,7 +354,11 @@ class _TrainingApplicationScreenState extends State<TrainingApplicationScreen> {
                       onPressed: _submitting ? null : _submit,
                       icon: const Icon(Icons.send, size: 18),
                       label: _submitting
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
                           : const Text('Υποβολή Αίτησης'),
                     ),
                   ),

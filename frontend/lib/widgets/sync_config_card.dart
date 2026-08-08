@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/sync_provider.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class SyncConfigCard extends StatefulWidget {
   final int departmentId;
   const SyncConfigCard({super.key, required this.departmentId});
@@ -70,8 +72,8 @@ class _SyncConfigCardState extends State<SyncConfigCard> {
     );
     if (!mounted) return;
     if (err != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(err), backgroundColor: Colors.red));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Αποθηκεύτηκε')),
@@ -210,15 +212,19 @@ class _SyncConfigCardState extends State<SyncConfigCard> {
                     const Icon(Icons.sync, size: 20),
                     const SizedBox(width: 8),
                     Text('Συγχρονισμός Mitroo',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            )),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: AppFontWeight.semibold,
+                                )),
                     if (lastStatus != null) ...[
                       const SizedBox(width: 8),
                       Icon(
-                        lastStatus == 'success' ? Icons.check_circle : Icons.error,
+                        lastStatus == 'success'
+                            ? Icons.check_circle
+                            : Icons.error,
                         size: 16,
-                        color: lastStatus == 'success' ? Colors.green : Colors.red,
+                        color:
+                            lastStatus == 'success' ? Colors.green : Colors.red,
                       ),
                     ],
                   ],
@@ -245,8 +251,8 @@ class _SyncConfigCardState extends State<SyncConfigCard> {
                         icon: Icon(_passwordObscured
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined),
-                        onPressed: () =>
-                            setState(() => _passwordObscured = !_passwordObscured),
+                        onPressed: () => setState(
+                            () => _passwordObscured = !_passwordObscured),
                       ),
                     ),
                   ),
@@ -338,12 +344,13 @@ class _SyncRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+              Text(label,
+                  style: const TextStyle(fontWeight: AppFontWeight.medium)),
               Text('Τελευταίος: $lastSync',
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall
-                      ?.copyWith(color: const Color(0xFF6B7280))),
+                      ?.copyWith(color: AppColors.gray500)),
             ],
           ),
         ),

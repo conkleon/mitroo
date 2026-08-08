@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/victim_provider.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class VictimsScreen extends StatefulWidget {
   const VictimsScreen({super.key});
 
@@ -36,16 +38,16 @@ class _VictimsScreenState extends State<VictimsScreen> {
 
   void _fetch({int page = 1}) {
     context.read<VictimProvider>().fetchVictims(
-      search: _searchCtrl.text,
-      dateFrom: _dateFrom != null
-          ? '${_dateFrom!.year}-${_dateFrom!.month.toString().padLeft(2, '0')}-${_dateFrom!.day.toString().padLeft(2, '0')}'
-          : null,
-      dateTo: _dateTo != null
-          ? '${_dateTo!.year}-${_dateTo!.month.toString().padLeft(2, '0')}-${_dateTo!.day.toString().padLeft(2, '0')}'
-          : null,
-      status: _status,
-      page: page,
-    );
+          search: _searchCtrl.text,
+          dateFrom: _dateFrom != null
+              ? '${_dateFrom!.year}-${_dateFrom!.month.toString().padLeft(2, '0')}-${_dateFrom!.day.toString().padLeft(2, '0')}'
+              : null,
+          dateTo: _dateTo != null
+              ? '${_dateTo!.year}-${_dateTo!.month.toString().padLeft(2, '0')}-${_dateTo!.day.toString().padLeft(2, '0')}'
+              : null,
+          status: _status,
+          page: page,
+        );
   }
 
   void _onSearchChanged(String value) {
@@ -86,264 +88,298 @@ class _VictimsScreenState extends State<VictimsScreen> {
         child: RefreshIndicator(
           onRefresh: () async => _fetch(),
           child: Column(
-          children: [
-            // ── Search bar + filter toggle ──────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchCtrl,
-                      decoration: InputDecoration(
-                        hintText: 'Αναζήτηση...',
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _searchCtrl.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () {
-                                  _searchDebounce?.cancel();
-                                  _searchCtrl.clear();
-                                  setState(() {});
-                                  _fetch();
-                                },
-                              )
-                            : null,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onChanged: (v) {
-                        setState(() {});
-                        _onSearchChanged(v);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => setState(() => _filtersExpanded = !_filtersExpanded),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: (_filtersExpanded || _activeFilterCount > 0)
-                            ? Theme.of(context).colorScheme.primary.withAlpha(15)
-                            : const Color(0xFFF3F4F6),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: (_filtersExpanded || _activeFilterCount > 0)
-                              ? Theme.of(context).colorScheme.primary.withAlpha(60)
-                              : const Color(0xFFE5E7EB),
-                        ),
-                      ),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Icon(
-                            Icons.tune_rounded,
-                            size: 20,
-                            color: (_filtersExpanded || _activeFilterCount > 0)
-                                ? Theme.of(context).colorScheme.primary
-                                : const Color(0xFF6B7280),
+            children: [
+              // ── Search bar + filter toggle ──────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchCtrl,
+                        decoration: InputDecoration(
+                          hintText: 'Αναζήτηση...',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _searchCtrl.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchDebounce?.cancel();
+                                    _searchCtrl.clear();
+                                    setState(() {});
+                                    _fetch();
+                                  },
+                                )
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: AppRadius.r12,
+                            borderSide:
+                                const BorderSide(color: AppColors.gray200),
                           ),
-                          if (_activeFilterCount > 0)
-                            Positioned(
-                              right: -4, top: -4,
-                              child: Container(
-                                padding: const EdgeInsets.all(3),
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFC62828),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Text(
-                                  '$_activeFilterCount',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onChanged: (v) {
+                          setState(() {});
+                          _onSearchChanged(v);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () =>
+                          setState(() => _filtersExpanded = !_filtersExpanded),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: (_filtersExpanded || _activeFilterCount > 0)
+                              ? Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withAlpha(15)
+                              : AppColors.gray100,
+                          borderRadius: AppRadius.r12,
+                          border: Border.all(
+                            color: (_filtersExpanded || _activeFilterCount > 0)
+                                ? Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withAlpha(60)
+                                : AppColors.gray200,
+                          ),
+                        ),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Icon(
+                              Icons.tune_rounded,
+                              size: 20,
+                              color:
+                                  (_filtersExpanded || _activeFilterCount > 0)
+                                      ? Theme.of(context).colorScheme.primary
+                                      : AppColors.gray500,
+                            ),
+                            if (_activeFilterCount > 0)
+                              Positioned(
+                                right: -4,
+                                top: -4,
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.brandPrimary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    '$_activeFilterCount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: AppFontSize.xxs,
+                                      fontWeight: AppFontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            // ── Collapsible filters ─────────────
-            AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              child: _filtersExpanded
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: _DatePickerButton(
-                                  label: 'Από',
-                                  date: _dateFrom,
-                                  onPicked: (d) {
-                                    setState(() => _dateFrom = d);
-                                    _fetch();
-                                  },
-                                  onClear: () {
-                                    setState(() => _dateFrom = null);
-                                    _fetch();
-                                  },
+              // ── Collapsible filters ─────────────
+              AnimatedSize(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                child: _filtersExpanded
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _DatePickerButton(
+                                    label: 'Από',
+                                    date: _dateFrom,
+                                    onPicked: (d) {
+                                      setState(() => _dateFrom = d);
+                                      _fetch();
+                                    },
+                                    onClear: () {
+                                      setState(() => _dateFrom = null);
+                                      _fetch();
+                                    },
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: _DatePickerButton(
-                                  label: 'Έως',
-                                  date: _dateTo,
-                                  onPicked: (d) {
-                                    setState(() => _dateTo = d);
-                                    _fetch();
-                                  },
-                                  onClear: () {
-                                    setState(() => _dateTo = null);
-                                    _fetch();
-                                  },
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: _DatePickerButton(
+                                    label: 'Έως',
+                                    date: _dateTo,
+                                    onPicked: (d) {
+                                      setState(() => _dateTo = d);
+                                      _fetch();
+                                    },
+                                    onClear: () {
+                                      setState(() => _dateTo = null);
+                                      _fetch();
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        _FilterRow(
-                          selected: _status,
-                          onChanged: (v) {
-                            setState(() => _status = v);
-                            _fetch();
-                          },
-                        ),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            const SizedBox(height: 4),
-
-            // ── Table or loading/empty ─────────
-            Expanded(
-              child: provider.loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : allRows.isEmpty
-                      ? Center(
-                          child: Text(
-                            'Δεν υπάρχουν περιστατικά',
-                            style: GoogleFonts.inter(
-                              color: const Color(0xFF6B7280),
-                              fontSize: 15,
+                              ],
                             ),
                           ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.only(top: 8),
-                          itemCount: allRows.length,
-                          itemBuilder: (context, i) {
-                            final v = allRows[i];
-                            final name = v['name'] as String? ?? 'Άγνωστο';
-                            final chiefComplaint = v['chiefComplaint'] as String? ?? '';
-                            final isPending = v['_isPending'] == true;
-                            final isFinalized = v['isFinalized'] == true;
+                          _FilterRow(
+                            selected: _status,
+                            onChanged: (v) {
+                              setState(() => _status = v);
+                              _fetch();
+                            },
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              const SizedBox(height: 4),
 
-                            final borderColor = isPending
-                                ? const Color(0xFFD97706)
-                                : isFinalized
-                                    ? const Color(0xFF9CA3AF)
-                                    : const Color(0xFF2563EB);
+              // ── Table or loading/empty ─────────
+              Expanded(
+                child: provider.loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : allRows.isEmpty
+                        ? Center(
+                            child: Text(
+                              'Δεν υπάρχουν περιστατικά',
+                              style: GoogleFonts.inter(
+                                color: AppColors.gray500,
+                                fontSize: AppFontSize.xl,
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.only(top: 8),
+                            itemCount: allRows.length,
+                            itemBuilder: (context, i) {
+                              final v = allRows[i];
+                              final name = v['name'] as String? ?? 'Άγνωστο';
+                              final chiefComplaint =
+                                  v['chiefComplaint'] as String? ?? '';
+                              final isPending = v['_isPending'] == true;
+                              final isFinalized = v['isFinalized'] == true;
 
-                            return Card(
-                              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                              clipBehavior: Clip.antiAlias,
-                              child: InkWell(
-                                onTap: isPending ? null : () => context.push('/victims/${v['id']}'),
-                                child: IntrinsicHeight(
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Container(width: 4, color: borderColor),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 12),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  if (isPending) ...[
-                                                    const Icon(Icons.cloud_off_outlined,
-                                                        size: 14, color: Color(0xFFD97706)),
-                                                    const SizedBox(width: 4),
-                                                  ],
-                                                  Expanded(
-                                                    child: Text(
-                                                      name,
-                                                      style: TextStyle(
-                                                        fontWeight: FontWeight.w700,
-                                                        fontSize: 14,
-                                                        color: isPending
-                                                            ? const Color(0xFF92400E)
-                                                            : const Color(0xFF1F2937),
+                              final borderColor = isPending
+                                  ? AppColors.amber600
+                                  : isFinalized
+                                      ? AppColors.gray400
+                                      : AppColors.blue600;
+
+                              return Card(
+                                margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: isPending
+                                      ? null
+                                      : () =>
+                                          context.push('/victims/${v['id']}'),
+                                  child: IntrinsicHeight(
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Container(width: 4, color: borderColor),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 12),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    if (isPending) ...[
+                                                      const Icon(
+                                                          Icons
+                                                              .cloud_off_outlined,
+                                                          size: 14,
+                                                          color: AppColors
+                                                              .amber600),
+                                                      const SizedBox(width: 4),
+                                                    ],
+                                                    Expanded(
+                                                      child: Text(
+                                                        name,
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              AppFontWeight
+                                                                  .bold,
+                                                          fontSize:
+                                                              AppFontSize.lg,
+                                                          color: isPending
+                                                              ? AppColors
+                                                                  .amber800
+                                                              : AppColors
+                                                                  .gray800,
+                                                        ),
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
                                                       ),
-                                                      overflow: TextOverflow.ellipsis,
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                isPending
-                                                    ? 'Εκκρεμεί'
-                                                    : [
-                                                        _formatDate(v['createdAt'] as String?),
-                                                        if (chiefComplaint.isNotEmpty) chiefComplaint,
-                                                      ].join(' · '),
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: isPending
-                                                      ? const Color(0xFFD97706)
-                                                      : const Color(0xFF6B7280),
+                                                  ],
                                                 ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  isPending
+                                                      ? 'Εκκρεμεί'
+                                                      : [
+                                                          _formatDate(
+                                                              v['createdAt']
+                                                                  as String?),
+                                                          if (chiefComplaint
+                                                              .isNotEmpty)
+                                                            chiefComplaint,
+                                                        ].join(' · '),
+                                                  style: TextStyle(
+                                                    fontSize: AppFontSize.base,
+                                                    color: isPending
+                                                        ? AppColors.amber600
+                                                        : AppColors.gray500,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      if (!isPending)
-                                        const Padding(
-                                          padding: EdgeInsets.only(right: 12),
-                                          child: Icon(Icons.chevron_right,
-                                              size: 18, color: Color(0xFF9CA3AF)),
-                                        ),
-                                    ],
+                                        if (!isPending)
+                                          const Padding(
+                                            padding: EdgeInsets.only(right: 12),
+                                            child: Icon(Icons.chevron_right,
+                                                size: 18,
+                                                color: AppColors.gray400),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-            ),
-
-            // ── Pagination ──────────────────────
-            if (provider.totalPages > 1)
-              _PaginationBar(
-                currentPage: provider.currentPage,
-                totalPages: provider.totalPages,
-                onPageChanged: (p) => _fetch(page: p),
+                              );
+                            },
+                          ),
               ),
-          ],
+
+              // ── Pagination ──────────────────────
+              if (provider.totalPages > 1)
+                _PaginationBar(
+                  currentPage: provider.currentPage,
+                  totalPages: provider.totalPages,
+                  onPageChanged: (p) => _fetch(page: p),
+                ),
+            ],
           ),
         ),
       ),
@@ -379,12 +415,12 @@ class _DatePickerButton extends StatelessWidget {
         );
         if (picked != null) onPicked(picked);
       },
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: AppRadius.r10,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          borderRadius: AppRadius.r10,
+          border: Border.all(color: AppColors.gray200),
         ),
         child: Row(
           children: [
@@ -396,16 +432,17 @@ class _DatePickerButton extends StatelessWidget {
                     ? '${date!.day}/${date!.month}/${date!.year}'
                     : label,
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: date != null ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
+                  fontSize: AppFontSize.md,
+                  fontWeight: AppFontWeight.medium,
+                  color: date != null ? AppColors.gray800 : AppColors.gray400,
                 ),
               ),
             ),
             if (date != null)
               GestureDetector(
                 onTap: onClear,
-                child: const Icon(Icons.close, size: 16, color: Color(0xFF9CA3AF)),
+                child:
+                    const Icon(Icons.close, size: 16, color: AppColors.gray400),
               ),
           ],
         ),
@@ -428,11 +465,23 @@ class _FilterRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          _FilterChip(label: 'Όλα', value: 'all', selected: selected, onChanged: onChanged),
+          _FilterChip(
+              label: 'Όλα',
+              value: 'all',
+              selected: selected,
+              onChanged: onChanged),
           const SizedBox(width: 8),
-          _FilterChip(label: 'Ανοιχτά', value: 'open', selected: selected, onChanged: onChanged),
+          _FilterChip(
+              label: 'Ανοιχτά',
+              value: 'open',
+              selected: selected,
+              onChanged: onChanged),
           const SizedBox(width: 8),
-          _FilterChip(label: 'Οριστικοποιημένα', value: 'finalized', selected: selected, onChanged: onChanged),
+          _FilterChip(
+              label: 'Οριστικοποιημένα',
+              value: 'finalized',
+              selected: selected,
+              onChanged: onChanged),
         ],
       ),
     );
@@ -459,11 +508,11 @@ class _FilterChip extends StatelessWidget {
       label: Text(label),
       selected: active,
       onSelected: (_) => onChanged(value),
-      selectedColor: const Color(0xFFC62828),
+      selectedColor: AppColors.brandPrimary,
       labelStyle: GoogleFonts.inter(
-        fontSize: 13,
-        fontWeight: FontWeight.w500,
-        color: active ? Colors.white : const Color(0xFF1A1C1E),
+        fontSize: AppFontSize.md,
+        fontWeight: AppFontWeight.medium,
+        color: active ? Colors.white : AppColors.ink,
       ),
     );
   }
@@ -516,7 +565,7 @@ class _PaginationBar extends StatelessWidget {
             if (p < 0) {
               return const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 2),
-                child: Text('…', style: TextStyle(color: Color(0xFF9CA3AF))),
+                child: Text('…', style: TextStyle(color: AppColors.gray400)),
               );
             }
             return _PageButton(
@@ -562,23 +611,24 @@ class _PageButton extends StatelessWidget {
         height: 36,
         child: Material(
           color: active ? cs.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.r8,
           child: InkWell(
             onTap: enabled ? onTap : null,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.r8,
             child: Center(
               child: icon != null
-                  ? Icon(icon, size: 18,
-                      color: enabled ? const Color(0xFF374151) : const Color(0xFFD1D5DB))
+                  ? Icon(icon,
+                      size: 18,
+                      color: enabled ? AppColors.gray700 : AppColors.gray300)
                   : Text(label!,
                       style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                        fontSize: AppFontSize.md,
+                        fontWeight: AppFontWeight.semibold,
                         color: active
                             ? Colors.white
                             : enabled
-                                ? const Color(0xFF374151)
-                                : const Color(0xFFD1D5DB),
+                                ? AppColors.gray700
+                                : AppColors.gray300,
                       )),
             ),
           ),

@@ -7,6 +7,8 @@ import '../providers/auth_provider.dart';
 import '../providers/department_provider.dart';
 import '../services/api_client.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class CreateChatScreen extends StatefulWidget {
   const CreateChatScreen({super.key});
 
@@ -156,13 +158,12 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
                   hintText: 'Αναζήτηση χρηστών...',
                   prefixIcon: const Icon(Icons.search, size: 20),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.r12,
                     borderSide: BorderSide.none,
                   ),
                   filled: true,
                   fillColor: Colors.white,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
                 onChanged: (v) =>
                     setState(() => _userSearchQuery = v.trim().toLowerCase()),
@@ -179,8 +180,7 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
             ...(_filteredUsers.map((u) => CheckboxListTile(
                   title: Text(
                       '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim()),
-                  subtitle:
-                      Text(u['eame'] as String? ?? ''),
+                  subtitle: Text(u['eame'] as String? ?? ''),
                   value: _selectedUserIds.contains(u['id'] as int),
                   onChanged: (sel) {
                     setState(() {
@@ -196,26 +196,22 @@ class _CreateChatScreenState extends State<CreateChatScreen> {
           const SizedBox(height: 24),
           Text('Δικαιώματα', style: tt.titleSmall),
           SwitchListTile(
-            title: const Text(
-                'Οι διαχειριστές αντικειμένων μπορούν να στέλνουν'),
+            title:
+                const Text('Οι διαχειριστές αντικειμένων μπορούν να στέλνουν'),
             value: _itemAdminsCanSend,
-            onChanged: (v) =>
-                setState(() => _itemAdminsCanSend = v),
+            onChanged: (v) => setState(() => _itemAdminsCanSend = v),
             dense: true,
           ),
           SwitchListTile(
             title: const Text('Οι εθελοντές μπορούν να στέλνουν'),
             value: _volunteersCanSend,
-            onChanged: (v) =>
-                setState(() => _volunteersCanSend = v),
+            onChanged: (v) => setState(() => _volunteersCanSend = v),
             dense: true,
           ),
           SwitchListTile(
-            title: const Text(
-                'Αυτόματη διαγραφή μετά από 24 ώρες'),
+            title: const Text('Αυτόματη διαγραφή μετά από 24 ώρες'),
             value: _deleteAfter24h,
-            onChanged: (v) =>
-                setState(() => _deleteAfter24h = v),
+            onChanged: (v) => setState(() => _deleteAfter24h = v),
             dense: true,
           ),
           const SizedBox(height: 24),

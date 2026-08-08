@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../providers/chat_provider.dart';
 import '../helpers/chat_models.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class DirectMessagePickerScreen extends StatefulWidget {
   const DirectMessagePickerScreen({super.key});
 
@@ -12,8 +14,7 @@ class DirectMessagePickerScreen extends StatefulWidget {
       _DirectMessagePickerScreenState();
 }
 
-class _DirectMessagePickerScreenState
-    extends State<DirectMessagePickerScreen> {
+class _DirectMessagePickerScreenState extends State<DirectMessagePickerScreen> {
   List<DmCandidateGroup> _groups = [];
   bool _loading = true;
   bool _creating = false;
@@ -34,7 +35,11 @@ class _DirectMessagePickerScreenState
 
   Future<void> _load() async {
     final groups = await context.read<ChatProvider>().fetchDmCandidates();
-    if (mounted) setState(() { _groups = groups; _loading = false; });
+    if (mounted)
+      setState(() {
+        _groups = groups;
+        _loading = false;
+      });
   }
 
   List<DmCandidateGroup> get _filtered {
@@ -100,7 +105,7 @@ class _DirectMessagePickerScreenState
                 hintText: 'Αναζήτηση...',
                 prefixIcon: const Icon(Icons.search, size: 20),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.r12,
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
@@ -124,8 +129,8 @@ class _DirectMessagePickerScreenState
                           _searchQuery.isNotEmpty
                               ? 'Δεν βρέθηκαν αποτελέσματα'
                               : 'Δεν υπάρχουν διαθέσιμοι χρήστες',
-                          style: tt.bodyLarge
-                              ?.copyWith(color: const Color(0xFF6B7280)),
+                          style:
+                              tt.bodyLarge?.copyWith(color: AppColors.gray500),
                         ),
                       )
                     : ListView.builder(
@@ -138,13 +143,14 @@ class _DirectMessagePickerScreenState
                           for (final group in groups) {
                             if (index == offset) {
                               return Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 12, 16, 4),
                                 child: Text(
                                   group.departmentName.toUpperCase(),
                                   style: tt.labelSmall?.copyWith(
-                                    color: const Color(0xFF9CA3AF),
+                                    color: AppColors.gray400,
                                     letterSpacing: 0.8,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: AppFontWeight.bold,
                                   ),
                                 ),
                               );
@@ -162,7 +168,7 @@ class _DirectMessagePickerScreenState
                                         : '?',
                                     style: TextStyle(
                                         color: cs.primary,
-                                        fontWeight: FontWeight.w700),
+                                        fontWeight: AppFontWeight.bold),
                                   ),
                                 ),
                                 title: Text(candidate.fullName),

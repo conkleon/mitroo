@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:mitroo_frontend/theme/theme.dart';
 import 'package:http/http.dart' as http;
 import '../providers/chat_provider.dart';
 import '../providers/auth_provider.dart';
@@ -44,8 +45,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   void _onScroll() {
     if (_scrollCtrl.position.pixels <= 100 && !_loadingOlder) {
-      final msgs =
-          context.read<ChatProvider>().messagesForChat(widget.chatId);
+      final msgs = context.read<ChatProvider>().messagesForChat(widget.chatId);
       if (msgs.isNotEmpty) {
         setState(() => _loadingOlder = true);
         context
@@ -74,8 +74,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final attId =
         await chatProv.uploadAttachment(widget.chatId, file.bytes!, file.name);
     if (attId != null) {
-      chatProv.sendMessage(widget.chatId, file.name,
-          attachmentIds: [attId]);
+      chatProv.sendMessage(widget.chatId, file.name, attachmentIds: [attId]);
     }
   }
 
@@ -85,8 +84,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     final chatProv = context.watch<ChatProvider>();
     final auth = context.watch<AuthProvider>();
 
-    final chat =
-        chatProv.chats.where((c) => c.id == widget.chatId).firstOrNull;
+    final chat = chatProv.chats.where((c) => c.id == widget.chatId).firstOrNull;
     final msgs = chatProv.messagesForChat(widget.chatId);
 
     final bool canSend = _canSend(chat, auth);
@@ -108,8 +106,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               chat?.type == 'direct'
                   ? 'Άμεσο μήνυμα'
                   : '${chat?.memberCount ?? 0} μέλη',
-              style: tt.labelSmall
-                  ?.copyWith(color: const Color(0xFF6B7280)),
+              style: tt.labelSmall?.copyWith(color: AppColors.gray500),
             ),
           ],
         ),
@@ -129,8 +126,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                         context.push('/chat/${widget.chatId}/settings'),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.exit_to_app,
-                        color: Color(0xFFDC2626)),
+                    icon:
+                        const Icon(Icons.exit_to_app, color: AppColors.red600),
                     onPressed: () => _confirmLeaveChat(context),
                   ),
                 ],
@@ -150,8 +147,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             child: ListView.builder(
               controller: _scrollCtrl,
               reverse: true,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: msgs.length,
               itemBuilder: (context, index) {
                 final reversed = msgs.reversed.toList();
@@ -204,7 +200,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 }
               });
             },
-            style: TextButton.styleFrom(foregroundColor: Color(0xFFDC2626)),
+            style: TextButton.styleFrom(foregroundColor: AppColors.red600),
             child: const Text('Αποχώρηση'),
           ),
         ],
@@ -235,8 +231,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   builder: (_, prov, __) {
                     final members = prov.membersForChat(widget.chatId);
                     if (members.isEmpty) {
-                      return const Center(
-                          child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
                     return ListView.builder(
                       shrinkWrap: true,
@@ -247,14 +242,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                           leading: CircleAvatar(
                             radius: 16,
                             child: Text(
-                              m.forename.isNotEmpty
-                                  ? m.forename[0]
-                                  : '?',
-                              style: const TextStyle(fontSize: 12),
+                              m.forename.isNotEmpty ? m.forename[0] : '?',
+                              style:
+                                  const TextStyle(fontSize: AppFontSize.base),
                             ),
                           ),
-                          title: Text(
-                              '${m.forename} ${m.surname}'.trim()),
+                          title: Text('${m.forename} ${m.surname}'.trim()),
                           dense: true,
                         );
                       },
@@ -324,9 +317,9 @@ class _MessageBubble extends StatelessWidget {
                     ? message.user.forename[0]
                     : '?',
                 style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFontSize.base,
                     color: cs.primary,
-                    fontWeight: FontWeight.w600),
+                    fontWeight: AppFontWeight.semibold),
               ),
             ),
             const SizedBox(width: 8),
@@ -336,8 +329,7 @@ class _MessageBubble extends StatelessWidget {
             child: Container(
               constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width * 0.7),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: isMe ? cs.primary : Colors.white,
                 borderRadius: BorderRadius.only(
@@ -364,7 +356,7 @@ class _MessageBubble extends StatelessWidget {
                         '${message.user.forename} ${message.user.surname}',
                         style: tt.labelSmall?.copyWith(
                           color: cs.primary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeight.semibold,
                         ),
                       ),
                     ),
@@ -376,7 +368,7 @@ class _MessageBubble extends StatelessWidget {
                   Text(
                     message.text,
                     style: tt.bodyMedium?.copyWith(
-                      color: isMe ? Colors.white : const Color(0xFF1F2937),
+                      color: isMe ? Colors.white : AppColors.gray800,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -388,7 +380,7 @@ class _MessageBubble extends StatelessWidget {
                         style: tt.labelSmall?.copyWith(
                           color: isMe
                               ? Colors.white.withAlpha(180)
-                              : const Color(0xFF9CA3AF),
+                              : AppColors.gray400,
                         ),
                       ),
                       if (canDelete) ...[
@@ -400,7 +392,7 @@ class _MessageBubble extends StatelessWidget {
                             size: 14,
                             color: isMe
                                 ? Colors.white.withAlpha(180)
-                                : const Color(0xFF9CA3AF),
+                                : AppColors.gray400,
                           ),
                         ),
                       ],
@@ -420,9 +412,9 @@ class _MessageBubble extends StatelessWidget {
                     ? message.user.forename[0]
                     : '?',
                 style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFontSize.base,
                     color: Colors.white,
-                    fontWeight: FontWeight.w600),
+                    fontWeight: AppFontWeight.semibold),
               ),
             ),
           ],
@@ -437,7 +429,8 @@ class _MessageBubble extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Διαγραφή μηνύματος'),
-        content: const Text('Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το μήνυμα;'),
+        content: const Text(
+            'Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το μήνυμα;'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -448,7 +441,7 @@ class _MessageBubble extends StatelessWidget {
               Navigator.of(ctx).pop();
               onDelete?.call();
             },
-            style: TextButton.styleFrom(foregroundColor: Color(0xFFDC2626)),
+            style: TextButton.styleFrom(foregroundColor: AppColors.red600),
             child: const Text('Διαγραφή'),
           ),
         ],
@@ -491,7 +484,7 @@ class _AttachmentTile extends StatelessWidget {
         child: Stack(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.r8,
               child: Image.network(
                 _url.toString(),
                 height: 160,
@@ -505,9 +498,9 @@ class _AttachmentTile extends StatelessWidget {
               right: 4,
               child: Material(
                 color: Colors.black.withAlpha(120),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: AppRadius.r6,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: AppRadius.r6,
                   onTap: _download,
                   child: const Padding(
                     padding: EdgeInsets.all(4),
@@ -525,15 +518,16 @@ class _AttachmentTile extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.attach_file, size: 16,
-              color: isMe ? Colors.white.withAlpha(200) : const Color(0xFF6B7280)),
+          Icon(Icons.attach_file,
+              size: 16,
+              color: isMe ? Colors.white.withAlpha(200) : AppColors.gray500),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
               attachment.fileName,
               style: TextStyle(
-                fontSize: 12,
-                color: isMe ? Colors.white.withAlpha(200) : const Color(0xFF6B7280),
+                fontSize: AppFontSize.base,
+                color: isMe ? Colors.white.withAlpha(200) : AppColors.gray500,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -542,8 +536,9 @@ class _AttachmentTile extends StatelessWidget {
           const SizedBox(width: 4),
           GestureDetector(
             onTap: _download,
-            child: Icon(Icons.download, size: 16,
-                color: isMe ? Colors.white.withAlpha(200) : const Color(0xFF6B7280)),
+            child: Icon(Icons.download,
+                size: 16,
+                color: isMe ? Colors.white.withAlpha(200) : AppColors.gray500),
           ),
         ],
       ),
@@ -576,8 +571,8 @@ class _BottomBar extends StatelessWidget {
           child: Center(
             child: Text(
               'Μόνο οι διαχειριστές μπορούν να στείλουν μηνύματα',
-              style: TextStyle(
-                  color: const Color(0xFF9CA3AF), fontSize: 13),
+              style:
+                  TextStyle(color: AppColors.gray400, fontSize: AppFontSize.md),
             ),
           ),
         ),
@@ -592,7 +587,7 @@ class _BottomBar extends StatelessWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.attach_file, size: 22),
-              color: const Color(0xFF6B7280),
+              color: AppColors.gray500,
               onPressed: onAttach,
             ),
             Expanded(
@@ -603,13 +598,13 @@ class _BottomBar extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'Μήνυμα...',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: AppRadius.r24,
                     borderSide: BorderSide.none,
                   ),
                   filled: true,
-                  fillColor: const Color(0xFFF3F4F6),
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
+                  fillColor: AppColors.gray100,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
                 onSubmitted: (_) => onSend(),
               ),

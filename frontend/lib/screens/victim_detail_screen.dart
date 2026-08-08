@@ -7,6 +7,8 @@ import '../providers/victim_provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class VictimDetailScreen extends StatefulWidget {
   final int victimId;
 
@@ -24,7 +26,8 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<VictimProvider>().fetchVictim(widget.victimId));
+    Future.microtask(
+        () => context.read<VictimProvider>().fetchVictim(widget.victimId));
   }
 
   void _showAddVitalSignDialog() {
@@ -47,41 +50,90 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: systolicCtrl, decoration: const InputDecoration(labelText: 'Συστολική (mmHg)'), keyboardType: TextInputType.number),
-              TextField(controller: diastolicCtrl, decoration: const InputDecoration(labelText: 'Διαστολική (mmHg)'), keyboardType: TextInputType.number),
-              TextField(controller: hrCtrl, decoration: const InputDecoration(labelText: 'Καρδιακοί παλμοί'), keyboardType: TextInputType.number),
-              TextField(controller: rrCtrl, decoration: const InputDecoration(labelText: 'Αναπνοές/λεπτό'), keyboardType: TextInputType.number),
-              TextField(controller: spo2Ctrl, decoration: const InputDecoration(labelText: 'SpO2 (%)'), keyboardType: TextInputType.number),
-              TextField(controller: tempCtrl, decoration: const InputDecoration(labelText: 'Θερμοκρασία (°C)'), keyboardType: TextInputType.number),
-              TextField(controller: glucoseCtrl, decoration: const InputDecoration(labelText: 'Γλυκόζη (mg/dL)'), keyboardType: TextInputType.number),
-              TextField(controller: painCtrl, decoration: const InputDecoration(labelText: 'Πόνος (0–10)'), keyboardType: TextInputType.number),
-              TextField(controller: measuredByCtrl, decoration: const InputDecoration(labelText: 'Καταγραφή από')),
-              TextField(controller: notesCtrl, decoration: const InputDecoration(labelText: 'Σημειώσεις'), maxLines: 2),
+              TextField(
+                  controller: systolicCtrl,
+                  decoration:
+                      const InputDecoration(labelText: 'Συστολική (mmHg)'),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: diastolicCtrl,
+                  decoration:
+                      const InputDecoration(labelText: 'Διαστολική (mmHg)'),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: hrCtrl,
+                  decoration:
+                      const InputDecoration(labelText: 'Καρδιακοί παλμοί'),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: rrCtrl,
+                  decoration:
+                      const InputDecoration(labelText: 'Αναπνοές/λεπτό'),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: spo2Ctrl,
+                  decoration: const InputDecoration(labelText: 'SpO2 (%)'),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: tempCtrl,
+                  decoration:
+                      const InputDecoration(labelText: 'Θερμοκρασία (°C)'),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: glucoseCtrl,
+                  decoration:
+                      const InputDecoration(labelText: 'Γλυκόζη (mg/dL)'),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: painCtrl,
+                  decoration: const InputDecoration(labelText: 'Πόνος (0–10)'),
+                  keyboardType: TextInputType.number),
+              TextField(
+                  controller: measuredByCtrl,
+                  decoration:
+                      const InputDecoration(labelText: 'Καταγραφή από')),
+              TextField(
+                  controller: notesCtrl,
+                  decoration: const InputDecoration(labelText: 'Σημειώσεις'),
+                  maxLines: 2),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () async {
               final data = <String, dynamic>{};
-              if (systolicCtrl.text.isNotEmpty) data['systolicBP'] = int.tryParse(systolicCtrl.text);
-              if (diastolicCtrl.text.isNotEmpty) data['diastolicBP'] = int.tryParse(diastolicCtrl.text);
-              if (hrCtrl.text.isNotEmpty) data['heartRate'] = int.tryParse(hrCtrl.text);
-              if (rrCtrl.text.isNotEmpty) data['respiratoryRate'] = int.tryParse(rrCtrl.text);
-              if (spo2Ctrl.text.isNotEmpty) data['oxygenSat'] = int.tryParse(spo2Ctrl.text);
-              if (tempCtrl.text.isNotEmpty) data['temperature'] = double.tryParse(tempCtrl.text);
-              if (glucoseCtrl.text.isNotEmpty) data['bloodGlucose'] = double.tryParse(glucoseCtrl.text);
-              if (painCtrl.text.isNotEmpty) data['painScore'] = int.tryParse(painCtrl.text);
-              if (measuredByCtrl.text.isNotEmpty) data['measuredBy'] = measuredByCtrl.text;
+              if (systolicCtrl.text.isNotEmpty)
+                data['systolicBP'] = int.tryParse(systolicCtrl.text);
+              if (diastolicCtrl.text.isNotEmpty)
+                data['diastolicBP'] = int.tryParse(diastolicCtrl.text);
+              if (hrCtrl.text.isNotEmpty)
+                data['heartRate'] = int.tryParse(hrCtrl.text);
+              if (rrCtrl.text.isNotEmpty)
+                data['respiratoryRate'] = int.tryParse(rrCtrl.text);
+              if (spo2Ctrl.text.isNotEmpty)
+                data['oxygenSat'] = int.tryParse(spo2Ctrl.text);
+              if (tempCtrl.text.isNotEmpty)
+                data['temperature'] = double.tryParse(tempCtrl.text);
+              if (glucoseCtrl.text.isNotEmpty)
+                data['bloodGlucose'] = double.tryParse(glucoseCtrl.text);
+              if (painCtrl.text.isNotEmpty)
+                data['painScore'] = int.tryParse(painCtrl.text);
+              if (measuredByCtrl.text.isNotEmpty)
+                data['measuredBy'] = measuredByCtrl.text;
               if (notesCtrl.text.isNotEmpty) data['notes'] = notesCtrl.text;
 
-              final err = await context.read<VictimProvider>().addVitalSign(widget.victimId, data);
+              final err = await context
+                  .read<VictimProvider>()
+                  .addVitalSign(widget.victimId, data);
               if (ctx.mounted) {
                 Navigator.pop(ctx);
                 if (err != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(err), backgroundColor: const Color(0xFFB91C1C)),
+                    SnackBar(
+                        content: Text(err), backgroundColor: AppColors.red700),
                   );
                 }
               }
@@ -139,46 +191,74 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: actionCtrl, decoration: const InputDecoration(labelText: 'Ενέργεια *')),
-                TextField(controller: materialCtrl, decoration: const InputDecoration(labelText: 'Υλικά που χρησιμοποιήθηκαν')),
+                TextField(
+                    controller: actionCtrl,
+                    decoration: const InputDecoration(labelText: 'Ενέργεια *')),
+                TextField(
+                    controller: materialCtrl,
+                    decoration: const InputDecoration(
+                        labelText: 'Υλικά που χρησιμοποιήθηκαν')),
                 if (availableItems.isNotEmpty)
                   DropdownButtonFormField<int>(
                     value: selectedItemId,
-                    decoration: const InputDecoration(labelText: 'Αντικείμενο (από εξοπλισμό)'),
+                    decoration: const InputDecoration(
+                        labelText: 'Αντικείμενο (από εξοπλισμό)'),
                     items: [
-                      const DropdownMenuItem<int>(value: null, child: Text('—')),
+                      const DropdownMenuItem<int>(
+                          value: null, child: Text('—')),
                       ...availableItems.map((item) => DropdownMenuItem<int>(
-                        value: item['id'],
-                        child: Text(item['name'] ?? 'Αντικείμενο ${item['id']}'),
-                      )),
+                            value: item['id'],
+                            child: Text(
+                                item['name'] ?? 'Αντικείμενο ${item['id']}'),
+                          )),
                     ],
                     onChanged: (v) => setDialogState(() => selectedItemId = v),
                   ),
                 if (selectedItemId != null)
-                  TextField(controller: consumedCtrl, decoration: const InputDecoration(labelText: 'Σημείωση κατανάλωσης')),
-                TextField(controller: performedByCtrl, decoration: const InputDecoration(labelText: 'Εκτελέστηκε από')),
-                TextField(controller: notesCtrl, decoration: const InputDecoration(labelText: 'Σημειώσεις'), maxLines: 2),
+                  TextField(
+                      controller: consumedCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Σημείωση κατανάλωσης')),
+                TextField(
+                    controller: performedByCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Εκτελέστηκε από')),
+                TextField(
+                    controller: notesCtrl,
+                    decoration: const InputDecoration(labelText: 'Σημειώσεις'),
+                    maxLines: 2),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: () async {
                 if (actionCtrl.text.trim().isEmpty) return;
-                final data = <String, dynamic>{'action': actionCtrl.text.trim()};
-                if (materialCtrl.text.isNotEmpty) data['materialUsed'] = materialCtrl.text;
+                final data = <String, dynamic>{
+                  'action': actionCtrl.text.trim()
+                };
+                if (materialCtrl.text.isNotEmpty)
+                  data['materialUsed'] = materialCtrl.text;
                 if (selectedItemId != null) data['itemId'] = selectedItemId;
-                if (consumedCtrl.text.isNotEmpty) data['consumedNote'] = consumedCtrl.text;
-                if (performedByCtrl.text.isNotEmpty) data['performedBy'] = performedByCtrl.text;
+                if (consumedCtrl.text.isNotEmpty)
+                  data['consumedNote'] = consumedCtrl.text;
+                if (performedByCtrl.text.isNotEmpty)
+                  data['performedBy'] = performedByCtrl.text;
                 if (notesCtrl.text.isNotEmpty) data['notes'] = notesCtrl.text;
 
-                final err = await context.read<VictimProvider>().addTreatment(widget.victimId, data);
+                final err = await context
+                    .read<VictimProvider>()
+                    .addTreatment(widget.victimId, data);
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
                   if (err != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(err), backgroundColor: const Color(0xFFB91C1C)),
+                      SnackBar(
+                          content: Text(err),
+                          backgroundColor: AppColors.red700),
                     );
                   }
                 }
@@ -196,16 +276,21 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Οριστικοποίηση περιστατικού'),
-        content: const Text('Μετά την οριστικοποίηση, το περιστατικό μπορεί να τροποποιηθεί μόνο από διαχειριστές. Συνέχεια;'),
+        content: const Text(
+            'Μετά την οριστικοποίηση, το περιστατικό μπορεί να τροποποιηθεί μόνο από διαχειριστές. Συνέχεια;'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              final err = await context.read<VictimProvider>().finalizeVictim(widget.victimId);
+              final err = await context
+                  .read<VictimProvider>()
+                  .finalizeVictim(widget.victimId);
               if (err != null && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(err), backgroundColor: const Color(0xFFB91C1C)),
+                  SnackBar(
+                      content: Text(err), backgroundColor: AppColors.red700),
                 );
               }
             },
@@ -223,15 +308,19 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
         title: const Text('Διαγραφή περιστατικού'),
         content: const Text('Αυτή η ενέργεια είναι μη αναστρέψιμη. Συνέχεια;'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFB91C1C)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red700),
             onPressed: () async {
               Navigator.pop(ctx);
-              final err = await context.read<VictimProvider>().deleteVictim(widget.victimId);
+              final err = await context
+                  .read<VictimProvider>()
+                  .deleteVictim(widget.victimId);
               if (err != null && context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(err), backgroundColor: const Color(0xFFB91C1C)),
+                  SnackBar(
+                      content: Text(err), backgroundColor: AppColors.red700),
                 );
               } else if (context.mounted) {
                 context.go('/victims');
@@ -260,8 +349,10 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
     final isFinalized = victim['isFinalized'] == true;
     final isCreator = victim['createdById'] == auth.user?['id'];
     final isAdmin = auth.isAdmin;
-    final canEdit = !isFinalized && (isCreator || isAdmin || auth.isMissionAdmin);
-    final canFinalize = !isFinalized && (isCreator || isAdmin || auth.isMissionAdmin);
+    final canEdit =
+        !isFinalized && (isCreator || isAdmin || auth.isMissionAdmin);
+    final canFinalize =
+        !isFinalized && (isCreator || isAdmin || auth.isMissionAdmin);
     final canDelete = isAdmin || auth.isMissionAdmin;
 
     final vitals = (victim['vitalSigns'] as List?) ?? [];
@@ -278,7 +369,6 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (isFinalized) _FinalizedBanner(victim: victim),
-
               _SectionHeader(title: 'Στοιχεία'),
               Card(
                 child: Padding(
@@ -286,40 +376,69 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
                   child: Column(
                     children: [
                       _DetailRow(label: 'Ονοματεπώνυμο', value: victim['name']),
-                      if (victim['age'] != null) _DetailRow(label: 'Ηλικία', value: '${victim['age']}'),
-                      if (victim['dateOfBirth'] != null) _DetailRow(label: 'Ημ/νία γέννησης', value: _formatDate(victim['dateOfBirth'])),
-                      if (victim['gender'] != null) _DetailRow(label: 'Φύλο', value: _genderLabel(victim['gender'])),
-                      if (victim['address'] != null) _DetailRow(label: 'Διεύθυνση', value: victim['address']),
-                      if (victim['city'] != null) _DetailRow(label: 'Πόλη', value: victim['city']),
-                      if (victim['telephone'] != null) _DetailRow(label: 'Τηλέφωνο', value: victim['telephone']),
-                      if (victim['emergencyContact'] != null) _DetailRow(label: 'Επαφή έκτακτης ανάγκης', value: victim['emergencyContact']),
-                      if (victim['emergencyPhone'] != null) _DetailRow(label: 'Τηλ. επαφής έκτακτης ανάγκης', value: victim['emergencyPhone']),
+                      if (victim['age'] != null)
+                        _DetailRow(label: 'Ηλικία', value: '${victim['age']}'),
+                      if (victim['dateOfBirth'] != null)
+                        _DetailRow(
+                            label: 'Ημ/νία γέννησης',
+                            value: _formatDate(victim['dateOfBirth'])),
+                      if (victim['gender'] != null)
+                        _DetailRow(
+                            label: 'Φύλο',
+                            value: _genderLabel(victim['gender'])),
+                      if (victim['address'] != null)
+                        _DetailRow(
+                            label: 'Διεύθυνση', value: victim['address']),
+                      if (victim['city'] != null)
+                        _DetailRow(label: 'Πόλη', value: victim['city']),
+                      if (victim['telephone'] != null)
+                        _DetailRow(
+                            label: 'Τηλέφωνο', value: victim['telephone']),
+                      if (victim['emergencyContact'] != null)
+                        _DetailRow(
+                            label: 'Επαφή έκτακτης ανάγκης',
+                            value: victim['emergencyContact']),
+                      if (victim['emergencyPhone'] != null)
+                        _DetailRow(
+                            label: 'Τηλ. επαφής έκτακτης ανάγκης',
+                            value: victim['emergencyPhone']),
                     ],
                   ),
                 ),
               ),
-
               const SizedBox(height: 12),
-
               _SectionHeader(title: 'Ιατρικό ιστορικό'),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(
                     children: [
-                      if (victim['chiefComplaint'] != null) _DetailRow(label: 'Κύριο σύμπτωμα', value: victim['chiefComplaint']),
-                      if (victim['allergies'] != null) _DetailRow(label: 'Αλλεργίες', value: victim['allergies']),
-                      if (victim['medications'] != null) _DetailRow(label: 'Φαρμακευτική αγωγή', value: victim['medications']),
-                      if (victim['medicalHistory'] != null) _DetailRow(label: 'Ιατρικό ιστορικό', value: victim['medicalHistory']),
-                      if (victim['chiefComplaint'] == null && victim['allergies'] == null && victim['medications'] == null && victim['medicalHistory'] == null)
-                        const Text('Δεν καταγράφηκαν', style: TextStyle(color: Color(0xFF9CA3AF))),
+                      if (victim['chiefComplaint'] != null)
+                        _DetailRow(
+                            label: 'Κύριο σύμπτωμα',
+                            value: victim['chiefComplaint']),
+                      if (victim['allergies'] != null)
+                        _DetailRow(
+                            label: 'Αλλεργίες', value: victim['allergies']),
+                      if (victim['medications'] != null)
+                        _DetailRow(
+                            label: 'Φαρμακευτική αγωγή',
+                            value: victim['medications']),
+                      if (victim['medicalHistory'] != null)
+                        _DetailRow(
+                            label: 'Ιατρικό ιστορικό',
+                            value: victim['medicalHistory']),
+                      if (victim['chiefComplaint'] == null &&
+                          victim['allergies'] == null &&
+                          victim['medications'] == null &&
+                          victim['medicalHistory'] == null)
+                        const Text('Δεν καταγράφηκαν',
+                            style: TextStyle(color: AppColors.gray400)),
                     ],
                   ),
                 ),
               ),
-
               const SizedBox(height: 12),
-
               _SectionHeader(title: 'Αξιολόγηση'),
               Card(
                 child: Padding(
@@ -327,37 +446,55 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
                   child: Column(
                     children: [
                       if (victim['gcsTotal'] != null)
-                        _DetailRow(label: 'GCS', value: '${victim['gcsTotal']} (E${victim['gcsEye']} / V${victim['gcsVerbal']} / M${victim['gcsMotor']})'),
-                      if (victim['avpu'] != null) _DetailRow(label: 'AVPU', value: victim['avpu']),
-                      if (victim['locationNotes'] != null) _DetailRow(label: 'Σημ. τοποθεσίας', value: victim['locationNotes']),
+                        _DetailRow(
+                            label: 'GCS',
+                            value:
+                                '${victim['gcsTotal']} (E${victim['gcsEye']} / V${victim['gcsVerbal']} / M${victim['gcsMotor']})'),
+                      if (victim['avpu'] != null)
+                        _DetailRow(label: 'AVPU', value: victim['avpu']),
+                      if (victim['locationNotes'] != null)
+                        _DetailRow(
+                            label: 'Σημ. τοποθεσίας',
+                            value: victim['locationNotes']),
                       if (victim['service'] != null)
-                        _DetailRow(label: 'Υπηρεσία', value: (victim['service'] as Map)['name'] ?? '—'),
-                      if (victim['notes'] != null) _DetailRow(label: 'Σημειώσεις', value: victim['notes']),
+                        _DetailRow(
+                            label: 'Υπηρεσία',
+                            value: (victim['service'] as Map)['name'] ?? '—'),
+                      if (victim['notes'] != null)
+                        _DetailRow(label: 'Σημειώσεις', value: victim['notes']),
                     ],
                   ),
                 ),
               ),
-
               const SizedBox(height: 12),
-
               Card(
                 child: ExpansionTile(
-                  title: Text('Ζωτικά Σημεία (${vitals.length})', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
+                  title: Text('Ζωτικά Σημεία (${vitals.length})',
+                      style: GoogleFonts.inter(
+                          fontSize: AppFontSize.xl,
+                          fontWeight: AppFontWeight.semibold)),
                   initiallyExpanded: _vitalsExpanded,
-                  onExpansionChanged: (v) => setState(() => _vitalsExpanded = v),
+                  onExpansionChanged: (v) =>
+                      setState(() => _vitalsExpanded = v),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (canEdit)
                         IconButton(
-                          icon: const Icon(Icons.add_circle_outline, color: Color(0xFFC62828)),
+                          icon: const Icon(Icons.add_circle_outline,
+                              color: AppColors.brandPrimary),
                           onPressed: _showAddVitalSignDialog,
                         ),
                       const Icon(Icons.expand_more),
                     ],
                   ),
                   children: vitals.isEmpty
-                      ? [const Padding(padding: EdgeInsets.all(14), child: Text('Δεν υπάρχουν καταγραφές', style: TextStyle(color: Color(0xFF9CA3AF))))]
+                      ? [
+                          const Padding(
+                              padding: EdgeInsets.all(14),
+                              child: Text('Δεν υπάρχουν καταγραφές',
+                                  style: TextStyle(color: AppColors.gray400)))
+                        ]
                       : vitals.map((vs) {
                           final sbp = vs['systolicBP'];
                           final dbp = vs['diastolicBP'];
@@ -370,53 +507,80 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
 
                           return ListTile(
                             dense: true,
-                            title: Text([
-                              if (sbp != null && dbp != null) 'ΑΠ $sbp/$dbp',
-                              if (hr != null) 'ΣΦ $hr',
-                              if (spo2 != null) 'SpO2 $spo2%',
-                              if (temp != null) '${temp}°C',
-                              if (pain != null) 'Πόνος $pain/10',
-                            ].join(' · '), style: GoogleFonts.inter(fontSize: 13)),
-                            subtitle: Text([
-                              if (measuredAt != null) _formatDateTime(measuredAt),
-                              if (measuredBy != null) 'από $measuredBy',
-                            ].join(' '), style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF9CA3AF))),
-                            trailing: canEdit ? IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFB91C1C)),
-                              onPressed: () async {
-                                final err = await context.read<VictimProvider>().deleteVitalSign(widget.victimId, vs['id']);
-                                if (err != null && context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(err), backgroundColor: const Color(0xFFB91C1C)),
-                                  );
-                                }
-                              },
-                            ) : null,
+                            title: Text(
+                                [
+                                  if (sbp != null && dbp != null)
+                                    'ΑΠ $sbp/$dbp',
+                                  if (hr != null) 'ΣΦ $hr',
+                                  if (spo2 != null) 'SpO2 $spo2%',
+                                  if (temp != null) '${temp}°C',
+                                  if (pain != null) 'Πόνος $pain/10',
+                                ].join(' · '),
+                                style: GoogleFonts.inter(
+                                    fontSize: AppFontSize.md)),
+                            subtitle: Text(
+                                [
+                                  if (measuredAt != null)
+                                    _formatDateTime(measuredAt),
+                                  if (measuredBy != null) 'από $measuredBy',
+                                ].join(' '),
+                                style: GoogleFonts.inter(
+                                    fontSize: AppFontSize.sm,
+                                    color: AppColors.gray400)),
+                            trailing: canEdit
+                                ? IconButton(
+                                    icon: const Icon(Icons.delete_outline,
+                                        size: 18, color: AppColors.red700),
+                                    onPressed: () async {
+                                      final err = await context
+                                          .read<VictimProvider>()
+                                          .deleteVitalSign(
+                                              widget.victimId, vs['id']);
+                                      if (err != null && context.mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text(err),
+                                              backgroundColor:
+                                                  AppColors.red700),
+                                        );
+                                      }
+                                    },
+                                  )
+                                : null,
                           );
                         }).toList(),
                 ),
               ),
-
               const SizedBox(height: 8),
-
               Card(
                 child: ExpansionTile(
-                  title: Text('Θεραπείες (${treatments.length})', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
+                  title: Text('Θεραπείες (${treatments.length})',
+                      style: GoogleFonts.inter(
+                          fontSize: AppFontSize.xl,
+                          fontWeight: AppFontWeight.semibold)),
                   initiallyExpanded: _treatmentsExpanded,
-                  onExpansionChanged: (v) => setState(() => _treatmentsExpanded = v),
+                  onExpansionChanged: (v) =>
+                      setState(() => _treatmentsExpanded = v),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (canEdit)
                         IconButton(
-                          icon: const Icon(Icons.add_circle_outline, color: Color(0xFFC62828)),
+                          icon: const Icon(Icons.add_circle_outline,
+                              color: AppColors.brandPrimary),
                           onPressed: _showAddTreatmentDialog,
                         ),
                       const Icon(Icons.expand_more),
                     ],
                   ),
                   children: treatments.isEmpty
-                      ? [const Padding(padding: EdgeInsets.all(14), child: Text('Δεν υπάρχουν καταγραφές', style: TextStyle(color: Color(0xFF9CA3AF))))]
+                      ? [
+                          const Padding(
+                              padding: EdgeInsets.all(14),
+                              child: Text('Δεν υπάρχουν καταγραφές',
+                                  style: TextStyle(color: AppColors.gray400)))
+                        ]
                       : treatments.map((t) {
                           final action = t['action'] ?? '';
                           final material = t['materialUsed'];
@@ -426,24 +590,43 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
 
                           return ListTile(
                             dense: true,
-                            title: Text(action, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500)),
-                            subtitle: Text([
-                              if (material != null) material,
-                              if (item != null) 'Αντικείμενο: ${item['name']}',
-                              if (performedAt != null) _formatDateTime(performedAt),
-                              if (performedBy != null) 'από $performedBy',
-                            ].join(' · '), style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF9CA3AF))),
-                            trailing: canEdit ? IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFB91C1C)),
-                              onPressed: () async {
-                                final err = await context.read<VictimProvider>().deleteTreatment(widget.victimId, t['id']);
-                                if (err != null && context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(err), backgroundColor: const Color(0xFFB91C1C)),
-                                  );
-                                }
-                              },
-                            ) : null,
+                            title: Text(action,
+                                style: GoogleFonts.inter(
+                                    fontSize: AppFontSize.md,
+                                    fontWeight: AppFontWeight.medium)),
+                            subtitle: Text(
+                                [
+                                  if (material != null) material,
+                                  if (item != null)
+                                    'Αντικείμενο: ${item['name']}',
+                                  if (performedAt != null)
+                                    _formatDateTime(performedAt),
+                                  if (performedBy != null) 'από $performedBy',
+                                ].join(' · '),
+                                style: GoogleFonts.inter(
+                                    fontSize: AppFontSize.sm,
+                                    color: AppColors.gray400)),
+                            trailing: canEdit
+                                ? IconButton(
+                                    icon: const Icon(Icons.delete_outline,
+                                        size: 18, color: AppColors.red700),
+                                    onPressed: () async {
+                                      final err = await context
+                                          .read<VictimProvider>()
+                                          .deleteTreatment(
+                                              widget.victimId, t['id']);
+                                      if (err != null && context.mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text(err),
+                                              backgroundColor:
+                                                  AppColors.red700),
+                                        );
+                                      }
+                                    },
+                                  )
+                                : null,
                           );
                         }).toList(),
                 ),
@@ -462,7 +645,8 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
                   children: [
                     if (canEdit)
                       FilledButton.icon(
-                        onPressed: () => context.push('/victims/create'), // edit not implemented separately — re-create flow
+                        onPressed: () => context.push(
+                            '/victims/create'), // edit not implemented separately — re-create flow
                         icon: const Icon(Icons.edit, size: 18),
                         label: const Text('Επεξεργασία'),
                       ),
@@ -474,7 +658,8 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
                       ),
                     if (canDelete)
                       FilledButton.icon(
-                        style: FilledButton.styleFrom(backgroundColor: const Color(0xFFB91C1C)),
+                        style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.red700),
                         onPressed: _showDeleteDialog,
                         icon: const Icon(Icons.delete_outline, size: 18),
                         label: const Text('Διαγραφή'),
@@ -503,11 +688,16 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
 
   String _genderLabel(String? g) {
     switch (g) {
-      case 'male': return 'Άνδρας';
-      case 'female': return 'Γυναίκα';
-      case 'other': return 'Άλλο';
-      case 'unknown': return 'Άγνωστο';
-      default: return g ?? '';
+      case 'male':
+        return 'Άνδρας';
+      case 'female':
+        return 'Γυναίκα';
+      case 'other':
+        return 'Άλλο';
+      case 'unknown':
+        return 'Άγνωστο';
+      default:
+        return g ?? '';
     }
   }
 }
@@ -520,7 +710,11 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(0xFF1A1C1E))),
+      child: Text(title,
+          style: GoogleFonts.inter(
+              fontSize: AppFontSize.xl2,
+              fontWeight: AppFontWeight.bold,
+              color: AppColors.ink)),
     );
   }
 }
@@ -539,9 +733,13 @@ class _DetailRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 160,
-            child: Text('$label:', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF6B7280))),
+            child: Text('$label:',
+                style: GoogleFonts.inter(
+                    fontSize: AppFontSize.md, color: AppColors.gray500)),
           ),
-          Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: 13))),
+          Expanded(
+              child: Text(value,
+                  style: GoogleFonts.inter(fontSize: AppFontSize.md))),
         ],
       ),
     );
@@ -556,7 +754,9 @@ class _FinalizedBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final finalizedBy = victim['finalizedBy'] as Map?;
-    final name = finalizedBy != null ? '${finalizedBy['forename']} ${finalizedBy['surname']}' : '—';
+    final name = finalizedBy != null
+        ? '${finalizedBy['forename']} ${finalizedBy['surname']}'
+        : '—';
     final date = _formatDt(victim['finalizedAt'] as String?);
 
     return Container(
@@ -564,18 +764,19 @@ class _FinalizedBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF3C7),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF59E0B)),
+        color: AppColors.amber100,
+        borderRadius: AppRadius.r12,
+        border: Border.all(color: AppColors.amber500),
       ),
       child: Row(
         children: [
-          const Icon(Icons.lock, color: Color(0xFFD97706), size: 20),
+          const Icon(Icons.lock, color: AppColors.amber600, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Οριστικοποιήθηκε από $name στις $date',
-              style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF92400E)),
+              style: GoogleFonts.inter(
+                  fontSize: AppFontSize.md, color: AppColors.amber800),
             ),
           ),
         ],

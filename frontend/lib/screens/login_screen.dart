@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:mitroo_frontend/theme/theme.dart';
 import 'dart:math' as math;
 import '../providers/auth_provider.dart';
 import '../providers/pwa_provider.dart';
@@ -177,18 +178,18 @@ class _LoginScreenState extends State<LoginScreen>
                       controller: _passwordCtrl,
                       obscureText: _obscurePassword,
                       style: const TextStyle(
-                          fontSize: 14, color: Color(0xFF1A1C1E)),
+                          fontSize: AppFontSize.lg, color: AppColors.ink),
                       decoration: InputDecoration(
                         labelText: 'Κωδικός',
                         prefixIcon: const Icon(Icons.lock_outline_rounded,
-                            size: 20, color: Color(0xFF9CA3AF)),
+                            size: 20, color: AppColors.gray400),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
                             size: 20,
-                            color: const Color(0xFF9CA3AF),
+                            color: AppColors.gray400,
                           ),
                           onPressed: () => setState(
                               () => _obscurePassword = !_obscurePassword),
@@ -212,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen>
                           minimumSize: const Size(0, 28),
                         ),
                         child: const Text('Ξεχάσατε τον κωδικό;',
-                            style: TextStyle(fontSize: 12)),
+                            style: TextStyle(fontSize: AppFontSize.base)),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -238,7 +239,11 @@ class _BrandPanel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF6B0000), Color(0xFFC62828), Color(0xFFD84315)],
+          colors: [
+            AppColors.brandDark,
+            AppColors.brandPrimary,
+            AppColors.orangeDeep
+          ],
           stops: [0.0, 0.55, 1.0],
         ),
       ),
@@ -267,8 +272,8 @@ class _BrandPanel extends StatelessWidget {
                       'R.C.D.',
                       style: GoogleFonts.inter(
                         color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontSize: AppFontSize.xl3,
+                        fontWeight: AppFontWeight.bold,
                         letterSpacing: 3,
                       ),
                     ),
@@ -277,20 +282,20 @@ class _BrandPanel extends StatelessWidget {
                 const Spacer(flex: 2),
                 // Status tag
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: Colors.white.withAlpha(25),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                        color: Colors.white.withAlpha(50), width: 1),
+                    borderRadius: AppRadius.r4,
+                    border:
+                        Border.all(color: Colors.white.withAlpha(50), width: 1),
                   ),
                   child: Text(
                     'ΕΛΛΗΝΙΚΟΣ ΕΡΥΘΡΟΣ ΣΤΑΥΡΟΣ',
                     style: GoogleFonts.inter(
                       color: Colors.white.withAlpha(200),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
+                      fontSize: AppFontSize.xs,
+                      fontWeight: AppFontWeight.semibold,
                       letterSpacing: 2.5,
                     ),
                   ),
@@ -301,8 +306,8 @@ class _BrandPanel extends StatelessWidget {
                   'Red Cross\nDispatcher',
                   style: GoogleFonts.inter(
                     color: Colors.white,
-                    fontSize: 52,
-                    fontWeight: FontWeight.w700,
+                    fontSize: AppFontSize.hero,
+                    fontWeight: AppFontWeight.bold,
                     height: 1.05,
                     letterSpacing: -1,
                   ),
@@ -313,7 +318,7 @@ class _BrandPanel extends StatelessWidget {
                   height: 2,
                   decoration: BoxDecoration(
                     color: Colors.white.withAlpha(180),
-                    borderRadius: BorderRadius.circular(1),
+                    borderRadius: AppRadius.r1,
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -321,9 +326,9 @@ class _BrandPanel extends StatelessWidget {
                   'Σύστημα διαχείρισης πόρων\nκαι αποστολών Ε.Ε.Σ.',
                   style: GoogleFonts.inter(
                     color: Colors.white.withAlpha(190),
-                    fontSize: 15,
+                    fontSize: AppFontSize.xl,
                     height: 1.65,
-                    fontWeight: FontWeight.w400,
+                    fontWeight: AppFontWeight.regular,
                   ),
                 ),
                 const Spacer(flex: 3),
@@ -344,7 +349,7 @@ class _BrandPanel extends StatelessWidget {
                   'v1.1.3',
                   style: TextStyle(
                     color: Colors.white.withAlpha(100),
-                    fontSize: 11,
+                    fontSize: AppFontSize.sm,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -367,7 +372,7 @@ class _CompactBrandHeader extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF6B0000), Color(0xFFC62828)],
+          colors: [AppColors.brandDark, AppColors.brandPrimary],
         ),
       ),
       child: Column(
@@ -380,8 +385,8 @@ class _CompactBrandHeader extends StatelessWidget {
               'R.C.D.',
               style: GoogleFonts.inter(
                 color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                fontSize: AppFontSize.xl2,
+                fontWeight: AppFontWeight.bold,
                 letterSpacing: 2.5,
               ),
             ),
@@ -391,8 +396,8 @@ class _CompactBrandHeader extends StatelessWidget {
             'Red Cross Dispatcher',
             style: GoogleFonts.inter(
               color: Colors.white.withAlpha(220),
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
+              fontSize: AppFontSize.xl5,
+              fontWeight: AppFontWeight.bold,
             ),
           ),
         ],
@@ -412,9 +417,9 @@ class _FormHeader extends StatelessWidget {
       Text(
         'Καλώς ήρθατε',
         style: GoogleFonts.inter(
-          fontSize: 30,
-          fontWeight: FontWeight.w700,
-          color: const Color(0xFF1A1C1E),
+          fontSize: AppFontSize.display2,
+          fontWeight: AppFontWeight.bold,
+          color: AppColors.ink,
           letterSpacing: -0.5,
           height: 1.1,
         ),
@@ -423,9 +428,9 @@ class _FormHeader extends StatelessWidget {
       Text(
         'Συνδεθείτε με τα διαπιστευτήριά σας',
         style: GoogleFonts.inter(
-          fontSize: 13,
-          color: const Color(0xFF6B7280),
-          fontWeight: FontWeight.w400,
+          fontSize: AppFontSize.md,
+          color: AppColors.gray500,
+          fontWeight: AppFontWeight.regular,
           height: 1.5,
         ),
       ),
@@ -443,22 +448,22 @@ class _ErrorBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFFECACA)),
+        color: AppColors.red50,
+        borderRadius: AppRadius.r8,
+        border: Border.all(color: AppColors.red200),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.error_outline_rounded,
-              size: 16, color: Color(0xFFDC2626)),
+              size: 16, color: AppColors.red600),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
               style: const TextStyle(
-                  color: Color(0xFFDC2626),
-                  fontSize: 13,
+                  color: AppColors.red600,
+                  fontSize: AppFontSize.md,
                   height: 1.4),
             ),
           ),
@@ -489,10 +494,10 @@ class _FormField extends StatelessWidget {
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
-      style: const TextStyle(fontSize: 14, color: Color(0xFF1A1C1E)),
+      style: const TextStyle(fontSize: AppFontSize.lg, color: AppColors.ink),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, size: 20, color: const Color(0xFF9CA3AF)),
+        prefixIcon: Icon(icon, size: 20, color: AppColors.gray400),
       ),
     );
   }
@@ -520,8 +525,8 @@ class _SubmitButton extends StatelessWidget {
             : Text(
                 'Σύνδεση',
                 style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontSize: AppFontSize.xl,
+                  fontWeight: AppFontWeight.semibold,
                   letterSpacing: 0.3,
                 ),
               ),
@@ -541,7 +546,7 @@ class _CapChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: Colors.white.withAlpha(18),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: AppRadius.r6,
         border: Border.all(color: Colors.white.withAlpha(45), width: 1),
       ),
       child: Row(
@@ -553,8 +558,8 @@ class _CapChip extends StatelessWidget {
             label,
             style: TextStyle(
               color: Colors.white.withAlpha(200),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+              fontSize: AppFontSize.base,
+              fontWeight: AppFontWeight.medium,
               letterSpacing: 0.2,
             ),
           ),

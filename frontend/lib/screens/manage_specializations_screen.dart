@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_client.dart';
+import 'package:mitroo_frontend/theme/theme.dart';
+
 /// Professional specialization list with search, hierarchy indicator,
 /// stats, and grid/list layout.
 class ManageSpecializationsScreen extends StatefulWidget {
@@ -91,49 +93,46 @@ class _ManageSpecializationsScreenState
                   TextField(
                       controller: nameCtrl,
                       decoration: const InputDecoration(
-                          labelText: 'Όνομα *',
-                          border: OutlineInputBorder())),
+                          labelText: 'Όνομα *', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
                   TextField(
                       controller: descCtrl,
                       decoration: const InputDecoration(
-                          labelText: 'Περιγραφή',
-                          border: OutlineInputBorder()),
+                          labelText: 'Περιγραφή', border: OutlineInputBorder()),
                       maxLines: 2),
                   const SizedBox(height: 12),
-                    TextField(
+                  TextField(
                       controller: yearlyHoursCtrl,
                       decoration: const InputDecoration(
-                        labelText: 'Ετήσιες Ώρες',
-                        border: OutlineInputBorder()),
+                          labelText: 'Ετήσιες Ώρες',
+                          border: OutlineInputBorder()),
                       keyboardType: TextInputType.number),
-                    const SizedBox(height: 12),
-                    TextField(
+                  const SizedBox(height: 12),
+                  TextField(
                       controller: yearlyHoursTrainingCtrl,
                       decoration: const InputDecoration(
-                        labelText: 'Ετήσιες Ώρες Εκπαίδευσης',
-                        border: OutlineInputBorder()),
+                          labelText: 'Ετήσιες Ώρες Εκπαίδευσης',
+                          border: OutlineInputBorder()),
                       keyboardType: TextInputType.number),
-                    const SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   TextField(
                       controller: hoursCtrl,
                       decoration: const InputDecoration(
                           labelText: 'Ώρες Εκπαίδευσης',
                           border: OutlineInputBorder()),
                       keyboardType: TextInputType.number),
-                    const SizedBox(height: 12),
-                    TextField(
+                  const SizedBox(height: 12),
+                  TextField(
                       controller: hoursTepCtrl,
                       decoration: const InputDecoration(
-                        labelText: 'Ώρες ΤΕΠ',
-                        border: OutlineInputBorder()),
+                          labelText: 'Ώρες ΤΕΠ', border: OutlineInputBorder()),
                       keyboardType: TextInputType.number),
-                    const SizedBox(height: 12),
-                    TextField(
+                  const SizedBox(height: 12),
+                  TextField(
                       controller: eamePrefixCtrl,
                       decoration: const InputDecoration(
-                        labelText: 'Πρόθεμα EAME',
-                        border: OutlineInputBorder())),
+                          labelText: 'Πρόθεμα EAME',
+                          border: OutlineInputBorder())),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int?>(
                     value: selectedRoot,
@@ -152,7 +151,10 @@ class _ManageSpecializationsScreenState
                   ),
                   const SizedBox(height: 12),
                   Text('Τύποι Υπηρεσιών',
-                      style: Theme.of(ctx).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                      style: Theme.of(ctx)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(fontWeight: AppFontWeight.semibold)),
                   const SizedBox(height: 8),
                   FutureBuilder(
                     future: _api.get('/service-types'),
@@ -177,8 +179,8 @@ class _ManageSpecializationsScreenState
                                 selectedTypeIds[typeId] = v;
                               });
                             },
-                            selectedColor: const Color(0xFFEDE9FE),
-                            checkmarkColor: const Color(0xFF7C3AED),
+                            selectedColor: AppColors.violet100,
+                            checkmarkColor: AppColors.violet600,
                           );
                         }).toList(),
                       );
@@ -204,7 +206,8 @@ class _ManageSpecializationsScreenState
                   body['yearlyHours'] = int.tryParse(yearlyHoursCtrl.text) ?? 0;
                 }
                 if (yearlyHoursTrainingCtrl.text.isNotEmpty) {
-                  body['yearlyHoursTraining'] = int.tryParse(yearlyHoursTrainingCtrl.text) ?? 0;
+                  body['yearlyHoursTraining'] =
+                      int.tryParse(yearlyHoursTrainingCtrl.text) ?? 0;
                 }
                 if (hoursCtrl.text.isNotEmpty) {
                   body['hoursTraining'] = int.tryParse(hoursCtrl.text) ?? 0;
@@ -214,8 +217,7 @@ class _ManageSpecializationsScreenState
                 }
                 body['eamePrefix'] = eamePrefixCtrl.text.trim();
                 if (selectedRoot != null) body['rootId'] = selectedRoot;
-                final res =
-                    await _api.post('/specializations', body: body);
+                final res = await _api.post('/specializations', body: body);
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (res.statusCode == 201) {
                   _fetch();
@@ -240,7 +242,7 @@ class _ManageSpecializationsScreenState
     return Scaffold(
       appBar: AppBar(
         title: Text('Διαχείριση Ειδικεύσεων',
-            style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            style: tt.titleLarge?.copyWith(fontWeight: AppFontWeight.bold)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -269,19 +271,20 @@ class _ManageSpecializationsScreenState
               child: Row(
                 children: [
                   Container(
-                    width: 4, height: 22,
+                    width: 4,
+                    height: 22,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7C3AED),
-                      borderRadius: BorderRadius.circular(2),
+                      color: AppColors.violet600,
+                      borderRadius: AppRadius.r2,
                     ),
                   ),
                   const SizedBox(width: 10),
                   Text(
                     'Ειδικεύσεις',
                     style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A1C1E),
+                      fontSize: AppFontSize.xl3,
+                      fontWeight: AppFontWeight.bold,
+                      color: AppColors.ink,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -291,18 +294,16 @@ class _ManageSpecializationsScreenState
 
             // ── Search ──
             Padding(
-              padding:
-                  EdgeInsets.symmetric(horizontal: hPad, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 12),
               child: TextField(
                 decoration: InputDecoration(
-                hintText: 'Αναζήτηση ειδικεύσεων...',
+                  hintText: 'Αναζήτηση ειδικεύσεων...',
                   prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(borderRadius: AppRadius.r12),
                   filled: true,
                   fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 onChanged: (v) => setState(() => _search = v),
               ),
@@ -332,19 +333,19 @@ class _ManageSpecializationsScreenState
                     label: 'Ειδικεύσεις',
                     value: '${_specs.length}',
                     icon: Icons.school,
-                    color: const Color(0xFF7C3AED)),
+                    color: AppColors.violet600),
                 const SizedBox(width: 12),
                 _MiniStat(
                     label: 'Χρήστες',
                     value: '$_totalUsers',
                     icon: Icons.people,
-                    color: const Color(0xFFDC2626)),
+                    color: AppColors.red600),
                 const SizedBox(width: 12),
                 _MiniStat(
                     label: 'Εμφαν.',
                     value: '${filtered.length}',
                     icon: Icons.filter_list,
-                    color: const Color(0xFF6B7280)),
+                    color: AppColors.gray500),
               ]),
             ),
             const SizedBox(height: 8),
@@ -357,11 +358,12 @@ class _ManageSpecializationsScreenState
                       ? Center(
                           child: Container(
                             margin: const EdgeInsets.symmetric(horizontal: 40),
-                            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 40, horizontal: 24),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF9FAFB),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: const Color(0xFFE5E7EB)),
+                              color: AppColors.gray50,
+                              borderRadius: AppRadius.r20,
+                              border: Border.all(color: AppColors.gray200),
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -369,22 +371,31 @@ class _ManageSpecializationsScreenState
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF3F4F6),
+                                    color: AppColors.gray100,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.school, size: 32, color: Color(0xFF9CA3AF)),
+                                  child: const Icon(Icons.school,
+                                      size: 32, color: AppColors.gray400),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  _search.isNotEmpty ? 'Δεν βρέθηκαν ειδικεύσεις' : 'Δεν υπάρχουν ειδικεύσεις',
+                                  _search.isNotEmpty
+                                      ? 'Δεν βρέθηκαν ειδικεύσεις'
+                                      : 'Δεν υπάρχουν ειδικεύσεις',
                                   style: GoogleFonts.inter(
-                                    fontSize: 14, color: const Color(0xFF6B7280), fontWeight: FontWeight.w600,
+                                    fontSize: AppFontSize.lg,
+                                    color: AppColors.gray500,
+                                    fontWeight: AppFontWeight.semibold,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  _search.isNotEmpty ? 'Δοκιμάστε άλλη αναζήτηση' : 'Πατήστε το + για να προσθέσετε',
-                                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF9CA3AF)),
+                                  _search.isNotEmpty
+                                      ? 'Δοκιμάστε άλλη αναζήτηση'
+                                      : 'Πατήστε το + για να προσθέσετε',
+                                  style: GoogleFonts.inter(
+                                      fontSize: AppFontSize.base,
+                                      color: AppColors.gray400),
                                 ),
                               ],
                             ),
@@ -409,8 +420,8 @@ class _ManageSpecializationsScreenState
       label: Text('$label ($count)'),
       selected: selected,
       onSelected: (_) => setState(() => _filter = key),
-      selectedColor: const Color(0xFFEDE9FE),
-      checkmarkColor: const Color(0xFF7C3AED),
+      selectedColor: AppColors.violet100,
+      checkmarkColor: AppColors.violet600,
     );
   }
 
@@ -469,18 +480,15 @@ class _SpecCard extends StatelessWidget {
     final eamePrefix = (spec['eamePrefix'] ?? '').toString();
     final isRoot = spec['rootId'] == null;
     final description = (spec['description'] ?? '').toString();
-    final subtitle = isRoot
-        ? description
-        : (root?['name'] ?? '').toString();
-    final accentColor =
-        isRoot ? const Color(0xFF7C3AED) : const Color(0xFFDC2626);
+    final subtitle = isRoot ? description : (root?['name'] ?? '').toString();
+    final accentColor = isRoot ? AppColors.violet600 : AppColors.red600;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.r12),
       elevation: 0,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.r12,
         onTap: onTap,
         child: IntrinsicHeight(
           child: Row(
@@ -503,14 +511,16 @@ class _SpecCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(spec['name'] ?? '',
-                          style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                          style: tt.titleSmall
+                              ?.copyWith(fontWeight: AppFontWeight.bold),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis),
                       if (subtitle.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(subtitle,
                             style: GoogleFonts.inter(
-                                fontSize: 12, color: const Color(0xFF6B7280)),
+                                fontSize: AppFontSize.base,
+                                color: AppColors.gray500),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 4),
@@ -520,37 +530,37 @@ class _SpecCard extends StatelessWidget {
                         _MiniLabel(
                             icon: Icons.people,
                             text: '$userCount',
-                            color: const Color(0xFFDC2626)),
+                            color: AppColors.red600),
                         if (isRoot && childCount > 0)
                           _MiniLabel(
                               icon: Icons.subdirectory_arrow_right,
                               text: '$childCount',
-                              color: const Color(0xFF7C3AED)),
+                              color: AppColors.violet600),
                         if (hours > 0)
                           _MiniLabel(
                               icon: Icons.schedule,
                               text: '${hours}h',
-                              color: const Color(0xFFD97706)),
+                              color: AppColors.amber600),
                         if (yearlyHours > 0)
                           _MiniLabel(
                               icon: Icons.calendar_month,
                               text: 'Ετήσιες ${yearlyHours}h',
-                              color: const Color(0xFF2563EB)),
+                              color: AppColors.blue600),
                         if (yearlyHoursTraining > 0)
                           _MiniLabel(
                               icon: Icons.school_outlined,
                               text: 'Εκπ. ${yearlyHoursTraining}h',
-                              color: const Color(0xFF0F766E)),
+                              color: AppColors.teal700),
                         if (hoursTep > 0)
                           _MiniLabel(
                               icon: Icons.timer,
                               text: 'TEP ${hoursTep}h',
-                              color: const Color(0xFF0EA5E9)),
+                              color: AppColors.sky500),
                         if (eamePrefix.isNotEmpty)
                           _MiniLabel(
                               icon: Icons.badge_outlined,
                               text: 'EAME $eamePrefix',
-                              color: const Color(0xFF111827)),
+                              color: AppColors.gray900),
                       ]),
                     ],
                   ),
@@ -558,7 +568,8 @@ class _SpecCard extends StatelessWidget {
               ),
               const Padding(
                 padding: EdgeInsets.only(right: 8),
-                child: Icon(Icons.chevron_right, color: Color(0xFF9CA3AF), size: 18),
+                child: Icon(Icons.chevron_right,
+                    color: AppColors.gray400, size: 18),
               ),
             ],
           ),
@@ -582,11 +593,12 @@ class _MiniLabel extends StatelessWidget {
       const SizedBox(width: 3),
       Text(text,
           style: GoogleFonts.inter(
-              fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+              fontSize: AppFontSize.base,
+              fontWeight: AppFontWeight.semibold,
+              color: color)),
     ]);
   }
 }
-
 
 class _MiniStat extends StatelessWidget {
   final String label;
@@ -603,28 +615,25 @@ class _MiniStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          borderRadius: AppRadius.r12,
+          border: Border.all(color: AppColors.gray200),
         ),
         child: Row(children: [
           Icon(icon, size: 18, color: color),
           const SizedBox(width: 8),
-          Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value,
-                    style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: color)),
-                Text(label,
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: const Color(0xFF6B7280))),
-              ]),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(value,
+                style: GoogleFonts.inter(
+                    fontWeight: AppFontWeight.bold,
+                    fontSize: AppFontSize.xl,
+                    color: color)),
+            Text(label,
+                style: GoogleFonts.inter(
+                    fontSize: AppFontSize.sm, color: AppColors.gray500)),
+          ]),
         ]),
       ),
     );

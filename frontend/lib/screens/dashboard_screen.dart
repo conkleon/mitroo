@@ -8,6 +8,8 @@ import '../providers/item_provider.dart';
 import '../providers/vehicle_provider.dart';
 import '../providers/auth_provider.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -67,25 +69,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFF6B0000), Color(0xFFC62828)],
+                        colors: [AppColors.brandDark, AppColors.brandPrimary],
                       ),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: AppRadius.r10,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Image.asset('assets/logo.png', height: 24),
                         const SizedBox(width: 8),
-                        Text('R.C.D.',
+                        Text(
+                          'R.C.D.',
                           style: GoogleFonts.inter(
                             color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                            fontSize: AppFontSize.lg,
+                            fontWeight: AppFontWeight.bold,
                             letterSpacing: 2,
                           ),
                         ),
@@ -97,10 +101,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     onTap: () => context.push('/profile'),
                     child: CircleAvatar(
                       radius: 18,
-                      backgroundColor: const Color(0xFFC62828),
+                      backgroundColor: AppColors.brandPrimary,
                       child: Text(
                         name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: AppFontWeight.semibold,
+                            fontSize: AppFontSize.lg),
                       ),
                     ),
                   ),
@@ -109,18 +116,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 24),
 
               // ── Greeting ──
-              Text(_greeting(), style: GoogleFonts.inter(
-                fontSize: 14, color: const Color(0xFF6B7280),
-              )),
+              Text(_greeting(),
+                  style: GoogleFonts.inter(
+                    fontSize: AppFontSize.lg,
+                    color: AppColors.gray500,
+                  )),
               const SizedBox(height: 2),
               Row(
                 children: [
                   Expanded(
-                    child: Text(name, style: GoogleFonts.inter(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A1C1E),
-                    )),
+                    child: Text(name,
+                        style: GoogleFonts.inter(
+                          fontSize: AppFontSize.display,
+                          fontWeight: AppFontWeight.bold,
+                          color: AppColors.ink,
+                        )),
                   ),
                   IconButton(
                     icon: Icon(Icons.refresh, color: cs.primary),
@@ -141,29 +151,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _StatCard(
                     icon: Icons.business_rounded,
-                    iconColor: const Color(0xFFDC2626),
-                    bgColor: const Color(0xFFFEE2E2),
+                    iconColor: AppColors.red600,
+                    bgColor: AppColors.red100,
                     value: '${deptProv.departments.length}',
                     label: 'Τμήματα',
                   ),
                   _StatCard(
                     icon: Icons.miscellaneous_services_rounded,
-                    iconColor: const Color(0xFF059669),
-                    bgColor: const Color(0xFFD1FAE5),
+                    iconColor: AppColors.emerald600,
+                    bgColor: AppColors.emerald100,
                     value: '${svcProv.services.length}',
                     label: 'Υπηρεσίες',
                   ),
                   _StatCard(
                     icon: Icons.inventory_2_rounded,
-                    iconColor: const Color(0xFF7C3AED),
-                    bgColor: const Color(0xFFEDE9FE),
+                    iconColor: AppColors.violet600,
+                    bgColor: AppColors.violet100,
                     value: '${itemProv.items.length}',
                     label: 'Αντικείμενα',
                   ),
                   _StatCard(
                     icon: Icons.directions_car_rounded,
-                    iconColor: const Color(0xFFD97706),
-                    bgColor: const Color(0xFFFEF3C7),
+                    iconColor: AppColors.amber600,
+                    bgColor: AppColors.amber100,
                     value: '${vehProv.vehicles.length}',
                     label: 'Οχήματα',
                   ),
@@ -174,12 +184,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               // ── Recent Services Section ──
               Row(
                 children: [
-                  Icon(Icons.miscellaneous_services, size: 20, color: cs.primary),
+                  Icon(Icons.miscellaneous_services,
+                      size: 20, color: cs.primary),
                   const SizedBox(width: 8),
-                  Text('Πρόσφατες Υπηρεσίες', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                  Text('Πρόσφατες Υπηρεσίες',
+                      style: tt.titleMedium
+                          ?.copyWith(fontWeight: AppFontWeight.semibold)),
                   const Spacer(),
                   Text('${svcProv.services.length} σύνολο',
-                      style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                      style: tt.bodySmall?.copyWith(color: AppColors.gray500)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -193,13 +206,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   elevation: 1,
                   shadowColor: Colors.black.withAlpha(15),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(color: Color(0xFFF3F4F6)),
+                    borderRadius: AppRadius.r14,
+                    side: BorderSide(color: AppColors.gray100),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Center(
-                      child: Text('Δεν υπάρχουν υπηρεσίες', style: tt.bodyMedium?.copyWith(color: Color(0xFF6B7280))),
+                      child: Text('Δεν υπάρχουν υπηρεσίες',
+                          style: tt.bodyMedium
+                              ?.copyWith(color: AppColors.gray500)),
                     ),
                   ),
                 )
@@ -213,25 +228,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       elevation: 1,
                       shadowColor: Colors.black.withAlpha(15),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        side: BorderSide(color: Color(0xFFF3F4F6)),
+                        borderRadius: AppRadius.r14,
+                        side: BorderSide(color: AppColors.gray100),
                       ),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 4),
                         leading: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: cs.primary.withAlpha(20),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadius.r12,
                           ),
-                          child: Icon(Icons.miscellaneous_services, color: cs.primary, size: 20),
+                          child: Icon(Icons.miscellaneous_services,
+                              color: cs.primary, size: 20),
                         ),
-                        title: Text(svc['name'] ?? '', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                        title: Text(svc['name'] ?? '',
+                            style: tt.titleSmall
+                                ?.copyWith(fontWeight: AppFontWeight.semibold)),
                         subtitle: Text(
                           '${dept?['name'] ?? ''} · $enrolled μέλη',
-                          style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+                          style:
+                              tt.bodySmall?.copyWith(color: AppColors.gray500),
                         ),
-                        trailing: Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+                        trailing:
+                            Icon(Icons.chevron_right, color: AppColors.gray400),
                       ),
                     ),
                   );
@@ -267,8 +288,8 @@ class _StatCard extends StatelessWidget {
       elevation: 2,
       shadowColor: Colors.black.withAlpha(20),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFF3F4F6)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray100),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -279,14 +300,17 @@ class _StatCard extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: bgColor,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.r12,
               ),
               child: Icon(icon, color: iconColor, size: 22),
             ),
             const Spacer(),
-            Text(value, style: tt.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
+            Text(value,
+                style: tt.headlineMedium
+                    ?.copyWith(fontWeight: AppFontWeight.bold)),
             const SizedBox(height: 2),
-            Text(label, style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+            Text(label,
+                style: tt.bodySmall?.copyWith(color: AppColors.gray500)),
           ],
         ),
       ),

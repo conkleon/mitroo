@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:mitroo_frontend/theme/theme.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -114,8 +115,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
               onRefresh: _refresh,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(
-                    hPad, isCompact ? 12 : 20, hPad, 24),
+                padding:
+                    EdgeInsets.fromLTRB(hPad, isCompact ? 12 : 20, hPad, 24),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: contentWidth),
@@ -139,8 +140,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                             tiles: [
                               _AdminTileData(
                                 icon: Icons.people,
-                                iconColor: const Color(0xFFDC2626),
-                                bgColor: const Color(0xFFFEE2E2),
+                                iconColor: AppColors.red600,
+                                bgColor: AppColors.red100,
                                 title: 'Διαχείρηση Χρηστών',
                                 subtitle:
                                     'Δημιουργία, επεξεργασία & ανάθεση ρόλων',
@@ -148,12 +149,11 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                               ),
                               _AdminTileData(
                                 icon: Icons.business,
-                                iconColor: const Color(0xFF7C3AED),
-                                bgColor: const Color(0xFFEDE9FE),
+                                iconColor: AppColors.violet600,
+                                bgColor: AppColors.violet100,
                                 title: 'Διαχείρηση Τμημάτων',
                                 subtitle: 'Δημιουργία & ρύθμιση τμημάτων',
-                                onTap: () =>
-                                    context.push('/admin/departments'),
+                                onTap: () => context.push('/admin/departments'),
                               ),
                               // Server-side the report API is restricted to sys
                               // admins and department missionAdmins, so gate the
@@ -162,8 +162,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                               if (isSysAdmin || auth.isMissionAdmin)
                                 _AdminTileData(
                                   icon: Icons.campaign,
-                                  iconColor: const Color(0xFF059669),
-                                  bgColor: const Color(0xFFD1FAE5),
+                                  iconColor: AppColors.emerald600,
+                                  bgColor: AppColors.emerald100,
                                   title: 'Αναφορά Αποστολών',
                                   subtitle:
                                       'Δημιουργία αναφοράς με τεχνητή νοημοσύνη',
@@ -173,18 +173,17 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                               if (isSysAdmin) ...[
                                 _AdminTileData(
                                   icon: Icons.school,
-                                  iconColor: const Color(0xFFD97706),
-                                  bgColor: const Color(0xFFFEF3C7),
+                                  iconColor: AppColors.amber600,
+                                  bgColor: AppColors.amber100,
                                   title: 'Διαχείρηση Ειδικεύσεων',
-                                  subtitle:
-                                      'Δημιουργία & ανάθεση ειδικεύσεων',
+                                  subtitle: 'Δημιουργία & ανάθεση ειδικεύσεων',
                                   onTap: () =>
                                       context.push('/admin/specializations'),
                                 ),
                                 _AdminTileData(
                                   icon: Icons.category,
-                                  iconColor: const Color(0xFF0891B2),
-                                  bgColor: const Color(0xFFECFEFF),
+                                  iconColor: AppColors.cyan600,
+                                  bgColor: AppColors.cyan50,
                                   title: 'Τύποι Υπηρεσιών',
                                   subtitle:
                                       'Διαχείριση τύπων υπηρεσιών & ορατότητας',
@@ -199,11 +198,9 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
 
                         // ── Department cards ──
                         if (depts.isEmpty && !isSysAdmin)
-                          const _EmptyCard(
-                              message: 'Κανένα τμήμα ανατεθειμένο')
+                          const _EmptyCard(message: 'Κανένα τμήμα ανατεθειμένο')
                         else if (depts.isNotEmpty) ...[
-                          _SectionHeader(
-                              icon: Icons.domain, label: 'Τμήματα'),
+                          _SectionHeader(icon: Icons.domain, label: 'Τμήματα'),
                           const SizedBox(height: 12),
                           ...depts.map((dept) {
                             final deptId = dept['id'] as int;
@@ -289,7 +286,7 @@ class _HeaderBar extends StatelessWidget {
           padding: EdgeInsets.all(isCompact ? 8 : 10),
           decoration: BoxDecoration(
             color: cs.primary.withAlpha(25),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.r12,
           ),
           child: Icon(Icons.admin_panel_settings,
               color: cs.primary, size: isCompact ? 24 : 28),
@@ -301,11 +298,10 @@ class _HeaderBar extends StatelessWidget {
             children: [
               Text('Πίνακας Διαχείρισης',
                   style: (isCompact ? tt.titleLarge : tt.headlineSmall)
-                      ?.copyWith(fontWeight: FontWeight.w700)),
+                      ?.copyWith(fontWeight: AppFontWeight.bold)),
               const SizedBox(height: 2),
               Text(subtitle,
-                  style: tt.bodySmall
-                      ?.copyWith(color: const Color(0xFF6B7280))),
+                  style: tt.bodySmall?.copyWith(color: AppColors.gray500)),
             ],
           ),
         ),
@@ -320,7 +316,7 @@ class _HeaderBar extends StatelessWidget {
                   : 'A',
               style: TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeight.semibold,
                   fontSize: isCompact ? 14 : 16),
             ),
           ),
@@ -389,7 +385,8 @@ class _SectionHeader extends StatelessWidget {
         Icon(icon, size: 20, color: cs.primary),
         const SizedBox(width: 8),
         Text(label,
-            style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            style:
+                tt.titleMedium?.copyWith(fontWeight: AppFontWeight.semibold)),
       ],
     );
   }
@@ -426,13 +423,13 @@ class _AdminTileCardState extends State<_AdminTileCard> {
           elevation: _hovering ? 4 : 1,
           shadowColor: Colors.black.withAlpha(_hovering ? 30 : 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.r14,
             side: BorderSide(
               color: _hovering ? d.iconColor.withAlpha(60) : Colors.transparent,
             ),
           ),
           child: InkWell(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.r14,
             onTap: d.onTap,
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -445,11 +442,10 @@ class _AdminTileCardState extends State<_AdminTileCard> {
                     padding: EdgeInsets.all(widget.isCompact ? 8 : 10),
                     decoration: BoxDecoration(
                       color: d.bgColor,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.r12,
                     ),
                     child: Icon(d.icon,
-                        color: d.iconColor,
-                        size: widget.isCompact ? 22 : 24),
+                        color: d.iconColor, size: widget.isCompact ? 22 : 24),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -459,21 +455,20 @@ class _AdminTileCardState extends State<_AdminTileCard> {
                       children: [
                         Text(d.title,
                             style: tt.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600),
+                                ?.copyWith(fontWeight: AppFontWeight.semibold),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 2),
                         Text(d.subtitle,
-                            style: tt.bodySmall?.copyWith(
-                                color: const Color(0xFF6B7280)),
+                            style: tt.bodySmall
+                                ?.copyWith(color: AppColors.gray500),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis),
                       ],
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Icon(Icons.chevron_right,
-                      color: Color(0xFF9CA3AF), size: 20),
+                  Icon(Icons.chevron_right, color: AppColors.gray400, size: 20),
                 ],
               ),
             ),
@@ -491,7 +486,7 @@ class _EmptyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.r14),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Center(
@@ -499,7 +494,7 @@ class _EmptyCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(color: Color(0xFF6B7280))),
+                  ?.copyWith(color: AppColors.gray500)),
         ),
       ),
     );
@@ -531,8 +526,8 @@ class _DeptAdminCard extends StatelessWidget {
       if (isMission)
         _AdminTileData(
           icon: Icons.assignment_turned_in,
-          iconColor: const Color(0xFF1D4ED8),
-          bgColor: const Color(0xFFDBEAFE),
+          iconColor: AppColors.blue700,
+          bgColor: AppColors.blue100,
           title: 'Αιτήσεις Εκπαίδευσης',
           subtitle: 'Αποδοχή & ενεργοποίηση εκπαιδευόμενων',
           onTap: () => context.push('/admin/training-applications'),
@@ -540,8 +535,8 @@ class _DeptAdminCard extends StatelessWidget {
       if (isMission)
         _AdminTileData(
           icon: Icons.miscellaneous_services,
-          iconColor: const Color(0xFF059669),
-          bgColor: const Color(0xFFD1FAE5),
+          iconColor: AppColors.emerald600,
+          bgColor: AppColors.emerald100,
           title: 'Υπηρεσίες',
           subtitle: 'Δημιουργία & διαχείριση υπηρεσιών',
           onTap: () => context.push(
@@ -550,24 +545,24 @@ class _DeptAdminCard extends StatelessWidget {
       if (isMission && onUsersTap != null)
         _AdminTileData(
           icon: Icons.people,
-          iconColor: const Color(0xFFDC2626),
-          bgColor: const Color(0xFFFEE2E2),
+          iconColor: AppColors.red600,
+          bgColor: AppColors.red100,
           title: 'Χρήστες',
           subtitle: 'Προβολή & επεξεργασία μελών τμήματος',
           onTap: onUsersTap!,
         ),
       _AdminTileData(
         icon: Icons.inventory_2,
-        iconColor: const Color(0xFF7C3AED),
-        bgColor: const Color(0xFFEDE9FE),
+        iconColor: AppColors.violet600,
+        bgColor: AppColors.violet100,
         title: 'Αντικείμενα',
         subtitle: 'Διαχείριση εξοπλισμού & κουτιών',
         onTap: () => context.go('/items?departmentId=$deptId'),
       ),
       _AdminTileData(
         icon: Icons.directions_car,
-        iconColor: const Color(0xFFD97706),
-        bgColor: const Color(0xFFFEF3C7),
+        iconColor: AppColors.amber600,
+        bgColor: AppColors.amber100,
         title: 'Οχήματα',
         subtitle: 'Διαχείριση στόλου & χιλιομέτρων',
         onTap: () => context.go('/vehicles'),
@@ -577,8 +572,8 @@ class _DeptAdminCard extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray200),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -593,23 +588,18 @@ class _DeptAdminCard extends StatelessWidget {
                     style: Theme.of(context)
                         .textTheme
                         .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                        ?.copyWith(fontWeight: AppFontWeight.bold),
                   ),
                 ),
                 if (isMission)
-                  _RoleBadge(
-                      label: 'Αποστολών',
-                      color: const Color(0xFF059669)),
+                  _RoleBadge(label: 'Αποστολών', color: AppColors.emerald600),
                 if (roles.contains('itemAdmin') && !isMission)
-                  _RoleBadge(
-                      label: 'Υλικού',
-                      color: const Color(0xFF7C3AED)),
+                  _RoleBadge(label: 'Υλικού', color: AppColors.violet600),
               ],
             ),
           ),
           const Divider(height: 1),
-          ...tiles.map((t) =>
-              _CompactTileRow(data: t, isCompact: isCompact)),
+          ...tiles.map((t) => _CompactTileRow(data: t, isCompact: isCompact)),
           const SizedBox(height: 4),
         ],
       ),
@@ -629,13 +619,15 @@ class _RoleBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withAlpha(25),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.r20,
         border: Border.all(color: color.withAlpha(80)),
       ),
       child: Text(
         label,
         style: TextStyle(
-            fontSize: 11, color: color, fontWeight: FontWeight.w600),
+            fontSize: AppFontSize.sm,
+            color: color,
+            fontWeight: AppFontWeight.semibold),
       ),
     );
   }
@@ -665,9 +657,7 @@ class _CompactTileRowState extends State<_CompactTileRow> {
         onTap: d.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          color: _hovering
-              ? const Color(0xFFF9FAFB)
-              : Colors.transparent,
+          color: _hovering ? AppColors.gray50 : Colors.transparent,
           padding: EdgeInsets.symmetric(
             horizontal: 16,
             vertical: widget.isCompact ? 10 : 12,
@@ -678,10 +668,9 @@ class _CompactTileRowState extends State<_CompactTileRow> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: d.bgColor,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: AppRadius.r10,
                 ),
-                child:
-                    Icon(d.icon, color: d.iconColor, size: 20),
+                child: Icon(d.icon, color: d.iconColor, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -690,15 +679,14 @@ class _CompactTileRowState extends State<_CompactTileRow> {
                   children: [
                     Text(d.title,
                         style: tt.bodyMedium
-                            ?.copyWith(fontWeight: FontWeight.w600)),
+                            ?.copyWith(fontWeight: AppFontWeight.semibold)),
                     Text(d.subtitle,
-                        style: tt.bodySmall?.copyWith(
-                            color: const Color(0xFF6B7280))),
+                        style:
+                            tt.bodySmall?.copyWith(color: AppColors.gray500)),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right,
-                  color: Color(0xFF9CA3AF), size: 18),
+              Icon(Icons.chevron_right, color: AppColors.gray400, size: 18),
             ],
           ),
         ),
@@ -761,12 +749,10 @@ class _UserDrawerState extends State<_UserDrawer> {
     try {
       final res = await _api.get('/users/stats');
       if (res.statusCode == 200 && mounted) {
-        final all = (jsonDecode(res.body) as List)
-            .cast<Map<String, dynamic>>();
+        final all = (jsonDecode(res.body) as List).cast<Map<String, dynamic>>();
         _users = all.where((u) {
           final depts = u['departments'] as List<dynamic>? ?? [];
-          return depts
-              .any((d) => d['department']?['id'] == deptId);
+          return depts.any((d) => d['department']?['id'] == deptId);
         }).toList();
         _loadedDeptId = deptId;
       }
@@ -778,8 +764,7 @@ class _UserDrawerState extends State<_UserDrawer> {
     if (_search.isEmpty) return _users;
     final q = _search.toLowerCase();
     return _users.where((u) {
-      final name =
-          '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
+      final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
       final eame = (u['eame'] ?? '').toString().toLowerCase();
       return name.contains(q) || eame.contains(q);
     }).toList();
@@ -805,14 +790,11 @@ class _UserDrawerState extends State<_UserDrawer> {
           children: [
             // Header
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               child: Row(
                 children: [
                   IconButton(
-                    icon: Icon(inDetail
-                        ? Icons.arrow_back
-                        : Icons.close),
+                    icon: Icon(inDetail ? Icons.arrow_back : Icons.close),
                     onPressed: inDetail
                         ? widget.onBack
                         : () => Navigator.of(context).pop(),
@@ -825,7 +807,7 @@ class _UserDrawerState extends State<_UserDrawer> {
                           ? 'Στοιχεία Χρήστη'
                           : 'Χρήστες – ${widget.deptName}',
                       style: tt.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                          ?.copyWith(fontWeight: AppFontWeight.semibold),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -867,8 +849,7 @@ class _UserDrawerState extends State<_UserDrawer> {
               hintText: 'Αναζήτηση...',
               prefixIcon: Icon(Icons.search, size: 20),
               border: OutlineInputBorder(),
-              contentPadding:
-                  EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               isDense: true,
             ),
             onChanged: (v) => setState(() => _search = v),
@@ -881,7 +862,7 @@ class _UserDrawerState extends State<_UserDrawer> {
                   ? Center(
                       child: Text('Κανένα αποτέλεσμα',
                           style: tt.bodyMedium
-                              ?.copyWith(color: Color(0xFF6B7280))),
+                              ?.copyWith(color: AppColors.gray500)),
                     )
                   : ListView.separated(
                       itemCount: _filtered.length,
@@ -892,42 +873,32 @@ class _UserDrawerState extends State<_UserDrawer> {
                         final name =
                             '${u['forename'] ?? ''} ${u['surname'] ?? ''}'
                                 .trim();
-                        final initial = name.isNotEmpty
-                            ? name[0].toUpperCase()
-                            : '?';
-                        final depts = u['departments']
-                                as List<dynamic>? ??
-                            [];
+                        final initial =
+                            name.isNotEmpty ? name[0].toUpperCase() : '?';
+                        final depts = u['departments'] as List<dynamic>? ?? [];
                         final roleDept = depts.firstWhere(
-                          (d) =>
-                              d['department']?['id'] ==
-                              widget.deptId,
+                          (d) => d['department']?['id'] == widget.deptId,
                           orElse: () => <String, dynamic>{},
                         );
-                        final role =
-                            roleDept['role'] as String?;
+                        final role = roleDept['role'] as String?;
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundColor: cs.primary,
                             child: Text(initial,
                                 style: const TextStyle(
                                     color: Colors.white,
-                                    fontWeight: FontWeight.w600)),
+                                    fontWeight: AppFontWeight.semibold)),
                           ),
                           title: Text(name,
-                              style: tt.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w500)),
+                              style: tt.bodyMedium
+                                  ?.copyWith(fontWeight: AppFontWeight.medium)),
                           subtitle: role != null
                               ? Text(_roleLabel(role),
-                                  style: tt.bodySmall?.copyWith(
-                                      color:
-                                          const Color(0xFF6B7280)))
+                                  style: tt.bodySmall
+                                      ?.copyWith(color: AppColors.gray500))
                               : null,
-                          trailing: const Icon(
-                              Icons.chevron_right,
-                              size: 18),
-                          onTap: () =>
-                              widget.onUserSelected(u['id'] as int),
+                          trailing: const Icon(Icons.chevron_right, size: 18),
+                          onTap: () => widget.onUserSelected(u['id'] as int),
                         );
                       },
                     ),

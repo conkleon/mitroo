@@ -6,6 +6,8 @@ import '../services/api_client.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/sync_config_card.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 /// Full detail view for a single department.
 /// Shows info, members (with role management), recent services, vehicles.
 class DepartmentDetailScreen extends StatefulWidget {
@@ -48,17 +50,14 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
   // ── helpers ──
   List<dynamic> get _members =>
       (_dept?['userDepartments'] as List<dynamic>?) ?? [];
-  List<dynamic> get _services =>
-      (_dept?['services'] as List<dynamic>?) ?? [];
-  List<dynamic> get _vehicles =>
-      (_dept?['vehicles'] as List<dynamic>?) ?? [];
+  List<dynamic> get _services => (_dept?['services'] as List<dynamic>?) ?? [];
+  List<dynamic> get _vehicles => (_dept?['vehicles'] as List<dynamic>?) ?? [];
 
   // ── Edit department ─────────────────────────────
   void _editDepartment() {
     if (_dept == null) return;
     final nameCtrl = TextEditingController(text: _dept!['name'] ?? '');
-    final descCtrl =
-        TextEditingController(text: _dept!['description'] ?? '');
+    final descCtrl = TextEditingController(text: _dept!['description'] ?? '');
     final locCtrl = TextEditingController(text: _dept!['location'] ?? '');
 
     final auth = context.read<AuthProvider>();
@@ -78,29 +77,27 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                     controller: nameCtrl,
                     enabled: canEditName,
                     decoration: InputDecoration(
-                        labelText: canEditName ? 'Όνομα' : 'Όνομα (Μόνο διαχειριστής)',
+                        labelText:
+                            canEditName ? 'Όνομα' : 'Όνομα (Μόνο διαχειριστής)',
                         border: const OutlineInputBorder())),
                 const SizedBox(height: 12),
                 TextField(
                     controller: descCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'Περιγραφή',
-                        border: OutlineInputBorder()),
+                        labelText: 'Περιγραφή', border: OutlineInputBorder()),
                     maxLines: 2),
                 const SizedBox(height: 12),
                 TextField(
                     controller: locCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'Τοποθεσία',
-                        border: OutlineInputBorder())),
+                        labelText: 'Τοποθεσία', border: OutlineInputBorder())),
               ],
             ),
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Άκυρο')),
+              onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () async {
               final body = <String, dynamic>{};
@@ -135,10 +132,9 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
             const Text('Είστε σίγουροι; Όλες οι συσχετίσεις θα αφαιρεθούν.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Άκυρο')),
+              onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             onPressed: () async {
               await _api.delete('/departments/${widget.departmentId}');
               if (ctx.mounted) Navigator.pop(ctx);
@@ -153,10 +149,13 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
 
   // ── Add Member ──────────────────────────────────
   void _addMember() {
-    final currentIds = _members.map((m) {
-      final u = m['user'] as Map<String, dynamic>?;
-      return u?['id'] as int?;
-    }).whereType<int>().toSet();
+    final currentIds = _members
+        .map((m) {
+          final u = m['user'] as Map<String, dynamic>?;
+          return u?['id'] as int?;
+        })
+        .whereType<int>()
+        .toSet();
 
     final available =
         _allUsers.where((u) => !currentIds.contains(u['id'])).toList();
@@ -187,8 +186,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                       final name =
                           '${u['forename'] ?? ''} ${u['surname'] ?? ''}'
                               .toLowerCase();
-                      final eame =
-                          (u['eame'] ?? '').toString().toLowerCase();
+                      final eame = (u['eame'] ?? '').toString().toLowerCase();
                       return name.contains(q) || eame.contains(q);
                     });
                   },
@@ -200,10 +198,9 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                               .trim();
                     });
                   },
-                  fieldViewBuilder: (context, controller, focusNode,
-                      onFieldSubmitted) {
-                    if (selectedUserName != null &&
-                        controller.text.isEmpty) {
+                  fieldViewBuilder:
+                      (context, controller, focusNode, onFieldSubmitted) {
+                    if (selectedUserName != null && controller.text.isEmpty) {
                       controller.text = selectedUserName!;
                     }
                     return TextField(
@@ -213,12 +210,10 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                         labelText: 'Χρήστης',
                         hintText: 'Πληκτρολογήστε...',
                         border: const OutlineInputBorder(),
-                        prefixIcon:
-                            const Icon(Icons.search, size: 20),
+                        prefixIcon: const Icon(Icons.search, size: 20),
                         suffixIcon: controller.text.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear,
-                                    size: 18),
+                                icon: const Icon(Icons.clear, size: 18),
                                 onPressed: () {
                                   controller.clear();
                                   setS(() {
@@ -237,13 +232,12 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                       },
                     );
                   },
-                  optionsViewBuilder:
-                      (context, onSelected, options) {
+                  optionsViewBuilder: (context, onSelected, options) {
                     return Align(
                       alignment: Alignment.topLeft,
                       child: Material(
                         elevation: 4,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.r8,
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(
                               maxHeight: 200, maxWidth: 370),
@@ -259,19 +253,15 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                               return ListTile(
                                 dense: true,
                                 leading: const Icon(Icons.person,
-                                    size: 18,
-                                    color: Color(0xFFDC2626)),
+                                    size: 18, color: AppColors.red600),
                                 title: Text(
-                                    name.isNotEmpty
-                                        ? name
-                                        : opt['eame'] ?? '',
+                                    name.isNotEmpty ? name : opt['eame'] ?? '',
                                     style: const TextStyle(
-                                        fontSize: 14)),
-                                subtitle: Text(
-                                    opt['eame'] ?? '',
+                                        fontSize: AppFontSize.lg)),
+                                subtitle: Text(opt['eame'] ?? '',
                                     style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Color(0xFF9CA3AF))),
+                                        fontSize: AppFontSize.base,
+                                        color: AppColors.gray400)),
                                 onTap: () => onSelected(opt),
                               );
                             },
@@ -295,7 +285,8 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                     DropdownMenuItem(
                         value: 'itemAdmin', child: Text('Διαχειριστής Υλικού')),
                   ],
-                  onChanged: (v) => setS(() => selectedRole = v ?? selectedRole),
+                  onChanged: (v) =>
+                      setS(() => selectedRole = v ?? selectedRole),
                 ),
               ],
             ),
@@ -327,16 +318,14 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
 
   // ── Change member role ──
   Future<void> _changeRole(int userId, String newRole) async {
-    await _api.patch(
-        '/departments/${widget.departmentId}/members/$userId',
+    await _api.patch('/departments/${widget.departmentId}/members/$userId',
         body: {'role': newRole});
     _load();
   }
 
   // ── Remove member ──
   Future<void> _removeMember(int userId) async {
-    await _api
-        .delete('/departments/${widget.departmentId}/members/$userId');
+    await _api.delete('/departments/${widget.departmentId}/members/$userId');
     _load();
   }
 
@@ -349,7 +338,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_dept?['name'] ?? 'Τμήμα',
-            style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            style: tt.titleLarge?.copyWith(fontWeight: AppFontWeight.bold)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -361,7 +350,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                 tooltip: 'Επεξεργασία'),
           if (auth.isAdmin)
             IconButton(
-                icon: const Icon(Icons.delete, color: Color(0xFFDC2626)),
+                icon: const Icon(Icons.delete, color: AppColors.red600),
                 onPressed: _deleteDepartment,
                 tooltip: 'Διαγραφή'),
         ],
@@ -391,7 +380,8 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                                       _infoCard(tt),
                                       if (canSync) ...[
                                         const SizedBox(height: 16),
-                                        SyncConfigCard(departmentId: widget.departmentId),
+                                        SyncConfigCard(
+                                            departmentId: widget.departmentId),
                                       ],
                                     ],
                                   ),
@@ -420,7 +410,8 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                               _vehiclesCard(tt),
                               if (canSync) ...[
                                 const SizedBox(height: 16),
-                                SyncConfigCard(departmentId: widget.departmentId),
+                                SyncConfigCard(
+                                    departmentId: widget.departmentId),
                               ],
                             ]),
                     );
@@ -432,7 +423,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
   // ── Info Card ──
   Widget _infoCard(TextTheme tt) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.r16),
       elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -443,35 +434,31 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEDE9FE),
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.violet100,
+                  borderRadius: AppRadius.r16,
                 ),
                 child: const Icon(Icons.business,
-                    size: 48, color: Color(0xFF7C3AED)),
+                    size: 48, color: AppColors.violet600),
               ),
             ),
             const SizedBox(height: 16),
             Center(
               child: Text(_dept!['name'] ?? '',
                   style:
-                      tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                      tt.titleMedium?.copyWith(fontWeight: AppFontWeight.bold),
                   textAlign: TextAlign.center),
             ),
             if ((_dept!['description'] ?? '').toString().isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(_dept!['description'],
-                  style: tt.bodyMedium
-                      ?.copyWith(color: const Color(0xFF6B7280))),
+                  style: tt.bodyMedium?.copyWith(color: AppColors.gray500)),
             ],
             const Divider(height: 24),
-            _infoRow(Icons.location_on, 'Τοποθεσία',
-                _dept!['location'] ?? '—'),
-            _infoRow(
-                Icons.people, 'Μέλη', '${_members.length}'),
+            _infoRow(Icons.location_on, 'Τοποθεσία', _dept!['location'] ?? '—'),
+            _infoRow(Icons.people, 'Μέλη', '${_members.length}'),
             _infoRow(Icons.miscellaneous_services, 'Υπηρεσίες',
                 '${_services.length}'),
-            _infoRow(Icons.directions_car, 'Οχήματα',
-                '${_vehicles.length}'),
+            _infoRow(Icons.directions_car, 'Οχήματα', '${_vehicles.length}'),
           ],
         ),
       ),
@@ -483,15 +470,16 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF6B7280)),
+          Icon(icon, size: 18, color: AppColors.gray500),
           const SizedBox(width: 10),
           Expanded(
               child: Text(label,
                   style: const TextStyle(
-                      fontSize: 13, color: Color(0xFF6B7280)))),
+                      fontSize: AppFontSize.md, color: AppColors.gray500))),
           Text(value,
               style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600)),
+                  fontSize: AppFontSize.md,
+                  fontWeight: AppFontWeight.semibold)),
         ],
       ),
     );
@@ -500,7 +488,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
   // ── Members Card ──
   Widget _membersCard(TextTheme tt) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.r16),
       elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -508,11 +496,11 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              const Icon(Icons.people, color: Color(0xFFDC2626)),
+              const Icon(Icons.people, color: AppColors.red600),
               const SizedBox(width: 8),
               Text('Μέλη (${_members.length})',
                   style:
-                      tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                      tt.titleSmall?.copyWith(fontWeight: AppFontWeight.bold)),
               const Spacer(),
               ActionChip(
                 label: const Text('Προσθήκη'),
@@ -526,7 +514,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                 padding: EdgeInsets.symmetric(vertical: 16),
                 child: Center(
                     child: Text('Κανένα μέλος',
-                        style: TextStyle(color: Color(0xFF9CA3AF)))),
+                        style: TextStyle(color: AppColors.gray400))),
               )
             else
               ..._members.map((m) {
@@ -534,8 +522,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                 final role = m['role']?.toString() ?? 'volunteer';
                 final uid = user['id'] as int? ?? 0;
                 final name =
-                    '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
-                        .trim();
+                    '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim();
                 final eame = user['eame'] ?? '';
 
                 return Padding(
@@ -544,13 +531,11 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                     children: [
                       CircleAvatar(
                         radius: 18,
-                        backgroundColor: const Color(0xFFE5E7EB),
+                        backgroundColor: AppColors.gray200,
                         child: Text(
-                            name.isNotEmpty
-                                ? name[0].toUpperCase()
-                                : '?',
+                            name.isNotEmpty ? name[0].toUpperCase() : '?',
                             style: const TextStyle(
-                                fontWeight: FontWeight.w600)),
+                                fontWeight: AppFontWeight.semibold)),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -559,12 +544,12 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                           children: [
                             Text(name.isNotEmpty ? name : eame,
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13)),
+                                    fontWeight: AppFontWeight.semibold,
+                                    fontSize: AppFontSize.md)),
                             Text(eame,
                                 style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFF9CA3AF))),
+                                    fontSize: AppFontSize.sm,
+                                    color: AppColors.gray400)),
                           ],
                         ),
                       ),
@@ -580,8 +565,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                         },
                         itemBuilder: (_) => [
                           const PopupMenuItem(
-                              value: 'volunteer',
-                              child: Text('Εθελοντής')),
+                              value: 'volunteer', child: Text('Εθελοντής')),
                           const PopupMenuItem(
                               value: 'missionAdmin',
                               child: Text('Διαχειριστής Αποστολών')),
@@ -592,7 +576,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                           const PopupMenuItem(
                             value: '__remove__',
                             child: Text('Αφαίρεση',
-                                style: TextStyle(color: Color(0xFFDC2626))),
+                                style: TextStyle(color: AppColors.red600)),
                           ),
                         ],
                         child: Container(
@@ -600,15 +584,15 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                               horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: _roleBg(role),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppRadius.r8,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(_roleLabel(role),
                                   style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                                      fontSize: AppFontSize.base,
+                                      fontWeight: AppFontWeight.semibold,
                                       color: _roleColor(role))),
                               Icon(Icons.arrow_drop_down,
                                   size: 16, color: _roleColor(role)),
@@ -640,39 +624,39 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
   Color _roleColor(String role) {
     switch (role) {
       case 'missionAdmin':
-        return const Color(0xFF7C3AED);
+        return AppColors.violet600;
       case 'itemAdmin':
-        return const Color(0xFFDC2626);
+        return AppColors.red600;
       default:
-        return const Color(0xFF059669);
+        return AppColors.emerald600;
     }
   }
 
   Color _roleBg(String role) {
     switch (role) {
       case 'missionAdmin':
-        return const Color(0xFFEDE9FE);
+        return AppColors.violet100;
       case 'itemAdmin':
-        return const Color(0xFFFEE2E2);
+        return AppColors.red100;
       default:
-        return const Color(0xFFD1FAE5);
+        return AppColors.emerald100;
     }
   }
 
   // ── Recent Services Card ──
   Widget _servicesCard(TextTheme tt) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.r16),
       elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             const Icon(Icons.miscellaneous_services,
-                color: Color(0xFF059669)),
+                color: AppColors.emerald600),
             const SizedBox(width: 8),
             Text('Πρόσφατες Υπηρεσίες (${_services.length})',
-                style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                style: tt.titleSmall?.copyWith(fontWeight: AppFontWeight.bold)),
           ]),
           const SizedBox(height: 12),
           if (_services.isEmpty)
@@ -680,7 +664,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Center(
                   child: Text('Καμία υπηρεσία',
-                      style: TextStyle(color: Color(0xFF9CA3AF)))),
+                      style: TextStyle(color: AppColors.gray400))),
             )
           else
             ..._services.take(10).map((s) {
@@ -694,19 +678,19 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                       child: Text(title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 13)),
+                          style: const TextStyle(fontSize: AppFontSize.md)),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: _statusBg(status),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: AppRadius.r6,
                       ),
                       child: Text(status,
                           style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                              fontSize: AppFontSize.sm,
+                              fontWeight: AppFontWeight.semibold,
                               color: _statusFg(status))),
                     ),
                   ],
@@ -721,42 +705,42 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
   Color _statusFg(String s) {
     switch (s) {
       case 'active':
-        return const Color(0xFF059669);
+        return AppColors.emerald600;
       case 'completed':
-        return const Color(0xFFDC2626);
+        return AppColors.red600;
       case 'cancelled':
-        return const Color(0xFFDC2626);
+        return AppColors.red600;
       default:
-        return const Color(0xFF6B7280);
+        return AppColors.gray500;
     }
   }
 
   Color _statusBg(String s) {
     switch (s) {
       case 'active':
-        return const Color(0xFFD1FAE5);
+        return AppColors.emerald100;
       case 'completed':
-        return const Color(0xFFFEE2E2);
+        return AppColors.red100;
       case 'cancelled':
-        return const Color(0xFFFEE2E2);
+        return AppColors.red100;
       default:
-        return const Color(0xFFF3F4F6);
+        return AppColors.gray100;
     }
   }
 
   // ── Vehicles Card ──
   Widget _vehiclesCard(TextTheme tt) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.r16),
       elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const Icon(Icons.directions_car, color: Color(0xFFD97706)),
+            const Icon(Icons.directions_car, color: AppColors.amber600),
             const SizedBox(width: 8),
             Text('Οχήματα (${_vehicles.length})',
-                style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                style: tt.titleSmall?.copyWith(fontWeight: AppFontWeight.bold)),
           ]),
           const SizedBox(height: 12),
           if (_vehicles.isEmpty)
@@ -764,7 +748,7 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Center(
                   child: Text('Κανένα όχημα',
-                      style: TextStyle(color: Color(0xFF9CA3AF)))),
+                      style: TextStyle(color: AppColors.gray400))),
             )
           else
             Wrap(
@@ -775,10 +759,9 @@ class _DepartmentDetailScreenState extends State<DepartmentDetailScreen> {
                 final type = v['type'] ?? '';
                 return Chip(
                   avatar: const Icon(Icons.directions_car,
-                      size: 16, color: Color(0xFFD97706)),
-                  label: Text(
-                      '$plate${type.isNotEmpty ? ' ($type)' : ''}',
-                      style: const TextStyle(fontSize: 12)),
+                      size: 16, color: AppColors.amber600),
+                  label: Text('$plate${type.isNotEmpty ? ' ($type)' : ''}',
+                      style: const TextStyle(fontSize: AppFontSize.base)),
                 );
               }).toList(),
             ),

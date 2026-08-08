@@ -7,6 +7,8 @@ import '../providers/item_provider.dart';
 import '../providers/category_provider.dart';
 import '../providers/department_provider.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 /// Screen for exporting and importing items via CSV.
 class ItemsCsvScreen extends StatefulWidget {
   const ItemsCsvScreen({super.key});
@@ -40,7 +42,8 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
       _exporting = true;
       if (!template) _exportedCsv = null;
     });
-    final csv = await context.read<ItemProvider>().exportCsv(template: template);
+    final csv =
+        await context.read<ItemProvider>().exportCsv(template: template);
     if (mounted) {
       setState(() => _exporting = false);
       if (template) {
@@ -236,8 +239,8 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray200),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -250,18 +253,21 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: cs.primary.withAlpha(15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.r8,
                   ),
-                  child: Icon(Icons.file_download_outlined, size: 20, color: cs.primary),
+                  child: Icon(Icons.file_download_outlined,
+                      size: 20, color: cs.primary),
                 ),
                 const SizedBox(width: 10),
-                Text('Εξαγωγή', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Εξαγωγή',
+                    style: tt.titleMedium
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               'Κατέβασε όλα τα αντικείμενα σε CSV ή κατέβασε ένα πρότυπο για εισαγωγή.',
-              style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+              style: tt.bodySmall?.copyWith(color: AppColors.gray500),
             ),
             const SizedBox(height: 16),
             Row(
@@ -270,26 +276,36 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                   child: FilledButton.icon(
                     onPressed: _exporting ? null : () => _exportCsv(),
                     icon: _exporting
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
                         : const Icon(Icons.download, size: 18),
                     label: const Text('Εξαγωγή όλων'),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape:
+                          RoundedRectangleBorder(borderRadius: AppRadius.r12),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _exporting ? null : () => _exportCsv(template: true),
+                    onPressed:
+                        _exporting ? null : () => _exportCsv(template: true),
                     icon: _exporting
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.description_outlined, size: 18),
                     label: const Text('Πρότυπο CSV'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape:
+                          RoundedRectangleBorder(borderRadius: AppRadius.r12),
                     ),
                   ),
                 ),
@@ -300,15 +316,15 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
               Container(
                 constraints: const BoxConstraints(maxHeight: 200),
                 decoration: BoxDecoration(
-                  color: Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.gray100,
+                  borderRadius: AppRadius.r12,
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(12),
                   scrollDirection: Axis.horizontal,
                   child: SelectableText(
                     _exportedCsv!,
-                    style: const TextStyle(fontSize: 12),
+                    style: const TextStyle(fontSize: AppFontSize.base),
                   ),
                 ),
               ),
@@ -339,8 +355,8 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray200),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -352,19 +368,22 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF059669).withAlpha(15),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.emerald600.withAlpha(15),
+                    borderRadius: AppRadius.r8,
                   ),
-                  child: const Icon(Icons.file_upload_outlined, size: 20, color: Color(0xFF059669)),
+                  child: const Icon(Icons.file_upload_outlined,
+                      size: 20, color: AppColors.emerald600),
                 ),
                 const SizedBox(width: 10),
-                Text('Εισαγωγή', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Εισαγωγή',
+                    style: tt.titleMedium
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               'Επίλεξε τμήμα, μετά επίλεξε αρχείο CSV ή επικόλλησε δεδομένα για μαζική δημιουργία αντικειμένων.',
-              style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+              style: tt.bodySmall?.copyWith(color: AppColors.gray500),
             ),
             const SizedBox(height: 16),
             // Department dropdown
@@ -372,10 +391,10 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
               value: _selectedImportDeptId,
               decoration: InputDecoration(
                 labelText: 'Τμήμα',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                border: OutlineInputBorder(borderRadius: AppRadius.r10),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: Color(0xFFD1D5DB)),
+                  borderRadius: AppRadius.r10,
+                  borderSide: BorderSide(color: AppColors.gray300),
                 ),
               ),
               items: depts
@@ -396,7 +415,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                 label: Text(_pickedFileName ?? 'Επιλογή αρχείου CSV'),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.r12),
                 ),
               ),
             ),
@@ -404,12 +423,13 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
             // Divider with "or paste"
             Row(
               children: [
-                Expanded(child: Divider(color: Color(0xFFD1D5DB))),
+                Expanded(child: Divider(color: AppColors.gray300)),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text('ή επικόλλησε', style: tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF))),
+                  child: Text('ή επικόλλησε',
+                      style: tt.bodySmall?.copyWith(color: AppColors.gray400)),
                 ),
-                Expanded(child: Divider(color: Color(0xFFD1D5DB))),
+                Expanded(child: Divider(color: AppColors.gray300)),
               ],
             ),
             const SizedBox(height: 14),
@@ -417,17 +437,18 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
               controller: _importCtrl,
               maxLines: 6,
               decoration: InputDecoration(
-                hintText: 'name,description,barCode,location,categoryName,isContainer,quantity,expirationDate\n'
+                hintText:
+                    'name,description,barCode,location,categoryName,isContainer,quantity,expirationDate\n'
                     '"Παράδειγμα","Περιγραφή","BC-001","Αποθήκη Α","Αναλώσιμα",false,1,2026-12-31',
                 filled: true,
-                fillColor: Color(0xFFF3F4F6),
+                fillColor: AppColors.gray100,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.r12,
                   borderSide: BorderSide.none,
                 ),
                 contentPadding: const EdgeInsets.all(14),
               ),
-              style: const TextStyle(fontSize: 13),
+              style: const TextStyle(fontSize: AppFontSize.md),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -435,13 +456,17 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
               child: FilledButton.icon(
                 onPressed: _importing ? null : _importCsv,
                 icon: _importing
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.upload, size: 18),
                 label: Text(_importing ? 'Εισαγωγή...' : 'Εισαγωγή CSV'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF059669),
+                  backgroundColor: AppColors.emerald600,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.r12),
                 ),
               ),
             ),
@@ -451,44 +476,55 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF059669).withAlpha(20),
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.emerald600.withAlpha(20),
+                    borderRadius: AppRadius.r12,
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle, color: Color(0xFF059669), size: 20),
+                      const Icon(Icons.check_circle,
+                          color: AppColors.emerald600, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Δημιουργήθηκαν ${_importResult!['created']} αντικείμενα',
-                          style: const TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                              color: AppColors.emerald600,
+                              fontWeight: AppFontWeight.medium),
                         ),
                       ),
                     ],
                   ),
                 ),
-              if (_importResult!.containsKey('errors') && (_importResult!['errors'] as List).isNotEmpty) ...[
+              if (_importResult!.containsKey('errors') &&
+                  (_importResult!['errors'] as List).isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.red.withAlpha(20),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.r12,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.warning_amber, color: Color(0xFFDC2626), size: 20),
+                          Icon(Icons.warning_amber,
+                              color: AppColors.red600, size: 20),
                           SizedBox(width: 8),
-                          Text('Σφάλματα:', style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w500)),
+                          Text('Σφάλματα:',
+                              style: TextStyle(
+                                  color: AppColors.red600,
+                                  fontWeight: AppFontWeight.medium)),
                         ],
                       ),
                       const SizedBox(height: 4),
                       ...(_importResult!['errors'] as List).map((e) => Padding(
                             padding: const EdgeInsets.only(top: 4),
-                            child: Text('• $e', style: const TextStyle(color: Color(0xFFDC2626), fontSize: 12)),
+                            child: Text('• $e',
+                                style: const TextStyle(
+                                    color: AppColors.red600,
+                                    fontSize: AppFontSize.base)),
                           )),
                     ],
                   ),
@@ -499,16 +535,19 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.red.withAlpha(20),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.r12,
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 20),
+                      const Icon(Icons.error_outline,
+                          color: AppColors.red600, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           '${_importResult!['error']}',
-                          style: const TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                              color: AppColors.red600,
+                              fontWeight: AppFontWeight.medium),
                         ),
                       ),
                     ],
@@ -530,8 +569,8 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray200),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -544,12 +583,15 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: cs.primary.withAlpha(15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.r8,
                   ),
-                  child: Icon(Icons.category_outlined, size: 20, color: cs.primary),
+                  child: Icon(Icons.category_outlined,
+                      size: 20, color: cs.primary),
                 ),
                 const SizedBox(width: 10),
-                Text('Κατηγορίες', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Κατηγορίες',
+                    style: tt.titleMedium
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
                 const Spacer(),
                 FilledButton.tonalIcon(
                   onPressed: () => _showCreateCategoryDialog(depts),
@@ -565,7 +607,7 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
             const SizedBox(height: 4),
             Text(
               'Οι κατηγορίες είναι ανά τμήμα. Κάθε τμήμα μπορεί να έχει τις δικές του.',
-              style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+              style: tt.bodySmall?.copyWith(color: AppColors.gray500),
             ),
             const SizedBox(height: 12),
             if (catProv.loading)
@@ -579,7 +621,8 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 alignment: Alignment.center,
-                child: Text('Δεν υπάρχουν κατηγορίες', style: tt.bodyMedium?.copyWith(color: const Color(0xFF9CA3AF))),
+                child: Text('Δεν υπάρχουν κατηγορίες',
+                    style: tt.bodyMedium?.copyWith(color: AppColors.gray400)),
               )
             else
               ...catProv.categories.map((cat) {
@@ -590,10 +633,12 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                     dense: true,
-                    title: Text(cat['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w500)),
+                    title: Text(cat['name'] ?? '',
+                        style:
+                            const TextStyle(fontWeight: AppFontWeight.medium)),
                     subtitle: Text(
                       '${dept?['name'] ?? ''} · $itemCount αντικείμεν${itemCount == 1 ? 'ο' : 'α'}',
-                      style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+                      style: tt.bodySmall?.copyWith(color: AppColors.gray500),
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -605,7 +650,8 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                           visualDensity: VisualDensity.compact,
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFDC2626)),
+                          icon: const Icon(Icons.delete_outline,
+                              size: 18, color: AppColors.red600),
                           onPressed: () => _confirmDeleteCategory(cat),
                           tooltip: 'Διαγραφή',
                           visualDensity: VisualDensity.compact,
@@ -635,13 +681,15 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
             children: [
               TextField(
                 controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'Όνομα', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                    labelText: 'Όνομα', border: OutlineInputBorder()),
                 autofocus: true,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
                 value: selectedDeptId,
-                decoration: const InputDecoration(labelText: 'Τμήμα', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                    labelText: 'Τμήμα', border: OutlineInputBorder()),
                 items: depts
                     .map<DropdownMenuItem<int>>((d) => DropdownMenuItem(
                           value: d['id'] as int,
@@ -653,14 +701,20 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: () async {
-                if (nameCtrl.text.trim().isEmpty || selectedDeptId == null) return;
-                final err = await context.read<CategoryProvider>().create(nameCtrl.text.trim(), selectedDeptId!);
+                if (nameCtrl.text.trim().isEmpty || selectedDeptId == null)
+                  return;
+                final err = await context
+                    .read<CategoryProvider>()
+                    .create(nameCtrl.text.trim(), selectedDeptId!);
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (err != null && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(err)));
                 }
               },
               child: const Text('Δημιουργία'),
@@ -679,18 +733,23 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
         title: const Text('Μετονομασία'),
         content: TextField(
           controller: nameCtrl,
-          decoration: const InputDecoration(labelText: 'Όνομα', border: OutlineInputBorder()),
+          decoration: const InputDecoration(
+              labelText: 'Όνομα', border: OutlineInputBorder()),
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
-              final err = await context.read<CategoryProvider>().update(cat['id'] as int, nameCtrl.text.trim());
+              final err = await context
+                  .read<CategoryProvider>()
+                  .update(cat['id'] as int, nameCtrl.text.trim());
               if (ctx.mounted) Navigator.pop(ctx);
               if (err != null && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(err)));
               }
             },
             child: const Text('Αποθήκευση'),
@@ -712,14 +771,18 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
               : 'Διαγραφή της κατηγορίας "${cat['name']}";',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             onPressed: () async {
               Navigator.pop(ctx);
-              final err = await context.read<CategoryProvider>().deleteCategory(cat['id'] as int);
+              final err = await context
+                  .read<CategoryProvider>()
+                  .deleteCategory(cat['id'] as int);
               if (err != null && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(err)));
               }
             },
             child: const Text('Διαγραφή'),

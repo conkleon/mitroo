@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../providers/chat_provider.dart';
 import '../services/api_client.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class ChatSettingsScreen extends StatefulWidget {
   final int chatId;
 
@@ -133,12 +135,9 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
     }
 
     final detail = _chatDetail!;
-    final itemAdminsCanSend =
-        detail['itemAdminsCanSend'] as bool? ?? false;
-    final volunteersCanSend =
-        detail['volunteersCanSend'] as bool? ?? false;
-    final deleteAfter24h =
-        detail['deleteAfter24h'] as bool? ?? false;
+    final itemAdminsCanSend = detail['itemAdminsCanSend'] as bool? ?? false;
+    final volunteersCanSend = detail['volunteersCanSend'] as bool? ?? false;
+    final deleteAfter24h = detail['deleteAfter24h'] as bool? ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -154,8 +153,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
           ...(_members.map((m) {
             final user = m['user'] as Map<String, dynamic>?;
             final userName =
-                '${user?['forename'] ?? ''} ${user?['surname'] ?? ''}'
-                    .trim();
+                '${user?['forename'] ?? ''} ${user?['surname'] ?? ''}'.trim();
             return Card(
               color: Colors.white,
               child: ListTile(
@@ -163,13 +161,13 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                   radius: 14,
                   child: Text(
                     userName.isNotEmpty ? userName[0].toUpperCase() : '?',
-                    style: const TextStyle(fontSize: 12),
+                    style: const TextStyle(fontSize: AppFontSize.base),
                   ),
                 ),
                 title: Text(userName),
                 trailing: IconButton(
                   icon: const Icon(Icons.remove_circle_outline,
-                      color: Color(0xFFDC2626)),
+                      color: AppColors.red600),
                   onPressed: () => _kickUser(m['userId'] as int),
                 ),
               ),
@@ -194,14 +192,13 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                     controller: _inviteSearchCtrl,
                     decoration: InputDecoration(
                       hintText: 'Αναζήτηση χρηστών...',
-                      prefixIcon:
-                          const Icon(Icons.search, size: 20),
+                      prefixIcon: const Icon(Icons.search, size: 20),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.r12,
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
-                      fillColor: const Color(0xFFF3F4F6),
+                      fillColor: AppColors.gray100,
                       contentPadding: const EdgeInsets.symmetric(
                           vertical: 8, horizontal: 12),
                     ),
@@ -213,8 +210,7 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                   final uid = u['id'] as int;
                   return CheckboxListTile(
                     title: Text(
-                        '${u['forename'] ?? ''} ${u['surname'] ?? ''}'
-                            .trim()),
+                        '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim()),
                     subtitle: Text(u['eame'] as String? ?? ''),
                     value: _inviteSelectedIds.contains(uid),
                     onChanged: (sel) {
@@ -248,11 +244,9 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white))
+                                  strokeWidth: 2, color: Colors.white))
                           : const Icon(Icons.person_add, size: 18),
-                      label: Text(
-                          'Προσθήκη (${_inviteSelectedIds.length})'),
+                      label: Text('Προσθήκη (${_inviteSelectedIds.length})'),
                     ),
                   ),
               ],
@@ -261,14 +255,13 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
           const SizedBox(height: 24),
           Text('Δικαιώματα', style: tt.titleSmall),
           SwitchListTile(
-            title: const Text(
-                'Οι διαχειριστές αντικειμένων μπορούν να στέλνουν'),
+            title:
+                const Text('Οι διαχειριστές αντικειμένων μπορούν να στέλνουν'),
             value: itemAdminsCanSend,
             onChanged: (v) async {
               await chatProv.updateChatSettings(widget.chatId,
                   itemAdminsCanSend: v);
-              setState(
-                  () => _chatDetail!['itemAdminsCanSend'] = v);
+              setState(() => _chatDetail!['itemAdminsCanSend'] = v);
             },
           ),
           SwitchListTile(
@@ -281,14 +274,12 @@ class _ChatSettingsScreenState extends State<ChatSettingsScreen> {
             },
           ),
           SwitchListTile(
-            title: const Text(
-                'Αυτόματη διαγραφή μετά από 24 ώρες'),
+            title: const Text('Αυτόματη διαγραφή μετά από 24 ώρες'),
             value: deleteAfter24h,
             onChanged: (v) async {
               await chatProv.updateChatSettings(widget.chatId,
                   deleteAfter24h: v);
-              setState(
-                  () => _chatDetail!['deleteAfter24h'] = v);
+              setState(() => _chatDetail!['deleteAfter24h'] = v);
             },
           ),
         ],

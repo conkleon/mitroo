@@ -7,6 +7,8 @@ import '../providers/auth_provider.dart';
 import '../providers/service_provider.dart';
 import '../services/api_client.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 /// User management with table view, hours columns, pagination, sorting.
 class ManageUsersScreen extends StatefulWidget {
   const ManageUsersScreen({super.key});
@@ -55,8 +57,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         _api.get('/specializations'),
       ]);
       if (results[0].statusCode == 200) {
-        _users = (jsonDecode(results[0].body) as List)
-            .cast<Map<String, dynamic>>();
+        _users =
+            (jsonDecode(results[0].body) as List).cast<Map<String, dynamic>>();
       }
       if (results[1].statusCode == 200) {
         _allDepts = jsonDecode(results[1].body);
@@ -111,7 +113,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     if (_search.isNotEmpty) {
       final q = _search.toLowerCase();
       list = list.where((u) {
-        final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
+        final name =
+            '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
         final eame = (u['eame'] ?? '').toString().toLowerCase();
         final email = (u['email'] ?? '').toString().toLowerCase();
         return name.contains(q) || eame.contains(q) || email.contains(q);
@@ -123,23 +126,30 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       int cmp;
       switch (_sortField) {
         case 'totalHours':
-          cmp = ((a['totalHours'] ?? 0) as int).compareTo((b['totalHours'] ?? 0) as int);
+          cmp = ((a['totalHours'] ?? 0) as int)
+              .compareTo((b['totalHours'] ?? 0) as int);
           break;
         case 'yearHours':
-          cmp = ((a['yearHours'] ?? 0) as int).compareTo((b['yearHours'] ?? 0) as int);
+          cmp = ((a['yearHours'] ?? 0) as int)
+              .compareTo((b['yearHours'] ?? 0) as int);
           break;
         case 'yearVolHours':
-          cmp = ((a['yearVolHours'] ?? 0) as int).compareTo((b['yearVolHours'] ?? 0) as int);
+          cmp = ((a['yearVolHours'] ?? 0) as int)
+              .compareTo((b['yearVolHours'] ?? 0) as int);
           break;
         case 'yearTrainingHours':
-          cmp = ((a['yearTrainingHours'] ?? 0) as int).compareTo((b['yearTrainingHours'] ?? 0) as int);
+          cmp = ((a['yearTrainingHours'] ?? 0) as int)
+              .compareTo((b['yearTrainingHours'] ?? 0) as int);
           break;
         case 'yearTrainerHours':
-          cmp = ((a['yearTrainerHours'] ?? 0) as int).compareTo((b['yearTrainerHours'] ?? 0) as int);
+          cmp = ((a['yearTrainerHours'] ?? 0) as int)
+              .compareTo((b['yearTrainerHours'] ?? 0) as int);
           break;
         default: // name
-          final na = '${a['surname'] ?? ''} ${a['forename'] ?? ''}'.toLowerCase();
-          final nb = '${b['surname'] ?? ''} ${b['forename'] ?? ''}'.toLowerCase();
+          final na =
+              '${a['surname'] ?? ''} ${a['forename'] ?? ''}'.toLowerCase();
+          final nb =
+              '${b['surname'] ?? ''} ${b['forename'] ?? ''}'.toLowerCase();
           cmp = na.compareTo(nb);
       }
       return _sortAsc ? cmp : -cmp;
@@ -168,7 +178,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         _sortAsc = !_sortAsc;
       } else {
         _sortField = field;
-        _sortAsc = field == 'name'; // name ascending, hours descending by default
+        _sortAsc =
+            field == 'name'; // name ascending, hours descending by default
       }
       _page = 0;
     });
@@ -236,23 +247,39 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(controller: eameCtrl, decoration: const InputDecoration(labelText: 'EAME (προαιρετικό)', border: OutlineInputBorder())),
+                  TextField(
+                      controller: eameCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'EAME (προαιρετικό)',
+                          border: OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  TextField(controller: forenameCtrl, decoration: const InputDecoration(labelText: 'Όνομα *', border: OutlineInputBorder())),
+                  TextField(
+                      controller: forenameCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Όνομα *', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  TextField(controller: surnameCtrl, decoration: const InputDecoration(labelText: 'Επώνυμο *', border: OutlineInputBorder())),
+                  TextField(
+                      controller: surnameCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Επώνυμο *',
+                          border: OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email *', border: OutlineInputBorder())),
+                  TextField(
+                      controller: emailCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Email *', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     value: selectedRank,
-                    decoration: const InputDecoration(labelText: 'Βαθμός', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                        labelText: 'Βαθμός', border: OutlineInputBorder()),
                     items: const [
                       DropdownMenuItem(value: 'Α', child: Text('Α')),
                       DropdownMenuItem(value: 'Β', child: Text('Β')),
                       DropdownMenuItem(value: 'Γ', child: Text('Γ')),
                     ],
-                    onChanged: (v) => setDlgState(() => selectedRank = v ?? 'Γ'),
+                    onChanged: (v) =>
+                        setDlgState(() => selectedRank = v ?? 'Γ'),
                   ),
                   const SizedBox(height: 12),
                   Autocomplete<Map<String, dynamic>>(
@@ -261,7 +288,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                       final q = textEditingValue.text.toLowerCase().trim();
                       final opts = _allDepts.cast<Map<String, dynamic>>();
                       if (q.isEmpty) return opts;
-                      return opts.where((d) => (d['name'] ?? '').toString().toLowerCase().contains(q));
+                      return opts.where((d) => (d['name'] ?? '')
+                          .toString()
+                          .toLowerCase()
+                          .contains(q));
                     },
                     onSelected: (d) {
                       setDlgState(() {
@@ -269,7 +299,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                         selectedDeptName = d['name']?.toString();
                       });
                     },
-                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                    fieldViewBuilder:
+                        (context, controller, focusNode, onFieldSubmitted) {
                       if (selectedDeptName != null && controller.text.isEmpty) {
                         controller.text = selectedDeptName!;
                       }
@@ -307,9 +338,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                         alignment: Alignment.topLeft,
                         child: Material(
                           elevation: 4,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppRadius.r8,
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxHeight: 220, maxWidth: 380),
+                            constraints: const BoxConstraints(
+                                maxHeight: 220, maxWidth: 380),
                             child: ListView.builder(
                               padding: EdgeInsets.zero,
                               shrinkWrap: true,
@@ -318,8 +350,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                                 final opt = options.elementAt(i);
                                 return ListTile(
                                   dense: true,
-                                  leading: const Icon(Icons.business, size: 18, color: Color(0xFF7C3AED)),
-                                  title: Text(opt['name']?.toString() ?? '', style: const TextStyle(fontSize: 14)),
+                                  leading: const Icon(Icons.business,
+                                      size: 18, color: AppColors.violet600),
+                                  title: Text(opt['name']?.toString() ?? '',
+                                      style: const TextStyle(
+                                          fontSize: AppFontSize.lg)),
                                   onTap: () => onSelected(opt),
                                 );
                               },
@@ -332,46 +367,63 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     value: selectedDeptRole,
-                    decoration: const InputDecoration(labelText: 'Ρόλος στο τμήμα', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                        labelText: 'Ρόλος στο τμήμα',
+                        border: OutlineInputBorder()),
                     items: const [
-                      DropdownMenuItem(value: 'volunteer', child: Text('Εθελοντής')),
-                      DropdownMenuItem(value: 'missionAdmin', child: Text('Διαχειριστής Αποστολών')),
-                      DropdownMenuItem(value: 'itemAdmin', child: Text('Διαχειριστής Υλικού')),
+                      DropdownMenuItem(
+                          value: 'volunteer', child: Text('Εθελοντής')),
+                      DropdownMenuItem(
+                          value: 'missionAdmin',
+                          child: Text('Διαχειριστής Αποστολών')),
+                      DropdownMenuItem(
+                          value: 'itemAdmin',
+                          child: Text('Διαχειριστής Υλικού')),
                     ],
-                    onChanged: (v) => setDlgState(() => selectedDeptRole = v ?? 'volunteer'),
+                    onChanged: (v) =>
+                        setDlgState(() => selectedDeptRole = v ?? 'volunteer'),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int?>(
                     value: selectedSpecId,
-                    decoration: const InputDecoration(labelText: 'Ειδίκευση πρώτης ανάθεσης *', border: OutlineInputBorder()),
-                    items: rootSpecs.map((s) => DropdownMenuItem<int?>(
-                      value: s['id'] as int,
-                      child: Text(s['name']?.toString() ?? ''),
-                    )).toList(),
+                    decoration: const InputDecoration(
+                        labelText: 'Ειδίκευση πρώτης ανάθεσης *',
+                        border: OutlineInputBorder()),
+                    items: rootSpecs
+                        .map((s) => DropdownMenuItem<int?>(
+                              value: s['id'] as int,
+                              child: Text(s['name']?.toString() ?? ''),
+                            ))
+                        .toList(),
                     onChanged: (v) => setDlgState(() => selectedSpecId = v),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Η αρχική ειδίκευση μπορεί να είναι μόνο ριζική. Αν το EAME μείνει κενό, δημιουργείται αυτόματα από αυτήν.',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF4B5563)),
+                    style: TextStyle(
+                        fontSize: AppFontSize.base, color: AppColors.gray600),
                   ),
                 ],
               ),
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: () async {
                 if (selectedDeptId == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Επιλέξτε τμήμα πρώτης ανάθεσης.')),
+                    const SnackBar(
+                        content: Text('Επιλέξτε τμήμα πρώτης ανάθεσης.')),
                   );
                   return;
                 }
                 if (selectedSpecId == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Επιλέξτε ειδίκευση πρώτης ανάθεσης.')),
+                    const SnackBar(
+                        content: Text('Επιλέξτε ειδίκευση πρώτης ανάθεσης.')),
                   );
                   return;
                 }
@@ -397,16 +449,22 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                     _fetch();
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Ο χρήστης δημιουργήθηκε και έλαβε email πρόσκλησης.')),
+                        const SnackBar(
+                            content: Text(
+                                'Ο χρήστης δημιουργήθηκε και έλαβε email πρόσκλησης.')),
                       );
                     }
                   } else {
                     final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                    if (mounted)
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(SnackBar(content: Text(err)));
                   }
                 } catch (e) {
                   if (ctx.mounted) Navigator.pop(ctx);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+                  if (mounted)
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
                 }
               },
               child: const Text('Δημιουργία'),
@@ -429,161 +487,193 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Διαχείριση Χρηστών', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+        title: Text('Διαχείριση Χρηστών',
+            style: tt.titleLarge?.copyWith(fontWeight: AppFontWeight.bold)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _fetch, tooltip: 'Ανανέωση'),
+          IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _fetch,
+              tooltip: 'Ανανέωση'),
         ],
       ),
-      floatingActionButton: (auth.isAdmin || auth.isDepartmentMissionAdmin) && !_selectionMode
-          ? FloatingActionButton.extended(
-              heroTag: 'manage_users_fab',
-              onPressed: _showCreateDialog,
-              icon: const Icon(Icons.person_add),
-              label: const Text('Νέος Χρήστης'),
-            )
-          : null,
+      floatingActionButton:
+          (auth.isAdmin || auth.isDepartmentMissionAdmin) && !_selectionMode
+              ? FloatingActionButton.extended(
+                  heroTag: 'manage_users_fab',
+                  onPressed: _showCreateDialog,
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Νέος Χρήστης'),
+                )
+              : null,
       body: Stack(
         children: [
           SafeArea(
-        child: Column(
-          children: [
-            // ── Filters ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(children: [
-                Row(children: [
-                  Expanded(child: _buildDeptFilter()),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Αναζήτηση...',
-                        prefixIcon: const Icon(Icons.search, size: 20),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        isDense: true,
+            child: Column(
+              children: [
+                // ── Filters ──
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(children: [
+                    Row(children: [
+                      Expanded(child: _buildDeptFilter()),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Αναζήτηση...',
+                            prefixIcon: const Icon(Icons.search, size: 20),
+                            border:
+                                OutlineInputBorder(borderRadius: AppRadius.r12),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            isDense: true,
+                          ),
+                          onChanged: (v) => setState(() {
+                            _search = v;
+                            _page = 0;
+                          }),
+                        ),
                       ),
-                      onChanged: (v) => setState(() { _search = v; _page = 0; }),
+                    ]),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 34,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          _chip('Όλοι (${_users.length})', null),
+                          const SizedBox(width: 6),
+                          ..._allSpecs.map((s) {
+                            final specId = s['id'] as int;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: _chip(
+                                '${s['name']} (${_countSpec(specId)})',
+                                specId,
+                                color: AppColors.violet600,
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
                     ),
-                  ),
-                ]),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 34,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      _chip('Όλοι (${_users.length})', null),
-                      const SizedBox(width: 6),
-                      ..._allSpecs.map((s) {
-                        final specId = s['id'] as int;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: _chip(
-                            '${s['name']} (${_countSpec(specId)})',
-                            specId,
-                            color: const Color(0xFF7C3AED),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
+                  ]),
                 ),
-              ]),
-            ),
 
-            // ── Table ──
-            Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : processed.isEmpty
-                      ? Center(
-                          child: Column(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.person_off, size: 64, color: Color(0xFFD1D5DB)),
-                            const SizedBox(height: 12),
-                            Text('Δεν βρέθηκαν χρήστες', style: tt.bodyLarge?.copyWith(color: Color(0xFF6B7280))),
-                          ]),
-                        )
-                      : Column(children: [
-                          // ── Pagination controls ──
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                            child: Row(children: [
-                              Text('${processed.length} users',
-                                  style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
-                              const Spacer(),
-                              const Text('Γραμμές: ', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-                              _pageDropdown(),
-                              const SizedBox(width: 12),
-                              IconButton(
-                                icon: const Icon(Icons.chevron_left, size: 20),
-                                onPressed: _page > 0 ? () => setState(() => _page--) : null,
-                                visualDensity: VisualDensity.compact,
-                              ),
-                              Text('${_page + 1} / ${totalPages.clamp(1, 999)}',
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                              IconButton(
-                                icon: const Icon(Icons.chevron_right, size: 20),
-                                onPressed: _page < totalPages - 1 ? () => setState(() => _page++) : null,
-                                visualDensity: VisualDensity.compact,
-                              ),
-                            ]),
-                          ),
-
-                          // ── Header ──
-                          Container(
-                            color: const Color(0xFFEEF0F4),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            child: Row(children: [
-                              if (_selectionMode)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: Checkbox(
-                                    value: pageUsers.isNotEmpty &&
-                                        pageUsers.every((u) =>
-                                            _selectedIds.contains(u['id'] as int)),
-                                    tristate: false,
-                                    onChanged: (_) => _toggleSelectAll(pageUsers),
+                // ── Table ──
+                Expanded(
+                  child: _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : processed.isEmpty
+                          ? Center(
+                              child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.person_off,
+                                        size: 64, color: AppColors.gray300),
+                                    const SizedBox(height: 12),
+                                    Text('Δεν βρέθηκαν χρήστες',
+                                        style: tt.bodyLarge?.copyWith(
+                                            color: AppColors.gray500)),
+                                  ]),
+                            )
+                          : Column(children: [
+                              // ── Pagination controls ──
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 4),
+                                child: Row(children: [
+                                  Text('${processed.length} users',
+                                      style: tt.bodySmall
+                                          ?.copyWith(color: AppColors.gray500)),
+                                  const Spacer(),
+                                  const Text('Γραμμές: ',
+                                      style: TextStyle(
+                                          fontSize: AppFontSize.base,
+                                          color: AppColors.gray500)),
+                                  _pageDropdown(),
+                                  const SizedBox(width: 12),
+                                  IconButton(
+                                    icon: const Icon(Icons.chevron_left,
+                                        size: 20),
+                                    onPressed: _page > 0
+                                        ? () => setState(() => _page--)
+                                        : null,
                                     visualDensity: VisualDensity.compact,
-                                    activeColor: const Color(0xFF7C3AED),
                                   ),
-                                )
-                              else
-                                const SizedBox(width: 8),
-                              _headerCell('Name', 'name', flex: 3),
-                              _headerCell('Phone', 'phone', flex: 2),
-                              _headerCell('Email', 'email', flex: 2),
-                              _headerCell('Total', 'totalHours'),
-                              _headerCell('Year', 'yearHours'),
-                              _headerCell('Vol', 'yearVolHours'),
-                              _headerCell('Trng', 'yearTrainingHours'),
-                              _headerCell('Trnr', 'yearTrainerHours'),
-                              const SizedBox(width: 32), // chevron space
-                            ]),
-                          ),
-
-                          // ── Rows ──
-                          Expanded(
-                            child: RefreshIndicator(
-                              onRefresh: _fetch,
-                              child: ListView.builder(
-                                padding: const EdgeInsets.only(bottom: 90),
-                                itemCount: pageUsers.length,
-                                itemBuilder: (context, i) =>
-                                    _buildRow(pageUsers[i], tt, i.isEven),
+                                  Text(
+                                      '${_page + 1} / ${totalPages.clamp(1, 999)}',
+                                      style: const TextStyle(
+                                          fontSize: AppFontSize.base,
+                                          fontWeight: AppFontWeight.semibold)),
+                                  IconButton(
+                                    icon: const Icon(Icons.chevron_right,
+                                        size: 20),
+                                    onPressed: _page < totalPages - 1
+                                        ? () => setState(() => _page++)
+                                        : null,
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                ]),
                               ),
-                            ),
-                          ),
-                        ]),
+
+                              // ── Header ──
+                              Container(
+                                color: AppColors.surfaceTint,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 6),
+                                child: Row(children: [
+                                  if (_selectionMode)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: Checkbox(
+                                        value: pageUsers.isNotEmpty &&
+                                            pageUsers.every((u) => _selectedIds
+                                                .contains(u['id'] as int)),
+                                        tristate: false,
+                                        onChanged: (_) =>
+                                            _toggleSelectAll(pageUsers),
+                                        visualDensity: VisualDensity.compact,
+                                        activeColor: AppColors.violet600,
+                                      ),
+                                    )
+                                  else
+                                    const SizedBox(width: 8),
+                                  _headerCell('Name', 'name', flex: 3),
+                                  _headerCell('Phone', 'phone', flex: 2),
+                                  _headerCell('Email', 'email', flex: 2),
+                                  _headerCell('Total', 'totalHours'),
+                                  _headerCell('Year', 'yearHours'),
+                                  _headerCell('Vol', 'yearVolHours'),
+                                  _headerCell('Trng', 'yearTrainingHours'),
+                                  _headerCell('Trnr', 'yearTrainerHours'),
+                                  const SizedBox(width: 32), // chevron space
+                                ]),
+                              ),
+
+                              // ── Rows ──
+                              Expanded(
+                                child: RefreshIndicator(
+                                  onRefresh: _fetch,
+                                  child: ListView.builder(
+                                    padding: const EdgeInsets.only(bottom: 90),
+                                    itemCount: pageUsers.length,
+                                    itemBuilder: (context, i) =>
+                                        _buildRow(pageUsers[i], tt, i.isEven),
+                                  ),
+                                ),
+                              ),
+                            ]),
+                ),
+              ],
             ),
-          ],
           ),
-        ),
           _buildBulkBar(),
         ],
       ),
@@ -601,12 +691,13 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           children: [
             Text(label,
                 style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                    color: isActive ? const Color(0xFFDC2626) : const Color(0xFF374151))),
+                    fontSize: AppFontSize.sm,
+                    fontWeight:
+                        isActive ? AppFontWeight.bold : AppFontWeight.semibold,
+                    color: isActive ? AppColors.red600 : AppColors.gray700)),
             if (isActive)
               Icon(_sortAsc ? Icons.arrow_upward : Icons.arrow_downward,
-                  size: 12, color: const Color(0xFFDC2626)),
+                  size: 12, color: AppColors.red600),
           ],
         ),
       ),
@@ -634,10 +725,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           color: isSelected
-              ? const Color(0xFFEEF2FF)
+              ? AppColors.indigo50
               : even
                   ? Colors.white
-                  : const Color(0xFFF9FAFB),
+                  : AppColors.gray50,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(children: [
             AnimatedSwitcher(
@@ -648,22 +739,21 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                       value: isSelected,
                       onChanged: (_) => _toggleSelect(userId),
                       visualDensity: VisualDensity.compact,
-                      activeColor: const Color(0xFF7C3AED),
+                      activeColor: AppColors.violet600,
                     )
                   : CircleAvatar(
                       key: ValueKey('avatar_$userId'),
                       radius: 15,
-                      backgroundColor: isAdmin
-                          ? Color(0xFFFEF3C7)
-                          : const Color(0xFFFEE2E2),
+                      backgroundColor:
+                          isAdmin ? AppColors.amber100 : AppColors.red100,
                       child: Text(
                         name.isNotEmpty ? name[0].toUpperCase() : 'U',
                         style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                            fontSize: AppFontSize.base,
+                            fontWeight: AppFontWeight.bold,
                             color: isAdmin
-                                ? Color(0xFFD97706)
-                                : const Color(0xFFDC2626)),
+                                ? AppColors.amber600
+                                : AppColors.red600),
                       ),
                     ),
             ),
@@ -677,7 +767,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                     Flexible(
                       child: Text(name.isNotEmpty ? name : user['eame'] ?? '',
                           style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w600),
+                              fontSize: AppFontSize.md,
+                              fontWeight: AppFontWeight.semibold),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis),
                     ),
@@ -688,18 +779,18 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                             horizontal: 4, vertical: 1),
                         decoration: BoxDecoration(
                             color: Colors.amber.withAlpha(30),
-                            borderRadius: BorderRadius.circular(3)),
+                            borderRadius: AppRadius.r3),
                         child: Text('A',
                             style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFFD97706))),
+                                fontSize: AppFontSize.xxs,
+                                fontWeight: AppFontWeight.bold,
+                                color: AppColors.amber600)),
                       ),
                     ],
                   ]),
                   Text(user['eame'] ?? '',
                       style: const TextStyle(
-                          fontSize: 10, color: Color(0xFF9CA3AF)),
+                          fontSize: AppFontSize.xs, color: AppColors.gray400),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                 ],
@@ -715,7 +806,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
             _selectionMode
                 ? const SizedBox(width: 16)
                 : const Icon(Icons.chevron_right,
-                    size: 16, color: Color(0xFFD1D5DB)),
+                    size: 16, color: AppColors.gray300),
           ]),
         ),
       ),
@@ -728,16 +819,17 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       child: Text(
         h > 0 ? '$h' : '—',
         style: TextStyle(
-          fontSize: 12,
-          fontWeight: h > 0 ? FontWeight.w600 : FontWeight.w400,
-          color: h > 0 ? const Color(0xFF111827) : const Color(0xFFD1D5DB),
+          fontSize: AppFontSize.base,
+          fontWeight: h > 0 ? AppFontWeight.semibold : AppFontWeight.regular,
+          color: h > 0 ? AppColors.gray900 : AppColors.gray300,
         ),
         textAlign: TextAlign.center,
       ),
     );
   }
 
-  Widget _editFieldCell(Map<String, dynamic> user, String field, String label, {int flex = 1}) {
+  Widget _editFieldCell(Map<String, dynamic> user, String field, String label,
+      {int flex = 1}) {
     final value = (user[field] ?? '').toString();
     final userId = user['id'] as int;
     final canEdit = !_selectionMode;
@@ -746,7 +838,9 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     return Expanded(
       flex: flex,
       child: GestureDetector(
-        onTap: canEdit ? () => _showEditFieldDialog(userId, field, label, value) : null,
+        onTap: canEdit
+            ? () => _showEditFieldDialog(userId, field, label, value)
+            : null,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           child: Row(
@@ -757,16 +851,21 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   onTap: () => launchUrl(Uri(scheme: 'tel', path: value)),
                   child: const Padding(
                     padding: EdgeInsets.only(right: 4),
-                    child: Icon(Icons.call, size: 12, color: Color(0xFF7C3AED)),
+                    child:
+                        Icon(Icons.call, size: 12, color: AppColors.violet600),
                   ),
                 ),
               Flexible(
                 child: Text(
                   value.isNotEmpty ? value : '—',
                   style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: value.isNotEmpty ? FontWeight.w500 : FontWeight.w400,
-                    color: value.isNotEmpty ? const Color(0xFF111827) : const Color(0xFFD1D5DB),
+                    fontSize: AppFontSize.sm,
+                    fontWeight: value.isNotEmpty
+                        ? AppFontWeight.medium
+                        : AppFontWeight.regular,
+                    color: value.isNotEmpty
+                        ? AppColors.gray900
+                        : AppColors.gray300,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -774,10 +873,11 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
               ),
               if (canEdit)
                 GestureDetector(
-                  onTap: () => _showEditFieldDialog(userId, field, label, value),
+                  onTap: () =>
+                      _showEditFieldDialog(userId, field, label, value),
                   child: const Padding(
                     padding: EdgeInsets.only(left: 2),
-                    child: Icon(Icons.edit, size: 12, color: Color(0xFF9CA3AF)),
+                    child: Icon(Icons.edit, size: 12, color: AppColors.gray400),
                   ),
                 ),
             ],
@@ -787,7 +887,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     );
   }
 
-  Future<void> _showEditFieldDialog(int userId, String field, String label, String currentValue) async {
+  Future<void> _showEditFieldDialog(
+      int userId, String field, String label, String currentValue) async {
     final ctrl = TextEditingController(text: currentValue);
     final isEmail = field == 'email';
 
@@ -797,7 +898,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         title: Text('Επεξεργασία $label'),
         content: TextField(
           controller: ctrl,
-          keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.phone,
+          keyboardType:
+              isEmail ? TextInputType.emailAddress : TextInputType.phone,
           decoration: InputDecoration(
             labelText: label,
             border: const OutlineInputBorder(),
@@ -853,14 +955,15 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r6,
+        border: Border.all(color: AppColors.gray200),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int>(
           value: _rowsPerPage,
           isDense: true,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF374151)),
+          style: const TextStyle(
+              fontSize: AppFontSize.base, color: AppColors.gray700),
           items: const [
             DropdownMenuItem(value: 10, child: Text('10')),
             DropdownMenuItem(value: 25, child: Text('25')),
@@ -880,20 +983,23 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     final selected = _specFilter == key;
     final c = color ?? Theme.of(context).colorScheme.primary;
     return GestureDetector(
-      onTap: () => setState(() { _specFilter = key; _page = 0; }),
+      onTap: () => setState(() {
+        _specFilter = key;
+        _page = 0;
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected ? c : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? c : const Color(0xFFD1D5DB)),
+          borderRadius: AppRadius.r20,
+          border: Border.all(color: selected ? c : AppColors.gray300),
         ),
         child: Text(label,
             style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : const Color(0xFF374151))),
+                fontSize: AppFontSize.base,
+                fontWeight: AppFontWeight.semibold,
+                color: selected ? Colors.white : AppColors.gray700)),
       ),
     );
   }
@@ -912,8 +1018,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1B4B),
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.indigo950,
+              borderRadius: AppRadius.r16,
               boxShadow: [
                 BoxShadow(
                     color: Colors.black.withAlpha(60),
@@ -927,16 +1033,15 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                 onPressed: _exitSelectionMode,
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
-                constraints:
-                    const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               ),
               const SizedBox(width: 6),
               Text(
                 '${_selectedIds.length} επιλεγμένοι',
                 style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13),
+                    fontWeight: AppFontWeight.semibold,
+                    fontSize: AppFontSize.md),
               ),
               const Spacer(),
               _BulkAction(
@@ -958,7 +1063,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
               _BulkAction(
                 icon: Icons.delete_outline,
                 label: 'Διαγραφή',
-                color: const Color(0xFFEF4444),
+                color: AppColors.red500,
                 onTap: _showDeleteDialog,
               ),
             ]),
@@ -1029,8 +1134,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     if (_deptFilter == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text(
-                'Επιλέξτε τμήμα για να αναθέσετε χρήστες σε υπηρεσία')),
+            content:
+                Text('Επιλέξτε τμήμα για να αναθέσετε χρήστες σε υπηρεσία')),
       );
       return;
     }
@@ -1097,7 +1202,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     int fail = 0;
     final sp = context.read<ServiceProvider>();
     await Future.wait(_selectedIds.map((uid) async {
-      final err = await sp.enrollUser(selectedServiceId!, uid, status: 'accepted');
+      final err =
+          await sp.enrollUser(selectedServiceId!, uid, status: 'accepted');
       if (err == null) {
         ok++;
       } else if (err.contains('Ήδη εγγεγραμμένος')) {
@@ -1131,15 +1237,12 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
               decoration: const InputDecoration(
                   labelText: 'Ρόλος', border: OutlineInputBorder()),
               items: const [
-                DropdownMenuItem(
-                    value: 'volunteer', child: Text('Εθελοντής')),
+                DropdownMenuItem(value: 'volunteer', child: Text('Εθελοντής')),
                 DropdownMenuItem(
                     value: 'missionAdmin', child: Text('Δ. Αποστολών')),
-                DropdownMenuItem(
-                    value: 'itemAdmin', child: Text('Δ. Υλικού')),
+                DropdownMenuItem(value: 'itemAdmin', child: Text('Δ. Υλικού')),
               ],
-              onChanged: (v) =>
-                  setDlg(() => selectedRole = v ?? 'volunteer'),
+              onChanged: (v) => setDlg(() => selectedRole = v ?? 'volunteer'),
             ),
           ),
           actions: [
@@ -1159,8 +1262,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     int fail = 0;
     await Future.wait(_selectedIds.map((uid) async {
       try {
-        final res = await _api.patch(
-            '/departments/$_deptFilter/members/$uid',
+        final res = await _api.patch('/departments/$_deptFilter/members/$uid',
             body: {'role': selectedRole});
         res.statusCode == 200 ? ok++ : fail++;
       } catch (_) {
@@ -1191,7 +1293,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Διαγραφή'),
           ),
         ],
@@ -1228,8 +1330,8 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r12,
+        border: Border.all(color: AppColors.gray200),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<int?>(
@@ -1237,8 +1339,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
           isExpanded: true,
           isDense: true,
           icon: const Icon(Icons.filter_list, size: 18),
-          hint: const Text('Όλα τα Τμήματα', style: TextStyle(fontSize: 13)),
-          style: const TextStyle(fontSize: 13, color: Color(0xFF374151)),
+          hint: const Text('Όλα τα Τμήματα',
+              style: TextStyle(fontSize: AppFontSize.md)),
+          style: const TextStyle(
+              fontSize: AppFontSize.md, color: AppColors.gray700),
           items: [
             if (showAll)
               const DropdownMenuItem<int?>(
@@ -1248,7 +1352,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   child: Text(d['name'] ?? 'Τμήμα'),
                 )),
           ],
-          onChanged: (v) => setState(() { _deptFilter = v; _page = 0; }),
+          onChanged: (v) => setState(() {
+            _deptFilter = v;
+            _page = 0;
+          }),
         ),
       ),
     );
@@ -1271,7 +1378,7 @@ class _BulkAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppRadius.r8,
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1281,8 +1388,8 @@ class _BulkAction extends StatelessWidget {
           Text(label,
               style: TextStyle(
                   color: color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600)),
+                  fontSize: AppFontSize.xs,
+                  fontWeight: AppFontWeight.semibold)),
         ]),
       ),
     );

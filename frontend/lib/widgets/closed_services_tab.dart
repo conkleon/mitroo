@@ -9,6 +9,8 @@ import '../services/api_client.dart';
 import '../utils/api_error.dart';
 import 'service_card.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class ClosedServicesTab extends StatefulWidget {
   final int departmentId;
   final String departmentName;
@@ -69,7 +71,8 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
     final buf = StringBuffer(
       '/services?departmentId=${widget.departmentId}&includeEnrollments=true&includeExpired=true&lifecycleStatus=closed',
     );
-    if (_search.isNotEmpty) buf.write('&search=${Uri.encodeComponent(_search)}');
+    if (_search.isNotEmpty)
+      buf.write('&search=${Uri.encodeComponent(_search)}');
     if (_dateFrom != null) buf.write('&fromDate=${_fmtDate(_dateFrom!)}');
     if (_dateTo != null) buf.write('&toDate=${_fmtEndOfDay(_dateTo!)}');
     return buf.toString();
@@ -86,7 +89,11 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
 
   Future<void> _load({bool silent = false}) async {
     setState(() {
-      if (silent) { _filtering = true; } else { _loading = true; }
+      if (silent) {
+        _filtering = true;
+      } else {
+        _loading = true;
+      }
     });
     try {
       final results = await Future.wait([
@@ -100,7 +107,11 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
         _deptMembers = jsonDecode(results[1].body);
       }
     } catch (_) {}
-    if (mounted) setState(() { _loading = false; _filtering = false; });
+    if (mounted)
+      setState(() {
+        _loading = false;
+        _filtering = false;
+      });
   }
 
   Future<void> _loadServices() async {
@@ -156,33 +167,26 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
         height: 44,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: isSet
-              ? const Color(0xFF7C3AED).withAlpha(15)
-              : const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(12),
+          color: isSet ? AppColors.violet600.withAlpha(15) : AppColors.gray100,
+          borderRadius: AppRadius.r12,
           border: Border.all(
-            color: isSet
-                ? const Color(0xFF7C3AED).withAlpha(60)
-                : const Color(0xFFE5E7EB),
+            color:
+                isSet ? AppColors.violet600.withAlpha(60) : AppColors.gray200,
           ),
         ),
         child: Row(
           children: [
             Icon(Icons.calendar_today_outlined,
                 size: 14,
-                color: isSet
-                    ? const Color(0xFF7C3AED)
-                    : const Color(0xFF6B7280)),
+                color: isSet ? AppColors.violet600 : AppColors.gray500),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: isSet
-                      ? const Color(0xFF7C3AED)
-                      : const Color(0xFF6B7280),
+                  fontSize: AppFontSize.base,
+                  fontWeight: AppFontWeight.medium,
+                  color: isSet ? AppColors.violet600 : AppColors.gray500,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -191,7 +195,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
               GestureDetector(
                 onTap: onClear,
                 child: const Icon(Icons.close,
-                    size: 14, color: Color(0xFF7C3AED)),
+                    size: 14, color: AppColors.violet600),
               ),
           ],
         ),
@@ -264,8 +268,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
             final uid = e['userId'] as int? ?? (e['user']?['id'] as int?);
             return uid == userId;
           });
-          (svc['_count'] as Map<String, dynamic>?)?['userServices'] =
-              us.length;
+          (svc['_count'] as Map<String, dynamic>?)?['userServices'] = us.length;
           break;
         }
       }
@@ -287,8 +290,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
             'hoursTrainers': 0,
             'user': member['user'],
           });
-          (svc['_count'] as Map<String, dynamic>?)?['userServices'] =
-              us.length;
+          (svc['_count'] as Map<String, dynamic>?)?['userServices'] = us.length;
           break;
         }
       }
@@ -338,8 +340,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
     if (err == null) {
       _localUpdateStatus(serviceId, userId, status);
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     }
   }
 
@@ -352,8 +353,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
     if (err == null) {
       _localUpdateStatus(serviceId, userId, status);
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     }
   }
 
@@ -369,28 +369,24 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style:
-                FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Αφαίρεση'),
           ),
         ],
       ),
     );
     if (confirmed != true || !mounted) return;
-    final err = await context
-        .read<ServiceProvider>()
-        .removeUser(serviceId, userId);
+    final err =
+        await context.read<ServiceProvider>().removeUser(serviceId, userId);
     if (!mounted) return;
     if (err == null) {
       _localRemoveEnrollment(serviceId, userId);
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     }
   }
 
-  Future<void> _directEnroll(
-      int serviceId, Map<String, dynamic> member) async {
+  Future<void> _directEnroll(int serviceId, Map<String, dynamic> member) async {
     final userId = member['user']['id'] as int;
     final err = await context
         .read<ServiceProvider>()
@@ -399,15 +395,13 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
     if (err == null) {
       _localAddEnrollment(serviceId, userId, member);
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     }
   }
 
   Future<void> _updateEnrollmentHours(
       int serviceId, int userId, Map<String, dynamic> currentUs) async {
-    final hrsCtrl =
-        TextEditingController(text: '${currentUs['hours'] ?? 0}');
+    final hrsCtrl = TextEditingController(text: '${currentUs['hours'] ?? 0}');
     final volCtrl =
         TextEditingController(text: '${currentUs['hoursVol'] ?? 0}');
     final trnCtrl =
@@ -433,11 +427,9 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
               const SizedBox(height: 8),
               ServiceHoursField(controller: volCtrl, label: 'Εθελοντικές'),
               const SizedBox(height: 8),
-              ServiceHoursField(
-                  controller: trnCtrl, label: 'Επανεκπαίδευση'),
+              ServiceHoursField(controller: trnCtrl, label: 'Επανεκπαίδευση'),
               const SizedBox(height: 8),
-              ServiceHoursField(
-                  controller: trnrCtrl, label: 'Εκπαιδευτές'),
+              ServiceHoursField(controller: trnrCtrl, label: 'Εκπαιδευτές'),
             ],
           ),
         ),
@@ -460,8 +452,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
         'hoursTraining': int.tryParse(trnCtrl.text) ?? 0,
         'hoursTrainers': int.tryParse(trnrCtrl.text) ?? 0,
       };
-      final res = await _api.patch(
-          '/services/$serviceId/users/$userId/hours',
+      final res = await _api.patch('/services/$serviceId/users/$userId/hours',
           body: hours);
       if (res.statusCode == 200) {
         _localUpdateHours(serviceId, userId, hours);
@@ -490,8 +481,8 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
               child: const Text('Ακύρωση')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF059669)),
+            style:
+                FilledButton.styleFrom(backgroundColor: AppColors.emerald600),
             child: const Text('Ολοκλήρωση'),
           ),
         ],
@@ -507,7 +498,9 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
       });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(extractApiError(res, 'Αποτυχία ολοκλήρωσης υπηρεσίας'))),
+        SnackBar(
+            content:
+                Text(extractApiError(res, 'Αποτυχία ολοκλήρωσης υπηρεσίας'))),
       );
     }
   }
@@ -547,7 +540,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Διαγραφή'),
           ),
         ],
@@ -572,8 +565,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
         .setResponsibleUser(serviceId, userId);
     if (!mounted) return;
     if (err != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
     }
   }
 
@@ -597,8 +589,8 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD1D5DB),
-                  borderRadius: BorderRadius.circular(2),
+                  color: AppColors.gray300,
+                  borderRadius: AppRadius.r2,
                 ),
               ),
             ),
@@ -607,13 +599,13 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700)),
+                    ?.copyWith(fontWeight: AppFontWeight.bold)),
             const SizedBox(height: 4),
             Text(svc['name'] ?? '',
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
-                    ?.copyWith(color: const Color(0xFF6B7280))),
+                    ?.copyWith(color: AppColors.gray500)),
             const SizedBox(height: 12),
             if (current != null) ...[
               Row(
@@ -631,8 +623,8 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                           : '?',
                       style: TextStyle(
                           color: cs.primary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14),
+                          fontWeight: AppFontWeight.bold,
+                          fontSize: AppFontSize.lg),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -641,7 +633,8 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                       '${current['forename'] ?? ''} ${current['surname'] ?? ''}'
                           .trim(),
                       style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14),
+                          fontWeight: AppFontWeight.semibold,
+                          fontSize: AppFontSize.lg),
                     ),
                   ),
                   TextButton.icon(
@@ -651,9 +644,9 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                       Navigator.pop(ctx);
                     },
                     icon: const Icon(Icons.close,
-                        size: 16, color: Color(0xFFDC2626)),
+                        size: 16, color: AppColors.red600),
                     label: const Text('Αφαίρεση',
-                        style: TextStyle(color: Color(0xFFDC2626))),
+                        style: TextStyle(color: AppColors.red600)),
                   ),
                 ],
               ),
@@ -662,8 +655,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
               const SizedBox(height: 8),
             ],
             Builder(builder: (ctx) {
-              final userServices =
-                  svc['userServices'] as List<dynamic>? ?? [];
+              final userServices = svc['userServices'] as List<dynamic>? ?? [];
               final acceptedUsers = userServices
                   .where(
                       (us) => us['status'] == 'accepted' && us['user'] != null)
@@ -675,8 +667,10 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
                       'Δεν υπάρχουν εγκεκριμένα μέλη σε αυτή την υπηρεσία',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF9CA3AF))),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: AppColors.gray400)),
                 );
               }
 
@@ -693,23 +687,24 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                       leading: CircleAvatar(
                         radius: 16,
                         backgroundColor: isCurrent
-                            ? const Color(0xFF7C3AED)
+                            ? AppColors.violet600
                             : cs.primary.withAlpha(20),
                         child: Text(
                           name.isNotEmpty ? name[0].toUpperCase() : '?',
                           style: TextStyle(
                             color: isCurrent ? Colors.white : cs.primary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
+                            fontWeight: AppFontWeight.bold,
+                            fontSize: AppFontSize.lg,
                           ),
                         ),
                       ),
                       title: Text(name,
                           style: const TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 14)),
+                              fontWeight: AppFontWeight.semibold,
+                              fontSize: AppFontSize.lg)),
                       trailing: isCurrent
                           ? const Icon(Icons.check_circle,
-                              size: 20, color: Color(0xFF7C3AED))
+                              size: 20, color: AppColors.violet600)
                           : null,
                       onTap: () {
                         final userId = u['id'] as int;
@@ -749,8 +744,7 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                   decoration: InputDecoration(
                     hintText: 'Αναζήτηση υπηρεσιών...',
                     prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(borderRadius: AppRadius.r12),
                     filled: true,
                     fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(
@@ -769,16 +763,16 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                     height: 48,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: (_filtersExpanded ||
-                              _selectedServiceTypeId != null)
-                          ? const Color(0xFF7C3AED).withAlpha(15)
-                          : const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(12),
+                      color:
+                          (_filtersExpanded || _selectedServiceTypeId != null)
+                              ? AppColors.violet600.withAlpha(15)
+                              : AppColors.gray100,
+                      borderRadius: AppRadius.r12,
                       border: Border.all(
-                        color: (_filtersExpanded ||
-                                _selectedServiceTypeId != null)
-                            ? const Color(0xFF7C3AED).withAlpha(60)
-                            : const Color(0xFFE5E7EB),
+                        color:
+                            (_filtersExpanded || _selectedServiceTypeId != null)
+                                ? AppColors.violet600.withAlpha(60)
+                                : AppColors.gray200,
                       ),
                     ),
                     child: Row(
@@ -789,8 +783,8 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                           size: 16,
                           color: (_filtersExpanded ||
                                   _selectedServiceTypeId != null)
-                              ? const Color(0xFF7C3AED)
-                              : const Color(0xFF6B7280),
+                              ? AppColors.violet600
+                              : AppColors.gray500,
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -798,12 +792,12 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                               ? 'Φίλτρα (1)'
                               : 'Φίλτρα',
                           style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                            fontSize: AppFontSize.md,
+                            fontWeight: AppFontWeight.medium,
                             color: (_filtersExpanded ||
                                     _selectedServiceTypeId != null)
-                                ? const Color(0xFF7C3AED)
-                                : const Color(0xFF6B7280),
+                                ? AppColors.violet600
+                                : AppColors.gray500,
                           ),
                         ),
                       ],
@@ -839,24 +833,22 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: selected
-                                  ? const Color(0xFF7C3AED)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(20),
+                              color:
+                                  selected ? AppColors.violet600 : Colors.white,
+                              borderRadius: AppRadius.r20,
                               border: Border.all(
                                 color: selected
-                                    ? const Color(0xFF7C3AED)
-                                    : const Color(0xFFD1D5DB),
+                                    ? AppColors.violet600
+                                    : AppColors.gray300,
                               ),
                             ),
                             child: Text(
                               st['name'] ?? '',
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: selected
-                                    ? Colors.white
-                                    : const Color(0xFF374151),
+                                fontSize: AppFontSize.md,
+                                fontWeight: AppFontWeight.semibold,
+                                color:
+                                    selected ? Colors.white : AppColors.gray700,
                               ),
                             ),
                           ),
@@ -873,7 +865,9 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
             children: [
               Expanded(
                 child: _buildDateButton(
-                  label: _dateFrom != null ? _fmtDisplay(_dateFrom!) : 'Από ημερομηνία',
+                  label: _dateFrom != null
+                      ? _fmtDisplay(_dateFrom!)
+                      : 'Από ημερομηνία',
                   isSet: _dateFrom != null,
                   onTap: _pickDateFrom,
                   onClear: () {
@@ -885,7 +879,9 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
               const SizedBox(width: 8),
               Expanded(
                 child: _buildDateButton(
-                  label: _dateTo != null ? _fmtDisplay(_dateTo!) : 'Έως ημερομηνία',
+                  label: _dateTo != null
+                      ? _fmtDisplay(_dateTo!)
+                      : 'Έως ημερομηνία',
                   isSet: _dateTo != null,
                   onTap: _pickDateTo,
                   onClear: () {
@@ -897,21 +893,19 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
             ],
           ),
         ),
-        if (_filtering)
-          const LinearProgressIndicator(minHeight: 2),
+        if (_filtering) const LinearProgressIndicator(minHeight: 2),
         Expanded(
           child: filtered.isEmpty
               ? Center(
-                  child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.inbox,
-                            size: 64, color: Color(0xFFD1D5DB)),
-                        const SizedBox(height: 12),
-                        Text('Δεν βρέθηκαν υπηρεσίες',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: const Color(0xFF6B7280))),
-                      ]))
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.inbox, size: 64, color: AppColors.gray300),
+                  const SizedBox(height: 12),
+                  Text('Δεν βρέθηκαν υπηρεσίες',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyLarge
+                          ?.copyWith(color: AppColors.gray500)),
+                ]))
               : RefreshIndicator(
                   onRefresh: sync,
                   child: ListView.builder(
@@ -932,18 +926,15 @@ class ClosedServicesTabState extends State<ClosedServicesTab>
                         deptMembers: _deptMembers,
                         onComplete: () => _completeService(id, name),
                         onOpenDetail: () => context.push('/admin/services/$id'),
-                        onUpdateStatus:
-                            (userId, status) =>
-                                _updateEnrollmentStatus(id, userId, status),
+                        onUpdateStatus: (userId, status) =>
+                            _updateEnrollmentStatus(id, userId, status),
                         onUpdateParticipation: (userId, status) =>
                             _updateParticipation(id, userId, status),
-                        onUpdateHours:
-                            (svcId, userId, us) =>
-                                _updateEnrollmentHours(svcId, userId, us),
+                        onUpdateHours: (svcId, userId, us) =>
+                            _updateEnrollmentHours(svcId, userId, us),
                         onRemoveEnrollment: (userId, uName) =>
                             _removeEnrollment(id, userId, uName),
-                        onDirectEnroll:
-                            (member) => _directEnroll(id, member),
+                        onDirectEnroll: (member) => _directEnroll(id, member),
                         onAssignResponsible: () => _showResponsiblePicker(svc),
                         onSync: () => _syncSingleService(id),
                         isSyncing: _syncingServiceIds.contains(id),

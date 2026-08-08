@@ -6,6 +6,8 @@ import 'scanner_screen.dart';
 import 'item_detail_screen.dart';
 import 'vehicle_detail_screen.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 /// Bottom sheet that shows the user's assigned equipment & active vehicles,
 /// with the ability to take / return both.
 class MyEquipmentSheet extends StatefulWidget {
@@ -95,7 +97,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Επιστροφή'),
           ),
         ],
@@ -120,8 +122,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         final body = jsonDecode(res.body);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(body['error'] ?? 'Αποτυχία επιστροφής')),
+            SnackBar(content: Text(body['error'] ?? 'Αποτυχία επιστροφής')),
           );
         }
       }
@@ -145,8 +146,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
       final res = await widget.api.get('/items?${params.join('&')}');
       if (res.statusCode == 200 && mounted) {
         final body = jsonDecode(res.body) as Map<String, dynamic>;
-        setState(() =>
-            _searchResults = (body['data'] as List<dynamic>?) ?? []);
+        setState(() => _searchResults = (body['data'] as List<dynamic>?) ?? []);
       }
     } catch (_) {}
     if (mounted) setState(() => _searchLoading = false);
@@ -157,8 +157,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
     final name = item['name'] ?? '';
     setState(() => _busy.add(itemId));
     try {
-      final res =
-          await widget.api.post('/items/$itemId/self-assign', body: {});
+      final res = await widget.api.post('/items/$itemId/self-assign', body: {});
       if (res.statusCode == 200 && mounted) {
         await _reloadEquipment();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -189,7 +188,8 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
     if (result == null || !mounted) return;
 
     final parsedId = int.tryParse(result.value);
-    if (result.isQr || (parsedId != null && result.value == parsedId.toString())) {
+    if (result.isQr ||
+        (parsedId != null && result.value == parsedId.toString())) {
       if (parsedId != null) {
         Navigator.pop(context);
         ItemDetailScreen.show(context, parsedId);
@@ -235,8 +235,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
   Future<void> _fetchAvailableVehicles([String query = '']) async {
     setState(() => _vehicleSearchLoading = true);
     try {
-      final q =
-          query.isNotEmpty ? '?search=${Uri.encodeComponent(query)}' : '';
+      final q = query.isNotEmpty ? '?search=${Uri.encodeComponent(query)}' : '';
       final res = await widget.api.get('/vehicles/available/list$q');
       if (res.statusCode == 200 && mounted) {
         setState(() =>
@@ -264,7 +263,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('$label έναρξης:',
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+                style: const TextStyle(fontWeight: AppFontWeight.semibold)),
             const SizedBox(height: 8),
             TextField(
               controller: meterCtrl,
@@ -273,22 +272,20 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               decoration: InputDecoration(
                 hintText: label,
                 suffixText: meterType == 'hours' ? 'h' : 'km',
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                border: OutlineInputBorder(borderRadius: AppRadius.r10),
                 isDense: true,
               ),
               autofocus: true,
             ),
             const SizedBox(height: 12),
             const Text('Προορισμός:',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+                style: TextStyle(fontWeight: AppFontWeight.semibold)),
             const SizedBox(height: 8),
             TextField(
               controller: destCtrl,
               decoration: InputDecoration(
                 hintText: 'Προορισμός (προαιρετικό)',
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                border: OutlineInputBorder(borderRadius: AppRadius.r10),
                 isDense: true,
               ),
             ),
@@ -296,13 +293,13 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Άκυρο')),
+              onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () {
               final val = num.tryParse(meterCtrl.text);
               if (val != null && val >= 0) {
-                Navigator.pop(ctx, {'meterStart': val, 'destination': destCtrl.text.trim()});
+                Navigator.pop(ctx,
+                    {'meterStart': val, 'destination': destCtrl.text.trim()});
               }
             },
             child: const Text('Λήψη'),
@@ -318,14 +315,13 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
       final body = <String, dynamic>{'meterStart': result['meterStart']};
       final dest = result['destination'] as String;
       if (dest.isNotEmpty) body['destination'] = dest;
-      final res = await widget.api
-          .post('/vehicles/$vehicleId/take', body: body);
+      final res =
+          await widget.api.post('/vehicles/$vehicleId/take', body: body);
       if (mounted) {
         final respBody = jsonDecode(res.body);
         if (res.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text('"${vehicle['name']}" ανατέθηκε σε εσάς')),
+            SnackBar(content: Text('"${vehicle['name']}" ανατέθηκε σε εσάς')),
           );
           _loadMyVehicles();
           _fetchAvailableVehicles(_vehicleSearchQuery);
@@ -355,7 +351,8 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
     final vehicleName = vehicle['name'] ?? '';
 
     final meterCtrl = TextEditingController(text: '$meterStart');
-    final destCtrl = TextEditingController(text: (log['destination'] ?? '') as String);
+    final destCtrl =
+        TextEditingController(text: (log['destination'] ?? '') as String);
 
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -366,10 +363,10 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('$label εκκίνησης: $meterStart',
-                style: const TextStyle(color: Color(0xFF6B7280))),
+                style: const TextStyle(color: AppColors.gray500)),
             const SizedBox(height: 12),
             Text('$label τέλους:',
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+                style: const TextStyle(fontWeight: AppFontWeight.semibold)),
             const SizedBox(height: 8),
             TextField(
               controller: meterCtrl,
@@ -378,22 +375,20 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               decoration: InputDecoration(
                 hintText: label,
                 suffixText: meterType == 'hours' ? 'h' : 'km',
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                border: OutlineInputBorder(borderRadius: AppRadius.r10),
                 isDense: true,
               ),
               autofocus: true,
             ),
             const SizedBox(height: 12),
             const Text('Προορισμός:',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+                style: TextStyle(fontWeight: AppFontWeight.semibold)),
             const SizedBox(height: 8),
             TextField(
               controller: destCtrl,
               decoration: InputDecoration(
                 hintText: 'Προορισμός',
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                border: OutlineInputBorder(borderRadius: AppRadius.r10),
                 isDense: true,
               ),
             ),
@@ -401,17 +396,16 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Άκυρο')),
+              onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () {
               final val = num.tryParse(meterCtrl.text);
               if (val != null && val >= num.parse('$meterStart')) {
-                Navigator.pop(ctx, {'meterEnd': val, 'destination': destCtrl.text.trim()});
+                Navigator.pop(ctx,
+                    {'meterEnd': val, 'destination': destCtrl.text.trim()});
               }
             },
-            style:
-                FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Επιστροφή'),
           ),
         ],
@@ -425,8 +419,8 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
       final body = <String, dynamic>{'meterEnd': result['meterEnd']};
       final dest = result['destination'] as String;
       if (dest.isNotEmpty) body['destination'] = dest;
-      final res = await widget.api.post('/vehicles/$vehicleId/return',
-          body: body);
+      final res =
+          await widget.api.post('/vehicles/$vehicleId/return', body: body);
       if (mounted) {
         final respBody = jsonDecode(res.body);
         if (res.statusCode == 200) {
@@ -462,7 +456,9 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 20, right: 20, top: 12,
+        left: 20,
+        right: 20,
+        top: 12,
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
       ),
       child: Column(
@@ -470,11 +466,12 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         children: [
           // Drag handle
           Container(
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFD1D5DB),
-              borderRadius: BorderRadius.circular(2),
+              color: AppColors.gray300,
+              borderRadius: AppRadius.r2,
             ),
           ),
 
@@ -482,7 +479,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
           TabBar(
             controller: _tabCtrl,
             labelColor: cs.primary,
-            unselectedLabelColor: const Color(0xFF6B7280),
+            unselectedLabelColor: AppColors.gray500,
             indicatorColor: cs.primary,
             tabs: [
               Tab(
@@ -518,12 +515,9 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         // Title row with search toggle
         Row(
           children: [
-            Text(
-                _showSearch
-                    ? 'Αναζήτηση Εξοπλισμού'
-                    : 'Ο Εξοπλισμός Μου',
+            Text(_showSearch ? 'Αναζήτηση Εξοπλισμού' : 'Ο Εξοπλισμός Μου',
                 style:
-                    tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    tt.titleMedium?.copyWith(fontWeight: AppFontWeight.bold)),
             const Spacer(),
             FilledButton.icon(
               onPressed: () {
@@ -535,23 +529,24 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                   }
                 });
               },
-              icon: Icon(_showSearch ? Icons.arrow_back : Icons.search,
-                  size: 18),
+              icon:
+                  Icon(_showSearch ? Icons.arrow_back : Icons.search, size: 18),
               label: Text(_showSearch ? 'Πίσω' : 'Λήψη',
-                  style: const TextStyle(fontSize: 12)),
+                  style: const TextStyle(fontSize: AppFontSize.base)),
               style: FilledButton.styleFrom(
-                backgroundColor: _showSearch
-                    ? const Color(0xFF6B7280)
-                    : cs.primary,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 6),
+                backgroundColor: _showSearch ? AppColors.gray500 : cs.primary,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 visualDensity: VisualDensity.compact,
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        if (_showSearch) _buildEquipmentSearch(tt, cs) else _buildMyEquipment(tt, cs),
+        if (_showSearch)
+          _buildEquipmentSearch(tt, cs)
+        else
+          _buildMyEquipment(tt, cs),
       ],
     );
   }
@@ -565,11 +560,10 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
           decoration: InputDecoration(
             hintText: 'Αναζήτηση με όνομα, περιγραφή ή barcode...',
             prefixIcon: const Icon(Icons.search),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10)),
+            border: OutlineInputBorder(borderRadius: AppRadius.r10),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 10),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
           onChanged: (v) {
             _searchQuery = v;
@@ -579,7 +573,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         const SizedBox(height: 12),
         _scanPanel(
           icon: Icons.barcode_reader,
-          color: const Color(0xFF0D9488),
+          color: AppColors.teal600,
           title: 'Σάρωση ',
           subtitle: 'Σάρωση με κάμερα',
           onTap: _handleScan,
@@ -598,23 +592,24 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Color(0xFFF3F4F6),
+                    color: AppColors.gray100,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.search_off, size: 40, color: Color(0xFF9CA3AF)),
+                  child: Icon(Icons.search_off,
+                      size: 40, color: AppColors.gray400),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Δεν βρέθηκαν διαθέσιμα αντικείμενα',
                   style: tt.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF374151),
+                    fontWeight: AppFontWeight.semibold,
+                    color: AppColors.gray700,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Δοκιμάστε διαφορετικό όρο αναζήτησης ή σαρώστε έναν κωδικό',
-                  style: tt.bodySmall?.copyWith(color: Color(0xFF6B7280)),
+                  style: tt.bodySmall?.copyWith(color: AppColors.gray500),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -639,15 +634,12 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                 icon: isContainer
                     ? Icons.check_box_outline_blank
                     : Icons.circle_outlined,
-                iconColor: isContainer
-                    ? const Color(0xFF2563EB)
-                    : cs.primary,
+                iconColor: isContainer ? AppColors.blue600 : cs.primary,
                 title: item['name'] ?? '',
                 subtitle: subtitle,
                 tt: tt,
                 trailing: FilledButton.icon(
-                  onPressed:
-                      isBusy ? null : () => _selfAssignItem(item),
+                  onPressed: isBusy ? null : () => _selfAssignItem(item),
                   icon: isBusy
                       ? const SizedBox(
                           width: 16,
@@ -656,10 +648,10 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                               strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.add, size: 16),
                   label: const Text('Λήψη',
-                      style: TextStyle(fontSize: 12)),
+                      style: TextStyle(fontSize: AppFontSize.base)),
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
@@ -680,27 +672,27 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF059669).withAlpha(12),
+                color: AppColors.emerald600.withAlpha(12),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.check_circle_outline,
                 size: 40,
-                color: Color(0xFF059669),
+                color: AppColors.emerald600,
               ),
             ),
             const SizedBox(height: 16),
             Text(
               'Κανένας εξοπλισμός',
               style: tt.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF374151),
+                fontWeight: AppFontWeight.semibold,
+                color: AppColors.gray700,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               'Πατήστε "Λήψη" για να αναζητήσετε διαθέσιμο εξοπλισμό',
-              style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+              style: tt.bodySmall?.copyWith(color: AppColors.gray500),
               textAlign: TextAlign.center,
             ),
           ],
@@ -718,9 +710,8 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                     ?.isBefore(DateTime.now()) ==
                 true;
 
-        final accent = item['isContainer'] == true
-            ? const Color(0xFF2563EB)
-            : cs.primary;
+        final accent =
+            item['isContainer'] == true ? AppColors.blue600 : cs.primary;
 
         return _card(
           icon: item['isContainer'] == true
@@ -740,17 +731,18 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.circular(6),
+                      color: AppColors.red50,
+                      borderRadius: AppRadius.r6,
                     ),
                     child: Text(
                       'Έληξε',
                       style: TextStyle(
-                        color: Color(0xFFB91C1C),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                        color: AppColors.red700,
+                        fontSize: AppFontSize.xs,
+                        fontWeight: AppFontWeight.semibold,
                       ),
                     ),
                   ),
@@ -758,7 +750,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               IconButton(
                 icon: const Icon(Icons.open_in_new, size: 18),
                 tooltip: 'Λεπτομέρειες',
-                color: const Color(0xFF9CA3AF),
+                color: AppColors.gray400,
                 onPressed: () {
                   Navigator.pop(context);
                   ItemDetailScreen.show(context, itemId);
@@ -773,7 +765,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.assignment_return,
-                        size: 18, color: Color(0xFFDC2626)),
+                        size: 18, color: AppColors.red600),
                 tooltip: 'Επιστροφή',
                 onPressed: isBusy ? null : () => _returnItem(item),
                 visualDensity: VisualDensity.compact,
@@ -797,12 +789,9 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
         // Title row with search toggle
         Row(
           children: [
-            Text(
-                _showVehicleSearch
-                    ? 'Αναζήτηση Οχημάτων'
-                    : 'Τα Οχήματά Μου',
+            Text(_showVehicleSearch ? 'Αναζήτηση Οχημάτων' : 'Τα Οχήματά Μου',
                 style:
-                    tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    tt.titleMedium?.copyWith(fontWeight: AppFontWeight.bold)),
             const Spacer(),
             FilledButton.icon(
               onPressed: () {
@@ -814,17 +803,15 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                   }
                 });
               },
-              icon: Icon(
-                  _showVehicleSearch ? Icons.arrow_back : Icons.search,
+              icon: Icon(_showVehicleSearch ? Icons.arrow_back : Icons.search,
                   size: 18),
               label: Text(_showVehicleSearch ? 'Πίσω' : 'Λήψη',
-                  style: const TextStyle(fontSize: 12)),
+                  style: const TextStyle(fontSize: AppFontSize.base)),
               style: FilledButton.styleFrom(
-                backgroundColor: _showVehicleSearch
-                    ? const Color(0xFF6B7280)
-                    : cs.primary,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 6),
+                backgroundColor:
+                    _showVehicleSearch ? AppColors.gray500 : cs.primary,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 visualDensity: VisualDensity.compact,
               ),
             ),
@@ -852,11 +839,10 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
           decoration: InputDecoration(
             hintText: 'Αναζήτηση με όνομα ή αρ. κυκλοφορίας...',
             prefixIcon: const Icon(Icons.search),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10)),
+            border: OutlineInputBorder(borderRadius: AppRadius.r10),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 10),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
           onChanged: (v) {
             _vehicleSearchQuery = v;
@@ -870,8 +856,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
             child: Center(child: CircularProgressIndicator()),
           )
         else if (_vehicleSearchResults.isEmpty)
-          _emptyState(
-              Icons.search_off, 'Δεν βρέθηκαν διαθέσιμα οχήματα', tt)
+          _emptyState(Icons.search_off, 'Δεν βρέθηκαν διαθέσιμα οχήματα', tt)
         else
           _constrainedList(
             itemCount: _vehicleSearchResults.length,
@@ -889,7 +874,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
 
               return _card(
                 icon: vehicleIcon(v['type'] as String?),
-                iconColor: const Color(0xFF0D47A1),
+                iconColor: AppColors.blueDeep,
                 title: v['name'] ?? '',
                 subtitle: subtitle,
                 tt: tt,
@@ -899,7 +884,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                     IconButton(
                       icon: const Icon(Icons.open_in_new, size: 18),
                       tooltip: 'Λεπτομέρειες',
-                      color: const Color(0xFF6B7280),
+                      color: AppColors.gray500,
                       onPressed: () {
                         Navigator.pop(context);
                         VehicleDetailScreen.show(context, vid);
@@ -915,7 +900,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                                   strokeWidth: 2, color: Colors.white))
                           : const Icon(Icons.key, size: 16),
                       label: const Text('Λήψη',
-                          style: TextStyle(fontSize: 12)),
+                          style: TextStyle(fontSize: AppFontSize.base)),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
@@ -949,7 +934,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
 
         return _card(
           icon: vehicleIcon(vehicle['type'] as String?),
-          iconColor: const Color(0xFF0D47A1),
+          iconColor: AppColors.blueDeep,
           title: vehicle['name'] ?? '',
           subtitle:
               '${vehicleTypeLabel(vehicle['type'] as String?)} · Έναρξη: ${log['meterStart']} $meterUnit',
@@ -960,7 +945,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               IconButton(
                 icon: const Icon(Icons.open_in_new, size: 18),
                 tooltip: 'Λεπτομέρειες',
-                color: const Color(0xFF6B7280),
+                color: AppColors.gray500,
                 onPressed: () {
                   Navigator.pop(context);
                   VehicleDetailScreen.show(context, vehicleId);
@@ -975,12 +960,12 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.assignment_return, size: 16),
-                label:
-                    const Text('Επιστροφή', style: TextStyle(fontSize: 12)),
+                label: const Text('Επιστροφή',
+                    style: TextStyle(fontSize: AppFontSize.base)),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Color(0xFFDC2626),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  backgroundColor: AppColors.red600,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -1001,11 +986,9 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          Icon(icon, size: 48, color: Color(0xFFD1D5DB)),
+          Icon(icon, size: 48, color: AppColors.gray300),
           const SizedBox(height: 8),
-          Text(text,
-              style: tt.bodyMedium
-                  ?.copyWith(color: const Color(0xFF6B7280))),
+          Text(text, style: tt.bodyMedium?.copyWith(color: AppColors.gray500)),
         ],
       ),
     );
@@ -1016,8 +999,8 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
     required Widget Function(BuildContext, int) itemBuilder,
   }) {
     return ConstrainedBox(
-      constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.45),
+      constraints:
+          BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.45),
       child: ListView.separated(
         shrinkWrap: true,
         itemCount: itemCount,
@@ -1039,8 +1022,8 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF3F4F6)),
+        borderRadius: AppRadius.r12,
+        border: Border.all(color: AppColors.gray100),
       ),
       child: Row(
         children: [
@@ -1049,7 +1032,7 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
             height: 40,
             decoration: BoxDecoration(
               color: iconColor.withAlpha(18),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppRadius.r10,
             ),
             child: Icon(icon, color: iconColor, size: 20),
           ),
@@ -1060,14 +1043,14 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(title,
-                    style: tt.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF111827))),
+                    style: tt.titleSmall?.copyWith(
+                        fontWeight: AppFontWeight.semibold,
+                        color: AppColors.gray900)),
                 if (subtitle.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 3),
                     child: Text(subtitle,
-                        style: tt.bodySmall
-                            ?.copyWith(color: const Color(0xFF6B7280)),
+                        style: tt.bodySmall?.copyWith(color: AppColors.gray500),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),
                   ),
@@ -1091,13 +1074,13 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.r12,
         child: Container(
           height: 64,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: color.withAlpha(15),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.r12,
             border: Border.all(color: color.withAlpha(76)),
           ),
           child: Row(
@@ -1120,17 +1103,17 @@ class _MyEquipmentSheetState extends State<MyEquipmentSheet>
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1F2937),
+                        fontSize: AppFontSize.lg,
+                        fontWeight: AppFontWeight.semibold,
+                        color: AppColors.gray800,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B7280),
+                        fontSize: AppFontSize.base,
+                        color: AppColors.gray500,
                       ),
                     ),
                   ],

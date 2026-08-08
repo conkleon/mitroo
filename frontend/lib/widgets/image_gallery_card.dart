@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:mitroo_frontend/theme/theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -42,7 +43,8 @@ class _ImageGalleryCardState extends State<ImageGalleryCard> {
 
   Future<void> _load() async {
     try {
-      final res = await _api.get('/files?${widget.entityParam}=${widget.entityId}&imagesOnly=true');
+      final res = await _api.get(
+          '/files?${widget.entityParam}=${widget.entityId}&imagesOnly=true');
       if (res.statusCode == 200 && mounted) {
         final body = jsonDecode(res.body);
         setState(() {
@@ -146,7 +148,9 @@ class _ImageGalleryCardState extends State<ImageGalleryCard> {
         title: const Text('Διαγραφή Εικόνας'),
         content: const Text('Είστε σίγουροι;'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
@@ -193,7 +197,7 @@ class _ImageGalleryCardState extends State<ImageGalleryCard> {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.r16,
         side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Padding(
@@ -207,24 +211,31 @@ class _ImageGalleryCardState extends State<ImageGalleryCard> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF3B82F6).withAlpha(15),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.blue500.withAlpha(15),
+                    borderRadius: AppRadius.r8,
                   ),
-                  child: const Icon(Icons.photo_library_outlined, size: 18, color: Color(0xFF3B82F6)),
+                  child: const Icon(Icons.photo_library_outlined,
+                      size: 18, color: AppColors.blue500),
                 ),
                 const SizedBox(width: 10),
-                Text('Εικόνες', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Εικόνες',
+                    style: tt.titleSmall
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
                 const Spacer(),
                 if (_files.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3B82F6).withAlpha(15),
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppColors.blue500.withAlpha(15),
+                      borderRadius: AppRadius.r8,
                     ),
                     child: Text(
                       '${_files.length}',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF3B82F6), fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          fontSize: AppFontSize.base,
+                          color: AppColors.blue500,
+                          fontWeight: AppFontWeight.bold),
                     ),
                   ),
                 if (widget.canManage) ...[
@@ -239,22 +250,28 @@ class _ImageGalleryCardState extends State<ImageGalleryCard> {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: _uploadImage,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppRadius.r8,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF3B82F6).withAlpha(10),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFF3B82F6).withAlpha(30)),
+                                color: AppColors.blue500.withAlpha(10),
+                                borderRadius: AppRadius.r8,
+                                border: Border.all(
+                                    color: AppColors.blue500.withAlpha(30)),
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.add_photo_alternate_outlined, size: 14, color: Color(0xFF3B82F6)),
+                                  Icon(Icons.add_photo_alternate_outlined,
+                                      size: 14, color: AppColors.blue500),
                                   SizedBox(width: 4),
                                   Text(
                                     'Προσθήκη',
-                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF3B82F6)),
+                                    style: TextStyle(
+                                        fontSize: AppFontSize.base,
+                                        fontWeight: AppFontWeight.semibold,
+                                        color: AppColors.blue500),
                                   ),
                                 ],
                               ),
@@ -268,20 +285,27 @@ class _ImageGalleryCardState extends State<ImageGalleryCard> {
 
             // Body
             if (_loading)
-              const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+              const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator()))
             else if (_files.isEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.r12,
                 ),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.photo_outlined, color: Colors.grey.shade400, size: 28),
+                      Icon(Icons.photo_outlined,
+                          color: Colors.grey.shade400, size: 28),
                       const SizedBox(height: 6),
-                      Text('Δεν υπάρχουν εικόνες', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                      Text('Δεν υπάρχουν εικόνες',
+                          style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: AppFontSize.md)),
                     ],
                   ),
                 ),
@@ -304,13 +328,14 @@ class _ImageGalleryCardState extends State<ImageGalleryCard> {
                       fit: StackFit.expand,
                       children: [
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppRadius.r10,
                           child: Image.network(
                             _imageUrl(file, thumbnail: true),
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Container(
                               color: Colors.grey.shade200,
-                              child: Icon(Icons.broken_image, color: Colors.grey.shade400),
+                              child: Icon(Icons.broken_image,
+                                  color: Colors.grey.shade400),
                             ),
                           ),
                         ),
@@ -326,7 +351,8 @@ class _ImageGalleryCardState extends State<ImageGalleryCard> {
                                   color: Colors.black.withAlpha(120),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.close, size: 14, color: Colors.white),
+                                child: const Icon(Icons.close,
+                                    size: 14, color: Colors.white),
                               ),
                             ),
                           ),
@@ -390,7 +416,7 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
         foregroundColor: Colors.white,
         title: Text(
           '${_current + 1} / ${widget.files.length}',
-          style: const TextStyle(fontSize: 14),
+          style: const TextStyle(fontSize: AppFontSize.lg),
         ),
         actions: [
           if (widget.canManage)
@@ -413,7 +439,8 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
               child: Image.network(
                 _imageUrl(widget.files[i]),
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.white54, size: 64),
+                errorBuilder: (_, __, ___) => const Icon(Icons.broken_image,
+                    color: Colors.white54, size: 64),
               ),
             ),
           );

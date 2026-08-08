@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:mitroo_frontend/theme/theme.dart';
 import 'dart:ui' as ui;
 import '../providers/auth_provider.dart';
 import '../providers/item_provider.dart';
@@ -67,7 +68,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       if (results[2].statusCode == 200) {
         final parsed = jsonDecode(results[2].body);
         final all = (parsed['data'] ?? parsed) as List;
-        _allContainers = all.cast<Map<String, dynamic>>().where((i) => i['isContainer'] == true && i['id'] != widget.itemId).toList();
+        _allContainers = all
+            .cast<Map<String, dynamic>>()
+            .where((i) => i['isContainer'] == true && i['id'] != widget.itemId)
+            .toList();
       }
       if (results[3].statusCode == 200) {
         _comments = jsonDecode(results[3].body) as List;
@@ -114,12 +118,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     if (_item!['expirationDate'] != null) {
       expirationDate = DateTime.tryParse(_item!['expirationDate']);
     }
-    final quantityCtrl = TextEditingController(text: '${_item!['quantity'] ?? 1}');
+    final quantityCtrl =
+        TextEditingController(text: '${_item!['quantity'] ?? 1}');
 
     const gap = SizedBox(height: 14);
     final inputBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: Color(0xFFD1D5DB)),
+      borderRadius: AppRadius.r10,
+      borderSide: BorderSide(color: AppColors.gray300),
     );
 
     showDialog(
@@ -141,14 +146,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFDC2626).withAlpha(15),
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppColors.red600.withAlpha(15),
+                          borderRadius: AppRadius.r8,
                         ),
-                        child: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFFDC2626)),
+                        child: const Icon(Icons.edit_outlined,
+                            size: 18, color: AppColors.red600),
                       ),
                       const SizedBox(width: 12),
                       const Text('Επεξεργασία Αντικειμένου',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                          style: TextStyle(
+                              fontSize: AppFontSize.xl4,
+                              fontWeight: AppFontWeight.semibold)),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -159,7 +167,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       border: inputBorder,
                       enabledBorder: inputBorder,
                       focusedBorder: inputBorder.copyWith(
-                        borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                        borderSide: BorderSide(
+                            color: Theme.of(ctx).colorScheme.primary,
+                            width: 1.5),
                       ),
                     ),
                   ),
@@ -171,7 +181,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       border: inputBorder,
                       enabledBorder: inputBorder,
                       focusedBorder: inputBorder.copyWith(
-                        borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                        borderSide: BorderSide(
+                            color: Theme.of(ctx).colorScheme.primary,
+                            width: 1.5),
                       ),
                     ),
                   ),
@@ -183,7 +195,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       border: inputBorder,
                       enabledBorder: inputBorder,
                       focusedBorder: inputBorder.copyWith(
-                        borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                        borderSide: BorderSide(
+                            color: Theme.of(ctx).colorScheme.primary,
+                            width: 1.5),
                       ),
                     ),
                   ),
@@ -195,7 +209,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       border: inputBorder,
                       enabledBorder: inputBorder,
                       focusedBorder: inputBorder.copyWith(
-                        borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                        borderSide: BorderSide(
+                            color: Theme.of(ctx).colorScheme.primary,
+                            width: 1.5),
                       ),
                     ),
                     maxLines: 3,
@@ -203,7 +219,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   gap,
                   Builder(
                     builder: (_) {
-                      final depts = context.read<DepartmentProvider>().departments;
+                      final depts =
+                          context.read<DepartmentProvider>().departments;
                       return DropdownButtonFormField<int>(
                         value: selectedDeptId,
                         decoration: InputDecoration(
@@ -211,13 +228,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           border: inputBorder,
                           enabledBorder: inputBorder,
                           focusedBorder: inputBorder.copyWith(
-                            borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                            borderSide: BorderSide(
+                                color: Theme.of(ctx).colorScheme.primary,
+                                width: 1.5),
                           ),
                         ),
-                        items: depts.map<DropdownMenuItem<int>>((d) => DropdownMenuItem(
-                          value: d['id'] as int,
-                          child: Text(d['name'] ?? ''),
-                        )).toList(),
+                        items: depts
+                            .map<DropdownMenuItem<int>>((d) => DropdownMenuItem(
+                                  value: d['id'] as int,
+                                  child: Text(d['name'] ?? ''),
+                                ))
+                            .toList(),
                         onChanged: (v) => setSt(() => selectedDeptId = v),
                       );
                     },
@@ -233,15 +254,18 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           border: inputBorder,
                           enabledBorder: inputBorder,
                           focusedBorder: inputBorder.copyWith(
-                            borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                            borderSide: BorderSide(
+                                color: Theme.of(ctx).colorScheme.primary,
+                                width: 1.5),
                           ),
                         ),
                         items: [
-                          const DropdownMenuItem<int?>(value: null, child: Text('Χωρίς κατηγορία')),
+                          const DropdownMenuItem<int?>(
+                              value: null, child: Text('Χωρίς κατηγορία')),
                           ...cats.map((c) => DropdownMenuItem<int?>(
-                            value: c['id'] as int,
-                            child: Text('${c['name']}'),
-                          )),
+                                value: c['id'] as int,
+                                child: Text('${c['name']}'),
+                              )),
                         ],
                         onChanged: (v) => setSt(() => selectedCategoryId = v),
                       );
@@ -257,33 +281,41 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                               context: ctx,
                               firstDate: DateTime(2020),
                               lastDate: DateTime(2100),
-                              initialDate: expirationDate ?? DateTime.now().add(const Duration(days: 365)),
+                              initialDate: expirationDate ??
+                                  DateTime.now().add(const Duration(days: 365)),
                             );
-                            if (picked != null) setSt(() => expirationDate = picked);
+                            if (picked != null)
+                              setSt(() => expirationDate = picked);
                           },
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppRadius.r10,
                           child: InputDecorator(
                             decoration: InputDecoration(
                               labelText: 'Ημερομηνία λήξης',
                               border: inputBorder,
                               enabledBorder: inputBorder,
                               focusedBorder: inputBorder.copyWith(
-                                borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                                borderSide: BorderSide(
+                                    color: Theme.of(ctx).colorScheme.primary,
+                                    width: 1.5),
                               ),
                               suffixIcon: expirationDate != null
                                   ? IconButton(
                                       icon: const Icon(Icons.clear, size: 18),
-                                      onPressed: () => setSt(() => expirationDate = null),
+                                      onPressed: () =>
+                                          setSt(() => expirationDate = null),
                                     )
-                                  : const Icon(Icons.calendar_today_outlined, size: 20),
+                                  : const Icon(Icons.calendar_today_outlined,
+                                      size: 20),
                             ),
                             child: Text(
                               expirationDate != null
                                   ? '${expirationDate!.day}/${expirationDate!.month}/${expirationDate!.year}'
                                   : 'Δεν έχει οριστεί',
                               style: TextStyle(
-                                color: expirationDate != null ? null : Color(0xFF6B7280),
-                                fontSize: 15,
+                                color: expirationDate != null
+                                    ? null
+                                    : AppColors.gray500,
+                                fontSize: AppFontSize.xl,
                               ),
                             ),
                           ),
@@ -298,7 +330,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             border: inputBorder,
                             enabledBorder: inputBorder,
                             focusedBorder: inputBorder.copyWith(
-                              borderSide: BorderSide(color: Theme.of(ctx).colorScheme.primary, width: 1.5),
+                              borderSide: BorderSide(
+                                  color: Theme.of(ctx).colorScheme.primary,
+                                  width: 1.5),
                             ),
                           ),
                           keyboardType: TextInputType.number,
@@ -310,17 +344,25 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Color(0xFFD1D5DB)),
+                      borderRadius: AppRadius.r10,
+                      border: Border.all(color: AppColors.gray300),
                     ),
                     child: Column(
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.inventory_2, size: 18, color: Color(0xFF374151)),
+                            Icon(Icons.inventory_2,
+                                size: 18, color: AppColors.gray700),
                             const SizedBox(width: 10),
-                            const Expanded(child: Text('Κουτί', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
-                            const Text('Μπορεί να περιέχει αντικείμενα', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                            const Expanded(
+                                child: Text('Κουτί',
+                                    style: TextStyle(
+                                        fontSize: AppFontSize.lg,
+                                        fontWeight: AppFontWeight.medium))),
+                            const Text('Μπορεί να περιέχει αντικείμενα',
+                                style: TextStyle(
+                                    fontSize: AppFontSize.base,
+                                    color: AppColors.gray500)),
                             const SizedBox(width: 10),
                             Switch(
                               value: isContainer,
@@ -331,12 +373,18 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         const Divider(height: 20),
                         Row(
                           children: [
-                            Icon(Icons.assignment_outlined, size: 18, color: Color(0xFF374151)),
+                            Icon(Icons.assignment_outlined,
+                                size: 18, color: AppColors.gray700),
                             const SizedBox(width: 10),
-                            const Expanded(child: Text('Διαθέσιμο για ανάθεση', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
+                            const Expanded(
+                                child: Text('Διαθέσιμο για ανάθεση',
+                                    style: TextStyle(
+                                        fontSize: AppFontSize.lg,
+                                        fontWeight: AppFontWeight.medium))),
                             Switch(
                               value: availableForAssignment,
-                              onChanged: (v) => setSt(() => availableForAssignment = v),
+                              onChanged: (v) =>
+                                  setSt(() => availableForAssignment = v),
                             ),
                           ],
                         ),
@@ -348,7 +396,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
@@ -356,18 +406,26 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   'name': nameCtrl.text.trim(),
                   'isContainer': isContainer,
                   'availableForAssignment': availableForAssignment,
-                  'barCode': barcodeCtrl.text.isNotEmpty ? barcodeCtrl.text.trim() : null,
-                  'location': locationCtrl.text.isNotEmpty ? locationCtrl.text.trim() : null,
-                  'description': descCtrl.text.isNotEmpty ? descCtrl.text.trim() : null,
+                  'barCode': barcodeCtrl.text.isNotEmpty
+                      ? barcodeCtrl.text.trim()
+                      : null,
+                  'location': locationCtrl.text.isNotEmpty
+                      ? locationCtrl.text.trim()
+                      : null,
+                  'description':
+                      descCtrl.text.isNotEmpty ? descCtrl.text.trim() : null,
                   'expirationDate': expirationDate?.toIso8601String(),
                   'quantity': int.tryParse(quantityCtrl.text) ?? 1,
                   'categoryId': selectedCategoryId,
                   'departmentId': selectedDeptId,
                 };
-                final err = await context.read<ItemProvider>().update(widget.itemId, data);
+                final err = await context
+                    .read<ItemProvider>()
+                    .update(widget.itemId, data);
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (err != null && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(err)));
                 } else {
                   _load();
                 }
@@ -389,14 +447,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         title: const Text('Διαγραφή Αντικειμένου'),
         content: const Text('Είστε σίγουροι; Δεν μπορεί να αναιρεθεί.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             onPressed: () async {
-              final err = await context.read<ItemProvider>().deleteItem(widget.itemId);
+              final err =
+                  await context.read<ItemProvider>().deleteItem(widget.itemId);
               if (ctx.mounted) Navigator.pop(ctx);
               if (err != null && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(err)));
               } else if (mounted) {
                 Navigator.of(context).pop(true);
               }
@@ -430,24 +491,28 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Row(
                       children: [
-                        const Icon(Icons.person, size: 16, color: Color(0xFF059669)),
+                        const Icon(Icons.person,
+                            size: 16, color: AppColors.emerald600),
                         const SizedBox(width: 6),
                         Text(
                           'Τρέχων: ${currentAssigned['forename']} ${currentAssigned['surname']}',
-                          style: const TextStyle(color: Color(0xFF059669)),
+                          style: const TextStyle(color: AppColors.emerald600),
                         ),
                       ],
                     ),
                   ),
                 Autocomplete<Map<String, dynamic>>(
                   displayStringForOption: (u) =>
-                      '${u['forename'] ?? ''} ${u['surname'] ?? ''} (${u['eame'] ?? ''})'.trim(),
+                      '${u['forename'] ?? ''} ${u['surname'] ?? ''} (${u['eame'] ?? ''})'
+                          .trim(),
                   optionsBuilder: (textEditingValue) {
                     final q = textEditingValue.text.toLowerCase();
                     final opts = _allUsers.cast<Map<String, dynamic>>();
                     if (q.isEmpty) return opts;
                     return opts.where((u) {
-                      final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.toLowerCase();
+                      final name =
+                          '${u['forename'] ?? ''} ${u['surname'] ?? ''}'
+                              .toLowerCase();
                       final eame = (u['eame'] ?? '').toString().toLowerCase();
                       return name.contains(q) || eame.contains(q);
                     });
@@ -458,7 +523,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       selectedUserName = '${u['forename']} ${u['surname']}';
                     });
                   },
-                  fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                  fieldViewBuilder:
+                      (context, controller, focusNode, onSubmitted) {
                     return TextField(
                       controller: controller,
                       focusNode: focusNode,
@@ -472,7 +538,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 ),
                 if (selectedUserName != null) ...[
                   const SizedBox(height: 8),
-                  Text('Επιλογή: $selectedUserName', style: const TextStyle(fontWeight: FontWeight.w500)),
+                  Text('Επιλογή: $selectedUserName',
+                      style: const TextStyle(fontWeight: AppFontWeight.medium)),
                 ],
               ],
             ),
@@ -482,30 +549,42 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               TextButton(
                 onPressed: () async {
                   Navigator.pop(ctx);
-                  final err = await context.read<ItemProvider>().unassignUser(widget.itemId);
+                  final err = await context
+                      .read<ItemProvider>()
+                      .unassignUser(widget.itemId);
                   if (mounted) {
                     if (err != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(SnackBar(content: Text(err)));
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ο χρήστης αφαιρέθηκε')));
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content: Text('Ο χρήστης αφαιρέθηκε')));
                       _load();
                     }
                   }
                 },
-                child: const Text('Αφαίρεση', style: TextStyle(color: Color(0xFFDC2626))),
+                child: const Text('Αφαίρεση',
+                    style: TextStyle(color: AppColors.red600)),
               ),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: selectedUserId == null
                   ? null
                   : () async {
                       Navigator.pop(ctx);
-                      final err = await context.read<ItemProvider>().assignToUser(widget.itemId, selectedUserId!);
+                      final err = await context
+                          .read<ItemProvider>()
+                          .assignToUser(widget.itemId, selectedUserId!);
                       if (mounted) {
                         if (err != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(SnackBar(content: Text(err)));
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ανάθεση επιτυχής')));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Ανάθεση επιτυχής')));
                           _load();
                         }
                       }
@@ -539,10 +618,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_box_outline_blank, size: 16, color: Color(0xFF2563EB)),
+                        const Icon(Icons.check_box_outline_blank,
+                            size: 16, color: AppColors.blue600),
                         const SizedBox(width: 6),
                         Text('Τρέχον: ${_item!['containedBy']['name']}',
-                            style: const TextStyle(color: Color(0xFF2563EB))),
+                            style: const TextStyle(color: AppColors.blue600)),
                       ],
                     ),
                   ),
@@ -552,7 +632,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     final q = textEditingValue.text.toLowerCase();
                     final opts = _allContainers.cast<Map<String, dynamic>>();
                     if (q.isEmpty) return opts;
-                    return opts.where((c) => (c['name'] ?? '').toString().toLowerCase().contains(q));
+                    return opts.where((c) =>
+                        (c['name'] ?? '').toString().toLowerCase().contains(q));
                   },
                   onSelected: (c) {
                     setSt(() {
@@ -560,7 +641,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       selectedContainerName = c['name'];
                     });
                   },
-                  fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                  fieldViewBuilder:
+                      (context, controller, focusNode, onSubmitted) {
                     return TextField(
                       controller: controller,
                       focusNode: focusNode,
@@ -574,7 +656,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 ),
                 if (selectedContainerName != null) ...[
                   const SizedBox(height: 8),
-                  Text('Προορισμός: $selectedContainerName', style: const TextStyle(fontWeight: FontWeight.w500)),
+                  Text('Προορισμός: $selectedContainerName',
+                      style: const TextStyle(fontWeight: AppFontWeight.medium)),
                 ],
               ],
             ),
@@ -584,30 +667,42 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               TextButton(
                 onPressed: () async {
                   Navigator.pop(ctx);
-                  final err = await context.read<ItemProvider>().moveToContainer(widget.itemId, null);
+                  final err = await context
+                      .read<ItemProvider>()
+                      .moveToContainer(widget.itemId, null);
                   if (mounted) {
                     if (err != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(SnackBar(content: Text(err)));
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Αφαιρέθηκε από κουτί')));
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content: Text('Αφαιρέθηκε από κουτί')));
                       _load();
                     }
                   }
                 },
-                child: const Text('Αφαίρεση από κουτί', style: TextStyle(color: Color(0xFFDC2626))),
+                child: const Text('Αφαίρεση από κουτί',
+                    style: TextStyle(color: AppColors.red600)),
               ),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: selectedContainerId == null
                   ? null
                   : () async {
                       Navigator.pop(ctx);
-                      final err = await context.read<ItemProvider>().moveToContainer(widget.itemId, selectedContainerId!);
+                      final err = await context
+                          .read<ItemProvider>()
+                          .moveToContainer(widget.itemId, selectedContainerId!);
                       if (mounted) {
                         if (err != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(SnackBar(content: Text(err)));
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Μετακινήθηκε σε κουτί')));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Μετακινήθηκε σε κουτί')));
                           _load();
                         }
                       }
@@ -629,7 +724,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         title: const Text('Λήψη Εξοπλισμού'),
         content: Text('Ανάθεση του "${_item?['name']}" σε εσάς;'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
           FilledButton.icon(
             icon: const Icon(Icons.check, size: 18),
             label: const Text('Λήψη'),
@@ -659,10 +756,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         title: const Text('Επιστροφή'),
         content: Text('Επιστροφή του "${_item?['name']}";'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Επιστροφή'),
           ),
         ],
@@ -709,32 +808,42 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(labelText: 'Υπηρεσία', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                        labelText: 'Υπηρεσία', border: OutlineInputBorder()),
                     items: _allServices.map<DropdownMenuItem<int>>((s) {
-                      return DropdownMenuItem<int>(value: s['id'] as int, child: Text(s['name'] as String? ?? ''));
+                      return DropdownMenuItem<int>(
+                          value: s['id'] as int,
+                          child: Text(s['name'] as String? ?? ''));
                     }).toList(),
                     onChanged: (v) => setS(() => selectedServiceId = v),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(labelText: 'Χρήστης', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                        labelText: 'Χρήστης', border: OutlineInputBorder()),
                     items: _allUsers.map<DropdownMenuItem<int>>((u) {
-                      final name = '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim();
-                      return DropdownMenuItem<int>(value: u['id'] as int, child: Text(name));
+                      final name =
+                          '${u['forename'] ?? ''} ${u['surname'] ?? ''}'.trim();
+                      return DropdownMenuItem<int>(
+                          value: u['id'] as int, child: Text(name));
                     }).toList(),
                     onChanged: (v) => setS(() => selectedUserId = v),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: commentCtrl,
-                    decoration: const InputDecoration(labelText: 'Σχόλιο (προαιρετικό)', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                        labelText: 'Σχόλιο (προαιρετικό)',
+                        border: OutlineInputBorder()),
                     maxLines: 2,
                   ),
                 ],
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Άκυρο')),
               FilledButton(
                 onPressed: selectedServiceId != null && selectedUserId != null
                     ? () => Navigator.pop(ctx, true)
@@ -748,16 +857,18 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
       if (confirmed != true || !mounted) return;
 
-      final comment = commentCtrl.text.trim().isEmpty ? null : commentCtrl.text.trim();
+      final comment =
+          commentCtrl.text.trim().isEmpty ? null : commentCtrl.text.trim();
       final err = await context.read<ItemProvider>().assignToService(
-        selectedServiceId!,
-        selectedUserId!,
-        widget.itemId,
-        comment: comment,
-      );
+            selectedServiceId!,
+            selectedUserId!,
+            widget.itemId,
+            comment: comment,
+          );
       if (!mounted) return;
       if (err != null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(err)));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Η ανάθεση αποθηκεύτηκε')),
@@ -776,10 +887,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         title: const Text('Αφαίρεση Ανάθεσης'),
         content: const Text('Αφαίρεση αυτής της ανάθεσης από την υπηρεσία;'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Αφαίρεση'),
           ),
         ],
@@ -787,7 +900,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
     if (confirmed != true || !mounted) return;
 
-    final err = await context.read<ItemProvider>().unassignFromService(itemServiceId, widget.itemId);
+    final err = await context
+        .read<ItemProvider>()
+        .unassignFromService(itemServiceId, widget.itemId);
     if (!mounted) return;
     if (err != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
@@ -831,58 +946,58 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    Text(
+                      itemName,
+                      style: const TextStyle(
+                        fontSize: AppFontSize.xl3,
+                        fontWeight: AppFontWeight.bold,
+                        color: AppColors.ink,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (itemDesc.isNotEmpty) ...[
+                      const SizedBox(height: 4),
                       Text(
-                        itemName,
+                        itemDesc,
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1C1E),
+                          fontSize: AppFontSize.md,
+                          color: AppColors.gray500,
                         ),
                         textAlign: TextAlign.center,
-                        maxLines: 2,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (itemDesc.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          itemDesc,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF6B7280),
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      QrImageView(
-                        data: itemId,
-                        version: QrVersions.auto,
-                        size: 200,
-                        eyeStyle: const QrEyeStyle(
-                          eyeShape: QrEyeShape.square,
-                          color: Color(0xFF1A1C1E),
-                        ),
-                        dataModuleStyle: const QrDataModuleStyle(
-                          dataModuleShape: QrDataModuleShape.square,
-                          color: Color(0xFF1A1C1E),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'ID: #$itemId',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF9CA3AF),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
                     ],
-                  ),
+                    const SizedBox(height: 16),
+                    QrImageView(
+                      data: itemId,
+                      version: QrVersions.auto,
+                      size: 200,
+                      eyeStyle: const QrEyeStyle(
+                        eyeShape: QrEyeShape.square,
+                        color: AppColors.ink,
+                      ),
+                      dataModuleStyle: const QrDataModuleStyle(
+                        dataModuleShape: QrDataModuleShape.square,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'ID: #$itemId',
+                      style: const TextStyle(
+                        fontSize: AppFontSize.base,
+                        color: AppColors.gray400,
+                        fontWeight: AppFontWeight.medium,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
+          ),
           actionsPadding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
           actions: [
             TextButton(
@@ -894,8 +1009,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               label: const Text('Αποθήκευση'),
               onPressed: () async {
                 try {
-                  final boundary = repaintKey.currentContext
-                      ?.findRenderObject() as RenderRepaintBoundary?;
+                  final boundary = repaintKey.currentContext?.findRenderObject()
+                      as RenderRepaintBoundary?;
                   if (boundary == null) return;
                   final image = await boundary.toImage(pixelRatio: 3.0);
                   final byteData =
@@ -936,12 +1051,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final cs = Theme.of(context).colorScheme;
     final canManage = _canManage;
     final isContainer = _item?['isContainer'] == true;
-    final accentColor = isContainer ? const Color(0xFF2563EB) : const Color(0xFFDC2626);
+    final accentColor = isContainer ? AppColors.blue600 : AppColors.red600;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.92,
       decoration: const BoxDecoration(
-        color: Color(0xFFF5F7FA),
+        color: AppColors.surfaceAlt,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       clipBehavior: Clip.antiAlias,
@@ -958,7 +1073,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.error_outline, size: 48, color: Color(0xFF9CA3AF)),
+                            Icon(Icons.error_outline,
+                                size: 48, color: AppColors.gray400),
                             const SizedBox(height: 12),
                             const Text('Αντικείμενο δεν βρέθηκε'),
                           ],
@@ -999,7 +1115,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   // ── Header with gradient, drag handle, title & actions ──
 
-  Widget _buildHeader(TextTheme tt, ColorScheme cs, bool canManage, Color accentColor) {
+  Widget _buildHeader(
+      TextTheme tt, ColorScheme cs, bool canManage, Color accentColor) {
     final assigned = _item?['assignedTo'];
     final isContainer = _item?['isContainer'] == true;
 
@@ -1025,7 +1142,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 height: 4,
                 decoration: BoxDecoration(
                   color: Colors.white.withAlpha(100),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppRadius.r2,
                 ),
               ),
             ),
@@ -1074,10 +1191,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.white.withAlpha(30),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: AppRadius.r14,
                       ),
                       child: Icon(
-                        isContainer ? Icons.check_box_outline_blank : Icons.circle_outlined,
+                        isContainer
+                            ? Icons.check_box_outline_blank
+                            : Icons.circle_outlined,
                         color: Colors.white,
                         size: 28,
                       ),
@@ -1090,7 +1209,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           Text(
                             _item!['name'] ?? '',
                             style: tt.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
+                              fontWeight: AppFontWeight.extrabold,
                               color: Colors.white,
                             ),
                             maxLines: 2,
@@ -1103,7 +1222,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             children: [
                               if (assigned != null)
                                 _heroBadge(
-                                  '${assigned['forename'] ?? ''} ${assigned['surname'] ?? ''}'.trim(),
+                                  '${assigned['forename'] ?? ''} ${assigned['surname'] ?? ''}'
+                                      .trim(),
                                   Icons.person,
                                   Colors.white.withAlpha(30),
                                 ),
@@ -1126,7 +1246,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.r8,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1135,7 +1255,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           const SizedBox(width: 4),
           Text(
             text,
-            style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+                fontSize: AppFontSize.sm,
+                color: Colors.white,
+                fontWeight: AppFontWeight.semibold),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1149,14 +1272,15 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   Widget _buildDetailsCard(TextTheme tt, ColorScheme cs) {
     final qty = _item!['quantity'];
     final expDate = _item!['expirationDate'];
-    final isExpired = expDate != null && DateTime.tryParse(expDate)?.isBefore(DateTime.now()) == true;
+    final isExpired = expDate != null &&
+        DateTime.tryParse(expDate)?.isBefore(DateTime.now()) == true;
 
     return Card(
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray200),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1168,18 +1292,22 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1).withAlpha(15),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.indigo500.withAlpha(15),
+                    borderRadius: AppRadius.r8,
                   ),
-                  child: const Icon(Icons.info_outline, size: 18, color: Color(0xFF6366F1)),
+                  child: const Icon(Icons.info_outline,
+                      size: 18, color: AppColors.indigo500),
                 ),
                 const SizedBox(width: 10),
-                Text('Λεπτομέρειες', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Λεπτομέρειες',
+                    style: tt.titleSmall
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
               ],
             ),
             const SizedBox(height: 14),
             _detailRow(tt, 'Όνομα', _item!['name'] ?? '—'),
-            if (_item!['description'] != null && (_item!['description'] as String).isNotEmpty)
+            if (_item!['description'] != null &&
+                (_item!['description'] as String).isNotEmpty)
               _detailRow(tt, 'Περιγραφή', _item!['description'], maxLines: 5),
             _detailRow(tt, 'Barcode', _item!['barCode'] ?? '—'),
             _detailRow(tt, 'Τοποθεσία', _item!['location'] ?? '—'),
@@ -1189,19 +1317,21 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 tt,
                 'Ημερομηνία λήξης',
                 _formatDate(expDate),
-                valueColor: isExpired ? Color(0xFFDC2626) : null,
+                valueColor: isExpired ? AppColors.red600 : null,
               ),
             if (_item!['category'] != null)
               _detailRow(tt, 'Κατηγορία', _item!['category']['name']),
             _detailRow(tt, 'Τμήμα', _item!['department']?['name'] ?? '—'),
-            _detailRow(tt, 'Τύπος', _item!['isContainer'] == true ? 'Κουτί' : 'Αντικείμενο'),
+            _detailRow(tt, 'Τύπος',
+                _item!['isContainer'] == true ? 'Κουτί' : 'Αντικείμενο'),
           ],
         ),
       ),
     );
   }
 
-  Widget _detailRow(TextTheme tt, String label, String value, {Color? valueColor, int maxLines = 2}) {
+  Widget _detailRow(TextTheme tt, String label, String value,
+      {Color? valueColor, int maxLines = 2}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -1209,14 +1339,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         children: [
           SizedBox(
             width: 110,
-            child: Text(label, style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280), fontSize: 12)),
+            child: Text(label,
+                style: tt.bodySmall?.copyWith(
+                    color: AppColors.gray500, fontSize: AppFontSize.base)),
           ),
           Expanded(
             child: Text(
               value,
               style: tt.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: valueColor ?? const Color(0xFF1F2937),
+                fontWeight: AppFontWeight.medium,
+                color: valueColor ?? AppColors.gray800,
               ),
               maxLines: maxLines,
               overflow: TextOverflow.ellipsis,
@@ -1241,8 +1373,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray200),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1257,18 +1389,27 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: (assigned != null ? const Color(0xFF059669) : const Color(0xFF6B7280)).withAlpha(15),
-                        borderRadius: BorderRadius.circular(8),
+                        color: (assigned != null
+                                ? AppColors.emerald600
+                                : AppColors.gray500)
+                            .withAlpha(15),
+                        borderRadius: AppRadius.r8,
                       ),
                       child: Icon(
-                        assigned != null ? Icons.person : Icons.person_off_outlined,
+                        assigned != null
+                            ? Icons.person
+                            : Icons.person_off_outlined,
                         size: 18,
-                        color: assigned != null ? const Color(0xFF059669) : const Color(0xFF6B7280),
+                        color: assigned != null
+                            ? AppColors.emerald600
+                            : AppColors.gray500,
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text('Ανατεθειμένος Χρήστης', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                      child: Text('Ανατεθειμένος Χρήστης',
+                          style: tt.titleSmall
+                              ?.copyWith(fontWeight: AppFontWeight.semibold)),
                     ),
                   ],
                 ),
@@ -1278,7 +1419,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     alignment: Alignment.centerRight,
                     child: _actionChip(
                       label: assigned != null ? 'Αλλαγή' : 'Ανάθεση',
-                      icon: assigned != null ? Icons.swap_horiz : Icons.person_add_alt_1,
+                      icon: assigned != null
+                          ? Icons.swap_horiz
+                          : Icons.person_add_alt_1,
                       onTap: _showAssignUserDialog,
                     ),
                   ),
@@ -1291,19 +1434,25 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [const Color(0xFF059669).withAlpha(10), const Color(0xFF059669).withAlpha(5)],
+                    colors: [
+                      AppColors.emerald600.withAlpha(10),
+                      AppColors.emerald600.withAlpha(5)
+                    ],
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF059669).withAlpha(30)),
+                  borderRadius: AppRadius.r12,
+                  border: Border.all(color: AppColors.emerald600.withAlpha(30)),
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 22,
-                      backgroundColor: const Color(0xFF059669),
+                      backgroundColor: AppColors.emerald600,
                       child: Text(
                         (assigned['forename'] ?? 'U')[0].toUpperCase(),
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: AppFontWeight.bold,
+                            fontSize: AppFontSize.xl2),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1312,11 +1461,15 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${assigned['forename'] ?? ''} ${assigned['surname'] ?? ''}'.trim(),
-                            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                            '${assigned['forename'] ?? ''} ${assigned['surname'] ?? ''}'
+                                .trim(),
+                            style: tt.titleSmall
+                                ?.copyWith(fontWeight: AppFontWeight.semibold),
                           ),
                           if (assigned['eame'] != null)
-                            Text(assigned['eame'], style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                            Text(assigned['eame'],
+                                style: tt.bodySmall
+                                    ?.copyWith(color: AppColors.gray500)),
                         ],
                       ),
                     ),
@@ -1324,12 +1477,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       FilledButton.tonalIcon(
                         onPressed: _selfUnassign,
                         icon: const Icon(Icons.assignment_return, size: 16),
-                        label: const Text('Επιστροφή', style: TextStyle(fontSize: 12)),
+                        label: const Text('Επιστροφή',
+                            style: TextStyle(fontSize: AppFontSize.base)),
                         style: FilledButton.styleFrom(
-                          backgroundColor: Color(0xFFFEF2F2),
-                          foregroundColor: Color(0xFFB91C1C),
+                          backgroundColor: AppColors.red50,
+                          foregroundColor: AppColors.red700,
                           visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                         ),
                       ),
                   ],
@@ -1339,16 +1494,21 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Color(0xFFE5E7EB), style: BorderStyle.solid),
+                  color: AppColors.gray50,
+                  borderRadius: AppRadius.r12,
+                  border: Border.all(
+                      color: AppColors.gray200, style: BorderStyle.solid),
                 ),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.person_off_outlined, color: Color(0xFF9CA3AF), size: 28),
+                      Icon(Icons.person_off_outlined,
+                          color: AppColors.gray400, size: 28),
                       const SizedBox(height: 6),
-                      Text('Κανένας χρήστης', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+                      Text('Κανένας χρήστης',
+                          style: TextStyle(
+                              color: AppColors.gray500,
+                              fontSize: AppFontSize.md)),
                     ],
                   ),
                 ),
@@ -1363,7 +1523,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   label: const Text('Λήψη'),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadius.r12),
                   ),
                 ),
               ),
@@ -1374,25 +1534,32 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
   }
 
-  Widget _actionChip({required String label, required IconData icon, required VoidCallback onTap}) {
+  Widget _actionChip(
+      {required String label,
+      required IconData icon,
+      required VoidCallback onTap}) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.r8,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFFDC2626).withAlpha(10),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFDC2626).withAlpha(30)),
+            color: AppColors.red600.withAlpha(10),
+            borderRadius: AppRadius.r8,
+            border: Border.all(color: AppColors.red600.withAlpha(30)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: const Color(0xFFDC2626)),
+              Icon(icon, size: 14, color: AppColors.red600),
               const SizedBox(width: 4),
-              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFDC2626))),
+              Text(label,
+                  style: const TextStyle(
+                      fontSize: AppFontSize.base,
+                      fontWeight: AppFontWeight.semibold,
+                      color: AppColors.red600)),
             ],
           ),
         ),
@@ -1402,15 +1569,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   // ── Service assignments card ──
 
-  Widget _buildServiceAssignmentsCard(TextTheme tt, ColorScheme cs, bool canManage) {
+  Widget _buildServiceAssignmentsCard(
+      TextTheme tt, ColorScheme cs, bool canManage) {
     final assignments = (_item!['itemServices'] as List<dynamic>?) ?? [];
 
     return Card(
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray200),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1422,15 +1590,22 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withAlpha(15),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.blue600.withAlpha(15),
+                    borderRadius: AppRadius.r8,
                   ),
-                  child: const Icon(Icons.miscellaneous_services_outlined, size: 18, color: Color(0xFF2563EB)),
+                  child: const Icon(Icons.miscellaneous_services_outlined,
+                      size: 18, color: AppColors.blue600),
                 ),
                 const SizedBox(width: 10),
-                Expanded(child: Text('Αναθέσεις Υπηρεσιών', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600))),
+                Expanded(
+                    child: Text('Αναθέσεις Υπηρεσιών',
+                        style: tt.titleSmall
+                            ?.copyWith(fontWeight: AppFontWeight.semibold))),
                 if (canManage)
-                  _actionChip(label: 'Προσθήκη', icon: Icons.add, onTap: _showAssignToServiceDialog),
+                  _actionChip(
+                      label: 'Προσθήκη',
+                      icon: Icons.add,
+                      onTap: _showAssignToServiceDialog),
               ],
             ),
             const SizedBox(height: 14),
@@ -1438,16 +1613,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Color(0xFFE5E7EB)),
+                  color: AppColors.gray50,
+                  borderRadius: AppRadius.r12,
+                  border: Border.all(color: AppColors.gray200),
                 ),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.inbox_outlined, color: Color(0xFF9CA3AF), size: 28),
+                      Icon(Icons.inbox_outlined,
+                          color: AppColors.gray400, size: 28),
                       const SizedBox(height: 6),
-                      Text('Δεν υπάρχουν αναθέσεις', style: tt.bodySmall?.copyWith(color: Color(0xFF6B7280))),
+                      Text('Δεν υπάρχουν αναθέσεις',
+                          style:
+                              tt.bodySmall?.copyWith(color: AppColors.gray500)),
                     ],
                   ),
                 ),
@@ -1460,9 +1638,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withAlpha(8),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF2563EB).withAlpha(25)),
+                    color: AppColors.blue600.withAlpha(8),
+                    borderRadius: AppRadius.r12,
+                    border: Border.all(color: AppColors.blue600.withAlpha(25)),
                   ),
                   child: Row(
                     children: [
@@ -1470,28 +1648,38 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(service['name'] ?? '—', style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                            Text(service['name'] ?? '—',
+                                style: tt.bodyMedium?.copyWith(
+                                    fontWeight: AppFontWeight.semibold)),
                             const SizedBox(height: 2),
                             Text(
-                              '${user['forename'] ?? ''} ${user['surname'] ?? ''}'.trim(),
-                              style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+                              '${user['forename'] ?? ''} ${user['surname'] ?? ''}'
+                                  .trim(),
+                              style: tt.bodySmall
+                                  ?.copyWith(color: AppColors.gray500),
                             ),
                             if (a['assignedAt'] != null)
                               Text(
                                 _formatDate(a['assignedAt'] as String?),
-                                style: tt.labelSmall?.copyWith(color: Color(0xFF9CA3AF)),
+                                style: tt.labelSmall
+                                    ?.copyWith(color: AppColors.gray400),
                               ),
-                            if ((a['comment'] as String?)?.isNotEmpty == true) ...[
+                            if ((a['comment'] as String?)?.isNotEmpty ==
+                                true) ...[
                               const SizedBox(height: 4),
-                              Text(a['comment'] as String, style: tt.bodySmall?.copyWith(fontStyle: FontStyle.italic)),
+                              Text(a['comment'] as String,
+                                  style: tt.bodySmall
+                                      ?.copyWith(fontStyle: FontStyle.italic)),
                             ],
                           ],
                         ),
                       ),
                       if (canManage)
                         IconButton(
-                          icon: Icon(Icons.close, size: 18, color: Color(0xFFF87171)),
-                          onPressed: () => _removeServiceAssignment(a['id'] as int),
+                          icon: Icon(Icons.close,
+                              size: 18, color: AppColors.red400),
+                          onPressed: () =>
+                              _removeServiceAssignment(a['id'] as int),
                           tooltip: 'Αφαίρεση',
                         ),
                     ],
@@ -1513,8 +1701,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray200),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1526,23 +1714,30 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withAlpha(15),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.blue600.withAlpha(15),
+                    borderRadius: AppRadius.r8,
                   ),
-                  child: const Icon(Icons.inbox, size: 18, color: Color(0xFF2563EB)),
+                  child: const Icon(Icons.inbox,
+                      size: 18, color: AppColors.blue600),
                 ),
                 const SizedBox(width: 10),
-                Text('Περιεχόμενα', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Περιεχόμενα',
+                    style: tt.titleSmall
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withAlpha(15),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.blue600.withAlpha(15),
+                    borderRadius: AppRadius.r8,
                   ),
                   child: Text(
                     '${contents.length}',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF2563EB), fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                        fontSize: AppFontSize.base,
+                        color: AppColors.blue600,
+                        fontWeight: AppFontWeight.bold),
                   ),
                 ),
               ],
@@ -1552,15 +1747,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.gray50,
+                  borderRadius: AppRadius.r12,
                 ),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.inbox_outlined, color: Color(0xFF9CA3AF), size: 28),
+                      Icon(Icons.inbox_outlined,
+                          color: AppColors.gray400, size: 28),
                       const SizedBox(height: 6),
-                      Text('Άδειο κουτί', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+                      Text('Άδειο κουτί',
+                          style: TextStyle(
+                              color: AppColors.gray500,
+                              fontSize: AppFontSize.md)),
                     ],
                   ),
                 ),
@@ -1570,19 +1769,21 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 final child = entry.value;
                 final childIsContainer = child['isContainer'] == true;
                 final childAssigned = child['assignedTo'];
-                final childColor = childIsContainer ? const Color(0xFF2563EB) : const Color(0xFFDC2626);
+                final childColor =
+                    childIsContainer ? AppColors.blue600 : AppColors.red600;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => ItemDetailScreen.show(context, child['id'] as int),
+                      borderRadius: AppRadius.r12,
+                      onTap: () =>
+                          ItemDetailScreen.show(context, child['id'] as int),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: childColor.withAlpha(6),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppRadius.r12,
                           border: Border.all(color: childColor.withAlpha(25)),
                         ),
                         child: Row(
@@ -1591,10 +1792,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: childColor.withAlpha(15),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: AppRadius.r8,
                               ),
                               child: Icon(
-                                childIsContainer ? Icons.check_box_outline_blank : Icons.circle_outlined,
+                                childIsContainer
+                                    ? Icons.check_box_outline_blank
+                                    : Icons.circle_outlined,
                                 color: childColor,
                                 size: 18,
                               ),
@@ -1604,26 +1807,36 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(child['name'] ?? '', style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
-                                  if (child['barCode'] != null || childAssigned != null)
+                                  Text(child['name'] ?? '',
+                                      style: tt.bodyMedium?.copyWith(
+                                          fontWeight: AppFontWeight.semibold)),
+                                  if (child['barCode'] != null ||
+                                      childAssigned != null)
                                     const SizedBox(height: 2),
                                   if (child['barCode'] != null)
-                                    Text('${child['barCode']}', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                                    Text('${child['barCode']}',
+                                        style: tt.bodySmall?.copyWith(
+                                            color: AppColors.gray500)),
                                   if (childAssigned != null)
                                     Row(
                                       children: [
-                                        const Icon(Icons.person, size: 12, color: Color(0xFF059669)),
+                                        const Icon(Icons.person,
+                                            size: 12,
+                                            color: AppColors.emerald600),
                                         const SizedBox(width: 3),
                                         Text(
                                           '${childAssigned['forename']} ${childAssigned['surname']}',
-                                          style: tt.bodySmall?.copyWith(color: const Color(0xFF059669), fontSize: 11),
+                                          style: tt.bodySmall?.copyWith(
+                                              color: AppColors.emerald600,
+                                              fontSize: AppFontSize.sm),
                                         ),
                                       ],
                                     ),
                                 ],
                               ),
                             ),
-                            Icon(Icons.chevron_right, size: 18, color: Color(0xFF9CA3AF)),
+                            Icon(Icons.chevron_right,
+                                size: 18, color: AppColors.gray400),
                           ],
                         ),
                       ),
@@ -1650,7 +1863,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final text = _commentCtrl.text.trim();
     if (text.isEmpty) return;
     try {
-      final res = await _api.post('/items/${widget.itemId}/comments', body: {'text': text});
+      final res = await _api
+          .post('/items/${widget.itemId}/comments', body: {'text': text});
       if (res.statusCode == 201 && mounted) {
         _commentCtrl.clear();
         final commentsRes = await _api.get('/items/${widget.itemId}/comments');
@@ -1663,7 +1877,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   Future<void> _deleteComment(int commentId) async {
     try {
-      final res = await _api.delete('/items/${widget.itemId}/comments/$commentId');
+      final res =
+          await _api.delete('/items/${widget.itemId}/comments/$commentId');
       if (res.statusCode == 200 && mounted) {
         setState(() => _comments.removeWhere((c) => c['id'] == commentId));
       }
@@ -1675,8 +1890,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray200),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1688,24 +1903,31 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF59E0B).withAlpha(15),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.amber500.withAlpha(15),
+                    borderRadius: AppRadius.r8,
                   ),
-                  child: const Icon(Icons.chat_bubble_outline, size: 18, color: Color(0xFFF59E0B)),
+                  child: const Icon(Icons.chat_bubble_outline,
+                      size: 18, color: AppColors.amber500),
                 ),
                 const SizedBox(width: 10),
-                Text('Σχόλια', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                Text('Σχόλια',
+                    style: tt.titleSmall
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
                 const Spacer(),
                 if (_comments.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF59E0B).withAlpha(15),
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppColors.amber500.withAlpha(15),
+                      borderRadius: AppRadius.r8,
                     ),
                     child: Text(
                       '${_comments.length}',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFFF59E0B), fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          fontSize: AppFontSize.base,
+                          color: AppColors.amber500,
+                          fontWeight: AppFontWeight.bold),
                     ),
                   ),
               ],
@@ -1715,15 +1937,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.gray50,
+                  borderRadius: AppRadius.r12,
                 ),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.chat_bubble_outline, color: Color(0xFF9CA3AF), size: 28),
+                      Icon(Icons.chat_bubble_outline,
+                          color: AppColors.gray400, size: 28),
                       const SizedBox(height: 6),
-                      Text('Δεν υπάρχουν σχόλια', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+                      Text('Δεν υπάρχουν σχόλια',
+                          style: TextStyle(
+                              color: AppColors.gray500,
+                              fontSize: AppFontSize.md)),
                     ],
                   ),
                 ),
@@ -1731,15 +1957,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             else
               ..._comments.map((comment) {
                 final user = comment['user'];
-                final userName = user != null ? '${user['forename']} ${user['surname']}' : 'Άγνωστος';
+                final userName = user != null
+                    ? '${user['forename']} ${user['surname']}'
+                    : 'Άγνωστος';
                 final dateStr = _formatDate(comment['createdAt']);
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Color(0xFFF9FAFB),
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppColors.gray50,
+                      borderRadius: AppRadius.r12,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1750,8 +1978,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                               radius: 14,
                               backgroundColor: cs.primary.withAlpha(180),
                               child: Text(
-                                userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-                                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                                userName.isNotEmpty
+                                    ? userName[0].toUpperCase()
+                                    : 'U',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: AppFontSize.sm,
+                                    fontWeight: AppFontWeight.bold),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -1759,24 +1992,31 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(userName, style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w600)),
-                                  Text(dateStr, style: tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF), fontSize: 10)),
+                                  Text(userName,
+                                      style: tt.bodySmall?.copyWith(
+                                          fontWeight: AppFontWeight.semibold)),
+                                  Text(dateStr,
+                                      style: tt.bodySmall?.copyWith(
+                                          color: AppColors.gray400,
+                                          fontSize: AppFontSize.xs)),
                                 ],
                               ),
                             ),
                             if (canManage)
                               InkWell(
                                 onTap: () => _deleteComment(comment['id']),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: AppRadius.r6,
                                 child: Padding(
                                   padding: const EdgeInsets.all(4),
-                                  child: Icon(Icons.close, size: 16, color: Color(0xFF9CA3AF)),
+                                  child: Icon(Icons.close,
+                                      size: 16, color: AppColors.gray400),
                                 ),
                               ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Text(comment['text'] ?? '', style: tt.bodyMedium?.copyWith(height: 1.4)),
+                        Text(comment['text'] ?? '',
+                            style: tt.bodyMedium?.copyWith(height: 1.4)),
                       ],
                     ),
                   ),
@@ -1787,8 +2027,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Color(0xFFF3F4F6),
-                  borderRadius: BorderRadius.circular(14),
+                  color: AppColors.gray100,
+                  borderRadius: AppRadius.r14,
                 ),
                 child: Row(
                   children: [
@@ -1798,12 +2038,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         controller: _commentCtrl,
                         decoration: const InputDecoration(
                           hintText: 'Γράψε σχόλιο...',
-                          hintStyle: TextStyle(fontSize: 13),
+                          hintStyle: TextStyle(fontSize: AppFontSize.md),
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.symmetric(vertical: 10),
                         ),
-                        style: const TextStyle(fontSize: 13),
+                        style: const TextStyle(fontSize: AppFontSize.md),
                         maxLines: null,
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _addComment(),
@@ -1812,13 +2052,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     const SizedBox(width: 6),
                     Material(
                       color: cs.primary,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: AppRadius.r10,
                       child: InkWell(
                         onTap: _addComment,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppRadius.r10,
                         child: const Padding(
                           padding: EdgeInsets.all(8),
-                          child: Icon(Icons.send, size: 18, color: Colors.white),
+                          child:
+                              Icon(Icons.send, size: 18, color: Colors.white),
                         ),
                       ),
                     ),
@@ -1841,8 +2082,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Color(0xFFE5E7EB)),
+        borderRadius: AppRadius.r16,
+        side: BorderSide(color: AppColors.gray200),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1854,14 +2095,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withAlpha(15),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.blue600.withAlpha(15),
+                    borderRadius: AppRadius.r8,
                   ),
-                  child: const Icon(Icons.move_to_inbox, size: 18, color: Color(0xFF2563EB)),
+                  child: const Icon(Icons.move_to_inbox,
+                      size: 18, color: AppColors.blue600),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('Κουτί', style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  child: Text('Κουτί',
+                      style: tt.titleSmall
+                          ?.copyWith(fontWeight: AppFontWeight.semibold)),
                 ),
                 if (canManage)
                   _actionChip(
@@ -1876,30 +2120,36 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => ItemDetailScreen.show(context, parent['id'] as int),
+                  borderRadius: AppRadius.r12,
+                  onTap: () =>
+                      ItemDetailScreen.show(context, parent['id'] as int),
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2563EB).withAlpha(8),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF2563EB).withAlpha(25)),
+                      color: AppColors.blue600.withAlpha(8),
+                      borderRadius: AppRadius.r12,
+                      border:
+                          Border.all(color: AppColors.blue600.withAlpha(25)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB).withAlpha(15),
-                            borderRadius: BorderRadius.circular(8),
+                            color: AppColors.blue600.withAlpha(15),
+                            borderRadius: AppRadius.r8,
                           ),
-                          child: const Icon(Icons.check_box_outline_blank, color: Color(0xFF2563EB), size: 18),
+                          child: const Icon(Icons.check_box_outline_blank,
+                              color: AppColors.blue600, size: 18),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(parent['name'] ?? '', style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+                          child: Text(parent['name'] ?? '',
+                              style: tt.bodyMedium?.copyWith(
+                                  fontWeight: AppFontWeight.semibold)),
                         ),
-                        Icon(Icons.chevron_right, size: 18, color: Color(0xFF9CA3AF)),
+                        Icon(Icons.chevron_right,
+                            size: 18, color: AppColors.gray400),
                       ],
                     ),
                   ),
@@ -1909,15 +2159,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.gray50,
+                  borderRadius: AppRadius.r12,
                 ),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.all_inbox_outlined, color: Color(0xFF9CA3AF), size: 28),
+                      Icon(Icons.all_inbox_outlined,
+                          color: AppColors.gray400, size: 28),
                       const SizedBox(height: 6),
-                      Text('Δεν βρίσκεται σε κουτί', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+                      Text('Δεν βρίσκεται σε κουτί',
+                          style: TextStyle(
+                              color: AppColors.gray500,
+                              fontSize: AppFontSize.md)),
                     ],
                   ),
                 ),

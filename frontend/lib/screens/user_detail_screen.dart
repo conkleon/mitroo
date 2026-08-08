@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_client.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 /// User detail content without a Scaffold — safe to embed in a Drawer.
 class UserDetailBody extends StatefulWidget {
   final int userId;
@@ -47,7 +49,8 @@ class _UserDetailBodyState extends State<UserDetailBody> {
   // Services table state
   String _svcSearch = '';
   String _svcStatusFilter = 'all'; // all, accepted, requested, rejected
-  String _svcSortField = 'date'; // date, name, totalHours, hours, hoursVol, hoursTraining, hoursTrainers
+  String _svcSortField =
+      'date'; // date, name, totalHours, hours, hoursVol, hoursTraining, hoursTrainers
   bool _svcSortAsc = false;
   int _svcPage = 0;
   int _svcRowsPerPage = 10;
@@ -64,9 +67,8 @@ class _UserDetailBodyState extends State<UserDetailBody> {
     final userDeptIds = depts
         .map((d) => (d['department']?['id'] ?? d['departmentId']) as int)
         .toSet();
-    final myDeptIds = auth.missionAdminDepartments
-        .map((d) => d['id'] as int)
-        .toSet();
+    final myDeptIds =
+        auth.missionAdminDepartments.map((d) => d['id'] as int).toSet();
     return userDeptIds.intersection(myDeptIds).isNotEmpty;
   }
 
@@ -89,7 +91,8 @@ class _UserDetailBodyState extends State<UserDetailBody> {
       if (results[1].statusCode == 200) _allDepts = jsonDecode(results[1].body);
       if (results[2].statusCode == 200) _allSpecs = jsonDecode(results[2].body);
       if (results[3].statusCode == 200) {
-        _services = (jsonDecode(results[3].body) as List).cast<Map<String, dynamic>>();
+        _services =
+            (jsonDecode(results[3].body) as List).cast<Map<String, dynamic>>();
       }
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
@@ -102,7 +105,8 @@ class _UserDetailBodyState extends State<UserDetailBody> {
     final canManage = auth.isAdmin || auth.isDepartmentMissionAdmin;
     if (!canManage) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Δεν έχετε δικαίωμα επεξεργασίας χρήστη.')),
+        const SnackBar(
+            content: Text('Δεν έχετε δικαίωμα επεξεργασίας χρήστη.')),
       );
       return;
     }
@@ -127,21 +131,41 @@ class _UserDetailBodyState extends State<UserDetailBody> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(controller: eameCtrl, decoration: const InputDecoration(labelText: 'EAME', border: OutlineInputBorder())),
+                  TextField(
+                      controller: eameCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'EAME', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  TextField(controller: forenameCtrl, decoration: const InputDecoration(labelText: 'Όνομα', border: OutlineInputBorder())),
+                  TextField(
+                      controller: forenameCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Όνομα', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  TextField(controller: surnameCtrl, decoration: const InputDecoration(labelText: 'Επώνυμο', border: OutlineInputBorder())),
+                  TextField(
+                      controller: surnameCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Επώνυμο', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
+                  TextField(
+                      controller: emailCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Email', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Τηλέφωνο', border: OutlineInputBorder())),
+                  TextField(
+                      controller: phoneCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Τηλέφωνο', border: OutlineInputBorder())),
                   const SizedBox(height: 12),
-                  TextField(controller: addressCtrl, decoration: const InputDecoration(labelText: 'Διεύθυνση', border: OutlineInputBorder()), maxLines: 2),
+                  TextField(
+                      controller: addressCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Διεύθυνση', border: OutlineInputBorder()),
+                      maxLines: 2),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     value: rank,
-                    decoration: const InputDecoration(labelText: 'Βαθμός', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                        labelText: 'Βαθμός', border: OutlineInputBorder()),
                     items: const [
                       DropdownMenuItem(value: 'Α', child: Text('Α')),
                       DropdownMenuItem(value: 'Β', child: Text('Β')),
@@ -162,7 +186,9 @@ class _UserDetailBodyState extends State<UserDetailBody> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: () async {
                 final body = <String, dynamic>{
@@ -173,20 +199,27 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                   'isAdmin': isAdmin,
                   'rank': rank,
                 };
-                if (phoneCtrl.text.trim().isNotEmpty) body['phonePrimary'] = phoneCtrl.text.trim();
-                if (addressCtrl.text.trim().isNotEmpty) body['address'] = addressCtrl.text.trim();
+                if (phoneCtrl.text.trim().isNotEmpty)
+                  body['phonePrimary'] = phoneCtrl.text.trim();
+                if (addressCtrl.text.trim().isNotEmpty)
+                  body['address'] = addressCtrl.text.trim();
                 try {
-                  final res = await _api.patch('/users/${widget.userId}', body: body);
+                  final res =
+                      await _api.patch('/users/${widget.userId}', body: body);
                   if (ctx.mounted) Navigator.pop(ctx);
                   if (res.statusCode == 200) {
                     _load();
                   } else {
                     final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                    if (mounted)
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(SnackBar(content: Text(err)));
                   }
                 } catch (e) {
                   if (ctx.mounted) Navigator.pop(ctx);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+                  if (mounted)
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
                 }
               },
               child: const Text('Αποθήκευση'),
@@ -200,15 +233,20 @@ class _UserDetailBodyState extends State<UserDetailBody> {
   // ── Toggle system admin ─────────────────────────
   Future<void> _toggleAdmin(bool value) async {
     try {
-      final res = await _api.patch('/users/${widget.userId}', body: {'isAdmin': value});
+      final res =
+          await _api.patch('/users/${widget.userId}', body: {'isAdmin': value});
       if (res.statusCode == 200) {
         setState(() => _user!['isAdmin'] = value);
       } else {
         final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+        if (mounted)
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(err)));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
     }
   }
 
@@ -218,12 +256,15 @@ class _UserDetailBodyState extends State<UserDetailBody> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Διαγραφή Χρήστη'),
-        content: Text('Οριστική διαγραφή "${_user?['forename']} ${_user?['surname']}";\nΔεν μπορεί να αναιρεθεί.'),
+        content: Text(
+            'Οριστική διαγραφή "${_user?['forename']} ${_user?['surname']}";\nΔεν μπορεί να αναιρεθεί.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Διαγραφή'),
           ),
         ],
@@ -238,10 +279,13 @@ class _UserDetailBodyState extends State<UserDetailBody> {
         widget.onDeleted?.call();
         if (mounted) context.pop();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Αποτυχία διαγραφής χρήστη')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Αποτυχία διαγραφής χρήστη')));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
     }
   }
 
@@ -250,10 +294,12 @@ class _UserDetailBodyState extends State<UserDetailBody> {
     final userDepts = (_user?['departments'] as List<dynamic>? ?? [])
         .map((d) => d['departmentId'] ?? d['department']?['id'])
         .toSet();
-    final available = _allDepts.where((d) => !userDepts.contains(d['id'])).toList();
+    final available =
+        _allDepts.where((d) => !userDepts.contains(d['id'])).toList();
 
     if (available.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ο χρήστης είναι ήδη σε όλα τα τμήματα')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Ο χρήστης είναι ήδη σε όλα τα τμήματα')));
       return;
     }
 
@@ -276,9 +322,10 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                   displayStringForOption: (d) => d['name'] ?? '',
                   optionsBuilder: (textEditingValue) {
                     final q = textEditingValue.text.toLowerCase();
-                    if (q.isEmpty) return available.cast<Map<String, dynamic>>();
-                    return available.cast<Map<String, dynamic>>().where(
-                        (d) => (d['name'] ?? '').toString().toLowerCase().contains(q));
+                    if (q.isEmpty)
+                      return available.cast<Map<String, dynamic>>();
+                    return available.cast<Map<String, dynamic>>().where((d) =>
+                        (d['name'] ?? '').toString().toLowerCase().contains(q));
                   },
                   onSelected: (d) {
                     setDlgState(() {
@@ -286,7 +333,8 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                       selectedDeptName = d['name'] as String?;
                     });
                   },
-                  fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                  fieldViewBuilder:
+                      (context, controller, focusNode, onFieldSubmitted) {
                     if (selectedDeptName != null && controller.text.isEmpty) {
                       controller.text = selectedDeptName!;
                     }
@@ -324,9 +372,10 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                       alignment: Alignment.topLeft,
                       child: Material(
                         elevation: 4,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.r8,
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 200, maxWidth: 340),
+                          constraints: const BoxConstraints(
+                              maxHeight: 200, maxWidth: 340),
                           child: ListView.builder(
                             padding: EdgeInsets.zero,
                             shrinkWrap: true,
@@ -335,8 +384,11 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                               final opt = options.elementAt(i);
                               return ListTile(
                                 dense: true,
-                                leading: const Icon(Icons.business, size: 18, color: Color(0xFF7C3AED)),
-                                title: Text(opt['name'] ?? '', style: const TextStyle(fontSize: 14)),
+                                leading: const Icon(Icons.business,
+                                    size: 18, color: AppColors.violet600),
+                                title: Text(opt['name'] ?? '',
+                                    style: const TextStyle(
+                                        fontSize: AppFontSize.lg)),
                                 onTap: () => onSelected(opt),
                               );
                             },
@@ -348,20 +400,28 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: 'Ρόλος', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                      labelText: 'Ρόλος', border: OutlineInputBorder()),
                   value: selectedRole,
                   items: const [
-                    DropdownMenuItem(value: 'volunteer', child: Text('Εθελοντής')),
-                    DropdownMenuItem(value: 'missionAdmin', child: Text('Διαχειριστής Αποστολών')),
-                    DropdownMenuItem(value: 'itemAdmin', child: Text('Διαχειριστής Υλικού')),
+                    DropdownMenuItem(
+                        value: 'volunteer', child: Text('Εθελοντής')),
+                    DropdownMenuItem(
+                        value: 'missionAdmin',
+                        child: Text('Διαχειριστής Αποστολών')),
+                    DropdownMenuItem(
+                        value: 'itemAdmin', child: Text('Διαχειριστής Υλικού')),
                   ],
-                  onChanged: (v) => setDlgState(() => selectedRole = v ?? 'volunteer'),
+                  onChanged: (v) =>
+                      setDlgState(() => selectedRole = v ?? 'volunteer'),
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Άκυρο')),
             FilledButton(
               onPressed: selectedDeptId == null
                   ? null
@@ -375,12 +435,17 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                         if (res.statusCode == 201) {
                           _load();
                         } else {
-                          final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
-                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                          final err =
+                              jsonDecode(res.body)['error'] ?? 'Αποτυχία';
+                          if (mounted)
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(SnackBar(content: Text(err)));
                         }
                       } catch (e) {
                         if (ctx.mounted) Navigator.pop(ctx);
-                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+                        if (mounted)
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Σφάλμα: $e')));
                       }
                     },
               child: const Text('Προσθήκη'),
@@ -393,14 +458,17 @@ class _UserDetailBodyState extends State<UserDetailBody> {
 
   Future<void> _removeDeptMembership(int deptId) async {
     try {
-      final res = await _api.delete('/departments/$deptId/members/${widget.userId}');
+      final res =
+          await _api.delete('/departments/$deptId/members/${widget.userId}');
       if (res.statusCode == 204) _load();
     } catch (_) {}
   }
 
   Future<void> _changeDeptRole(int deptId, String newRole) async {
     try {
-      final res = await _api.patch('/departments/$deptId/members/${widget.userId}', body: {'role': newRole});
+      final res = await _api.patch(
+          '/departments/$deptId/members/${widget.userId}',
+          body: {'role': newRole});
       if (res.statusCode == 200) _load();
     } catch (_) {}
   }
@@ -408,12 +476,15 @@ class _UserDetailBodyState extends State<UserDetailBody> {
   // ── Manage specializations ───────────────────────
   void _addSpecialization() {
     final userSpecIds = (_user?['specializations'] as List<dynamic>? ?? [])
-        .map((us) => (us['specialization']?['id'] ?? us['specializationId']) as int)
+        .map((us) =>
+            (us['specialization']?['id'] ?? us['specializationId']) as int)
         .toSet();
-    final available = _allSpecs.where((s) => !userSpecIds.contains(s['id'])).toList();
+    final available =
+        _allSpecs.where((s) => !userSpecIds.contains(s['id'])).toList();
 
     if (available.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Όλες οι ειδικεύσεις έχουν ανατεθεί')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Όλες οι ειδικεύσεις έχουν ανατεθεί')));
       return;
     }
 
@@ -426,7 +497,9 @@ class _UserDetailBodyState extends State<UserDetailBody> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Πατήστε μια ειδίκευση:', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+              const Text('Πατήστε μια ειδίκευση:',
+                  style: TextStyle(
+                      color: AppColors.gray500, fontSize: AppFontSize.md)),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
@@ -434,16 +507,21 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                 children: available.map((s) {
                   return ActionChip(
                     avatar: const Icon(Icons.add, size: 16),
-                    label: Text(s['name'] ?? '', style: const TextStyle(fontSize: 13)),
+                    label: Text(s['name'] ?? '',
+                        style: const TextStyle(fontSize: AppFontSize.md)),
                     onPressed: () async {
                       try {
-                        final res = await _api.post('/users/${widget.userId}/specializations', body: {'specializationId': s['id']});
+                        final res = await _api.post(
+                            '/users/${widget.userId}/specializations',
+                            body: {'specializationId': s['id']});
                         if (res.statusCode == 201) {
                           if (ctx.mounted) Navigator.pop(ctx);
                           _load();
                         }
                       } catch (e) {
-                        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+                        if (mounted)
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Σφάλμα: $e')));
                       }
                     },
                   );
@@ -453,7 +531,9 @@ class _UserDetailBodyState extends State<UserDetailBody> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Κλείσιμο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Κλείσιμο')),
         ],
       ),
     );
@@ -461,7 +541,8 @@ class _UserDetailBodyState extends State<UserDetailBody> {
 
   Future<void> _removeSpecialization(int specId) async {
     try {
-      final res = await _api.delete('/users/${widget.userId}/specializations/$specId');
+      final res =
+          await _api.delete('/users/${widget.userId}/specializations/$specId');
       if (res.statusCode == 204) _load();
     } catch (_) {}
   }
@@ -492,9 +573,12 @@ class _UserDetailBodyState extends State<UserDetailBody> {
           builder: (context, constraints) {
             final isWide = constraints.maxWidth >= 900;
 
-            final profileCard = _buildProfileCard(u, name, isAdmin, tt, cs, canManage);
-            final deptsCard = _buildDepartmentsCard(departments, tt, cs, canManage);
-            final specsCard = _buildSpecializationsCard(specializations, tt, cs, canManage);
+            final profileCard =
+                _buildProfileCard(u, name, isAdmin, tt, cs, canManage);
+            final deptsCard =
+                _buildDepartmentsCard(departments, tt, cs, canManage);
+            final specsCard =
+                _buildSpecializationsCard(specializations, tt, cs, canManage);
             final servicesCard = _buildServicesCard(tt, cs);
 
             if (isWide) {
@@ -512,7 +596,11 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                             SizedBox(width: 380, child: profileCard),
                             const SizedBox(width: 20),
                             Expanded(
-                              child: Column(children: [deptsCard, const SizedBox(height: 16), specsCard]),
+                              child: Column(children: [
+                                deptsCard,
+                                const SizedBox(height: 16),
+                                specsCard
+                              ]),
                             ),
                           ],
                         ),
@@ -529,9 +617,12 @@ class _UserDetailBodyState extends State<UserDetailBody> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               child: Column(children: [
-                profileCard, const SizedBox(height: 16),
-                deptsCard, const SizedBox(height: 16),
-                specsCard, const SizedBox(height: 16),
+                profileCard,
+                const SizedBox(height: 16),
+                deptsCard,
+                const SizedBox(height: 16),
+                specsCard,
+                const SizedBox(height: 16),
                 servicesCard,
               ]),
             );
@@ -542,11 +633,12 @@ class _UserDetailBodyState extends State<UserDetailBody> {
   }
 
   // ── Profile card ──────────────────────────────────
-  Widget _buildProfileCard(Map<String, dynamic> u, String name, bool isAdmin, TextTheme tt, ColorScheme cs, bool canManage) {
+  Widget _buildProfileCard(Map<String, dynamic> u, String name, bool isAdmin,
+      TextTheme tt, ColorScheme cs, bool canManage) {
     final auth = context.read<AuthProvider>();
 
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.r16),
       elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -554,41 +646,73 @@ class _UserDetailBodyState extends State<UserDetailBody> {
           children: [
             CircleAvatar(
               radius: 40,
-              backgroundColor: isAdmin ? Color(0xFFFEF3C7) : const Color(0xFFFEE2E2),
+              backgroundColor: isAdmin ? AppColors.amber100 : AppColors.red100,
               child: Text(
                 name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: isAdmin ? Color(0xFFD97706) : const Color(0xFFDC2626)),
+                style: TextStyle(
+                    fontSize: AppFontSize.display3,
+                    fontWeight: AppFontWeight.bold,
+                    color: isAdmin ? AppColors.amber600 : AppColors.red600),
               ),
             ),
             const SizedBox(height: 16),
-            Text(name.isNotEmpty ? name : u['eame'] ?? '', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            Text(name.isNotEmpty ? name : u['eame'] ?? '',
+                style: tt.titleLarge?.copyWith(fontWeight: AppFontWeight.bold)),
             const SizedBox(height: 4),
-            Text('@${u['eame'] ?? ''}', style: tt.bodyMedium?.copyWith(color: const Color(0xFF6B7280))),
+            Text('@${u['eame'] ?? ''}',
+                style: tt.bodyMedium?.copyWith(color: AppColors.gray500)),
             if (isAdmin) ...[
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(color: Colors.amber.withAlpha(25), borderRadius: BorderRadius.circular(8)),
-                child: Text('Διαχειριστής Συστήματος', style: tt.labelMedium?.copyWith(color: Color(0xFFD97706), fontWeight: FontWeight.w600)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                    color: Colors.amber.withAlpha(25),
+                    borderRadius: AppRadius.r8),
+                child: Text('Διαχειριστής Συστήματος',
+                    style: tt.labelMedium?.copyWith(
+                        color: AppColors.amber600,
+                        fontWeight: AppFontWeight.semibold)),
               ),
             ],
             const SizedBox(height: 20),
             const Divider(),
             const SizedBox(height: 12),
-            _InfoRow(icon: Icons.email, label: 'Email', value: u['email'] ?? '—'),
-            _InfoRow(icon: Icons.badge_outlined, label: 'EAME', value: u['eame'] ?? '—'),
-            _InfoRow(icon: Icons.workspace_premium_outlined, label: 'Βαθμός', value: u['rank'] ?? 'Γ'),
-            _InfoRow(icon: Icons.phone, label: 'Τηλέφωνο', value: u['phonePrimary'] ?? '—'),
-            _InfoRow(icon: Icons.location_on, label: 'Διεύθυνση', value: u['address'] ?? '—'),
-            _InfoRow(icon: Icons.calendar_today, label: 'Ημ. Γέννησης', value: _formatDate(u['birthDate'])),
+            _InfoRow(
+                icon: Icons.email, label: 'Email', value: u['email'] ?? '—'),
+            _InfoRow(
+                icon: Icons.badge_outlined,
+                label: 'EAME',
+                value: u['eame'] ?? '—'),
+            _InfoRow(
+                icon: Icons.workspace_premium_outlined,
+                label: 'Βαθμός',
+                value: u['rank'] ?? 'Γ'),
+            _InfoRow(
+                icon: Icons.phone,
+                label: 'Τηλέφωνο',
+                value: u['phonePrimary'] ?? '—'),
+            _InfoRow(
+                icon: Icons.location_on,
+                label: 'Διεύθυνση',
+                value: u['address'] ?? '—'),
+            _InfoRow(
+                icon: Icons.calendar_today,
+                label: 'Ημ. Γέννησης',
+                value: _formatDate(u['birthDate'])),
             if ((u['extraInfo'] ?? '').toString().isNotEmpty)
-              _InfoRow(icon: Icons.info_outline, label: 'Επιπλέον Πληρ.', value: u['extraInfo']),
+              _InfoRow(
+                  icon: Icons.info_outline,
+                  label: 'Επιπλέον Πληρ.',
+                  value: u['extraInfo']),
             if (auth.isAdmin) ...[
               const SizedBox(height: 8),
               const Divider(),
               SwitchListTile(
                 title: const Text('Διαχειριστής Συστήματος'),
-                subtitle: Text(isAdmin ? 'Έχει πλήρη δικαιώματα διαχείρισης' : 'Χωρίς δικαιώματα διαχείρισης'),
+                subtitle: Text(isAdmin
+                    ? 'Έχει πλήρη δικαιώματα διαχείρισης'
+                    : 'Χωρίς δικαιώματα διαχείρισης'),
                 value: isAdmin,
                 onChanged: (v) => _toggleAdmin(v),
                 contentPadding: EdgeInsets.zero,
@@ -605,7 +729,8 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                     onPressed: _deleteUser,
                     icon: const Icon(Icons.delete, size: 16),
                     label: const Text('Διαγραφή'),
-                    style: OutlinedButton.styleFrom(foregroundColor: Color(0xFFDC2626)),
+                    style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.red600),
                   ),
                   const SizedBox(width: 8),
                   FilledButton.icon(
@@ -630,9 +755,10 @@ class _UserDetailBodyState extends State<UserDetailBody> {
   }
 
   // ── Departments card ──────────────────────────────
-  Widget _buildDepartmentsCard(List<dynamic> departments, TextTheme tt, ColorScheme cs, bool canManage) {
+  Widget _buildDepartmentsCard(
+      List<dynamic> departments, TextTheme tt, ColorScheme cs, bool canManage) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.r16),
       elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -643,7 +769,9 @@ class _UserDetailBodyState extends State<UserDetailBody> {
               children: [
                 Icon(Icons.business, color: cs.primary, size: 22),
                 const SizedBox(width: 10),
-                Text('Τμήματα', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Text('Τμήματα',
+                    style: tt.titleMedium
+                        ?.copyWith(fontWeight: AppFontWeight.bold)),
                 const Spacer(),
                 if (canManage)
                   TextButton.icon(
@@ -657,7 +785,9 @@ class _UserDetailBodyState extends State<UserDetailBody> {
             if (departments.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: Text('Χωρίς τμήματα', style: TextStyle(color: Color(0xFF9CA3AF)))),
+                child: Center(
+                    child: Text('Χωρίς τμήματα',
+                        style: TextStyle(color: AppColors.gray400))),
               )
             else
               ...departments.map((ud) {
@@ -670,11 +800,17 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                   contentPadding: EdgeInsets.zero,
                   leading: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: const Color(0xFFEDE9FE), borderRadius: BorderRadius.circular(10)),
-                    child: const Icon(Icons.business, color: Color(0xFF7C3AED), size: 20),
+                    decoration: BoxDecoration(
+                        color: AppColors.violet100,
+                        borderRadius: AppRadius.r10),
+                    child: const Icon(Icons.business,
+                        color: AppColors.violet600, size: 20),
                   ),
-                  title: Text(deptName, style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-                  subtitle: Text(_roleLabelFull(role), style: tt.bodySmall?.copyWith(color: _roleColor(role))),
+                  title: Text(deptName,
+                      style: tt.titleSmall
+                          ?.copyWith(fontWeight: AppFontWeight.semibold)),
+                  subtitle: Text(_roleLabelFull(role),
+                      style: tt.bodySmall?.copyWith(color: _roleColor(role))),
                   trailing: canManage
                       ? PopupMenuButton<String>(
                           icon: const Icon(Icons.more_vert, size: 20),
@@ -687,13 +823,22 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                           },
                           itemBuilder: (_) => [
                             if (role != 'volunteer')
-                              const PopupMenuItem(value: 'volunteer', child: Text('Ορισμός Εθελοντή')),
+                              const PopupMenuItem(
+                                  value: 'volunteer',
+                                  child: Text('Ορισμός Εθελοντή')),
                             if (role != 'missionAdmin')
-                              const PopupMenuItem(value: 'missionAdmin', child: Text('Ορισμός Διαχειριστή Αποστολών')),
+                              const PopupMenuItem(
+                                  value: 'missionAdmin',
+                                  child: Text('Ορισμός Διαχειριστή Αποστολών')),
                             if (role != 'itemAdmin')
-                              const PopupMenuItem(value: 'itemAdmin', child: Text('Ορισμός Διαχειριστή Υλικού')),
+                              const PopupMenuItem(
+                                  value: 'itemAdmin',
+                                  child: Text('Ορισμός Διαχειριστή Υλικού')),
                             const PopupMenuDivider(),
-                            const PopupMenuItem(value: 'remove', child: Text('Αφαίρεση', style: TextStyle(color: Color(0xFFDC2626)))),
+                            const PopupMenuItem(
+                                value: 'remove',
+                                child: Text('Αφαίρεση',
+                                    style: TextStyle(color: AppColors.red600))),
                           ],
                         )
                       : null,
@@ -706,9 +851,10 @@ class _UserDetailBodyState extends State<UserDetailBody> {
   }
 
   // ── Specializations card ──────────────────────────
-  Widget _buildSpecializationsCard(List<dynamic> specializations, TextTheme tt, ColorScheme cs, bool canManage) {
+  Widget _buildSpecializationsCard(List<dynamic> specializations, TextTheme tt,
+      ColorScheme cs, bool canManage) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.r16),
       elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -717,9 +863,11 @@ class _UserDetailBodyState extends State<UserDetailBody> {
           children: [
             Row(
               children: [
-                const Icon(Icons.school, color: Color(0xFFD97706), size: 22),
+                const Icon(Icons.school, color: AppColors.amber600, size: 22),
                 const SizedBox(width: 10),
-                Text('Ειδικεύσεις', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                Text('Ειδικεύσεις',
+                    style: tt.titleMedium
+                        ?.copyWith(fontWeight: AppFontWeight.bold)),
                 const Spacer(),
                 if (canManage)
                   TextButton.icon(
@@ -733,7 +881,9 @@ class _UserDetailBodyState extends State<UserDetailBody> {
             if (specializations.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: Text('Χωρίς ειδικεύσεις', style: TextStyle(color: Color(0xFF9CA3AF)))),
+                child: Center(
+                    child: Text('Χωρίς ειδικεύσεις',
+                        style: TextStyle(color: AppColors.gray400))),
               )
             else
               Wrap(
@@ -744,13 +894,16 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                   final specName = spec?['name'] ?? 'Unknown';
                   final specId = (spec?['id'] ?? us['specializationId']) as int;
                   return Chip(
-                    avatar: const Icon(Icons.school, size: 16, color: Color(0xFFD97706)),
+                    avatar: const Icon(Icons.school,
+                        size: 16, color: AppColors.amber600),
                     label: Text(specName),
-                    deleteIcon: canManage ? const Icon(Icons.close, size: 16) : null,
-                    onDeleted: canManage ? () => _removeSpecialization(specId) : null,
-                    backgroundColor: const Color(0xFFFEF3C7),
+                    deleteIcon:
+                        canManage ? const Icon(Icons.close, size: 16) : null,
+                    onDeleted:
+                        canManage ? () => _removeSpecialization(specId) : null,
+                    backgroundColor: AppColors.amber100,
                     side: BorderSide.none,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadius.r8),
                   );
                 }).toList(),
               ),
@@ -776,7 +929,8 @@ class _UserDetailBodyState extends State<UserDetailBody> {
         final svc = s['service'] as Map<String, dynamic>? ?? {};
         final name = (svc['name'] ?? '').toString().toLowerCase();
         final loc = (svc['location'] ?? '').toString().toLowerCase();
-        final dept = (svc['department']?['name'] ?? '').toString().toLowerCase();
+        final dept =
+            (svc['department']?['name'] ?? '').toString().toLowerCase();
         return name.contains(q) || loc.contains(q) || dept.contains(q);
       }).toList();
     }
@@ -791,19 +945,23 @@ class _UserDetailBodyState extends State<UserDetailBody> {
           cmp = na.compareTo(nb);
           break;
         case 'totalHours':
-          cmp = ((a['totalHours'] ?? 0) as int).compareTo((b['totalHours'] ?? 0) as int);
+          cmp = ((a['totalHours'] ?? 0) as int)
+              .compareTo((b['totalHours'] ?? 0) as int);
           break;
         case 'hours':
           cmp = ((a['hours'] ?? 0) as int).compareTo((b['hours'] ?? 0) as int);
           break;
         case 'hoursVol':
-          cmp = ((a['hoursVol'] ?? 0) as int).compareTo((b['hoursVol'] ?? 0) as int);
+          cmp = ((a['hoursVol'] ?? 0) as int)
+              .compareTo((b['hoursVol'] ?? 0) as int);
           break;
         case 'hoursTraining':
-          cmp = ((a['hoursTraining'] ?? 0) as int).compareTo((b['hoursTraining'] ?? 0) as int);
+          cmp = ((a['hoursTraining'] ?? 0) as int)
+              .compareTo((b['hoursTraining'] ?? 0) as int);
           break;
         case 'hoursTrainers':
-          cmp = ((a['hoursTrainers'] ?? 0) as int).compareTo((b['hoursTrainers'] ?? 0) as int);
+          cmp = ((a['hoursTrainers'] ?? 0) as int)
+              .compareTo((b['hoursTrainers'] ?? 0) as int);
           break;
         default: // date
           final da = a['service']?['startAt'] ?? '';
@@ -830,14 +988,16 @@ class _UserDetailBodyState extends State<UserDetailBody> {
 
   Widget _buildServicesCard(TextTheme tt, ColorScheme cs) {
     final processed = _processedServices;
-    final totalPages = processed.isEmpty ? 1 : (processed.length / _svcRowsPerPage).ceil();
+    final totalPages =
+        processed.isEmpty ? 1 : (processed.length / _svcRowsPerPage).ceil();
     final pageStart = _svcPage * _svcRowsPerPage;
     final pageEnd = (pageStart + _svcRowsPerPage).clamp(0, processed.length);
     final pageItems = processed.sublist(pageStart, pageEnd);
 
     // Sum hours for summary
     int sumTotal = 0, sumH = 0, sumVol = 0, sumTrain = 0, sumTrainer = 0;
-    for (final s in _services.where((s) => s['status'] == 'accepted' || s['status'] == 'participated')) {
+    for (final s in _services.where(
+        (s) => s['status'] == 'accepted' || s['status'] == 'participated')) {
       sumTotal += (s['totalHours'] ?? 0) as int;
       sumH += (s['hours'] ?? 0) as int;
       sumVol += (s['hoursVol'] ?? 0) as int;
@@ -846,7 +1006,7 @@ class _UserDetailBodyState extends State<UserDetailBody> {
     }
 
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.r16),
       elevation: 0,
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -857,20 +1017,22 @@ class _UserDetailBodyState extends State<UserDetailBody> {
             Row(children: [
               Icon(Icons.work_history, color: cs.primary, size: 22),
               const SizedBox(width: 10),
-              Text('Υπηρεσίες / Αποστολές', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              Text('Υπηρεσίες / Αποστολές',
+                  style:
+                      tt.titleMedium?.copyWith(fontWeight: AppFontWeight.bold)),
               const Spacer(),
               Text('${_services.length} total',
-                  style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+                  style: tt.bodySmall?.copyWith(color: AppColors.gray500)),
             ]),
             const SizedBox(height: 8),
 
             // Summary chips
             Wrap(spacing: 8, runSpacing: 6, children: [
-              _hoursSummaryChip('Total', sumTotal, const Color(0xFFDC2626)),
-              _hoursSummaryChip('Hours', sumH, const Color(0xFF059669)),
-              _hoursSummaryChip('Vol', sumVol, const Color(0xFF7C3AED)),
-              _hoursSummaryChip('Training', sumTrain, const Color(0xFFD97706)),
-              _hoursSummaryChip('Trainer', sumTrainer, const Color(0xFFDC2626)),
+              _hoursSummaryChip('Total', sumTotal, AppColors.red600),
+              _hoursSummaryChip('Hours', sumH, AppColors.emerald600),
+              _hoursSummaryChip('Vol', sumVol, AppColors.violet600),
+              _hoursSummaryChip('Training', sumTrain, AppColors.amber600),
+              _hoursSummaryChip('Trainer', sumTrainer, AppColors.red600),
             ]),
             const SizedBox(height: 12),
 
@@ -880,24 +1042,35 @@ class _UserDetailBodyState extends State<UserDetailBody> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  color: AppColors.gray50,
+                  borderRadius: AppRadius.r8,
+                  border: Border.all(color: AppColors.gray200),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: _svcStatusFilter,
                     isDense: true,
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF374151)),
+                    style: const TextStyle(
+                        fontSize: AppFontSize.base, color: AppColors.gray700),
                     items: const [
-                      DropdownMenuItem(value: 'all', child: Text('Όλες οι καταστάσεις')),
-                      DropdownMenuItem(value: 'accepted', child: Text('Εγκεκριμένη')),
-                      DropdownMenuItem(value: 'participated', child: Text('Παρουσιάστηκε')),
-                      DropdownMenuItem(value: 'requested', child: Text('Εκκρεμής')),
-                      DropdownMenuItem(value: 'rejected', child: Text('Απορριφθείσα')),
-                      DropdownMenuItem(value: 'not-participated', child: Text('Δεν παρουσιάστηκε')),
+                      DropdownMenuItem(
+                          value: 'all', child: Text('Όλες οι καταστάσεις')),
+                      DropdownMenuItem(
+                          value: 'accepted', child: Text('Εγκεκριμένη')),
+                      DropdownMenuItem(
+                          value: 'participated', child: Text('Παρουσιάστηκε')),
+                      DropdownMenuItem(
+                          value: 'requested', child: Text('Εκκρεμής')),
+                      DropdownMenuItem(
+                          value: 'rejected', child: Text('Απορριφθείσα')),
+                      DropdownMenuItem(
+                          value: 'not-participated',
+                          child: Text('Δεν παρουσιάστηκε')),
                     ],
-                    onChanged: (v) => setState(() { _svcStatusFilter = v ?? 'all'; _svcPage = 0; }),
+                    onChanged: (v) => setState(() {
+                      _svcStatusFilter = v ?? 'all';
+                      _svcPage = 0;
+                    }),
                   ),
                 ),
               ),
@@ -907,14 +1080,18 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                   decoration: InputDecoration(
                     hintText: 'Αναζήτηση υπηρεσιών...',
                     prefixIcon: const Icon(Icons.search, size: 18),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    border: OutlineInputBorder(borderRadius: AppRadius.r8),
                     filled: true,
-                    fillColor: const Color(0xFFF9FAFB),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    fillColor: AppColors.gray50,
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     isDense: true,
                   ),
-                  style: const TextStyle(fontSize: 12),
-                  onChanged: (v) => setState(() { _svcSearch = v; _svcPage = 0; }),
+                  style: const TextStyle(fontSize: AppFontSize.base),
+                  onChanged: (v) => setState(() {
+                    _svcSearch = v;
+                    _svcPage = 0;
+                  }),
                 ),
               ),
             ]),
@@ -923,44 +1100,56 @@ class _UserDetailBodyState extends State<UserDetailBody> {
             // Pagination
             Row(children: [
               Text('${processed.length} shown',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+                  style: const TextStyle(
+                      fontSize: AppFontSize.sm, color: AppColors.gray500)),
               const Spacer(),
-              const Text('Γραμμές: ', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+              const Text('Γραμμές: ',
+                  style: TextStyle(
+                      fontSize: AppFontSize.sm, color: AppColors.gray500)),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9FAFB),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  color: AppColors.gray50,
+                  borderRadius: AppRadius.r4,
+                  border: Border.all(color: AppColors.gray200),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<int>(
                     value: _svcRowsPerPage,
                     isDense: true,
-                    style: const TextStyle(fontSize: 11, color: Color(0xFF374151)),
+                    style: const TextStyle(
+                        fontSize: AppFontSize.sm, color: AppColors.gray700),
                     items: const [
                       DropdownMenuItem(value: 5, child: Text('5')),
                       DropdownMenuItem(value: 10, child: Text('10')),
                       DropdownMenuItem(value: 25, child: Text('25')),
                       DropdownMenuItem(value: 50, child: Text('50')),
                     ],
-                    onChanged: (v) => setState(() { _svcRowsPerPage = v ?? 10; _svcPage = 0; }),
+                    onChanged: (v) => setState(() {
+                      _svcRowsPerPage = v ?? 10;
+                      _svcPage = 0;
+                    }),
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.chevron_left, size: 18),
-                onPressed: _svcPage > 0 ? () => setState(() => _svcPage--) : null,
+                onPressed:
+                    _svcPage > 0 ? () => setState(() => _svcPage--) : null,
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
               Text('${_svcPage + 1}/${totalPages.clamp(1, 999)}',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                  style: const TextStyle(
+                      fontSize: AppFontSize.sm,
+                      fontWeight: AppFontWeight.semibold)),
               IconButton(
                 icon: const Icon(Icons.chevron_right, size: 18),
-                onPressed: _svcPage < totalPages - 1 ? () => setState(() => _svcPage++) : null,
+                onPressed: _svcPage < totalPages - 1
+                    ? () => setState(() => _svcPage++)
+                    : null,
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -970,7 +1159,7 @@ class _UserDetailBodyState extends State<UserDetailBody> {
 
             // Table header
             Container(
-              color: const Color(0xFFEEF0F4),
+              color: AppColors.surfaceTint,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
               child: Row(children: [
                 _svcHeaderCell('Service', 'name', flex: 3),
@@ -988,10 +1177,17 @@ class _UserDetailBodyState extends State<UserDetailBody> {
             if (pageItems.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: Text('Δεν βρέθηκαν υπηρεσίες', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13))),
+                child: Center(
+                    child: Text('Δεν βρέθηκαν υπηρεσίες',
+                        style: TextStyle(
+                            color: AppColors.gray400,
+                            fontSize: AppFontSize.md))),
               )
             else
-              ...pageItems.asMap().entries.map((e) => _buildSvcRow(e.value, e.key.isEven)),
+              ...pageItems
+                  .asMap()
+                  .entries
+                  .map((e) => _buildSvcRow(e.value, e.key.isEven)),
           ],
         ),
       ),
@@ -1009,12 +1205,13 @@ class _UserDetailBodyState extends State<UserDetailBody> {
           children: [
             Text(label,
                 style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                    color: isActive ? const Color(0xFFDC2626) : const Color(0xFF374151))),
+                    fontSize: AppFontSize.xs,
+                    fontWeight:
+                        isActive ? AppFontWeight.bold : AppFontWeight.semibold,
+                    color: isActive ? AppColors.red600 : AppColors.gray700)),
             if (isActive)
               Icon(_svcSortAsc ? Icons.arrow_upward : Icons.arrow_downward,
-                  size: 10, color: const Color(0xFFDC2626)),
+                  size: 10, color: AppColors.red600),
           ],
         ),
       ),
@@ -1039,16 +1236,25 @@ class _UserDetailBodyState extends State<UserDetailBody> {
 
     Color statusColor;
     switch (status) {
-      case 'accepted': statusColor = const Color(0xFF059669); break;
-      case 'participated': statusColor = const Color(0xFF0891B2); break;
-      case 'rejected': statusColor = const Color(0xFFDC2626); break;
+      case 'accepted':
+        statusColor = AppColors.emerald600;
+        break;
+      case 'participated':
+        statusColor = AppColors.cyan600;
+        break;
+      case 'rejected':
+        statusColor = AppColors.red600;
+        break;
       case 'not-participated':
-      case 'not_participated': statusColor = const Color(0xFF6B7280); break;
-      default: statusColor = const Color(0xFFF59E0B);
+      case 'not_participated':
+        statusColor = AppColors.gray500;
+        break;
+      default:
+        statusColor = AppColors.amber500;
     }
 
     return Container(
-      color: even ? Colors.white : const Color(0xFFF9FAFB),
+      color: even ? Colors.white : AppColors.gray50,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(children: [
         // Name + department
@@ -1057,16 +1263,27 @@ class _UserDetailBodyState extends State<UserDetailBody> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(name,
+                  style: const TextStyle(
+                      fontSize: AppFontSize.base,
+                      fontWeight: AppFontWeight.semibold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
               if (dept.isNotEmpty)
-                Text(dept, style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(dept,
+                    style: const TextStyle(
+                        fontSize: AppFontSize.xs, color: AppColors.gray400),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
             ],
           ),
         ),
         // Date
         Expanded(
           flex: 2,
-          child: Text(dateStr, style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280))),
+          child: Text(dateStr,
+              style: const TextStyle(
+                  fontSize: AppFontSize.xs, color: AppColors.gray500)),
         ),
         // Status
         Expanded(
@@ -1074,11 +1291,16 @@ class _UserDetailBodyState extends State<UserDetailBody> {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             decoration: BoxDecoration(
               color: statusColor.withAlpha(20),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: AppRadius.r4,
             ),
             child: Text(
-              status.isNotEmpty ? status[0].toUpperCase() + status.substring(1) : '',
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: statusColor),
+              status.isNotEmpty
+                  ? status[0].toUpperCase() + status.substring(1)
+                  : '',
+              style: TextStyle(
+                  fontSize: AppFontSize.xxs,
+                  fontWeight: AppFontWeight.semibold,
+                  color: statusColor),
               textAlign: TextAlign.center,
             ),
           ),
@@ -1099,9 +1321,11 @@ class _UserDetailBodyState extends State<UserDetailBody> {
       child: Text(
         h > 0 ? '$h' : '—',
         style: TextStyle(
-          fontSize: 11,
-          fontWeight: h > 0 && bold ? FontWeight.w700 : (h > 0 ? FontWeight.w600 : FontWeight.w400),
-          color: h > 0 ? const Color(0xFF111827) : const Color(0xFFD1D5DB),
+          fontSize: AppFontSize.sm,
+          fontWeight: h > 0 && bold
+              ? AppFontWeight.bold
+              : (h > 0 ? AppFontWeight.semibold : AppFontWeight.regular),
+          color: h > 0 ? AppColors.gray900 : AppColors.gray300,
         ),
         textAlign: TextAlign.center,
       ),
@@ -1113,31 +1337,44 @@ class _UserDetailBodyState extends State<UserDetailBody> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withAlpha(15),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.r8,
         border: Border.all(color: color.withAlpha(40)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Text('$value', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+        Text('$value',
+            style: TextStyle(
+                fontSize: AppFontSize.md,
+                fontWeight: AppFontWeight.bold,
+                color: color)),
         const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 10, color: color.withAlpha(180))),
+        Text(label,
+            style: TextStyle(
+                fontSize: AppFontSize.xs, color: color.withAlpha(180))),
       ]),
     );
   }
 
   static String _roleLabelFull(String role) {
     switch (role) {
-      case 'missionAdmin': return 'Διαχειριστής Αποστολών';
-      case 'itemAdmin': return 'Διαχειριστής Υλικού';
-      case 'volunteer': return 'Εθελοντής';
-      default: return role;
+      case 'missionAdmin':
+        return 'Διαχειριστής Αποστολών';
+      case 'itemAdmin':
+        return 'Διαχειριστής Υλικού';
+      case 'volunteer':
+        return 'Εθελοντής';
+      default:
+        return role;
     }
   }
 
   static Color _roleColor(String role) {
     switch (role) {
-      case 'missionAdmin': return const Color(0xFF059669);
-      case 'itemAdmin': return const Color(0xFF7C3AED);
-      default: return const Color(0xFFDC2626);
+      case 'missionAdmin':
+        return AppColors.emerald600;
+      case 'itemAdmin':
+        return AppColors.violet600;
+      default:
+        return AppColors.red600;
     }
   }
 }
@@ -1146,7 +1383,8 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow(
+      {required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -1155,13 +1393,18 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF6B7280)),
+          Icon(icon, size: 18, color: AppColors.gray500),
           const SizedBox(width: 12),
           SizedBox(
             width: 90,
-            child: Text(label, style: tt.bodySmall?.copyWith(fontWeight: FontWeight.w600, color: const Color(0xFF374151))),
+            child: Text(label,
+                style: tt.bodySmall?.copyWith(
+                    fontWeight: AppFontWeight.semibold,
+                    color: AppColors.gray700)),
           ),
-          Expanded(child: Text(value, style: tt.bodySmall?.copyWith(color: const Color(0xFF4B5563)))),
+          Expanded(
+              child: Text(value,
+                  style: tt.bodySmall?.copyWith(color: AppColors.gray600))),
         ],
       ),
     );

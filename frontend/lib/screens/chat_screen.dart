@@ -7,6 +7,8 @@ import '../providers/chat_provider.dart';
 import '../providers/auth_provider.dart';
 import '../helpers/chat_models.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
 
@@ -54,10 +56,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final auth = context.watch<AuthProvider>();
 
     final allFiltered = _filteredChats(chatProv);
-    final groupChats =
-        allFiltered.where((c) => c.type != 'direct').toList();
-    final directChats =
-        allFiltered.where((c) => c.type == 'direct').toList();
+    final groupChats = allFiltered.where((c) => c.type != 'direct').toList();
+    final directChats = allFiltered.where((c) => c.type == 'direct').toList();
 
     return Scaffold(
       body: Column(
@@ -70,7 +70,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 hintText: 'Αναζήτηση συνομιλιών...',
                 prefixIcon: const Icon(Icons.search, size: 20),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.r12,
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
@@ -99,20 +99,19 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                 ? 'Δεν βρέθηκαν συνομιλίες'
                                 : 'Δεν υπάρχουν συνομιλίες ομάδων',
                             style: tt.bodySmall
-                                ?.copyWith(color: const Color(0xFF9CA3AF)),
+                                ?.copyWith(color: AppColors.gray400),
                           ),
                         )
                       else
-                        ...groupChats.map((chat) => _buildChatTile(
-                            context, chat, chatProv, cs, tt)),
+                        ...groupChats.map((chat) =>
+                            _buildChatTile(context, chat, chatProv, cs, tt)),
                       _SectionHeader(
                         label: 'ΑΜΕΣΑ ΜΗΝΥΜΑΤΑ',
                         trailing: IconButton(
                           icon: Icon(Icons.add_circle,
                               color: cs.primary, size: 20),
                           tooltip: 'Νέο άμεσο μήνυμα',
-                          onPressed: () =>
-                              context.push('/chat/direct/new'),
+                          onPressed: () => context.push('/chat/direct/new'),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                         ),
@@ -126,12 +125,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                 ? 'Δεν βρέθηκαν άμεσα μηνύματα'
                                 : 'Δεν υπάρχουν άμεσα μηνύματα',
                             style: tt.bodySmall
-                                ?.copyWith(color: const Color(0xFF9CA3AF)),
+                                ?.copyWith(color: AppColors.gray400),
                           ),
                         )
                       else
-                        ...directChats.map((chat) => _buildChatTile(
-                            context, chat, chatProv, cs, tt)),
+                        ...directChats.map((chat) =>
+                            _buildChatTile(context, chat, chatProv, cs, tt)),
                     ],
                   ),
           ),
@@ -167,22 +166,20 @@ class _ChatListScreenState extends State<ChatListScreen> {
           ),
           title: Text(
             chat.name,
-            style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            style: tt.bodyMedium?.copyWith(fontWeight: AppFontWeight.semibold),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: chat.lastMessage != null
               ? Text(
                   '${chat.lastMessage!.user.forename}: ${chat.lastMessage!.text}',
-                  style:
-                      tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+                  style: tt.bodySmall?.copyWith(color: AppColors.gray500),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 )
               : Text(
                   '${chat.memberCount} μέλη',
-                  style:
-                      tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF)),
+                  style: tt.bodySmall?.copyWith(color: AppColors.gray400),
                 ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -190,24 +187,23 @@ class _ChatListScreenState extends State<ChatListScreen> {
               if (chat.lastMessage != null)
                 Text(
                   _formatTime(chat.lastMessage!.createdAt),
-                  style: tt.labelSmall
-                      ?.copyWith(color: const Color(0xFF9CA3AF)),
+                  style: tt.labelSmall?.copyWith(color: AppColors.gray400),
                 ),
               if (unread > 0) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 7, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: cs.primary,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppRadius.r10,
                   ),
                   child: Text(
                     '$unread',
                     style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600),
+                        fontSize: AppFontSize.sm,
+                        fontWeight: AppFontWeight.semibold),
                   ),
                 ),
               ],
@@ -270,9 +266,9 @@ class _SectionHeader extends StatelessWidget {
             child: Text(
               label,
               style: tt.labelSmall?.copyWith(
-                color: const Color(0xFF9CA3AF),
+                color: AppColors.gray400,
                 letterSpacing: 0.8,
-                fontWeight: FontWeight.w700,
+                fontWeight: AppFontWeight.bold,
               ),
             ),
           ),

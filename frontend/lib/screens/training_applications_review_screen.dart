@@ -2,14 +2,18 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class TrainingApplicationsReviewScreen extends StatefulWidget {
   const TrainingApplicationsReviewScreen({super.key});
 
   @override
-  State<TrainingApplicationsReviewScreen> createState() => _TrainingApplicationsReviewScreenState();
+  State<TrainingApplicationsReviewScreen> createState() =>
+      _TrainingApplicationsReviewScreenState();
 }
 
-class _TrainingApplicationsReviewScreenState extends State<TrainingApplicationsReviewScreen> {
+class _TrainingApplicationsReviewScreenState
+    extends State<TrainingApplicationsReviewScreen> {
   final _api = ApiClient();
   bool _loading = true;
   List<Map<String, dynamic>> _pending = [];
@@ -30,25 +34,30 @@ class _TrainingApplicationsReviewScreenState extends State<TrainingApplicationsR
       ]);
 
       if (results[0].statusCode == 200) {
-        _pending = (jsonDecode(results[0].body) as List).cast<Map<String, dynamic>>();
+        _pending =
+            (jsonDecode(results[0].body) as List).cast<Map<String, dynamic>>();
       }
       if (results[1].statusCode == 200) {
-        _training = (jsonDecode(results[1].body) as List).cast<Map<String, dynamic>>();
+        _training =
+            (jsonDecode(results[1].body) as List).cast<Map<String, dynamic>>();
       }
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
   }
 
   Future<void> _acceptTraining(int id) async {
-    final res = await _api.patch('/training-applications/$id/accept-training', body: {});
+    final res = await _api
+        .patch('/training-applications/$id/accept-training', body: {});
     if (!mounted) return;
     if (res.statusCode == 200) {
       _load();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Η αίτηση έγινε αποδεκτή για εκπαίδευση.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Η αίτηση έγινε αποδεκτή για εκπαίδευση.')));
       return;
     }
     final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία ενέργειας';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err.toString())));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(err.toString())));
   }
 
   Future<void> _reject(int id) async {
@@ -65,14 +74,17 @@ class _TrainingApplicationsReviewScreenState extends State<TrainingApplicationsR
             TextField(
               controller: notesCtrl,
               maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Σημειώσεις', border: OutlineInputBorder()),
+              decoration: const InputDecoration(
+                  labelText: 'Σημειώσεις', border: OutlineInputBorder()),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Απόρριψη'),
           ),
@@ -82,31 +94,39 @@ class _TrainingApplicationsReviewScreenState extends State<TrainingApplicationsR
 
     if (confirmed != true) return;
     final body = <String, dynamic>{};
-    if (notesCtrl.text.trim().isNotEmpty) body['reviewNotes'] = notesCtrl.text.trim();
+    if (notesCtrl.text.trim().isNotEmpty)
+      body['reviewNotes'] = notesCtrl.text.trim();
 
-    final res = await _api.patch('/training-applications/$id/reject', body: body);
+    final res =
+        await _api.patch('/training-applications/$id/reject', body: body);
     if (!mounted) return;
     if (res.statusCode == 200) {
       _load();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Η αίτηση απορρίφθηκε.')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Η αίτηση απορρίφθηκε.')));
       return;
     }
     final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία ενέργειας';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err.toString())));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(err.toString())));
   }
 
   Future<void> _enableServices(int id) async {
-    final res = await _api.patch('/training-applications/$id/enable-services', body: {});
+    final res = await _api
+        .patch('/training-applications/$id/enable-services', body: {});
     if (!mounted) return;
     if (res.statusCode == 200) {
       _load();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ο χρήστης ενεργοποιήθηκε και μπορεί να συνδεθεί στο σύστημα.')),
+        const SnackBar(
+            content: Text(
+                'Ο χρήστης ενεργοποιήθηκε και μπορεί να συνδεθεί στο σύστημα.')),
       );
       return;
     }
     final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία ενεργοποίησης';
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err.toString())));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(err.toString())));
   }
 
   @override
@@ -216,9 +236,12 @@ class _ApplicationCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${app['forename'] ?? ''} ${app['surname'] ?? ''}', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+            Text('${app['forename'] ?? ''} ${app['surname'] ?? ''}',
+                style:
+                    tt.titleMedium?.copyWith(fontWeight: AppFontWeight.bold)),
             const SizedBox(height: 4),
-            Text(app['email']?.toString() ?? '-', style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280))),
+            Text(app['email']?.toString() ?? '-',
+                style: tt.bodySmall?.copyWith(color: AppColors.gray500)),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
@@ -251,10 +274,12 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(999),
+        color: AppColors.gray100,
+        borderRadius: AppRadius.pill,
       ),
-      child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+      child: Text(label,
+          style: const TextStyle(
+              fontSize: AppFontSize.base, fontWeight: AppFontWeight.semibold)),
     );
   }
 }

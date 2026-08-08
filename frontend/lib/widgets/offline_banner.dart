@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../providers/connectivity_provider.dart';
 import '../providers/victim_provider.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class OfflineBanner extends StatelessWidget {
   const OfflineBanner({super.key});
 
@@ -24,10 +26,8 @@ class OfflineBanner extends StatelessWidget {
       message = '$pending αναφορές εκκρεμούν';
     }
 
-    final color =
-        isOnline ? const Color(0xFFFEF3C7) : const Color(0xFFFEE2E2);
-    final textColor =
-        isOnline ? const Color(0xFF92400E) : const Color(0xFF991B1B);
+    final color = isOnline ? AppColors.amber100 : AppColors.red100;
+    final textColor = isOnline ? AppColors.amber800 : AppColors.red800;
 
     return Material(
       color: color,
@@ -36,9 +36,7 @@ class OfflineBanner extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              isOnline
-                  ? Icons.cloud_upload_outlined
-                  : Icons.wifi_off_rounded,
+              isOnline ? Icons.cloud_upload_outlined : Icons.wifi_off_rounded,
               size: 16,
               color: textColor,
             ),
@@ -47,16 +45,15 @@ class OfflineBanner extends StatelessWidget {
               child: Text(
                 message,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.md,
                   color: textColor,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeight.medium,
                 ),
               ),
             ),
             if (pending > 0)
               TextButton(
-                onPressed:
-                    isOnline ? () => victims.syncOutbox() : null,
+                onPressed: isOnline ? () => victims.syncOutbox() : null,
                 style: TextButton.styleFrom(foregroundColor: textColor),
                 child: const Text('Συγχρονισμός'),
               ),

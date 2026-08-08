@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 /// Result returned by the scanner screen via Navigator.pop().
 class ScanResult {
   final String value;
@@ -30,14 +32,14 @@ Future<ScanChoice?> showScanChoiceDialog(BuildContext context) {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: Color(0xFFD1D5DB),
-                  borderRadius: BorderRadius.circular(2),
+                  color: AppColors.gray300,
+                  borderRadius: AppRadius.r2,
                 ),
               ),
               Text(
                 'Σάρωση Κωδικού',
                 style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.semibold,
                     ),
               ),
               const Divider(height: 1, indent: 16, endIndent: 16),
@@ -50,7 +52,8 @@ Future<ScanChoice?> showScanChoiceDialog(BuildContext context) {
               ),
               const Divider(height: 1, indent: 16, endIndent: 16),
               ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.keyboard_outlined)),
+                leading:
+                    const CircleAvatar(child: Icon(Icons.keyboard_outlined)),
                 title: const Text('Χειροκίνητη Εισαγωγή'),
                 subtitle: const Text('Πληκτρολογήστε κωδικό'),
                 trailing: const Icon(Icons.chevron_right),
@@ -136,8 +139,14 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 children: [
                   SegmentedButton<bool>(
                     segments: const [
-                      ButtonSegment(value: true, label: Text('QR / ID'), icon: Icon(Icons.qr_code)),
-                      ButtonSegment(value: false, label: Text('Barcode'), icon: Icon(Icons.barcode_reader)),
+                      ButtonSegment(
+                          value: true,
+                          label: Text('QR / ID'),
+                          icon: Icon(Icons.qr_code)),
+                      ButtonSegment(
+                          value: false,
+                          label: Text('Barcode'),
+                          icon: Icon(Icons.barcode_reader)),
                     ],
                     selected: {isQr},
                     onSelectionChanged: (v) => setSt(() => isQr = v.first),
@@ -150,14 +159,17 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       hintText: isQr ? 'π.χ. 42' : 'π.χ. ABC-123',
                       prefixIcon: Icon(isQr ? Icons.tag : Icons.barcode_reader),
                     ),
-                    keyboardType: isQr ? TextInputType.number : TextInputType.text,
+                    keyboardType:
+                        isQr ? TextInputType.number : TextInputType.text,
                     onChanged: (v) => selectedValue = v,
                   ),
                 ],
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Άκυρο')),
               FilledButton(
                 onPressed: () {
                   final value = selectedValue.trim();
@@ -165,7 +177,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   Navigator.pop(ctx); // close dialog
                   if (_hasPopped) return;
                   _hasPopped = true;
-                  Navigator.of(context).pop(ScanResult(value: value, isQr: isQr));
+                  Navigator.of(context)
+                      .pop(ScanResult(value: value, isQr: isQr));
                 },
                 child: const Text('Αναζήτηση'),
               ),
@@ -195,19 +208,23 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.videocam_off, color: Colors.white54, size: 64),
+                      const Icon(Icons.videocam_off,
+                          color: Colors.white54, size: 64),
                       const SizedBox(height: 16),
                       Text(
                         'Κάμερα μη διαθέσιμη',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: AppFontWeight.semibold,
+                                ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        error.errorDetails?.message ?? 'Δεν ήταν δυνατή η πρόσβαση στην κάμερα. Ελέγξτε τα δικαιώματα.',
-                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        error.errorDetails?.message ??
+                            'Δεν ήταν δυνατή η πρόσβαση στην κάμερα. Ελέγξτε τα δικαιώματα.',
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: AppFontSize.md),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
@@ -245,7 +262,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                       'Σάρωση QR ή Barcode',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: AppFontWeight.semibold,
                           ),
                     ),
                     const Spacer(),
@@ -269,7 +286,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   children: [
                     Text(
                       'Σκοπεύστε σε κωδικό QR ή barcode',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(color: Colors.white70),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
@@ -328,7 +348,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
             child: Icon(icon, color: Colors.white, size: 24),
           ),
           const SizedBox(height: 6),
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          Text(label,
+              style: const TextStyle(
+                  color: Colors.white70, fontSize: AppFontSize.base)),
         ],
       ),
     );
@@ -350,10 +372,14 @@ class _ScanOverlay extends StatelessWidget {
           children: [
             // Semi-transparent background
             ColorFiltered(
-              colorFilter: const ColorFilter.mode(Colors.black54, BlendMode.srcOut),
+              colorFilter:
+                  const ColorFilter.mode(Colors.black54, BlendMode.srcOut),
               child: Stack(
                 children: [
-                  Container(decoration: const BoxDecoration(color: Colors.black, backgroundBlendMode: BlendMode.dstOut)),
+                  Container(
+                      decoration: const BoxDecoration(
+                          color: Colors.black,
+                          backgroundBlendMode: BlendMode.dstOut)),
                   Positioned(
                     left: left,
                     top: top,
@@ -361,8 +387,8 @@ class _ScanOverlay extends StatelessWidget {
                       width: scanArea,
                       height: scanArea,
                       decoration: BoxDecoration(
-                        color: Color(0xFFDC2626), // any opaque color for cutout
-                        borderRadius: BorderRadius.circular(20),
+                        color: AppColors.red600, // any opaque color for cutout
+                        borderRadius: AppRadius.r20,
                       ),
                     ),
                   ),
@@ -441,7 +467,8 @@ class _BracketPainter extends CustomPainter {
       Path()
         ..moveTo(size.width - len, size.height)
         ..lineTo(size.width - r, size.height)
-        ..quadraticBezierTo(size.width, size.height, size.width, size.height - r)
+        ..quadraticBezierTo(
+            size.width, size.height, size.width, size.height - r)
         ..lineTo(size.width, size.height - len),
       paint,
     );

@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class ManageServiceTypesScreen extends StatefulWidget {
   const ManageServiceTypesScreen({super.key});
 
   @override
-  State<ManageServiceTypesScreen> createState() => _ManageServiceTypesScreenState();
+  State<ManageServiceTypesScreen> createState() =>
+      _ManageServiceTypesScreenState();
 }
 
 class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
@@ -33,7 +36,8 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
   }
 
   Future<void> _toggleDefaultVisible(int typeId, bool current) async {
-    await _api.patch('/service-types/$typeId', body: {'isDefaultVisible': !current});
+    await _api
+        .patch('/service-types/$typeId', body: {'isDefaultVisible': !current});
     _fetch();
   }
 
@@ -118,14 +122,16 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
       final res = await _api.get('/service-types/$typeId/specializations');
       if (res.statusCode == 200) {
         final rows = jsonDecode(res.body) as List<dynamic>;
-        selectedSpecIds = rows.map((r) => r['specializationId'] as int).toList();
+        selectedSpecIds =
+            rows.map((r) => r['specializationId'] as int).toList();
       }
     } catch (_) {}
 
     final selected = Set<int>.from(selectedSpecIds);
 
     final nameCtrl = TextEditingController(text: type['name'] ?? '');
-    final extIdCtrl = TextEditingController(text: '${type['externalMissionTypeId'] ?? ''}');
+    final extIdCtrl =
+        TextEditingController(text: '${type['externalMissionTypeId'] ?? ''}');
     bool isDefaultVisible = type['isDefaultVisible'] == true;
 
     await showModalBottomSheet(
@@ -147,16 +153,20 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
               children: [
                 Center(
                   child: Container(
-                    width: 40, height: 4,
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: Color(0xFFD1D5DB),
-                      borderRadius: BorderRadius.circular(2),
+                      color: AppColors.gray300,
+                      borderRadius: AppRadius.r2,
                     ),
                   ),
                 ),
                 const SizedBox(height: 20),
                 Text('Επεξεργασία Τύπου Υπηρεσίας',
-                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    style: Theme.of(ctx)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: AppFontWeight.bold)),
                 const SizedBox(height: 16),
                 TextField(
                   controller: nameCtrl,
@@ -185,7 +195,10 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text('Ειδικεύσεις που βλέπουν αυτό τον τύπο',
-                    style: Theme.of(ctx).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                    style: Theme.of(ctx)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(fontWeight: AppFontWeight.semibold)),
                 const SizedBox(height: 8),
                 if (_allSpecs.isEmpty)
                   const Text('Δεν υπάρχουν ειδικεύσεις')
@@ -228,13 +241,16 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
                             'name': nameCtrl.text.trim(),
                             'isDefaultVisible': isDefaultVisible,
                           };
-                          final extIdParsed = int.tryParse(extIdCtrl.text.trim());
+                          final extIdParsed =
+                              int.tryParse(extIdCtrl.text.trim());
                           if (extIdParsed != null) {
                             body['externalMissionTypeId'] = extIdParsed;
                           }
-                          await _api.patch('/service-types/$typeId', body: body);
+                          await _api.patch('/service-types/$typeId',
+                              body: body);
 
-                          await _api.put('/service-types/$typeId/specializations',
+                          await _api.put(
+                              '/service-types/$typeId/specializations',
                               body: {'specializationIds': selected.toList()});
 
                           if (ctx.mounted) Navigator.pop(ctx);
@@ -259,7 +275,8 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Τύποι Υπηρεσιών', style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+        title: Text('Τύποι Υπηρεσιών',
+            style: tt.titleLarge?.copyWith(fontWeight: AppFontWeight.bold)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         actions: [
@@ -281,11 +298,12 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
               ? Center(
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 40),
-                    padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 40, horizontal: 24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF9FAFB),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      color: AppColors.gray50,
+                      borderRadius: AppRadius.r20,
+                      border: Border.all(color: AppColors.gray200),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -293,17 +311,21 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF3F4F6),
+                            color: AppColors.gray100,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.category, size: 32, color: Color(0xFF9CA3AF)),
+                          child: const Icon(Icons.category,
+                              size: 32, color: AppColors.gray400),
                         ),
                         const SizedBox(height: 16),
                         Text('Δεν υπάρχουν τύποι υπηρεσιών',
-                            style: tt.bodyLarge?.copyWith(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600)),
+                            style: tt.bodyLarge?.copyWith(
+                                color: AppColors.gray500,
+                                fontWeight: AppFontWeight.semibold)),
                         const SizedBox(height: 6),
                         Text('Πατήστε το + για να δημιουργήσετε',
-                            style: tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF))),
+                            style: tt.bodySmall
+                                ?.copyWith(color: AppColors.gray400)),
                       ],
                     ),
                   ),
@@ -316,26 +338,35 @@ class _ManageServiceTypesScreenState extends State<ManageServiceTypesScreen> {
                     final t = _types[i];
                     final name = t['name'] ?? '';
                     final defaultVisible = t['isDefaultVisible'] == true;
-                    final specCount = (t['_count']?['specializations'] ?? 0) as int;
+                    final specCount =
+                        (t['_count']?['specializations'] ?? 0) as int;
                     final serviceCount = (t['_count']?['services'] ?? 0) as int;
 
                     return Card(
                       child: ListTile(
-                        title: Text(name, style: tt.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
-                        subtitle: Text('$specCount ειδικεύσεις • $serviceCount υπηρεσίες'),
+                        title: Text(name,
+                            style: tt.bodyLarge
+                                ?.copyWith(fontWeight: AppFontWeight.semibold)),
+                        subtitle: Text(
+                            '$specCount ειδικεύσεις • $serviceCount υπηρεσίες'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             FilterChip(
-                              label: Text(defaultVisible ? 'Προεπιλογή' : 'Περιορισμένο',
-                                  style: TextStyle(fontSize: 11)),
+                              label: Text(
+                                  defaultVisible
+                                      ? 'Προεπιλογή'
+                                      : 'Περιορισμένο',
+                                  style: TextStyle(fontSize: AppFontSize.sm)),
                               selected: defaultVisible,
-                              onSelected: (_) => _toggleDefaultVisible(t['id'], defaultVisible),
+                              onSelected: (_) => _toggleDefaultVisible(
+                                  t['id'], defaultVisible),
                             ),
                             const SizedBox(width: 4),
                             IconButton(
                               icon: const Icon(Icons.edit, size: 20),
-                              onPressed: () => _showEditSheet(Map<String, dynamic>.from(t as Map)),
+                              onPressed: () => _showEditSheet(
+                                  Map<String, dynamic>.from(t as Map)),
                             ),
                           ],
                         ),

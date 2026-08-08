@@ -9,6 +9,8 @@ import '../services/api_client.dart';
 import '../utils/api_error.dart';
 import 'service_card.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class FinalizedServicesTab extends StatefulWidget {
   final int departmentId;
   final String departmentName;
@@ -82,7 +84,11 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
 
   Future<void> _load({bool silent = false}) async {
     setState(() {
-      if (silent) { _filtering = true; } else { _loading = true; }
+      if (silent) {
+        _filtering = true;
+      } else {
+        _loading = true;
+      }
       _page = 1;
       _hasMore = true;
     });
@@ -94,7 +100,11 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
         _hasMore = data.length >= _limit;
       }
     } catch (_) {}
-    if (mounted) setState(() { _loading = false; _filtering = false; });
+    if (mounted)
+      setState(() {
+        _loading = false;
+        _filtering = false;
+      });
   }
 
   Future<void> _loadMore() async {
@@ -117,7 +127,8 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
     final buf = StringBuffer(
       '/services?departmentId=${widget.departmentId}&includeEnrollments=true&includeExpired=true&lifecycleStatus=finalized&page=$page&limit=$_limit',
     );
-    if (_search.isNotEmpty) buf.write('&search=${Uri.encodeComponent(_search)}');
+    if (_search.isNotEmpty)
+      buf.write('&search=${Uri.encodeComponent(_search)}');
     if (_dateFrom != null) buf.write('&fromDate=${_fmtDate(_dateFrom!)}');
     if (_dateTo != null) buf.write('&toDate=${_fmtEndOfDay(_dateTo!)}');
     return buf.toString();
@@ -135,8 +146,8 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
   void _onSearchChanged(String v) {
     setState(() => _search = v);
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(
-        const Duration(milliseconds: 400), () => _load(silent: true));
+    _debounceTimer =
+        Timer(const Duration(milliseconds: 400), () => _load(silent: true));
   }
 
   Future<void> _pickDateFrom() async {
@@ -175,33 +186,26 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
         height: 44,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: isSet
-              ? const Color(0xFF7C3AED).withAlpha(15)
-              : const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(12),
+          color: isSet ? AppColors.violet600.withAlpha(15) : AppColors.gray100,
+          borderRadius: AppRadius.r12,
           border: Border.all(
-            color: isSet
-                ? const Color(0xFF7C3AED).withAlpha(60)
-                : const Color(0xFFE5E7EB),
+            color:
+                isSet ? AppColors.violet600.withAlpha(60) : AppColors.gray200,
           ),
         ),
         child: Row(
           children: [
             Icon(Icons.calendar_today_outlined,
                 size: 14,
-                color: isSet
-                    ? const Color(0xFF7C3AED)
-                    : const Color(0xFF6B7280)),
+                color: isSet ? AppColors.violet600 : AppColors.gray500),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: isSet
-                      ? const Color(0xFF7C3AED)
-                      : const Color(0xFF6B7280),
+                  fontSize: AppFontSize.base,
+                  fontWeight: AppFontWeight.medium,
+                  color: isSet ? AppColors.violet600 : AppColors.gray500,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -210,7 +214,7 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
               GestureDetector(
                 onTap: onClear,
                 child: const Icon(Icons.close,
-                    size: 14, color: Color(0xFF7C3AED)),
+                    size: 14, color: AppColors.violet600),
               ),
           ],
         ),
@@ -273,7 +277,7 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
               child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Διαγραφή'),
           ),
         ],
@@ -330,8 +334,7 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
                   decoration: InputDecoration(
                     hintText: 'Αναζήτηση υπηρεσιών...',
                     prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(borderRadius: AppRadius.r12),
                     filled: true,
                     fillColor: Colors.white,
                     contentPadding: const EdgeInsets.symmetric(
@@ -350,16 +353,16 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
                     height: 48,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: (_filtersExpanded ||
-                              _selectedServiceTypeId != null)
-                          ? const Color(0xFF7C3AED).withAlpha(15)
-                          : const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(12),
+                      color:
+                          (_filtersExpanded || _selectedServiceTypeId != null)
+                              ? AppColors.violet600.withAlpha(15)
+                              : AppColors.gray100,
+                      borderRadius: AppRadius.r12,
                       border: Border.all(
-                        color: (_filtersExpanded ||
-                                _selectedServiceTypeId != null)
-                            ? const Color(0xFF7C3AED).withAlpha(60)
-                            : const Color(0xFFE5E7EB),
+                        color:
+                            (_filtersExpanded || _selectedServiceTypeId != null)
+                                ? AppColors.violet600.withAlpha(60)
+                                : AppColors.gray200,
                       ),
                     ),
                     child: Row(
@@ -370,8 +373,8 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
                           size: 16,
                           color: (_filtersExpanded ||
                                   _selectedServiceTypeId != null)
-                              ? const Color(0xFF7C3AED)
-                              : const Color(0xFF6B7280),
+                              ? AppColors.violet600
+                              : AppColors.gray500,
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -379,12 +382,12 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
                               ? 'Φίλτρα (1)'
                               : 'Φίλτρα',
                           style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                            fontSize: AppFontSize.md,
+                            fontWeight: AppFontWeight.medium,
                             color: (_filtersExpanded ||
                                     _selectedServiceTypeId != null)
-                                ? const Color(0xFF7C3AED)
-                                : const Color(0xFF6B7280),
+                                ? AppColors.violet600
+                                : AppColors.gray500,
                           ),
                         ),
                       ],
@@ -420,24 +423,22 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: selected
-                                  ? const Color(0xFF7C3AED)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(20),
+                              color:
+                                  selected ? AppColors.violet600 : Colors.white,
+                              borderRadius: AppRadius.r20,
                               border: Border.all(
                                 color: selected
-                                    ? const Color(0xFF7C3AED)
-                                    : const Color(0xFFD1D5DB),
+                                    ? AppColors.violet600
+                                    : AppColors.gray300,
                               ),
                             ),
                             child: Text(
                               st['name'] ?? '',
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: selected
-                                    ? Colors.white
-                                    : const Color(0xFF374151),
+                                fontSize: AppFontSize.md,
+                                fontWeight: AppFontWeight.semibold,
+                                color:
+                                    selected ? Colors.white : AppColors.gray700,
                               ),
                             ),
                           ),
@@ -454,7 +455,9 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
             children: [
               Expanded(
                 child: _buildDateButton(
-                  label: _dateFrom != null ? _fmtDisplay(_dateFrom!) : 'Από ημερομηνία',
+                  label: _dateFrom != null
+                      ? _fmtDisplay(_dateFrom!)
+                      : 'Από ημερομηνία',
                   isSet: _dateFrom != null,
                   onTap: _pickDateFrom,
                   onClear: () {
@@ -466,7 +469,9 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
               const SizedBox(width: 8),
               Expanded(
                 child: _buildDateButton(
-                  label: _dateTo != null ? _fmtDisplay(_dateTo!) : 'Έως ημερομηνία',
+                  label: _dateTo != null
+                      ? _fmtDisplay(_dateTo!)
+                      : 'Έως ημερομηνία',
                   isSet: _dateTo != null,
                   onTap: _pickDateTo,
                   onClear: () {
@@ -478,21 +483,19 @@ class FinalizedServicesTabState extends State<FinalizedServicesTab>
             ],
           ),
         ),
-        if (_filtering)
-          const LinearProgressIndicator(minHeight: 2),
+        if (_filtering) const LinearProgressIndicator(minHeight: 2),
         Expanded(
           child: (filtered.isEmpty && !_hasMore)
               ? Center(
-                  child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.inbox,
-                            size: 64, color: Color(0xFFD1D5DB)),
-                        const SizedBox(height: 12),
-                        Text('Δεν βρέθηκαν υπηρεσίες',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: const Color(0xFF6B7280))),
-                      ]))
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.inbox, size: 64, color: AppColors.gray300),
+                  const SizedBox(height: 12),
+                  Text('Δεν βρέθηκαν υπηρεσίες',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyLarge
+                          ?.copyWith(color: AppColors.gray500)),
+                ]))
               : RefreshIndicator(
                   onRefresh: sync,
                   child: ListView.builder(

@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/department_provider.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 /// Professional department list with search, stats, grid/list layout.
 class ManageDepartmentsScreen extends StatefulWidget {
   const ManageDepartmentsScreen({super.key});
@@ -53,29 +55,25 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
                 TextField(
                     controller: nameCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'Όνομα *',
-                        border: OutlineInputBorder())),
+                        labelText: 'Όνομα *', border: OutlineInputBorder())),
                 const SizedBox(height: 12),
                 TextField(
                     controller: descCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'Περιγραφή',
-                        border: OutlineInputBorder()),
+                        labelText: 'Περιγραφή', border: OutlineInputBorder()),
                     maxLines: 2),
                 const SizedBox(height: 12),
                 TextField(
                     controller: locationCtrl,
                     decoration: const InputDecoration(
-                        labelText: 'Τοποθεσία',
-                        border: OutlineInputBorder())),
+                        labelText: 'Τοποθεσία', border: OutlineInputBorder())),
               ],
             ),
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Άκυρο')),
+              onPressed: () => Navigator.pop(ctx), child: const Text('Άκυρο')),
           FilledButton(
             onPressed: () async {
               final data = <String, dynamic>{'name': nameCtrl.text.trim()};
@@ -85,8 +83,7 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
               if (locationCtrl.text.isNotEmpty) {
                 data['location'] = locationCtrl.text.trim();
               }
-              final err =
-                  await context.read<DepartmentProvider>().create(data);
+              final err = await context.read<DepartmentProvider>().create(data);
               if (ctx.mounted) Navigator.pop(ctx);
               if (err != null && mounted) {
                 ScaffoldMessenger.of(context)
@@ -113,7 +110,7 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Διαχείριση Τμημάτων',
-            style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            style: tt.titleLarge?.copyWith(fontWeight: AppFontWeight.bold)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -145,19 +142,20 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
                   child: Row(
                     children: [
                       Container(
-                        width: 4, height: 22,
+                        width: 4,
+                        height: 22,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7C3AED),
-                          borderRadius: BorderRadius.circular(2),
+                          color: AppColors.violet600,
+                          borderRadius: AppRadius.r2,
                         ),
                       ),
                       const SizedBox(width: 10),
                       Text(
                         'Τμήματα',
                         style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1A1C1E),
+                          fontSize: AppFontSize.xl3,
+                          fontWeight: AppFontWeight.bold,
+                          color: AppColors.ink,
                           letterSpacing: -0.5,
                         ),
                       ),
@@ -167,14 +165,12 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
 
                 // ── Search ──
                 Padding(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: hPad, vertical: 12),
+                  padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 12),
                   child: TextField(
                     decoration: InputDecoration(
-                    hintText: 'Αναζήτηση τμημάτων...',
+                      hintText: 'Αναζήτηση τμημάτων...',
                       prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(borderRadius: AppRadius.r12),
                       filled: true,
                       fillColor: Colors.white,
                       contentPadding: const EdgeInsets.symmetric(
@@ -193,19 +189,19 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
                           label: 'Τμήματα',
                           value: '${prov.departments.length}',
                           icon: Icons.business,
-                          color: const Color(0xFF7C3AED)),
+                          color: AppColors.violet600),
                       const SizedBox(width: 12),
                       _MiniStat(
                           label: 'Μέλη',
                           value: '$totalMembers',
                           icon: Icons.people,
-                          color: const Color(0xFFDC2626)),
+                          color: AppColors.red600),
                       const SizedBox(width: 12),
                       _MiniStat(
                           label: 'Εμφαν.',
                           value: '${filtered.length}',
                           icon: Icons.filter_list,
-                          color: const Color(0xFF6B7280)),
+                          color: AppColors.gray500),
                     ],
                   ),
                 ),
@@ -218,12 +214,14 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
                       : filtered.isEmpty
                           ? Center(
                               child: Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 40),
-                                padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 40),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 40, horizontal: 24),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF9FAFB),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                                  color: AppColors.gray50,
+                                  borderRadius: AppRadius.r20,
+                                  border: Border.all(color: AppColors.gray200),
                                 ),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
@@ -231,22 +229,31 @@ class _ManageDepartmentsScreenState extends State<ManageDepartmentsScreen> {
                                     Container(
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFF3F4F6),
+                                        color: AppColors.gray100,
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.business, size: 32, color: Color(0xFF9CA3AF)),
+                                      child: const Icon(Icons.business,
+                                          size: 32, color: AppColors.gray400),
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
-                                      _search.isNotEmpty ? 'Δεν βρέθηκαν τμήματα' : 'Δεν υπάρχουν τμήματα',
+                                      _search.isNotEmpty
+                                          ? 'Δεν βρέθηκαν τμήματα'
+                                          : 'Δεν υπάρχουν τμήματα',
                                       style: GoogleFonts.inter(
-                                        fontSize: 14, color: const Color(0xFF6B7280), fontWeight: FontWeight.w600,
+                                        fontSize: AppFontSize.lg,
+                                        color: AppColors.gray500,
+                                        fontWeight: AppFontWeight.semibold,
                                       ),
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      _search.isNotEmpty ? 'Δοκιμάστε άλλη αναζήτηση' : 'Πατήστε το + για να προσθέσετε',
-                                      style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF9CA3AF)),
+                                      _search.isNotEmpty
+                                          ? 'Δοκιμάστε άλλη αναζήτηση'
+                                          : 'Πατήστε το + για να προσθέσετε',
+                                      style: GoogleFonts.inter(
+                                          fontSize: AppFontSize.base,
+                                          color: AppColors.gray400),
                                     ),
                                   ],
                                 ),
@@ -317,16 +324,15 @@ class _DeptCard extends StatelessWidget {
     final vehicleCount = counts['vehicles'] ?? 0;
     final location = (dept['location'] ?? '').toString();
     final description = (dept['description'] ?? '').toString();
-    final subtitle = [location, description]
-        .where((s) => s.isNotEmpty)
-        .join(' • ');
+    final subtitle =
+        [location, description].where((s) => s.isNotEmpty).join(' • ');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.r12),
       elevation: 0,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.r12,
         onTap: onTap,
         child: IntrinsicHeight(
           child: Row(
@@ -334,7 +340,7 @@ class _DeptCard extends StatelessWidget {
               Container(
                 width: 4,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF7C3AED),
+                  color: AppColors.violet600,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(12),
                     bottomLeft: Radius.circular(12),
@@ -349,14 +355,16 @@ class _DeptCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(dept['name'] ?? '',
-                          style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                          style: tt.titleSmall
+                              ?.copyWith(fontWeight: AppFontWeight.bold),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis),
                       if (subtitle.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(subtitle,
                             style: GoogleFonts.inter(
-                                fontSize: 12, color: const Color(0xFF6B7280)),
+                                fontSize: AppFontSize.base,
+                                color: AppColors.gray500),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 4),
@@ -368,15 +376,15 @@ class _DeptCard extends StatelessWidget {
                           _CountBadge(
                               icon: Icons.people,
                               count: memberCount,
-                              color: const Color(0xFFDC2626)),
+                              color: AppColors.red600),
                           _CountBadge(
                               icon: Icons.miscellaneous_services,
                               count: serviceCount,
-                              color: const Color(0xFF059669)),
+                              color: AppColors.emerald600),
                           _CountBadge(
                               icon: Icons.directions_car,
                               count: vehicleCount,
-                              color: const Color(0xFFD97706)),
+                              color: AppColors.amber600),
                         ],
                       ),
                     ],
@@ -385,7 +393,8 @@ class _DeptCard extends StatelessWidget {
               ),
               const Padding(
                 padding: EdgeInsets.only(right: 8),
-                child: Icon(Icons.chevron_right, color: Color(0xFF9CA3AF), size: 18),
+                child: Icon(Icons.chevron_right,
+                    color: AppColors.gray400, size: 18),
               ),
             ],
           ),
@@ -411,8 +420,8 @@ class _CountBadge extends StatelessWidget {
         const SizedBox(width: 4),
         Text('$count',
             style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontSize: AppFontSize.base,
+                fontWeight: AppFontWeight.semibold,
                 color: color)),
       ],
     );
@@ -434,28 +443,25 @@ class _MiniStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          borderRadius: AppRadius.r12,
+          border: Border.all(color: AppColors.gray200),
         ),
         child: Row(children: [
           Icon(icon, size: 18, color: color),
           const SizedBox(width: 8),
-          Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value,
-                    style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: color)),
-                Text(label,
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: const Color(0xFF6B7280))),
-              ]),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(value,
+                style: GoogleFonts.inter(
+                    fontWeight: AppFontWeight.bold,
+                    fontSize: AppFontSize.xl,
+                    color: color)),
+            Text(label,
+                style: GoogleFonts.inter(
+                    fontSize: AppFontSize.sm, color: AppColors.gray500)),
+          ]),
         ]),
       ),
     );

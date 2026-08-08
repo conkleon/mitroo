@@ -6,16 +6,20 @@ import '../providers/auth_provider.dart';
 import '../providers/department_provider.dart';
 import '../providers/mission_report_provider.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 const _defaultMissionListLimit = 20;
 
 class MissionReportSelectionScreen extends StatefulWidget {
   const MissionReportSelectionScreen({super.key});
 
   @override
-  State<MissionReportSelectionScreen> createState() => _MissionReportSelectionScreenState();
+  State<MissionReportSelectionScreen> createState() =>
+      _MissionReportSelectionScreenState();
 }
 
-class _MissionReportSelectionScreenState extends State<MissionReportSelectionScreen>
+class _MissionReportSelectionScreenState
+    extends State<MissionReportSelectionScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
@@ -58,12 +62,14 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
   }
 
   void _fetchMissionList() {
-    final hasFilters = _search.isNotEmpty || _listFromDate != null || _listToDate != null;
+    final hasFilters =
+        _search.isNotEmpty || _listFromDate != null || _listToDate != null;
     context.read<MissionReportProvider>().fetchMissions(
           search: _search.isEmpty ? null : _search,
           from: _listFromDate?.toUtc().toIso8601String(),
           to: _listToDate != null
-              ? DateTime(_listToDate!.year, _listToDate!.month, _listToDate!.day, 23, 59, 59)
+              ? DateTime(_listToDate!.year, _listToDate!.month,
+                      _listToDate!.day, 23, 59, 59)
                   .toUtc()
                   .toIso8601String()
               : null,
@@ -74,7 +80,8 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
   void _onSearchChanged(String value) {
     setState(() => _search = value);
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 400), _fetchMissionList);
+    _debounceTimer =
+        Timer(const Duration(milliseconds: 400), _fetchMissionList);
   }
 
   Future<void> _pickListDate({required bool isFrom}) async {
@@ -207,7 +214,8 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
                 onPressed: provider.generating ? null : _generate,
                 child: provider.generating
                     ? const SizedBox(
-                        height: 20, width: 20,
+                        height: 20,
+                        width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2))
                     : const Text('Δημιουργία Αναφοράς'),
               ),
@@ -236,12 +244,12 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
         decoration: BoxDecoration(
           color: isSet
               ? Theme.of(context).colorScheme.primary.withAlpha(20)
-              : const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(12),
+              : AppColors.gray100,
+          borderRadius: AppRadius.r12,
           border: Border.all(
             color: isSet
                 ? Theme.of(context).colorScheme.primary.withAlpha(80)
-                : const Color(0xFFE5E7EB),
+                : AppColors.gray200,
           ),
         ),
         child: Row(
@@ -250,18 +258,18 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
                 size: 14,
                 color: isSet
                     ? Theme.of(context).colorScheme.primary
-                    : const Color(0xFF6B7280)),
+                    : AppColors.gray500),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 text,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                  fontSize: AppFontSize.base,
+                  fontWeight: AppFontWeight.medium,
                   color: isSet
                       ? Theme.of(context).colorScheme.primary
-                      : const Color(0xFF6B7280),
+                      : AppColors.gray500,
                 ),
               ),
             ),
@@ -278,7 +286,8 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
   }
 
   Widget _buildMissionListTab(MissionReportProvider provider) {
-    final hasFilters = _search.isNotEmpty || _listFromDate != null || _listToDate != null;
+    final hasFilters =
+        _search.isNotEmpty || _listFromDate != null || _listToDate != null;
 
     return Column(
       children: [
@@ -289,10 +298,11 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
             decoration: InputDecoration(
               hintText: 'Αναζήτηση αποστολών...',
               prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(borderRadius: AppRadius.r12),
               filled: true,
               fillColor: Theme.of(context).colorScheme.surface,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               suffixIcon: _search.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear),
@@ -342,7 +352,7 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall
-                      ?.copyWith(color: const Color(0xFF9CA3AF)),
+                      ?.copyWith(color: AppColors.gray400),
                 ),
               ),
               if (_selectedMissionIds.isNotEmpty)
@@ -350,7 +360,7 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
                   '${_selectedMissionIds.length} επιλεγμένες',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: AppFontWeight.bold,
                       ),
                 ),
             ],
@@ -365,7 +375,8 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       itemCount: provider.missions.length,
                       itemBuilder: (context, i) {
-                        final map = provider.missions[i] as Map<String, dynamic>;
+                        final map =
+                            provider.missions[i] as Map<String, dynamic>;
                         final id = map['id'] as int;
                         return CheckboxListTile(
                           value: _selectedMissionIds.contains(id),
@@ -393,10 +404,13 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.inbox, size: 64, color: Color(0xFFD1D5DB)),
+          const Icon(Icons.inbox, size: 64, color: AppColors.gray300),
           const SizedBox(height: 12),
           Text('Δεν βρέθηκαν αποστολές',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: const Color(0xFF6B7280))),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: AppColors.gray500)),
         ],
       ),
     );
@@ -408,13 +422,15 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
       children: [
         ListTile(
           title: const Text('Από'),
-          subtitle: Text(_fromDate?.toLocal().toString().split(' ').first ?? 'Επιλογή'),
+          subtitle: Text(
+              _fromDate?.toLocal().toString().split(' ').first ?? 'Επιλογή'),
           trailing: const Icon(Icons.calendar_today),
           onTap: () => _pickDate(isFrom: true),
         ),
         ListTile(
           title: const Text('Έως'),
-          subtitle: Text(_toDate?.toLocal().toString().split(' ').first ?? 'Επιλογή'),
+          subtitle:
+              Text(_toDate?.toLocal().toString().split(' ').first ?? 'Επιλογή'),
           trailing: const Icon(Icons.calendar_today),
           onTap: () => _pickDate(isFrom: false),
         ),
@@ -424,7 +440,8 @@ class _MissionReportSelectionScreenState extends State<MissionReportSelectionScr
             value: _departmentFilter,
             decoration: const InputDecoration(labelText: 'Τμήμα (προαιρετικό)'),
             items: [
-              const DropdownMenuItem<int?>(value: null, child: Text('Όλα τα τμήματα')),
+              const DropdownMenuItem<int?>(
+                  value: null, child: Text('Όλα τα τμήματα')),
               ...context.watch<DepartmentProvider>().departments.map((d) {
                 final map = d as Map<String, dynamic>;
                 return DropdownMenuItem<int?>(

@@ -11,6 +11,8 @@ import '../services/api_client.dart';
 import '../widgets/stale_banner.dart';
 import 'my_equipment_sheet.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 // ── Greek day-of-week names ──────────────────────────────────
 const _greekDays = <int, String>{
   1: 'Δευτέρα',
@@ -34,7 +36,7 @@ String _dayLabel(DateTime dt) {
 /// Shows dates when start and end are on different days; time-only when same day.
 String _timeRange(Map<String, dynamic> svc, {bool timeOnly = false}) {
   final startUtc = DateTime.tryParse(svc['startAt'] ?? '');
-  final endUtc   = DateTime.tryParse(svc['endAt']   ?? '');
+  final endUtc = DateTime.tryParse(svc['endAt'] ?? '');
   if (startUtc == null) return '';
 
   final start = startUtc.toLocal();
@@ -201,21 +203,27 @@ class _ServicesScreenState extends State<ServicesScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Υποβολή αίτησης'),
-        content: const Text('Θέλετε να υποβάλετε αίτηση για αυτή την υπηρεσία;'),
+        content:
+            const Text('Θέλετε να υποβάλετε αίτηση για αυτή την υπηρεσία;'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Άκυρο')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Υποβολή')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Άκυρο')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Υποβολή')),
         ],
       ),
     );
     if (confirmed != true || !mounted) return;
 
-    final err = await context.read<ServiceProvider>().enrollSelf(serviceId, userId);
+    final err =
+        await context.read<ServiceProvider>().enrollSelf(serviceId, userId);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(err ?? 'Η αίτηση υποβλήθηκε επιτυχώς!'),
-        backgroundColor: err != null ? Color(0xFFB91C1C) : const Color(0xFF059669),
+        backgroundColor: err != null ? AppColors.red700 : AppColors.emerald600,
       ),
     );
   }
@@ -228,10 +236,12 @@ class _ServicesScreenState extends State<ServicesScreen>
         title: const Text('Ακύρωση αίτησης'),
         content: const Text('Θέλετε να ακυρώσετε την αίτησή σας;'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Όχι')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Όχι')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: Color(0xFFDC2626)),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             child: const Text('Ακύρωση αίτησης'),
           ),
         ],
@@ -244,7 +254,7 @@ class _ServicesScreenState extends State<ServicesScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(err ?? 'Η αίτηση ακυρώθηκε'),
-        backgroundColor: err != null ? Color(0xFFB91C1C) : const Color(0xFF059669),
+        backgroundColor: err != null ? AppColors.red700 : AppColors.emerald600,
       ),
     );
   }
@@ -272,7 +282,8 @@ class _ServicesScreenState extends State<ServicesScreen>
       countPerType[id] = (countPerType[id] ?? 0) + 1;
     }
     final serviceTypes = serviceTypeMap.entries.toList()
-      ..sort((a, b) => (countPerType[b.key] ?? 0).compareTo(countPerType[a.key] ?? 0));
+      ..sort((a, b) =>
+          (countPerType[b.key] ?? 0).compareTo(countPerType[a.key] ?? 0));
     final showTypeTabs = serviceTypes.length >= 2;
     final effectiveTypeId = showTypeTabs
         ? (serviceTypes.any((e) => e.key == _selectedServiceTypeId)
@@ -307,420 +318,475 @@ class _ServicesScreenState extends State<ServicesScreen>
             child: Stack(
               children: [
                 SafeArea(
-            child: RefreshIndicator(
-              onRefresh: () => svcProv.fetchMyServices(),
-              child: CustomScrollView(
-                slivers: [
-              // ── Top bar ──────────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                  child: Row(
-                    children: [
-                      // My accepted services button
-                      Material(
-                        color: cs.primary.withAlpha(15),
-                        borderRadius: BorderRadius.circular(12),
-                        child: InkWell(
-                          onTap: () => _showMyServicesSheet(context),
-                          borderRadius: BorderRadius.circular(12),
+                  child: RefreshIndicator(
+                    onRefresh: () => svcProv.fetchMyServices(),
+                    child: CustomScrollView(
+                      slivers: [
+                        // ── Top bar ──────────────────────────────
+                        SliverToBoxAdapter(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.assignment_turned_in_outlined, size: 18, color: cs.primary),
-                                const SizedBox(width: 8),
-                                Text('Οι υπηρεσίες μου',
-                                    style: tt.labelLarge?.copyWith(
-                                        fontWeight: FontWeight.w700, color: cs.primary)),
+                                // My accepted services button
+                                Material(
+                                  color: cs.primary.withAlpha(15),
+                                  borderRadius: AppRadius.r12,
+                                  child: InkWell(
+                                    onTap: () => _showMyServicesSheet(context),
+                                    borderRadius: AppRadius.r12,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 8),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                              Icons
+                                                  .assignment_turned_in_outlined,
+                                              size: 18,
+                                              color: cs.primary),
+                                          const SizedBox(width: 8),
+                                          Text('Οι υπηρεσίες μου',
+                                              style: tt.labelLarge?.copyWith(
+                                                  fontWeight:
+                                                      AppFontWeight.bold,
+                                                  color: cs.primary)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+                                // My Equipment button with badge
+                                Stack(
+                                  children: [
+                                    IconButton(
+                                      onPressed: _showMyEquipmentSheet,
+                                      icon: const Icon(
+                                          Icons.inventory_2_outlined),
+                                      tooltip: 'Ο Εξοπλισμός Μου',
+                                      style: IconButton.styleFrom(
+                                        backgroundColor:
+                                            cs.primary.withAlpha(20),
+                                      ),
+                                    ),
+                                    if (_myEquipment.isNotEmpty)
+                                      Positioned(
+                                        right: 2,
+                                        top: 2,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.red600,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          constraints: const BoxConstraints(
+                                              minWidth: 18, minHeight: 18),
+                                          child: Text(
+                                            '${_myEquipment.length}',
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: AppFontSize.xs,
+                                                fontWeight: AppFontWeight.bold),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                    if (_myVehiclesCount > 0)
+                                      Positioned(
+                                        right: 2,
+                                        bottom: 2,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 4, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.orange700,
+                                            borderRadius: AppRadius.r8,
+                                          ),
+                                          constraints: const BoxConstraints(
+                                              minWidth: 18, minHeight: 16),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.directions_car,
+                                                  size: 9, color: Colors.white),
+                                              const SizedBox(width: 2),
+                                              Text(
+                                                '$_myVehiclesCount',
+                                                style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: AppFontSize.xxs,
+                                                    fontWeight:
+                                                        AppFontWeight.bold),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(width: 6),
+                                GestureDetector(
+                                  onTap: () => context.push('/profile'),
+                                  child: CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor: cs.primary,
+                                    child: Text(
+                                      name.isNotEmpty
+                                          ? name[0].toUpperCase()
+                                          : 'U',
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: AppFontWeight.semibold,
+                                          fontSize: AppFontSize.lg),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      // My Equipment button with badge
-                      Stack(
-                        children: [
-                          IconButton(
-                            onPressed: _showMyEquipmentSheet,
-                            icon: const Icon(Icons.inventory_2_outlined),
-                            tooltip: 'Ο Εξοπλισμός Μου',
-                            style: IconButton.styleFrom(
-                              backgroundColor: cs.primary.withAlpha(20),
-                            ),
-                          ),
-                          if (_myEquipment.isNotEmpty)
-                            Positioned(
-                              right: 2,
-                              top: 2,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Color(0xFFDC2626),
-                                  shape: BoxShape.circle,
+
+                        // ── View toggle: Λίστα / Ημερολόγιο ─────
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+                            child: Container(
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceTint2,
+                                borderRadius: AppRadius.r14,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withAlpha(15),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: TabBar(
+                                controller: _tabController,
+                                indicator: BoxDecoration(
+                                  color: cs.primary,
+                                  borderRadius: AppRadius.r11,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: cs.primary.withAlpha(60),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
-                                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-                                child: Text(
-                                  '${_myEquipment.length}',
-                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
-                                  textAlign: TextAlign.center,
-                                ),
+                                indicatorSize: TabBarIndicatorSize.tab,
+                                labelColor: Colors.white,
+                                unselectedLabelColor: AppColors.gray700,
+                                labelStyle: tt.labelMedium
+                                    ?.copyWith(fontWeight: AppFontWeight.bold),
+                                unselectedLabelStyle: tt.labelMedium?.copyWith(
+                                    fontWeight: AppFontWeight.semibold),
+                                dividerHeight: 0,
+                                indicatorPadding: const EdgeInsets.all(3),
+                                tabs: const [
+                                  Tab(
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.list_alt_rounded, size: 16),
+                                        SizedBox(width: 6),
+                                        Text('Λίστα'),
+                                      ],
+                                    ),
+                                  ),
+                                  Tab(
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.calendar_month_rounded,
+                                            size: 16),
+                                        SizedBox(width: 6),
+                                        Text('Ημερολόγιο'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          if (_myVehiclesCount > 0)
-                            Positioned(
-                              right: 2,
-                              bottom: 2,
+                          ),
+                        ),
+
+                        // ── Service-type tab bar (hidden when < 2 types) ─────
+                        if (showTypeTabs)
+                          SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                height: 48,
+                                clipBehavior: Clip.hardEdge,
                                 decoration: BoxDecoration(
-                                  color: Color(0xFFC2410C),
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: AppColors.surfaceTint2,
+                                  borderRadius: AppRadius.r14,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withAlpha(15),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
                                 ),
-                                constraints: const BoxConstraints(minWidth: 18, minHeight: 16),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
+                                child: Stack(
                                   children: [
-                                    const Icon(Icons.directions_car, size: 9, color: Colors.white),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      '$_myVehiclesCount',
-                                      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                                    SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      padding: const EdgeInsets.all(4),
+                                      child: Row(
+                                        children: serviceTypes.map((entry) {
+                                          final typeId = entry.key;
+                                          final typeName = entry.value;
+                                          final count =
+                                              countPerType[typeId] ?? 0;
+                                          final selected =
+                                              effectiveTypeId == typeId;
+                                          return GestureDetector(
+                                            onTap: () => setState(() =>
+                                                _selectedServiceTypeId =
+                                                    typeId),
+                                            child: AnimatedContainer(
+                                              duration: const Duration(
+                                                  milliseconds: 200),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 8),
+                                              decoration: BoxDecoration(
+                                                color: selected
+                                                    ? cs.primary
+                                                    : Colors.transparent,
+                                                borderRadius: AppRadius.r11,
+                                                boxShadow: selected
+                                                    ? [
+                                                        BoxShadow(
+                                                          color: cs.primary
+                                                              .withAlpha(60),
+                                                          blurRadius: 6,
+                                                          offset: const Offset(
+                                                              0, 2),
+                                                        ),
+                                                      ]
+                                                    : null,
+                                              ),
+                                              child: Text(
+                                                '$typeName ($count)',
+                                                style: selected
+                                                    ? tt.labelSmall?.copyWith(
+                                                        fontWeight:
+                                                            AppFontWeight.bold,
+                                                        color: Colors.white,
+                                                      )
+                                                    : tt.labelSmall?.copyWith(
+                                                        fontWeight:
+                                                            AppFontWeight
+                                                                .semibold,
+                                                        color:
+                                                            AppColors.gray700,
+                                                      ),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 0,
+                                      top: 0,
+                                      bottom: 0,
+                                      width: 48,
+                                      child: IgnorePointer(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.centerLeft,
+                                              end: Alignment.centerRight,
+                                              colors: [
+                                                AppColors.surfaceTint2
+                                                    .withAlpha(0),
+                                                AppColors.surfaceTint2,
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-                        ],
-                      ),
-                      const SizedBox(width: 6),
-                      GestureDetector(
-                        onTap: () => context.push('/profile'),
-                        child: CircleAvatar(
-                          radius: 18,
-                          backgroundColor: cs.primary,
-                          child: Text(
-                            name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
 
-              // ── View toggle: Λίστα / Ημερολόγιο ─────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
-                  child: Container(
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE9EBF0),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(15),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: TabBar(
-                      controller: _tabController,
-                      indicator: BoxDecoration(
-                        color: cs.primary,
-                        borderRadius: BorderRadius.circular(11),
-                        boxShadow: [
-                          BoxShadow(
-                            color: cs.primary.withAlpha(60),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: const Color(0xFF374151),
-                      labelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w700),
-                      unselectedLabelStyle: tt.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-                      dividerHeight: 0,
-                      indicatorPadding: const EdgeInsets.all(3),
-                      tabs: const [
-                        Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.list_alt_rounded, size: 16),
-                              SizedBox(width: 6),
-                              Text('Λίστα'),
-                            ],
-                          ),
-                        ),
-                        Tab(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.calendar_month_rounded, size: 16),
-                              SizedBox(width: 6),
-                              Text('Ημερολόγιο'),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+                        // ═══ TAB 0: LIST VIEW ═══════════════════════
+                        if (_tabController.index == 0) ...[
+                          // ── Loading indicator ────────────────────
+                          if (svcProv.loading)
+                            const SliverFillRemaining(
+                                child:
+                                    Center(child: CircularProgressIndicator()))
 
-              // ── Service-type tab bar (hidden when < 2 types) ─────
-              if (showTypeTabs)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                    child: Container(
-                      height: 48,
-                      clipBehavior: Clip.hardEdge,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE9EBF0),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(15),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Stack(
-                        children: [
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.all(4),
-                            child: Row(
-                              children: serviceTypes.map((entry) {
-                                final typeId = entry.key;
-                                final typeName = entry.value;
-                                final count = countPerType[typeId] ?? 0;
-                                final selected = effectiveTypeId == typeId;
-                                return GestureDetector(
-                                  onTap: () => setState(() => _selectedServiceTypeId = typeId),
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: selected ? cs.primary : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(11),
-                                      boxShadow: selected
-                                          ? [
-                                              BoxShadow(
-                                                color: cs.primary.withAlpha(60),
-                                                blurRadius: 6,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
-                                    child: Text(
-                                      '$typeName ($count)',
-                                      style: selected
-                                          ? tt.labelSmall?.copyWith(
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.white,
-                                            )
-                                          : tt.labelSmall?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              color: const Color(0xFF374151),
-                                            ),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            bottom: 0,
-                            width: 48,
-                            child: IgnorePointer(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                    colors: [
-                                      const Color(0xFFE9EBF0).withAlpha(0),
-                                      const Color(0xFFE9EBF0),
-                                    ],
-                                  ),
+                          // ── Empty state ──────────────────────────
+                          else if (filtered.isEmpty)
+                            SliverFillRemaining(
+                              child: Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.event_busy,
+                                        size: 64, color: AppColors.gray300),
+                                    const SizedBox(height: 12),
+                                    Text('Δεν υπάρχουν υπηρεσίες',
+                                        style: tt.bodyLarge?.copyWith(
+                                            color: AppColors.gray500)),
+                                  ],
                                 ),
                               ),
+                            )
+
+                          // ── Service list grouped by day ────────────
+                          else
+                            SliverPadding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              sliver: Builder(builder: (context) {
+                                final List<dynamic> rows = [];
+                                String? lastKey;
+                                for (final svc in filtered) {
+                                  final start =
+                                      DateTime.tryParse(svc['startAt'] ?? '');
+                                  final key = start != null
+                                      ? '${start.year}-${start.month}-${start.day}'
+                                      : 'none';
+                                  if (key != lastKey) {
+                                    rows.add(
+                                        start != null ? _dayLabel(start) : '');
+                                    lastKey = key;
+                                  }
+                                  rows.add(svc);
+                                }
+
+                                return SliverList(
+                                  delegate: SliverChildBuilderDelegate(
+                                    (context, i) {
+                                      final row = rows[i];
+                                      if (row is String) {
+                                        return Padding(
+                                          padding: EdgeInsets.only(
+                                              top: i == 0 ? 8 : 20, bottom: 8),
+                                          child: Row(children: [
+                                            Container(
+                                              width: 4,
+                                              height: 18,
+                                              margin: const EdgeInsets.only(
+                                                  right: 10),
+                                              decoration: BoxDecoration(
+                                                color: cs.primary,
+                                                borderRadius: AppRadius.r2,
+                                              ),
+                                            ),
+                                            Text(row,
+                                                style: tt.titleSmall?.copyWith(
+                                                  fontWeight:
+                                                      AppFontWeight.extrabold,
+                                                  color: cs.primary,
+                                                  letterSpacing: 0.2,
+                                                )),
+                                          ]),
+                                        );
+                                      }
+                                      final svc = row as Map<String, dynamic>;
+                                      final svcId = svc['id'] as int;
+                                      return _CalendarServiceCard(
+                                        svc: svc,
+                                        showEnrollmentNeed: true,
+                                        onTap: () =>
+                                            _showServiceInfoSheet(context, svc),
+                                        onApply: () => _applyToService(svcId),
+                                        onUnenroll: () =>
+                                            _withdrawFromService(svcId),
+                                      );
+                                    },
+                                    childCount: rows.length,
+                                  ),
+                                );
+                              }),
                             ),
-                          ),
                         ],
-                      ),
+
+                        // ═══ TAB 1: CALENDAR VIEW ═══════════════════
+                        if (_tabController.index == 1) ...[
+                          if (svcProv.loading)
+                            const SliverFillRemaining(
+                                child:
+                                    Center(child: CircularProgressIndicator()))
+                          else
+                            SliverToBoxAdapter(
+                              child:
+                                  _buildCalendarView(context, filtered, cs, tt),
+                            ),
+                        ],
+
+                        const SliverToBoxAdapter(child: SizedBox(height: 90)),
+                      ],
                     ),
                   ),
                 ),
-
-              // ═══ TAB 0: LIST VIEW ═══════════════════════
-              if (_tabController.index == 0) ...[
-                // ── Loading indicator ────────────────────
-                if (svcProv.loading)
-                  const SliverFillRemaining(
-                      child: Center(child: CircularProgressIndicator()))
-
-                // ── Empty state ──────────────────────────
-                else if (filtered.isEmpty)
-                  SliverFillRemaining(
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.event_busy,
-                              size: 64, color: Color(0xFFD1D5DB)),
-                          const SizedBox(height: 12),
-                          Text('Δεν υπάρχουν υπηρεσίες',
-                              style: tt.bodyLarge
-                                  ?.copyWith(color: Color(0xFF6B7280))),
-                        ],
+                // SpeedDial overlay (admin only)
+                if (isAdmin) ...[
+                  if (_fabOpen)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        onTap: _toggleFab,
+                        child: Container(color: Colors.black.withAlpha(60)),
                       ),
                     ),
-                  )
-
-                // ── Service list grouped by day ────────────
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    sliver: Builder(builder: (context) {
-                      final List<dynamic> rows = [];
-                      String? lastKey;
-                      for (final svc in filtered) {
-                        final start = DateTime.tryParse(svc['startAt'] ?? '');
-                        final key = start != null
-                            ? '${start.year}-${start.month}-${start.day}'
-                            : 'none';
-                        if (key != lastKey) {
-                          rows.add(start != null ? _dayLabel(start) : '');
-                          lastKey = key;
-                        }
-                        rows.add(svc);
-                      }
-
-                      return SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, i) {
-                            final row = rows[i];
-                            if (row is String) {
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                    top: i == 0 ? 8 : 20, bottom: 8),
-                                child: Row(children: [
-                                  Container(
-                                    width: 4, height: 18,
-                                    margin: const EdgeInsets.only(right: 10),
-                                    decoration: BoxDecoration(
-                                      color: cs.primary,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                  Text(row,
-                                      style: tt.titleSmall?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                        color: cs.primary,
-                                        letterSpacing: 0.2,
-                                      )),
-                                ]),
-                              );
-                            }
-                            final svc = row as Map<String, dynamic>;
-                            final svcId = svc['id'] as int;
-                            return _CalendarServiceCard(
-                              svc: svc,
-                              showEnrollmentNeed: true,
-                              onTap: () => _showServiceInfoSheet(context, svc),
-                              onApply: () => _applyToService(svcId),
-                              onUnenroll: () => _withdrawFromService(svcId),
-                            );
-                          },
-                          childCount: rows.length,
+                  Positioned(
+                    right: 16,
+                    bottom: _fabOpen ? 88 : 16,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        ScaleTransition(
+                          scale: _fabScale,
+                          child: _SpeedDialItemRow(
+                            label: 'Καταγραφή Περιστατικού',
+                            icon: Icons.personal_injury,
+                            onTap: () {
+                              _toggleFab();
+                              context.push('/victims/create');
+                            },
+                          ),
                         ),
-                      );
-                    }),
+                        const SizedBox(height: 12),
+                        ScaleTransition(
+                          scale: _fabScale,
+                          child: _SpeedDialItemRow(
+                            label: 'Νέα υπηρεσία',
+                            icon: Icons.add,
+                            onTap: () {
+                              _toggleFab();
+                              context.push('/admin/services/create');
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                ],
               ],
-
-              // ═══ TAB 1: CALENDAR VIEW ═══════════════════
-              if (_tabController.index == 1) ...[
-                if (svcProv.loading)
-                  const SliverFillRemaining(
-                      child: Center(child: CircularProgressIndicator()))
-                else
-                  SliverToBoxAdapter(
-                    child: _buildCalendarView(context, filtered, cs, tt),
-                  ),
-              ],
-
-              const SliverToBoxAdapter(child: SizedBox(height: 90)),
-            ],
-          ),
-        ),
-      ),
-      // SpeedDial overlay (admin only)
-      if (isAdmin) ...[
-        if (_fabOpen)
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: _toggleFab,
-              child: Container(color: Colors.black.withAlpha(60)),
             ),
           ),
-        Positioned(
-          right: 16,
-          bottom: _fabOpen ? 88 : 16,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              ScaleTransition(
-                scale: _fabScale,
-                child: _SpeedDialItemRow(
-                  label: 'Καταγραφή Περιστατικού',
-                  icon: Icons.personal_injury,
-                  onTap: () {
-                    _toggleFab();
-                    context.push('/victims/create');
-                  },
-                ),
-              ),
-              const SizedBox(height: 12),
-              ScaleTransition(
-                scale: _fabScale,
-                child: _SpeedDialItemRow(
-                  label: 'Νέα υπηρεσία',
-                  icon: Icons.add,
-                  onTap: () {
-                    _toggleFab();
-                    context.push('/admin/services/create');
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ],
+        ],
       ),
-    ),
-  ],
-),
     );
   }
 
@@ -766,10 +832,11 @@ class _ServicesScreenState extends State<ServicesScreen>
               padding: const EdgeInsets.only(top: 12, bottom: 8),
               child: Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: Color(0xFFD1D5DB),
-                    borderRadius: BorderRadius.circular(2),
+                    color: AppColors.gray300,
+                    borderRadius: AppRadius.r2,
                   ),
                 ),
               ),
@@ -783,35 +850,42 @@ class _ServicesScreenState extends State<ServicesScreen>
                   const SizedBox(width: 10),
                   Text('Οι υπηρεσίες μου',
                       style: tt.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800, color: const Color(0xFF1F2937))),
+                          fontWeight: AppFontWeight.extrabold,
+                          color: AppColors.gray800)),
                   const Spacer(),
                   if (accepted.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(right: 6),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF059669).withAlpha(20),
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppColors.emerald600.withAlpha(20),
+                          borderRadius: AppRadius.r8,
                         ),
                         child: Text(
                           '${accepted.length}',
                           style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF059669)),
+                              fontSize: AppFontSize.md,
+                              fontWeight: AppFontWeight.bold,
+                              color: AppColors.emerald600),
                         ),
                       ),
                     ),
                   if (pending.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFD97706).withAlpha(20),
-                        borderRadius: BorderRadius.circular(8),
+                        color: AppColors.amber600.withAlpha(20),
+                        borderRadius: AppRadius.r8,
                       ),
                       child: Text(
                         '${pending.length}',
                         style: const TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFFD97706)),
+                            fontSize: AppFontSize.md,
+                            fontWeight: AppFontWeight.bold,
+                            color: AppColors.amber600),
                       ),
                     ),
                 ],
@@ -823,10 +897,12 @@ class _ServicesScreenState extends State<ServicesScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.event_available, size: 48, color: Color(0xFFD1D5DB)),
+                      Icon(Icons.event_available,
+                          size: 48, color: AppColors.gray300),
                       const SizedBox(height: 12),
                       Text('Δεν έχετε υπηρεσίες',
-                          style: tt.bodyMedium?.copyWith(color: Color(0xFF6B7280))),
+                          style: tt.bodyMedium
+                              ?.copyWith(color: AppColors.gray500)),
                     ],
                   ),
                 ),
@@ -841,8 +917,10 @@ class _ServicesScreenState extends State<ServicesScreen>
                     final svc = allServices[i];
                     return Column(
                       children: [
-                        if (i == accepted.length && pending.isNotEmpty && accepted.isNotEmpty)
-                          _buildSectionHeader('Σε αναμονή', const Color(0xFFD97706)),
+                        if (i == accepted.length &&
+                            pending.isNotEmpty &&
+                            accepted.isNotEmpty)
+                          _buildSectionHeader('Σε αναμονή', AppColors.amber600),
                         _CalendarServiceCard(
                           svc: svc,
                           onTap: () {
@@ -867,7 +945,8 @@ class _ServicesScreenState extends State<ServicesScreen>
       child: Row(
         children: [
           Container(
-            width: 8, height: 8,
+            width: 8,
+            height: 8,
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
@@ -877,8 +956,8 @@ class _ServicesScreenState extends State<ServicesScreen>
           Text(
             title,
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+              fontSize: AppFontSize.base,
+              fontWeight: AppFontWeight.bold,
               color: color,
               letterSpacing: 0.5,
             ),
@@ -929,13 +1008,17 @@ class _ServicesScreenState extends State<ServicesScreen>
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final selectedDayIds = selectedDayServices.map((s) => s['id']).toSet();
-    final recommended = allFiltered.where((s) {
-      final start = DateTime.tryParse(s['startAt'] ?? '');
-      if (start == null) return false;
-      if (selectedDayIds.contains(s['id'])) return false;
-      return DateTime(start.year, start.month, start.day).isAfter(today) ||
-          DateTime(start.year, start.month, start.day).isAtSameMomentAs(today);
-    }).take(5).toList();
+    final recommended = allFiltered
+        .where((s) {
+          final start = DateTime.tryParse(s['startAt'] ?? '');
+          if (start == null) return false;
+          if (selectedDayIds.contains(s['id'])) return false;
+          return DateTime(start.year, start.month, start.day).isAfter(today) ||
+              DateTime(start.year, start.month, start.day)
+                  .isAtSameMomentAs(today);
+        })
+        .take(5)
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -946,7 +1029,7 @@ class _ServicesScreenState extends State<ServicesScreen>
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppRadius.r16,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withAlpha(12),
@@ -975,8 +1058,8 @@ class _ServicesScreenState extends State<ServicesScreen>
                 formatButtonVisible: false,
                 titleCentered: true,
                 titleTextStyle: tt.titleSmall!.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1F2937),
+                  fontWeight: AppFontWeight.bold,
+                  color: AppColors.gray800,
                 ),
                 leftChevronIcon: Icon(Icons.chevron_left, color: cs.primary),
                 rightChevronIcon: Icon(Icons.chevron_right, color: cs.primary),
@@ -984,12 +1067,12 @@ class _ServicesScreenState extends State<ServicesScreen>
               ),
               daysOfWeekStyle: DaysOfWeekStyle(
                 weekdayStyle: tt.labelSmall!.copyWith(
-                  color: const Color(0xFF6B7280),
-                  fontWeight: FontWeight.w600,
+                  color: AppColors.gray500,
+                  fontWeight: AppFontWeight.semibold,
                 ),
                 weekendStyle: tt.labelSmall!.copyWith(
-                  color: const Color(0xFF9CA3AF),
-                  fontWeight: FontWeight.w600,
+                  color: AppColors.gray400,
+                  fontWeight: AppFontWeight.semibold,
                 ),
               ),
               calendarStyle: CalendarStyle(
@@ -1000,7 +1083,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                 ),
                 todayTextStyle: TextStyle(
                   color: cs.primary,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppFontWeight.bold,
                 ),
                 selectedDecoration: BoxDecoration(
                   color: cs.primary,
@@ -1008,15 +1091,15 @@ class _ServicesScreenState extends State<ServicesScreen>
                 ),
                 selectedTextStyle: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppFontWeight.bold,
                 ),
                 defaultTextStyle: const TextStyle(
-                  color: Color(0xFF374151),
-                  fontWeight: FontWeight.w500,
+                  color: AppColors.gray700,
+                  fontWeight: AppFontWeight.medium,
                 ),
                 weekendTextStyle: const TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontWeight: FontWeight.w500,
+                  color: AppColors.gray500,
+                  fontWeight: AppFontWeight.medium,
                 ),
                 cellMargin: const EdgeInsets.all(4),
               ),
@@ -1029,19 +1112,20 @@ class _ServicesScreenState extends State<ServicesScreen>
                   // Sum total enrollments for the day
                   int totalEnrollments = 0;
                   for (final s in services) {
-                    totalEnrollments += ((s['_count'] as Map?)?['userServices'] ?? 0) as int;
+                    totalEnrollments +=
+                        ((s['_count'] as Map?)?['userServices'] ?? 0) as int;
                   }
 
                   // Color based on enrollment density
                   final Color dotColor;
                   if (totalEnrollments == 0) {
-                    dotColor = const Color(0xFFEF4444); // red – needs people
+                    dotColor = AppColors.red500; // red – needs people
                   } else if (totalEnrollments <= 2) {
-                    dotColor = const Color(0xFFF59E0B); // amber – few people
+                    dotColor = AppColors.amber500; // amber – few people
                   } else if (totalEnrollments <= 5) {
-                    dotColor = const Color(0xFFEF4444); // red – moderate
+                    dotColor = AppColors.red500; // red – moderate
                   } else {
-                    dotColor = const Color(0xFF10B981); // green – well staffed
+                    dotColor = AppColors.emerald500; // green – well staffed
                   }
 
                   return Positioned(
@@ -1054,7 +1138,7 @@ class _ServicesScreenState extends State<ServicesScreen>
                           height: 6,
                           decoration: BoxDecoration(
                             color: dotColor,
-                            borderRadius: BorderRadius.circular(3),
+                            borderRadius: AppRadius.r3,
                           ),
                         ),
                         if (services.length > 2) ...[
@@ -1086,10 +1170,10 @@ class _ServicesScreenState extends State<ServicesScreen>
             spacing: 12,
             runSpacing: 4,
             children: [
-              _legendDot(const Color(0xFFEF4444), 'Χωρίς αιτήσεις'),
-              _legendDot(const Color(0xFFF59E0B), 'Λίγες (1-2)'),
-              _legendDot(const Color(0xFFEF4444), 'Μέτριες (3-5)'),
-              _legendDot(const Color(0xFF10B981), 'Πολλές (6+)'),
+              _legendDot(AppColors.red500, 'Χωρίς αιτήσεις'),
+              _legendDot(AppColors.amber500, 'Λίγες (1-2)'),
+              _legendDot(AppColors.red500, 'Μέτριες (3-5)'),
+              _legendDot(AppColors.emerald500, 'Πολλές (6+)'),
             ],
           ),
         ),
@@ -1103,32 +1187,34 @@ class _ServicesScreenState extends State<ServicesScreen>
             child: Row(
               children: [
                 Container(
-                  width: 4, height: 18,
+                  width: 4,
+                  height: 18,
                   margin: const EdgeInsets.only(right: 10),
                   decoration: BoxDecoration(
                     color: cs.primary,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: AppRadius.r2,
                   ),
                 ),
                 Text(
                   _dayLabel(_selectedDay!),
                   style: tt.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: AppFontWeight.extrabold,
                     color: cs.primary,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: cs.primary.withAlpha(20),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.r8,
                   ),
                   child: Text(
                     '${selectedDayServices.length} υπηρεσίες',
                     style: tt.labelSmall?.copyWith(
                       color: cs.primary,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeight.semibold,
                     ),
                   ),
                 ),
@@ -1144,16 +1230,17 @@ class _ServicesScreenState extends State<ServicesScreen>
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  borderRadius: AppRadius.r12,
+                  border: Border.all(color: AppColors.gray200),
                 ),
                 child: Column(
                   children: [
-                    Icon(Icons.event_available, size: 32, color: Color(0xFFD1D5DB)),
+                    Icon(Icons.event_available,
+                        size: 32, color: AppColors.gray300),
                     const SizedBox(height: 8),
                     Text(
                       'Δεν υπάρχουν υπηρεσίες αυτή την ημέρα',
-                      style: tt.bodySmall?.copyWith(color: Color(0xFF6B7280)),
+                      style: tt.bodySmall?.copyWith(color: AppColors.gray500),
                     ),
                   ],
                 ),
@@ -1182,8 +1269,8 @@ class _ServicesScreenState extends State<ServicesScreen>
               Text(
                 'Προτεινόμενες Υπηρεσίες',
                 style: tt.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1F2937),
+                  fontWeight: AppFontWeight.extrabold,
+                  color: AppColors.gray800,
                 ),
               ),
             ],
@@ -1193,7 +1280,7 @@ class _ServicesScreenState extends State<ServicesScreen>
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
             'Υπηρεσίες που χρειάζονται περισσότερα μέλη',
-            style: tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF)),
+            style: tt.bodySmall?.copyWith(color: AppColors.gray400),
           ),
         ),
         const SizedBox(height: 10),
@@ -1206,12 +1293,12 @@ class _ServicesScreenState extends State<ServicesScreen>
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
+                borderRadius: AppRadius.r12,
+                border: Border.all(color: AppColors.gray200),
               ),
               child: Text(
                 'Δεν υπάρχουν προτεινόμενες υπηρεσίες',
-                style: tt.bodySmall?.copyWith(color: Color(0xFF6B7280)),
+                style: tt.bodySmall?.copyWith(color: AppColors.gray500),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -1255,11 +1342,13 @@ class _ServicesScreenState extends State<ServicesScreen>
 
     final responsible = svc['responsibleUser'] as Map<String, dynamic>?;
     final rName = responsible != null
-        ? '${responsible['forename'] ?? ''} ${responsible['surname'] ?? ''}'.trim()
+        ? '${responsible['forename'] ?? ''} ${responsible['surname'] ?? ''}'
+            .trim()
         : '';
 
     final us = svc['userServices'] as List<dynamic>?;
-    final status = (us != null && us.isNotEmpty) ? us.first['status'] as String? : null;
+    final status =
+        (us != null && us.isNotEmpty) ? us.first['status'] as String? : null;
     final isApplied = status != null;
     final svcId = svc['id'] as int;
 
@@ -1283,11 +1372,12 @@ class _ServicesScreenState extends State<ServicesScreen>
               // Drag handle
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: Color(0xFFD1D5DB),
-                    borderRadius: BorderRadius.circular(2),
+                    color: AppColors.gray300,
+                    borderRadius: AppRadius.r2,
                   ),
                 ),
               ),
@@ -1296,8 +1386,8 @@ class _ServicesScreenState extends State<ServicesScreen>
               Text(
                 name,
                 style: tt.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1F2937),
+                  fontWeight: AppFontWeight.extrabold,
+                  color: AppColors.gray800,
                 ),
               ),
               const SizedBox(height: 12),
@@ -1312,32 +1402,35 @@ class _ServicesScreenState extends State<ServicesScreen>
 
               // Location
               if (location.isNotEmpty)
-                _sheetInfoRow(Icons.location_on_outlined, 'Τοποθεσία', location, cs),
+                _sheetInfoRow(
+                    Icons.location_on_outlined, 'Τοποθεσία', location, cs),
 
               // Responsible
               if (rName.isNotEmpty)
                 _sheetInfoRow(Icons.star_rounded, 'Υπεύθυνος', rName, cs),
 
               // Enrollments count
-              _sheetInfoRow(Icons.people_outline, 'Αιτήσεις', '$enrollCount μέλη', cs),
+              _sheetInfoRow(
+                  Icons.people_outline, 'Αιτήσεις', '$enrollCount μέλη', cs),
 
               // Description
-              if (description.isNotEmpty) ...[                const SizedBox(height: 12),
+              if (description.isNotEmpty) ...[
+                const SizedBox(height: 12),
                 Text('Επιπλέον πληροφορίες',
                     style: tt.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF374151))),
+                        fontWeight: AppFontWeight.bold,
+                        color: AppColors.gray700)),
                 const SizedBox(height: 4),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF9FAFB),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    color: AppColors.gray50,
+                    borderRadius: AppRadius.r10,
+                    border: Border.all(color: AppColors.gray200),
                   ),
                   child: Text(description,
-                      style: tt.bodySmall?.copyWith(color: const Color(0xFF4B5563))),
+                      style: tt.bodySmall?.copyWith(color: AppColors.gray600)),
                 ),
               ],
 
@@ -1345,8 +1438,8 @@ class _ServicesScreenState extends State<ServicesScreen>
               const SizedBox(height: 16),
               Text('Ώρες υπηρεσίας',
                   style: tt.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF374151))),
+                      fontWeight: AppFontWeight.bold,
+                      color: AppColors.gray700)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -1355,16 +1448,22 @@ class _ServicesScreenState extends State<ServicesScreen>
                   if (defaultHours > 0)
                     _sheetHourChip('Κάλυψη', defaultHours, cs.primary),
                   if (defaultHoursVol > 0)
-                    _sheetHourChip('Εθελοντικές', defaultHoursVol, const Color(0xFF7C3AED)),
+                    _sheetHourChip(
+                        'Εθελοντικές', defaultHoursVol, AppColors.violet600),
                   if (defaultHoursTraining > 0)
-                    _sheetHourChip('Επανεκπ.', defaultHoursTraining, const Color(0xFFD97706)),
+                    _sheetHourChip(
+                        'Επανεκπ.', defaultHoursTraining, AppColors.amber600),
                   if (defaultHoursTrainers > 0)
-                    _sheetHourChip('Εκπαιδευτών', defaultHoursTrainers, const Color(0xFF059669)),
+                    _sheetHourChip('Εκπαιδευτών', defaultHoursTrainers,
+                        AppColors.emerald600),
                   if (defaultHoursTEP > 0)
-                    _sheetHourChip('ΤΕΠ', defaultHoursTEP, const Color(0xFF0891B2)),
-                  if (defaultHours == 0 && defaultHoursVol == 0 &&
-                      defaultHoursTraining == 0 && defaultHoursTrainers == 0 && defaultHoursTEP == 0)
-                    _sheetHourChip('Κάλυψη', 0, Color(0xFF6B7280)),
+                    _sheetHourChip('ΤΕΠ', defaultHoursTEP, AppColors.cyan600),
+                  if (defaultHours == 0 &&
+                      defaultHoursVol == 0 &&
+                      defaultHoursTraining == 0 &&
+                      defaultHoursTrainers == 0 &&
+                      defaultHoursTEP == 0)
+                    _sheetHourChip('Κάλυψη', 0, AppColors.gray500),
                 ],
               ),
 
@@ -1383,11 +1482,11 @@ class _ServicesScreenState extends State<ServicesScreen>
                           icon: const Icon(Icons.close_rounded, size: 18),
                           label: const Text('Ακύρωση αίτησης'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFD97706),
-                            side: const BorderSide(color: Color(0xFFD97706)),
+                            foregroundColor: AppColors.amber600,
+                            side: const BorderSide(color: AppColors.amber600),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: AppRadius.r12,
                             ),
                           ),
                         ),
@@ -1403,10 +1502,11 @@ class _ServicesScreenState extends State<ServicesScreen>
                                 icon: const Icon(Icons.open_in_new, size: 16),
                                 label: const Text('Λεπτομέρειες'),
                                 style: FilledButton.styleFrom(
-                                  backgroundColor: const Color(0xFF059669),
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  backgroundColor: AppColors.emerald600,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: AppRadius.r12,
                                   ),
                                 ),
                               )
@@ -1415,11 +1515,13 @@ class _ServicesScreenState extends State<ServicesScreen>
                                 icon: const Icon(Icons.cancel, size: 18),
                                 label: const Text('Απορρίφθηκε'),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFFDC2626),
-                                  side: const BorderSide(color: Color(0xFFDC2626)),
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  foregroundColor: AppColors.red600,
+                                  side:
+                                      const BorderSide(color: AppColors.red600),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: AppRadius.r12,
                                   ),
                                 ),
                               ),
@@ -1434,12 +1536,12 @@ class _ServicesScreenState extends State<ServicesScreen>
                     },
                     icon: const Icon(Icons.send_rounded, size: 16),
                     label: const Text('Υποβολή Αίτησης',
-                        style: TextStyle(fontWeight: FontWeight.w700)),
+                        style: TextStyle(fontWeight: AppFontWeight.bold)),
                     style: FilledButton.styleFrom(
                       backgroundColor: cs.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.r12,
                       ),
                     ),
                   ),
@@ -1451,7 +1553,8 @@ class _ServicesScreenState extends State<ServicesScreen>
     );
   }
 
-  Widget _sheetInfoRow(IconData icon, String label, String value, ColorScheme cs) {
+  Widget _sheetInfoRow(
+      IconData icon, String label, String value, ColorScheme cs) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -1462,12 +1565,16 @@ class _ServicesScreenState extends State<ServicesScreen>
             width: 90,
             child: Text(label,
                 style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+                    fontSize: AppFontSize.md,
+                    fontWeight: AppFontWeight.semibold,
+                    color: AppColors.gray500)),
           ),
           Expanded(
             child: Text(value,
                 style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF1F2937))),
+                    fontSize: AppFontSize.md,
+                    fontWeight: AppFontWeight.medium,
+                    color: AppColors.gray800)),
           ),
         ],
       ),
@@ -1479,7 +1586,7 @@ class _ServicesScreenState extends State<ServicesScreen>
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color.withAlpha(18),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.r8,
         border: Border.all(color: color.withAlpha(50)),
       ),
       child: Row(
@@ -1488,7 +1595,10 @@ class _ServicesScreenState extends State<ServicesScreen>
           Icon(Icons.schedule, size: 13, color: color),
           const SizedBox(width: 4),
           Text('$label: ${hours}ω',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+              style: TextStyle(
+                  fontSize: AppFontSize.sm,
+                  fontWeight: AppFontWeight.semibold,
+                  color: color)),
         ],
       ),
     );
@@ -1499,13 +1609,15 @@ class _ServicesScreenState extends State<ServicesScreen>
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 10, height: 10,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+          style: const TextStyle(
+              fontSize: AppFontSize.sm, color: AppColors.gray500),
         ),
       ],
     );
@@ -1556,13 +1668,14 @@ class _ServiceAccordion extends StatelessWidget {
     final status = _enrollmentStatus();
     final isApplied = status != null;
     final Color accentColor = isApplied ? _statusColor(status!) : cs.primary;
-    final Color lightBg = isApplied ? _statusBgColor(status!) : cs.primary.withAlpha(8);
+    final Color lightBg =
+        isApplied ? _statusBgColor(status!) : cs.primary.withAlpha(8);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.r16,
           color: Colors.white,
           boxShadow: [
             BoxShadow(
@@ -1576,7 +1689,7 @@ class _ServiceAccordion extends StatelessWidget {
                 ? accentColor.withAlpha(80)
                 : isExpanded
                     ? cs.primary.withAlpha(60)
-                    : const Color(0xFFE5E7EB),
+                    : AppColors.gray200,
             width: isApplied ? 1.5 : 1,
           ),
         ),
@@ -1622,7 +1735,7 @@ class _ServiceAccordion extends StatelessWidget {
                               Text(
                                 name,
                                 style: tt.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: AppFontWeight.bold,
                                   color: accentColor,
                                 ),
                               ),
@@ -1632,7 +1745,7 @@ class _ServiceAccordion extends StatelessWidget {
                                   timeRange,
                                   style: tt.bodySmall?.copyWith(
                                     color: accentColor.withAlpha(180),
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: AppFontWeight.medium,
                                   ),
                                 ),
                               ],
@@ -1644,16 +1757,17 @@ class _ServiceAccordion extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(right: 12),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: accentColor.withAlpha(25),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: AppRadius.r6,
                             ),
                             child: Text(
                               _statusLabel(status!),
                               style: tt.labelSmall?.copyWith(
                                 color: accentColor,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: AppFontWeight.semibold,
                               ),
                             ),
                           ),
@@ -1672,42 +1786,50 @@ class _ServiceAccordion extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Divider(color: Color(0xFFE5E7EB), height: 1),
+                    Divider(color: AppColors.gray200, height: 1),
                     const SizedBox(height: 14),
 
                     // Responsible user
                     Builder(builder: (context) {
-                      final responsible = svc['responsibleUser'] as Map<String, dynamic>?;
+                      final responsible =
+                          svc['responsibleUser'] as Map<String, dynamic>?;
                       if (responsible == null) return const SizedBox.shrink();
-                      final rName = '${responsible['forename'] ?? ''} ${responsible['surname'] ?? ''}'.trim();
+                      final rName =
+                          '${responsible['forename'] ?? ''} ${responsible['surname'] ?? ''}'
+                              .trim();
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: Row(
                           children: [
-                            const Icon(Icons.star_rounded, size: 16, color: Color(0xFF7C3AED)),
+                            const Icon(Icons.star_rounded,
+                                size: 16, color: AppColors.violet600),
                             const SizedBox(width: 8),
                             SizedBox(
                               width: 140,
                               child: Text(
                                 'Υπεύθυνος',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF374151)),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                        fontWeight: AppFontWeight.bold,
+                                        color: AppColors.gray700),
                               ),
                             ),
                             Expanded(
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF7C3AED).withAlpha(15),
-                                  borderRadius: BorderRadius.circular(6),
+                                  color: AppColors.violet600.withAlpha(15),
+                                  borderRadius: AppRadius.r6,
                                 ),
                                 child: Text(
                                   rName,
                                   style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF7C3AED),
+                                    fontSize: AppFontSize.md,
+                                    fontWeight: AppFontWeight.semibold,
+                                    color: AppColors.violet600,
                                   ),
                                 ),
                               ),
@@ -1719,43 +1841,73 @@ class _ServiceAccordion extends StatelessWidget {
 
                     // Carrier
                     if (carrier.isNotEmpty)
-                      _DetailRow(icon: Icons.business_outlined, label: 'Φορέας', value: carrier),
+                      _DetailRow(
+                          icon: Icons.business_outlined,
+                          label: 'Φορέας',
+                          value: carrier),
 
                     // Location
                     if (location.isNotEmpty)
-                      _DetailRow(icon: Icons.location_on_outlined, label: 'Τοποθεσία', value: location),
+                      _DetailRow(
+                          icon: Icons.location_on_outlined,
+                          label: 'Τοποθεσία',
+                          value: location),
 
                     // ── Hour chips ─────────────────────
                     const SizedBox(height: 4),
                     Text('Ώρες υπηρεσίας',
                         style: tt.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF374151))),
+                            fontWeight: AppFontWeight.bold,
+                            color: AppColors.gray700)),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
                         if (defaultHours > 0)
-                          _HourChip(label: 'Ώρες Κάλυψης', hours: defaultHours, color: cs.primary),
+                          _HourChip(
+                              label: 'Ώρες Κάλυψης',
+                              hours: defaultHours,
+                              color: cs.primary),
                         if (defaultHoursVol > 0)
-                          _HourChip(label: 'Εθελοντικές Ώρες', hours: defaultHoursVol, color: const Color(0xFF7C3AED)),
+                          _HourChip(
+                              label: 'Εθελοντικές Ώρες',
+                              hours: defaultHoursVol,
+                              color: AppColors.violet600),
                         if (defaultHoursTraining > 0)
-                          _HourChip(label: 'Ώρες Επανεκπαίδευσης', hours: defaultHoursTraining, color: const Color(0xFFD97706)),
+                          _HourChip(
+                              label: 'Ώρες Επανεκπαίδευσης',
+                              hours: defaultHoursTraining,
+                              color: AppColors.amber600),
                         if (defaultHoursTrainers > 0)
-                          _HourChip(label: 'Ώρες Εκπαιδευτών', hours: defaultHoursTrainers, color: const Color(0xFF059669)),
+                          _HourChip(
+                              label: 'Ώρες Εκπαιδευτών',
+                              hours: defaultHoursTrainers,
+                              color: AppColors.emerald600),
                         if (defaultHoursTEP > 0)
-                          _HourChip(label: 'Ώρες ΤΕΠ', hours: defaultHoursTEP, color: const Color(0xFF0891B2)),
-                        if (defaultHours == 0 && defaultHoursVol == 0 &&
-                            defaultHoursTraining == 0 && defaultHoursTrainers == 0 && defaultHoursTEP == 0)
-                          _HourChip(label: 'Ώρες Κάλυψης', hours: 0, color: Color(0xFF6B7280)),
+                          _HourChip(
+                              label: 'Ώρες ΤΕΠ',
+                              hours: defaultHoursTEP,
+                              color: AppColors.cyan600),
+                        if (defaultHours == 0 &&
+                            defaultHoursVol == 0 &&
+                            defaultHoursTraining == 0 &&
+                            defaultHoursTrainers == 0 &&
+                            defaultHoursTEP == 0)
+                          _HourChip(
+                              label: 'Ώρες Κάλυψης',
+                              hours: 0,
+                              color: AppColors.gray500),
                       ],
                     ),
 
                     // Extra info
                     if (description.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      _DetailRow(icon: Icons.info_outline, label: 'Επιπλέον πληροφορίες', value: description),
+                      _DetailRow(
+                          icon: Icons.info_outline,
+                          label: 'Επιπλέον πληροφορίες',
+                          value: description),
                     ],
 
                     const SizedBox(height: 18),
@@ -1771,15 +1923,17 @@ class _ServiceAccordion extends StatelessWidget {
                                   // ── Pending: tappable to withdraw ──
                                   ? OutlinedButton.icon(
                                       onPressed: onUnenroll,
-                                      icon: const Icon(Icons.close_rounded, size: 18),
+                                      icon: const Icon(Icons.close_rounded,
+                                          size: 18),
                                       label: const Text('ΑΚΥΡΩΣΗ'),
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: _statusColor(status),
-                                        side: BorderSide(color: _statusColor(status)),
+                                        side: BorderSide(
+                                            color: _statusColor(status)),
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 20, vertical: 10),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: AppRadius.r8,
                                         ),
                                       ),
                                     )
@@ -1795,27 +1949,29 @@ class _ServiceAccordion extends StatelessWidget {
                                       label: Text(_statusButtonLabel(status)),
                                       style: OutlinedButton.styleFrom(
                                         foregroundColor: _statusColor(status),
-                                        side: BorderSide(color: _statusColor(status)),
+                                        side: BorderSide(
+                                            color: _statusColor(status)),
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 20, vertical: 10),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: AppRadius.r8,
                                         ),
                                       ),
                                     )
                               : FilledButton.icon(
                                   onPressed: onApply,
-                                  icon: const Icon(Icons.send_rounded, size: 16),
+                                  icon:
+                                      const Icon(Icons.send_rounded, size: 16),
                                   label: const Text('ΑΙΤΗΣΗ',
                                       style: TextStyle(
-                                          fontWeight: FontWeight.w700,
+                                          fontWeight: AppFontWeight.bold,
                                           letterSpacing: 0.5)),
                                   style: FilledButton.styleFrom(
                                     backgroundColor: cs.primary,
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 24, vertical: 10),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: AppRadius.r8,
                                     ),
                                   ),
                                 ),
@@ -1825,15 +1981,17 @@ class _ServiceAccordion extends StatelessWidget {
                           child: TextButton.icon(
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Προστέθηκε στο ημερολόγιο')),
+                                const SnackBar(
+                                    content: Text('Προστέθηκε στο ημερολόγιο')),
                               );
                             },
-                            icon: Icon(Icons.calendar_today, size: 15, color: cs.primary),
+                            icon: Icon(Icons.calendar_today,
+                                size: 15, color: cs.primary),
                             label: Text(
                               'Προσθήκη στο ημερολόγιο',
                               style: tt.bodySmall?.copyWith(
                                   color: cs.primary,
-                                  fontWeight: FontWeight.w500),
+                                  fontWeight: AppFontWeight.medium),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -1842,16 +2000,20 @@ class _ServiceAccordion extends StatelessWidget {
                     ),
 
                     // ── Details button (accepted members) ──
-                    if (status == 'accepted') ...[                      const SizedBox(height: 12),
+                    if (status == 'accepted') ...[
+                      const SizedBox(height: 12),
                       OutlinedButton.icon(
                         onPressed: () => context.push('/services/${svc['id']}'),
                         icon: const Icon(Icons.open_in_new, size: 15),
                         label: const Text('Λεπτομέρειες',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                            style: TextStyle(
+                                fontSize: AppFontSize.base,
+                                fontWeight: AppFontWeight.semibold)),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: AppRadius.r8,
                           ),
                         ),
                       ),
@@ -1872,33 +2034,45 @@ class _ServiceAccordion extends StatelessWidget {
 
   static String _statusLabel(String status) {
     switch (status) {
-      case 'accepted': return 'Εγκρίθηκε';
-      case 'rejected': return 'Απορρίφθηκε';
-      default:         return 'Αίτηση';
+      case 'accepted':
+        return 'Εγκρίθηκε';
+      case 'rejected':
+        return 'Απορρίφθηκε';
+      default:
+        return 'Αίτηση';
     }
   }
 
   static String _statusButtonLabel(String status) {
     switch (status) {
-      case 'accepted': return 'ΕΓΚΡΙΘΗΚΕ';
-      case 'rejected': return 'ΑΠΟΡΡΙΦΘΗΚΕ';
-      default:         return 'ΥΠΟΒΛΗΘΗΚΕ';
+      case 'accepted':
+        return 'ΕΓΚΡΙΘΗΚΕ';
+      case 'rejected':
+        return 'ΑΠΟΡΡΙΦΘΗΚΕ';
+      default:
+        return 'ΥΠΟΒΛΗΘΗΚΕ';
     }
   }
 
   static Color _statusColor(String status) {
     switch (status) {
-      case 'accepted': return const Color(0xFF059669);
-      case 'rejected': return const Color(0xFFDC2626);
-      default:         return const Color(0xFFD97706);
+      case 'accepted':
+        return AppColors.emerald600;
+      case 'rejected':
+        return AppColors.red600;
+      default:
+        return AppColors.amber600;
     }
   }
 
   static Color _statusBgColor(String status) {
     switch (status) {
-      case 'accepted': return const Color(0xFFF0FDF4); // light green
-      case 'rejected': return const Color(0xFFFEF2F2); // light red
-      default:         return const Color(0xFFFFFBEB); // light amber
+      case 'accepted':
+        return AppColors.green50; // light green
+      case 'rejected':
+        return AppColors.red50; // light red
+      default:
+        return AppColors.amber50; // light amber
     }
   }
 }
@@ -1910,7 +2084,8 @@ class _DetailRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _DetailRow({required this.icon, required this.label, required this.value});
+  const _DetailRow(
+      {required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -1920,21 +2095,20 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF6B7280)),
+          Icon(icon, size: 16, color: AppColors.gray500),
           const SizedBox(width: 8),
           SizedBox(
             width: 140,
             child: Text(
               label,
               style: tt.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF374151)),
+                  fontWeight: AppFontWeight.bold, color: AppColors.gray700),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: tt.bodySmall?.copyWith(color: const Color(0xFF4B5563)),
+              style: tt.bodySmall?.copyWith(color: AppColors.gray600),
             ),
           ),
         ],
@@ -1950,7 +2124,8 @@ class _HourChip extends StatelessWidget {
   final String label;
   final int hours;
   final Color color;
-  const _HourChip({required this.label, required this.hours, required this.color});
+  const _HourChip(
+      {required this.label, required this.hours, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -1958,7 +2133,7 @@ class _HourChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.withAlpha(18),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.r8,
         border: Border.all(color: color.withAlpha(50)),
       ),
       child: Row(
@@ -1969,9 +2144,9 @@ class _HourChip extends StatelessWidget {
           Text(
             '$label: $hours\u03C9',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.base,
               color: color,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeight.semibold,
             ),
           ),
         ],
@@ -2010,20 +2185,21 @@ class _CalendarServiceCard extends StatelessWidget {
 
     // Enrollment status for current user
     final us = svc['userServices'] as List<dynamic>?;
-    final status = (us != null && us.isNotEmpty) ? us.first['status'] as String? : null;
+    final status =
+        (us != null && us.isNotEmpty) ? us.first['status'] as String? : null;
     final isApplied = status != null;
 
     final Color accentColor;
     if (isApplied) {
       switch (status) {
         case 'accepted':
-          accentColor = const Color(0xFF059669);
+          accentColor = AppColors.emerald600;
           break;
         case 'rejected':
-          accentColor = const Color(0xFFDC2626);
+          accentColor = AppColors.red600;
           break;
         default:
-          accentColor = const Color(0xFFD97706);
+          accentColor = AppColors.amber600;
       }
     } else {
       accentColor = cs.primary;
@@ -2033,13 +2209,13 @@ class _CalendarServiceCard extends StatelessWidget {
     final Color needColor;
     final String needLabel;
     if (enrollCount == 0) {
-      needColor = const Color(0xFFEF4444);
+      needColor = AppColors.red500;
       needLabel = 'Χρειάζεται μέλη';
     } else if (enrollCount <= 2) {
-      needColor = const Color(0xFFF59E0B);
+      needColor = AppColors.amber500;
       needLabel = 'Λίγες αιτήσεις';
     } else {
-      needColor = const Color(0xFFEF4444);
+      needColor = AppColors.red500;
       needLabel = '$enrollCount αιτήσεις';
     }
 
@@ -2047,18 +2223,17 @@ class _CalendarServiceCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadius.r14,
         elevation: 0,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.r14,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppRadius.r14,
               border: Border.all(
-                color: isApplied
-                    ? accentColor.withAlpha(60)
-                    : const Color(0xFFE5E7EB),
+                color:
+                    isApplied ? accentColor.withAlpha(60) : AppColors.gray200,
               ),
             ),
             child: IntrinsicHeight(
@@ -2088,8 +2263,8 @@ class _CalendarServiceCard extends StatelessWidget {
                                 child: Text(
                                   displayTitle,
                                   style: tt.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF1F2937),
+                                    fontWeight: AppFontWeight.bold,
+                                    color: AppColors.gray800,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -2101,13 +2276,14 @@ class _CalendarServiceCard extends StatelessWidget {
                             const SizedBox(height: 2),
                             Row(
                               children: [
-                                Icon(Icons.schedule, size: 12, color: Color(0xFF6B7280)),
+                                Icon(Icons.schedule,
+                                    size: 12, color: AppColors.gray500),
                                 const SizedBox(width: 3),
                                 Text(
                                   timeRange,
                                   style: tt.bodySmall?.copyWith(
-                                    color: const Color(0xFF6B7280),
-                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.gray500,
+                                    fontWeight: AppFontWeight.medium,
                                   ),
                                 ),
                               ],
@@ -2117,13 +2293,14 @@ class _CalendarServiceCard extends StatelessWidget {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.location_on_outlined, size: 13, color: Color(0xFF6B7280)),
+                                Icon(Icons.location_on_outlined,
+                                    size: 13, color: AppColors.gray500),
                                 const SizedBox(width: 2),
                                 Flexible(
                                   child: Text(
                                     location,
                                     style: tt.bodySmall?.copyWith(
-                                      color: const Color(0xFF6B7280),
+                                      color: AppColors.gray500,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -2142,19 +2319,21 @@ class _CalendarServiceCard extends StatelessWidget {
                                       horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
                                     color: needColor.withAlpha(18),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: needColor.withAlpha(50)),
+                                    borderRadius: AppRadius.r6,
+                                    border: Border.all(
+                                        color: needColor.withAlpha(50)),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.people_outline, size: 13, color: needColor),
+                                      Icon(Icons.people_outline,
+                                          size: 13, color: needColor),
                                       const SizedBox(width: 4),
                                       Text(
                                         needLabel,
                                         style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
+                                          fontSize: AppFontSize.sm,
+                                          fontWeight: AppFontWeight.semibold,
                                           color: needColor,
                                         ),
                                       ),
@@ -2167,40 +2346,59 @@ class _CalendarServiceCard extends StatelessWidget {
                                     height: 28,
                                     child: FilledButton.icon(
                                       onPressed: onApply,
-                                      icon: const Icon(Icons.send_rounded, size: 12),
+                                      icon: const Icon(Icons.send_rounded,
+                                          size: 12),
                                       label: const Text('Αίτηση',
-                                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                                          style: TextStyle(
+                                              fontSize: AppFontSize.sm,
+                                              fontWeight: AppFontWeight.bold)),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: cs.primary,
-                                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(7),
+                                          borderRadius: AppRadius.r7,
                                         ),
                                       ),
                                     ),
                                   )
-                                else if (isApplied && status == 'requested' && onUnenroll != null)
+                                else if (isApplied &&
+                                    status == 'requested' &&
+                                    onUnenroll != null)
                                   SizedBox(
                                     height: 28,
                                     child: OutlinedButton.icon(
                                       onPressed: onUnenroll,
-                                      icon: const Icon(Icons.close_rounded, size: 12),
+                                      icon: const Icon(Icons.close_rounded,
+                                          size: 12),
                                       label: const Text('Ακύρωση',
-                                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                                          style: TextStyle(
+                                              fontSize: AppFontSize.sm,
+                                              fontWeight:
+                                                  AppFontWeight.semibold)),
                                       style: OutlinedButton.styleFrom(
-                                        foregroundColor: const Color(0xFFD97706),
-                                        side: const BorderSide(color: Color(0xFFD97706)),
-                                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                                        foregroundColor: AppColors.amber600,
+                                        side: const BorderSide(
+                                            color: AppColors.amber600),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(7),
+                                          borderRadius: AppRadius.r7,
                                         ),
                                       ),
                                     ),
                                   )
                                 else if (isApplied)
                                   Text(
-                                    status == 'accepted' ? '✓ Εγκρίθηκε' : status == 'rejected' ? '✗ Απορρίφθηκε' : '⏳ Αίτηση',
-                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: accentColor),
+                                    status == 'accepted'
+                                        ? '✓ Εγκρίθηκε'
+                                        : status == 'rejected'
+                                            ? '✗ Απορρίφθηκε'
+                                            : '⏳ Αίτηση',
+                                    style: TextStyle(
+                                        fontSize: AppFontSize.sm,
+                                        fontWeight: AppFontWeight.semibold,
+                                        color: accentColor),
                                   ),
                               ],
                             ),
@@ -2242,11 +2440,13 @@ class _SpeedDialItemRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1C1E).withAlpha(190),
-            borderRadius: BorderRadius.circular(6),
+            color: AppColors.ink.withAlpha(190),
+            borderRadius: AppRadius.r6,
           ),
-          child: Text(label,
-            style: GoogleFonts.inter(color: Colors.white, fontSize: 12),
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+                color: Colors.white, fontSize: AppFontSize.base),
           ),
         ),
         const SizedBox(width: 8),

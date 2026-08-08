@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class GdprConsentDialog extends StatefulWidget {
   final Future<void> Function() onAccept;
   final VoidCallback onDecline;
@@ -24,7 +26,8 @@ class _GdprConsentDialogState extends State<GdprConsentDialog> {
     return AlertDialog(
       title: Text(
         'Πολιτική Απορρήτου',
-        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 18),
+        style: GoogleFonts.inter(
+            fontWeight: AppFontWeight.bold, fontSize: AppFontSize.xl3),
       ),
       content: SizedBox(
         width: 480,
@@ -35,7 +38,7 @@ class _GdprConsentDialogState extends State<GdprConsentDialog> {
             children: [
               Text(
                 _showEnglish ? _englishText : _greekText,
-                style: GoogleFonts.inter(fontSize: 14, height: 1.6),
+                style: GoogleFonts.inter(fontSize: AppFontSize.lg, height: 1.6),
               ),
               const SizedBox(height: 12),
               TextButton(
@@ -45,14 +48,12 @@ class _GdprConsentDialogState extends State<GdprConsentDialog> {
                   minimumSize: const Size(0, 28),
                 ),
                 child: Text(
-                  _showEnglish
-                      ? 'Εμφάνιση στα Ελληνικά'
-                      : 'Show in English',
+                  _showEnglish ? 'Εμφάνιση στα Ελληνικά' : 'Show in English',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: const Color(0xFF6B7280),
+                    fontSize: AppFontSize.base,
+                    color: AppColors.gray500,
                     decoration: TextDecoration.underline,
-                    decorationColor: const Color(0xFF6B7280),
+                    decorationColor: AppColors.gray500,
                   ),
                 ),
               ),
@@ -65,7 +66,7 @@ class _GdprConsentDialogState extends State<GdprConsentDialog> {
           onPressed: widget.onDecline,
           child: Text(
             'Δεν αποδέχομαι',
-            style: GoogleFonts.inter(color: const Color(0xFF6B7280)),
+            style: GoogleFonts.inter(color: AppColors.gray500),
           ),
         ),
         FilledButton(
@@ -76,11 +77,11 @@ class _GdprConsentDialogState extends State<GdprConsentDialog> {
                   await widget.onAccept();
                 },
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFFC62828),
+            backgroundColor: AppColors.brandPrimary,
           ),
           child: Text(
             'Αποδέχομαι',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            style: GoogleFonts.inter(fontWeight: AppFontWeight.semibold),
           ),
         ),
       ],

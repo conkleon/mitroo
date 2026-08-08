@@ -5,6 +5,8 @@ import '../widgets/closed_services_tab.dart';
 import '../widgets/completed_services_tab.dart';
 import '../widgets/finalized_services_tab.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class ManageServicesScreen extends StatefulWidget {
   final int departmentId;
   final String departmentName;
@@ -81,7 +83,7 @@ class _ManageServicesScreenState extends State<ManageServicesScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.departmentName,
-            style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            style: tt.titleLarge?.copyWith(fontWeight: AppFontWeight.bold)),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -101,12 +103,12 @@ class _ManageServicesScreenState extends State<ManageServicesScreen>
         bottom: TabBar(
           controller: _tabController,
           labelColor: cs.primary,
-          unselectedLabelColor: const Color(0xFF6B7280),
+          unselectedLabelColor: AppColors.gray500,
           indicatorColor: cs.primary,
-          labelStyle:
-              const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          unselectedLabelStyle:
-              const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          labelStyle: const TextStyle(
+              fontSize: AppFontSize.md, fontWeight: AppFontWeight.semibold),
+          unselectedLabelStyle: const TextStyle(
+              fontSize: AppFontSize.md, fontWeight: AppFontWeight.medium),
           tabs: const [
             Tab(text: 'Ενεργές'),
             Tab(text: 'Κλειστές'),

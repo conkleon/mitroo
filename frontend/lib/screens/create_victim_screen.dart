@@ -6,6 +6,8 @@ import '../providers/victim_provider.dart';
 import '../services/api_client.dart';
 import 'dart:convert';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class CreateVictimScreen extends StatefulWidget {
   const CreateVictimScreen({super.key});
 
@@ -74,20 +76,29 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
       if (_gender != null) 'gender': _gender,
       if (_addressCtrl.text.isNotEmpty) 'address': _addressCtrl.text.trim(),
       if (_cityCtrl.text.isNotEmpty) 'city': _cityCtrl.text.trim(),
-      if (_postalCodeCtrl.text.isNotEmpty) 'postalCode': _postalCodeCtrl.text.trim(),
-      if (_telephoneCtrl.text.isNotEmpty) 'telephone': _telephoneCtrl.text.trim(),
-      if (_emergencyContactCtrl.text.isNotEmpty) 'emergencyContact': _emergencyContactCtrl.text.trim(),
-      if (_emergencyPhoneCtrl.text.isNotEmpty) 'emergencyPhone': _emergencyPhoneCtrl.text.trim(),
-      if (_chiefComplaintCtrl.text.isNotEmpty) 'chiefComplaint': _chiefComplaintCtrl.text.trim(),
-      if (_allergiesCtrl.text.isNotEmpty) 'allergies': _allergiesCtrl.text.trim(),
-      if (_medicationsCtrl.text.isNotEmpty) 'medications': _medicationsCtrl.text.trim(),
-      if (_medicalHistoryCtrl.text.isNotEmpty) 'medicalHistory': _medicalHistoryCtrl.text.trim(),
+      if (_postalCodeCtrl.text.isNotEmpty)
+        'postalCode': _postalCodeCtrl.text.trim(),
+      if (_telephoneCtrl.text.isNotEmpty)
+        'telephone': _telephoneCtrl.text.trim(),
+      if (_emergencyContactCtrl.text.isNotEmpty)
+        'emergencyContact': _emergencyContactCtrl.text.trim(),
+      if (_emergencyPhoneCtrl.text.isNotEmpty)
+        'emergencyPhone': _emergencyPhoneCtrl.text.trim(),
+      if (_chiefComplaintCtrl.text.isNotEmpty)
+        'chiefComplaint': _chiefComplaintCtrl.text.trim(),
+      if (_allergiesCtrl.text.isNotEmpty)
+        'allergies': _allergiesCtrl.text.trim(),
+      if (_medicationsCtrl.text.isNotEmpty)
+        'medications': _medicationsCtrl.text.trim(),
+      if (_medicalHistoryCtrl.text.isNotEmpty)
+        'medicalHistory': _medicalHistoryCtrl.text.trim(),
       'gcsEye': _gcsEye.round(),
       'gcsVerbal': _gcsVerbal.round(),
       'gcsMotor': _gcsMotor.round(),
       'gcsTotal': _gcsTotal,
       if (_avpu != null) 'avpu': _avpu,
-      if (_locationNotesCtrl.text.isNotEmpty) 'locationNotes': _locationNotesCtrl.text.trim(),
+      if (_locationNotesCtrl.text.isNotEmpty)
+        'locationNotes': _locationNotesCtrl.text.trim(),
       if (_notesCtrl.text.isNotEmpty) 'notes': _notesCtrl.text.trim(),
     };
   }
@@ -97,7 +108,7 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Το όνομα είναι υποχρεωτικό'),
-          backgroundColor: Color(0xFFB91C1C),
+          backgroundColor: AppColors.red700,
         ),
       );
       return;
@@ -110,17 +121,17 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
     final treatments = _buildTreatments();
 
     final err = await context.read<VictimProvider>().createVictim(
-      victimData,
-      vitalSigns: vitals != null ? [vitals] : [],
-      treatments: treatments,
-    );
+          victimData,
+          vitalSigns: vitals != null ? [vitals] : [],
+          treatments: treatments,
+        );
     setState(() => _submitting = false);
 
     if (!mounted) return;
 
     if (err != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err), backgroundColor: const Color(0xFFB91C1C)),
+        SnackBar(content: Text(err), backgroundColor: AppColors.red700),
       );
     } else {
       context.go('/victims');
@@ -129,35 +140,50 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
 
   Map<String, dynamic>? _buildVitalSigns() {
     final data = <String, dynamic>{};
-    if (_systolicCtrl.text.isNotEmpty) data['systolicBP'] = int.tryParse(_systolicCtrl.text);
-    if (_diastolicCtrl.text.isNotEmpty) data['diastolicBP'] = int.tryParse(_diastolicCtrl.text);
+    if (_systolicCtrl.text.isNotEmpty)
+      data['systolicBP'] = int.tryParse(_systolicCtrl.text);
+    if (_diastolicCtrl.text.isNotEmpty)
+      data['diastolicBP'] = int.tryParse(_diastolicCtrl.text);
     if (_hrCtrl.text.isNotEmpty) data['heartRate'] = int.tryParse(_hrCtrl.text);
-    if (_rrCtrl.text.isNotEmpty) data['respiratoryRate'] = int.tryParse(_rrCtrl.text);
-    if (_spo2Ctrl.text.isNotEmpty) data['oxygenSat'] = int.tryParse(_spo2Ctrl.text);
-    if (_tempCtrl.text.isNotEmpty) data['temperature'] = double.tryParse(_tempCtrl.text);
-    if (_glucoseCtrl.text.isNotEmpty) data['bloodGlucose'] = double.tryParse(_glucoseCtrl.text);
-    if (_painCtrl.text.isNotEmpty) data['painScore'] = int.tryParse(_painCtrl.text);
-    if (_measuredByCtrl.text.isNotEmpty) data['measuredBy'] = _measuredByCtrl.text.trim();
-    if (_vitalNotesCtrl.text.isNotEmpty) data['notes'] = _vitalNotesCtrl.text.trim();
+    if (_rrCtrl.text.isNotEmpty)
+      data['respiratoryRate'] = int.tryParse(_rrCtrl.text);
+    if (_spo2Ctrl.text.isNotEmpty)
+      data['oxygenSat'] = int.tryParse(_spo2Ctrl.text);
+    if (_tempCtrl.text.isNotEmpty)
+      data['temperature'] = double.tryParse(_tempCtrl.text);
+    if (_glucoseCtrl.text.isNotEmpty)
+      data['bloodGlucose'] = double.tryParse(_glucoseCtrl.text);
+    if (_painCtrl.text.isNotEmpty)
+      data['painScore'] = int.tryParse(_painCtrl.text);
+    if (_measuredByCtrl.text.isNotEmpty)
+      data['measuredBy'] = _measuredByCtrl.text.trim();
+    if (_vitalNotesCtrl.text.isNotEmpty)
+      data['notes'] = _vitalNotesCtrl.text.trim();
     return data.isEmpty ? null : data;
   }
 
   List<Map<String, dynamic>> _buildTreatments() {
-    return _treatments.map((t) {
-      final data = <String, dynamic>{};
-      final action = (t['actionCtrl'] as TextEditingController).text.trim();
-      if (action.isNotEmpty) data['action'] = action;
-      final material = (t['materialCtrl'] as TextEditingController).text.trim();
-      if (material.isNotEmpty) data['materialUsed'] = material;
-      if (t['itemId'] != null) data['itemId'] = t['itemId'];
-      final consumed = (t['consumedCtrl'] as TextEditingController).text.trim();
-      if (consumed.isNotEmpty) data['consumedNote'] = consumed;
-      final performedBy = (t['performedByCtrl'] as TextEditingController).text.trim();
-      if (performedBy.isNotEmpty) data['performedBy'] = performedBy;
-      final notes = (t['notesCtrl'] as TextEditingController).text.trim();
-      if (notes.isNotEmpty) data['notes'] = notes;
-      return data;
-    }).where((d) => d.isNotEmpty).toList();
+    return _treatments
+        .map((t) {
+          final data = <String, dynamic>{};
+          final action = (t['actionCtrl'] as TextEditingController).text.trim();
+          if (action.isNotEmpty) data['action'] = action;
+          final material =
+              (t['materialCtrl'] as TextEditingController).text.trim();
+          if (material.isNotEmpty) data['materialUsed'] = material;
+          if (t['itemId'] != null) data['itemId'] = t['itemId'];
+          final consumed =
+              (t['consumedCtrl'] as TextEditingController).text.trim();
+          if (consumed.isNotEmpty) data['consumedNote'] = consumed;
+          final performedBy =
+              (t['performedByCtrl'] as TextEditingController).text.trim();
+          if (performedBy.isNotEmpty) data['performedBy'] = performedBy;
+          final notes = (t['notesCtrl'] as TextEditingController).text.trim();
+          if (notes.isNotEmpty) data['notes'] = notes;
+          return data;
+        })
+        .where((d) => d.isNotEmpty)
+        .toList();
   }
 
   void _addTreatment() {
@@ -196,17 +222,28 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
 
   String _vitalSignLabel(String key) {
     switch (key) {
-      case 'systolicBP': return 'Συστολική';
-      case 'diastolicBP': return 'Διαστολική';
-      case 'heartRate': return 'Καρδιακοί παλμοί';
-      case 'respiratoryRate': return 'Αναπνοές/λεπτό';
-      case 'oxygenSat': return 'SpO2';
-      case 'temperature': return 'Θερμοκρασία';
-      case 'bloodGlucose': return 'Γλυκόζη';
-      case 'painScore': return 'Πόνος';
-      case 'measuredBy': return 'Καταγραφή από';
-      case 'notes': return 'Σημειώσεις';
-      default: return key;
+      case 'systolicBP':
+        return 'Συστολική';
+      case 'diastolicBP':
+        return 'Διαστολική';
+      case 'heartRate':
+        return 'Καρδιακοί παλμοί';
+      case 'respiratoryRate':
+        return 'Αναπνοές/λεπτό';
+      case 'oxygenSat':
+        return 'SpO2';
+      case 'temperature':
+        return 'Θερμοκρασία';
+      case 'bloodGlucose':
+        return 'Γλυκόζη';
+      case 'painScore':
+        return 'Πόνος';
+      case 'measuredBy':
+        return 'Καταγραφή από';
+      case 'notes':
+        return 'Σημειώσεις';
+      default:
+        return key;
     }
   }
 
@@ -295,7 +332,8 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
               children: [
                 TextField(
                   controller: _nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Ονοματεπώνυμο *'),
+                  decoration:
+                      const InputDecoration(labelText: 'Ονοματεπώνυμο *'),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -315,7 +353,8 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
                     if (picked != null) setState(() => _dateOfBirth = picked);
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'Ημερομηνία γέννησης'),
+                    decoration:
+                        const InputDecoration(labelText: 'Ημερομηνία γέννησης'),
                     child: Text(
                       _dateOfBirth != null
                           ? '${_dateOfBirth!.day}/${_dateOfBirth!.month}/${_dateOfBirth!.year}'
@@ -336,17 +375,33 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
                   onChanged: (v) => setState(() => _gender = v),
                 ),
                 const SizedBox(height: 12),
-                TextField(controller: _addressCtrl, decoration: const InputDecoration(labelText: 'Διεύθυνση')),
+                TextField(
+                    controller: _addressCtrl,
+                    decoration: const InputDecoration(labelText: 'Διεύθυνση')),
                 const SizedBox(height: 12),
-                TextField(controller: _cityCtrl, decoration: const InputDecoration(labelText: 'Πόλη')),
+                TextField(
+                    controller: _cityCtrl,
+                    decoration: const InputDecoration(labelText: 'Πόλη')),
                 const SizedBox(height: 12),
-                TextField(controller: _postalCodeCtrl, decoration: const InputDecoration(labelText: 'Τ.Κ.')),
+                TextField(
+                    controller: _postalCodeCtrl,
+                    decoration: const InputDecoration(labelText: 'Τ.Κ.')),
                 const SizedBox(height: 12),
-                TextField(controller: _telephoneCtrl, decoration: const InputDecoration(labelText: 'Τηλέφωνο'), keyboardType: TextInputType.phone),
+                TextField(
+                    controller: _telephoneCtrl,
+                    decoration: const InputDecoration(labelText: 'Τηλέφωνο'),
+                    keyboardType: TextInputType.phone),
                 const SizedBox(height: 12),
-                TextField(controller: _emergencyContactCtrl, decoration: const InputDecoration(labelText: 'Επαφή έκτακτης ανάγκης')),
+                TextField(
+                    controller: _emergencyContactCtrl,
+                    decoration: const InputDecoration(
+                        labelText: 'Επαφή έκτακτης ανάγκης')),
                 const SizedBox(height: 12),
-                TextField(controller: _emergencyPhoneCtrl, decoration: const InputDecoration(labelText: 'Τηλέφωνο επαφής έκτακτης ανάγκης'), keyboardType: TextInputType.phone),
+                TextField(
+                    controller: _emergencyPhoneCtrl,
+                    decoration: const InputDecoration(
+                        labelText: 'Τηλέφωνο επαφής έκτακτης ανάγκης'),
+                    keyboardType: TextInputType.phone),
               ],
             ),
           ),
@@ -360,7 +415,8 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
               children: [
                 TextField(
                   controller: _chiefComplaintCtrl,
-                  decoration: const InputDecoration(labelText: 'Κύριο σύμπτωμα'),
+                  decoration:
+                      const InputDecoration(labelText: 'Κύριο σύμπτωμα'),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 12),
@@ -372,13 +428,15 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _medicationsCtrl,
-                  decoration: const InputDecoration(labelText: 'Φαρμακευτική αγωγή'),
+                  decoration:
+                      const InputDecoration(labelText: 'Φαρμακευτική αγωγή'),
                   maxLines: 2,
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _medicalHistoryCtrl,
-                  decoration: const InputDecoration(labelText: 'Ιατρικό ιστορικό'),
+                  decoration:
+                      const InputDecoration(labelText: 'Ιατρικό ιστορικό'),
                   maxLines: 2,
                 ),
               ],
@@ -393,30 +451,59 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('GCS (Glasgow Coma Scale)', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text('GCS (Glasgow Coma Scale)',
+                    style: TextStyle(fontWeight: AppFontWeight.semibold)),
                 const SizedBox(height: 4),
-                Text('Σύνολο: $_gcsTotal / 15', style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFFC62828), fontWeight: FontWeight.w700)),
+                Text('Σύνολο: $_gcsTotal / 15',
+                    style: GoogleFonts.inter(
+                        fontSize: AppFontSize.lg,
+                        color: AppColors.brandPrimary,
+                        fontWeight: AppFontWeight.bold)),
                 const SizedBox(height: 8),
-                _GcsSlider(label: 'Οφθαλμοί (E)', value: _gcsEye, min: 1, max: 4, onChanged: (v) => setState(() => _gcsEye = v)),
-                _GcsSlider(label: 'Λεκτική (V)', value: _gcsVerbal, min: 1, max: 5, onChanged: (v) => setState(() => _gcsVerbal = v)),
-                _GcsSlider(label: 'Κινητική (M)', value: _gcsMotor, min: 1, max: 6, onChanged: (v) => setState(() => _gcsMotor = v)),
+                _GcsSlider(
+                    label: 'Οφθαλμοί (E)',
+                    value: _gcsEye,
+                    min: 1,
+                    max: 4,
+                    onChanged: (v) => setState(() => _gcsEye = v)),
+                _GcsSlider(
+                    label: 'Λεκτική (V)',
+                    value: _gcsVerbal,
+                    min: 1,
+                    max: 5,
+                    onChanged: (v) => setState(() => _gcsVerbal = v)),
+                _GcsSlider(
+                    label: 'Κινητική (M)',
+                    value: _gcsMotor,
+                    min: 1,
+                    max: 6,
+                    onChanged: (v) => setState(() => _gcsMotor = v)),
                 const SizedBox(height: 16),
-                const Text('AVPU', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text('AVPU',
+                    style: TextStyle(fontWeight: AppFontWeight.semibold)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   children: ['ALERT', 'VOICE', 'PAIN', 'UNRESPONSIVE'].map((v) {
                     return ChoiceChip(
-                      label: Text(v == 'ALERT' ? 'Σε εγρήγορση' : v == 'VOICE' ? 'Αντιδρά σε φωνή' : v == 'PAIN' ? 'Αντιδρά στον πόνο' : 'Χωρίς αντίδραση'),
+                      label: Text(v == 'ALERT'
+                          ? 'Σε εγρήγορση'
+                          : v == 'VOICE'
+                              ? 'Αντιδρά σε φωνή'
+                              : v == 'PAIN'
+                                  ? 'Αντιδρά στον πόνο'
+                                  : 'Χωρίς αντίδραση'),
                       selected: _avpu == v,
-                      onSelected: (_) => setState(() => _avpu = _avpu == v ? null : v),
+                      onSelected: (_) =>
+                          setState(() => _avpu = _avpu == v ? null : v),
                     );
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _locationNotesCtrl,
-                  decoration: const InputDecoration(labelText: 'Σημειώσεις τοποθεσίας'),
+                  decoration:
+                      const InputDecoration(labelText: 'Σημειώσεις τοποθεσίας'),
                   maxLines: 2,
                 ),
               ],
@@ -430,25 +517,62 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
             state: _currentStep > 3 ? StepState.complete : StepState.indexed,
             content: Column(
               children: [
-                TextField(controller: _systolicCtrl, decoration: const InputDecoration(labelText: 'Συστολική (mmHg)'), keyboardType: TextInputType.number),
+                TextField(
+                    controller: _systolicCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Συστολική (mmHg)'),
+                    keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
-                TextField(controller: _diastolicCtrl, decoration: const InputDecoration(labelText: 'Διαστολική (mmHg)'), keyboardType: TextInputType.number),
+                TextField(
+                    controller: _diastolicCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Διαστολική (mmHg)'),
+                    keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
-                TextField(controller: _hrCtrl, decoration: const InputDecoration(labelText: 'Καρδιακοί παλμοί'), keyboardType: TextInputType.number),
+                TextField(
+                    controller: _hrCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Καρδιακοί παλμοί'),
+                    keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
-                TextField(controller: _rrCtrl, decoration: const InputDecoration(labelText: 'Αναπνοές/λεπτό'), keyboardType: TextInputType.number),
+                TextField(
+                    controller: _rrCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Αναπνοές/λεπτό'),
+                    keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
-                TextField(controller: _spo2Ctrl, decoration: const InputDecoration(labelText: 'SpO2 (%)'), keyboardType: TextInputType.number),
+                TextField(
+                    controller: _spo2Ctrl,
+                    decoration: const InputDecoration(labelText: 'SpO2 (%)'),
+                    keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
-                TextField(controller: _tempCtrl, decoration: const InputDecoration(labelText: 'Θερμοκρασία (°C)'), keyboardType: TextInputType.number),
+                TextField(
+                    controller: _tempCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Θερμοκρασία (°C)'),
+                    keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
-                TextField(controller: _glucoseCtrl, decoration: const InputDecoration(labelText: 'Γλυκόζη (mg/dL)'), keyboardType: TextInputType.number),
+                TextField(
+                    controller: _glucoseCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Γλυκόζη (mg/dL)'),
+                    keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
-                TextField(controller: _painCtrl, decoration: const InputDecoration(labelText: 'Πόνος (0–10)'), keyboardType: TextInputType.number),
+                TextField(
+                    controller: _painCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Πόνος (0–10)'),
+                    keyboardType: TextInputType.number),
                 const SizedBox(height: 12),
-                TextField(controller: _measuredByCtrl, decoration: const InputDecoration(labelText: 'Καταγραφή από')),
+                TextField(
+                    controller: _measuredByCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Καταγραφή από')),
                 const SizedBox(height: 12),
-                TextField(controller: _vitalNotesCtrl, decoration: const InputDecoration(labelText: 'Σημειώσεις'), maxLines: 2),
+                TextField(
+                    controller: _vitalNotesCtrl,
+                    decoration: const InputDecoration(labelText: 'Σημειώσεις'),
+                    maxLines: 2),
               ],
             ),
           ),
@@ -471,16 +595,25 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
                         children: [
                           Row(
                             children: [
-                              Text('Θεραπεία ${i + 1}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                              Text('Θεραπεία ${i + 1}',
+                                  style: const TextStyle(
+                                      fontWeight: AppFontWeight.semibold)),
                               const Spacer(),
                               IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Color(0xFFB91C1C), size: 20),
+                                icon: const Icon(Icons.delete_outline,
+                                    color: AppColors.red700, size: 20),
                                 onPressed: () {
-                                  (t['actionCtrl'] as TextEditingController).dispose();
-                                  (t['materialCtrl'] as TextEditingController).dispose();
-                                  (t['consumedCtrl'] as TextEditingController).dispose();
-                                  (t['performedByCtrl'] as TextEditingController).dispose();
-                                  (t['notesCtrl'] as TextEditingController).dispose();
+                                  (t['actionCtrl'] as TextEditingController)
+                                      .dispose();
+                                  (t['materialCtrl'] as TextEditingController)
+                                      .dispose();
+                                  (t['consumedCtrl'] as TextEditingController)
+                                      .dispose();
+                                  (t['performedByCtrl']
+                                          as TextEditingController)
+                                      .dispose();
+                                  (t['notesCtrl'] as TextEditingController)
+                                      .dispose();
                                   setState(() => _treatments.removeAt(i));
                                 },
                               ),
@@ -488,45 +621,58 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
                           ),
                           const SizedBox(height: 8),
                           TextField(
-                            controller: t['actionCtrl'] as TextEditingController,
-                            decoration: const InputDecoration(labelText: 'Ενέργεια'),
+                            controller:
+                                t['actionCtrl'] as TextEditingController,
+                            decoration:
+                                const InputDecoration(labelText: 'Ενέργεια'),
                           ),
                           const SizedBox(height: 8),
                           TextField(
-                            controller: t['materialCtrl'] as TextEditingController,
-                            decoration: const InputDecoration(labelText: 'Υλικά που χρησιμοποιήθηκαν'),
+                            controller:
+                                t['materialCtrl'] as TextEditingController,
+                            decoration: const InputDecoration(
+                                labelText: 'Υλικά που χρησιμοποιήθηκαν'),
                           ),
                           if (_treatmentItems.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             DropdownButtonFormField<int>(
                               value: t['itemId'] as int?,
-                              decoration: const InputDecoration(labelText: 'Αντικείμενο (από εξοπλισμό)'),
+                              decoration: const InputDecoration(
+                                  labelText: 'Αντικείμενο (από εξοπλισμό)'),
                               items: [
-                                const DropdownMenuItem<int>(value: null, child: Text('—')),
-                                ..._treatmentItems.map((item) => DropdownMenuItem<int>(
-                                  value: item['id'] as int,
-                                  child: Text(item['name'] as String? ?? 'Αντικείμενο ${item['id']}'),
-                                )),
+                                const DropdownMenuItem<int>(
+                                    value: null, child: Text('—')),
+                                ..._treatmentItems
+                                    .map((item) => DropdownMenuItem<int>(
+                                          value: item['id'] as int,
+                                          child: Text(item['name'] as String? ??
+                                              'Αντικείμενο ${item['id']}'),
+                                        )),
                               ],
                               onChanged: (v) => setState(() => t['itemId'] = v),
                             ),
                             if (t['itemId'] != null) ...[
                               const SizedBox(height: 8),
                               TextField(
-                                controller: t['consumedCtrl'] as TextEditingController,
-                                decoration: const InputDecoration(labelText: 'Σημείωση κατανάλωσης'),
+                                controller:
+                                    t['consumedCtrl'] as TextEditingController,
+                                decoration: const InputDecoration(
+                                    labelText: 'Σημείωση κατανάλωσης'),
                               ),
                             ],
                           ],
                           const SizedBox(height: 8),
                           TextField(
-                            controller: t['performedByCtrl'] as TextEditingController,
-                            decoration: const InputDecoration(labelText: 'Εκτελέστηκε από'),
+                            controller:
+                                t['performedByCtrl'] as TextEditingController,
+                            decoration: const InputDecoration(
+                                labelText: 'Εκτελέστηκε από'),
                           ),
                           const SizedBox(height: 8),
                           TextField(
                             controller: t['notesCtrl'] as TextEditingController,
-                            decoration: const InputDecoration(labelText: 'Σημειώσεις'),
+                            decoration:
+                                const InputDecoration(labelText: 'Σημειώσεις'),
                             maxLines: 2,
                           ),
                         ],
@@ -551,30 +697,64 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SummaryRow(label: 'Ονοματεπώνυμο', value: _nameCtrl.text.trim()),
-                if (_ageCtrl.text.isNotEmpty) _SummaryRow(label: 'Ηλικία', value: _ageCtrl.text),
+                _SummaryRow(
+                    label: 'Ονοματεπώνυμο', value: _nameCtrl.text.trim()),
+                if (_ageCtrl.text.isNotEmpty)
+                  _SummaryRow(label: 'Ηλικία', value: _ageCtrl.text),
                 if (_dateOfBirth != null)
-                  _SummaryRow(label: 'Ημ/νία γέννησης', value: '${_dateOfBirth!.day}/${_dateOfBirth!.month}/${_dateOfBirth!.year}'),
-                if (_gender != null) _SummaryRow(label: 'Φύλο', value: _gender!),
-                if (_chiefComplaintCtrl.text.isNotEmpty) _SummaryRow(label: 'Κύριο σύμπτωμα', value: _chiefComplaintCtrl.text),
-                _SummaryRow(label: 'GCS', value: '$_gcsTotal (E$_gcsEye / V$_gcsVerbal / M$_gcsMotor)'),
+                  _SummaryRow(
+                      label: 'Ημ/νία γέννησης',
+                      value:
+                          '${_dateOfBirth!.day}/${_dateOfBirth!.month}/${_dateOfBirth!.year}'),
+                if (_gender != null)
+                  _SummaryRow(label: 'Φύλο', value: _gender!),
+                if (_chiefComplaintCtrl.text.isNotEmpty)
+                  _SummaryRow(
+                      label: 'Κύριο σύμπτωμα', value: _chiefComplaintCtrl.text),
+                _SummaryRow(
+                    label: 'GCS',
+                    value:
+                        '$_gcsTotal (E$_gcsEye / V$_gcsVerbal / M$_gcsMotor)'),
                 if (_avpu != null) _SummaryRow(label: 'AVPU', value: _avpu!),
-                if (_notesCtrl.text.isNotEmpty) _SummaryRow(label: 'Σημειώσεις', value: _notesCtrl.text),
+                if (_notesCtrl.text.isNotEmpty)
+                  _SummaryRow(label: 'Σημειώσεις', value: _notesCtrl.text),
                 const SizedBox(height: 12),
-                const Text('Ζωτικά Σημεία:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                const Text('Ζωτικά Σημεία:',
+                    style: TextStyle(
+                        fontWeight: AppFontWeight.semibold,
+                        fontSize: AppFontSize.lg)),
                 if (_buildVitalSigns() != null)
-                  ..._buildVitalSigns()!.entries.map((e) => _SummaryRow(label: _vitalSignLabel(e.key), value: '${e.value}')),
+                  ..._buildVitalSigns()!.entries.map((e) => _SummaryRow(
+                      label: _vitalSignLabel(e.key), value: '${e.value}')),
                 if (_buildVitalSigns() == null)
-                  const Padding(padding: EdgeInsets.only(top: 4), child: Text('Δεν καταγράφηκαν', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13))),
+                  const Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text('Δεν καταγράφηκαν',
+                          style: TextStyle(
+                              color: AppColors.gray400,
+                              fontSize: AppFontSize.md))),
                 const SizedBox(height: 12),
-                const Text('Θεραπείες:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                const Text('Θεραπείες:',
+                    style: TextStyle(
+                        fontWeight: AppFontWeight.semibold,
+                        fontSize: AppFontSize.lg)),
                 if (_treatments.isNotEmpty)
                   ..._treatments.asMap().entries.map((entry) {
-                    final action = (entry.value['actionCtrl'] as TextEditingController).text.trim();
-                    return _SummaryRow(label: 'Θεραπεία ${entry.key + 1}', value: action.isEmpty ? '—' : action);
+                    final action =
+                        (entry.value['actionCtrl'] as TextEditingController)
+                            .text
+                            .trim();
+                    return _SummaryRow(
+                        label: 'Θεραπεία ${entry.key + 1}',
+                        value: action.isEmpty ? '—' : action);
                   }),
                 if (_treatments.isEmpty)
-                  const Padding(padding: EdgeInsets.only(top: 4), child: Text('Δεν καταγράφηκαν', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13))),
+                  const Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text('Δεν καταγράφηκαν',
+                          style: TextStyle(
+                              color: AppColors.gray400,
+                              fontSize: AppFontSize.md))),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _notesCtrl,
@@ -609,7 +789,10 @@ class _GcsSlider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        SizedBox(width: 130, child: Text(label, style: GoogleFonts.inter(fontSize: 13))),
+        SizedBox(
+            width: 130,
+            child: Text(label,
+                style: GoogleFonts.inter(fontSize: AppFontSize.md))),
         Expanded(
           child: Slider(
             value: value,
@@ -620,7 +803,9 @@ class _GcsSlider extends StatelessWidget {
             onChanged: onChanged,
           ),
         ),
-        SizedBox(width: 24, child: Text(value.round().toString(), textAlign: TextAlign.center)),
+        SizedBox(
+            width: 24,
+            child: Text(value.round().toString(), textAlign: TextAlign.center)),
       ],
     );
   }
@@ -641,9 +826,15 @@ class _SummaryRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 160,
-            child: Text('$label:', style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF6B7280))),
+            child: Text('$label:',
+                style: GoogleFonts.inter(
+                    fontSize: AppFontSize.md, color: AppColors.gray500)),
           ),
-          Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500))),
+          Expanded(
+              child: Text(value,
+                  style: GoogleFonts.inter(
+                      fontSize: AppFontSize.md,
+                      fontWeight: AppFontWeight.medium))),
         ],
       ),
     );

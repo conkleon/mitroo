@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/department_provider.dart';
 
+import 'package:mitroo_frontend/theme/theme.dart';
+
 class DepartmentsScreen extends StatefulWidget {
   const DepartmentsScreen({super.key});
 
@@ -17,7 +19,8 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<DepartmentProvider>().fetchDepartments());
+    Future.microtask(
+        () => context.read<DepartmentProvider>().fetchDepartments());
   }
 
   List<dynamic> _filtered(List<dynamic> depts) {
@@ -80,12 +83,15 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
           FilledButton(
             onPressed: () async {
               final data = <String, dynamic>{'name': nameCtrl.text.trim()};
-              if (descCtrl.text.isNotEmpty) data['description'] = descCtrl.text.trim();
-              if (locationCtrl.text.isNotEmpty) data['location'] = locationCtrl.text.trim();
+              if (descCtrl.text.isNotEmpty)
+                data['description'] = descCtrl.text.trim();
+              if (locationCtrl.text.isNotEmpty)
+                data['location'] = locationCtrl.text.trim();
               final err = await context.read<DepartmentProvider>().create(data);
               if (ctx.mounted) Navigator.pop(ctx);
               if (err != null && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(err)));
               }
             },
             child: const Text('Δημιουργία'),
@@ -101,7 +107,9 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
     final prov = context.watch<DepartmentProvider>();
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
-    final name = auth.displayName.isNotEmpty ? auth.displayName : (auth.user?['eame'] ?? 'User');
+    final name = auth.displayName.isNotEmpty
+        ? auth.displayName
+        : (auth.user?['eame'] ?? 'User');
 
     final depts = prov.departments;
     final filtered = _filtered(depts);
@@ -123,7 +131,10 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
                     children: [
                       Image.asset('assets/logo.png', height: 32),
                       const SizedBox(width: 10),
-                      Text('R.C.D.', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: cs.primary)),
+                      Text('R.C.D.',
+                          style: tt.titleMedium?.copyWith(
+                              fontWeight: AppFontWeight.bold,
+                              color: cs.primary)),
                       const Spacer(),
                       GestureDetector(
                         onTap: () => context.push('/profile'),
@@ -132,7 +143,10 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
                           backgroundColor: cs.primary,
                           child: Text(
                             name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: AppFontWeight.semibold,
+                                fontSize: AppFontSize.lg),
                           ),
                         ),
                       ),
@@ -144,22 +158,24 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
               // ── Search ──
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   child: TextField(
                     decoration: InputDecoration(
                       hintText: 'Αναζήτηση τμημάτων...',
                       prefixIcon: const Icon(Icons.search, size: 20),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                        borderRadius: AppRadius.r12,
+                        borderSide: const BorderSide(color: AppColors.gray200),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                        borderRadius: AppRadius.r12,
+                        borderSide: const BorderSide(color: AppColors.gray200),
                       ),
                       filled: true,
                       fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                     ),
                     onChanged: (v) => setState(() => _search = v),
                   ),
@@ -169,28 +185,29 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
               // ── Stats ──
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   child: Row(
                     children: [
                       _MiniStat(
                         label: 'Τμήματα',
                         value: '${depts.length}',
                         icon: Icons.business,
-                        color: const Color(0xFF7C3AED),
+                        color: AppColors.violet600,
                       ),
                       const SizedBox(width: 10),
                       _MiniStat(
                         label: 'Μέλη',
                         value: '$totalMembers',
                         icon: Icons.people,
-                        color: const Color(0xFFDC2626),
+                        color: AppColors.red600,
                       ),
                       const SizedBox(width: 10),
                       _MiniStat(
                         label: 'Εμφαν.',
                         value: '${filtered.length}',
                         icon: Icons.filter_list,
-                        color: const Color(0xFF6B7280),
+                        color: AppColors.gray500,
                       ),
                     ],
                   ),
@@ -199,17 +216,19 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
 
               // ── Content ──
               if (prov.loading)
-                const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
+                const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator()))
               else if (filtered.isEmpty)
                 SliverFillRemaining(
                   child: Center(
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 40),
-                      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 40, horizontal: 24),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF9FAFB),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                        color: AppColors.gray50,
+                        borderRadius: AppRadius.r20,
+                        border: Border.all(color: AppColors.gray200),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -217,20 +236,28 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF3F4F6),
+                              color: AppColors.gray100,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.business, size: 32, color: Color(0xFF9CA3AF)),
+                            child: const Icon(Icons.business,
+                                size: 32, color: AppColors.gray400),
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            _search.isNotEmpty ? 'Δεν βρέθηκαν τμήματα' : 'Δεν υπάρχουν τμήματα',
-                            style: tt.bodyLarge?.copyWith(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600),
+                            _search.isNotEmpty
+                                ? 'Δεν βρέθηκαν τμήματα'
+                                : 'Δεν υπάρχουν τμήματα',
+                            style: tt.bodyLarge?.copyWith(
+                                color: AppColors.gray500,
+                                fontWeight: AppFontWeight.semibold),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            _search.isNotEmpty ? 'Δοκιμάστε άλλη αναζήτηση' : 'Πατήστε το + για να προσθέσετε',
-                            style: tt.bodySmall?.copyWith(color: const Color(0xFF9CA3AF)),
+                            _search.isNotEmpty
+                                ? 'Δοκιμάστε άλλη αναζήτηση'
+                                : 'Πατήστε το + για να προσθέσετε',
+                            style: tt.bodySmall
+                                ?.copyWith(color: AppColors.gray400),
                           ),
                         ],
                       ),
@@ -245,7 +272,8 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
                       (context, i) => _DeptCard(
                         dept: filtered[i] as Map<String, dynamic>,
                         onTap: () async {
-                          await context.push('/admin/departments/${filtered[i]['id']}');
+                          await context
+                              .push('/admin/departments/${filtered[i]['id']}');
                           if (mounted) prov.fetchDepartments();
                         },
                       ),
@@ -282,7 +310,9 @@ class _DeptCard extends StatelessWidget {
     final vehicleCount = counts['vehicles'] ?? 0;
     final location = dept['location'] as String?;
     final description = dept['description'] as String?;
-    final subtitle = description != null && description.isNotEmpty ? description : location ?? '';
+    final subtitle = description != null && description.isNotEmpty
+        ? description
+        : location ?? '';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -290,8 +320,8 @@ class _DeptCard extends StatelessWidget {
         elevation: 0,
         color: Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFE5E7EB)),
+          borderRadius: AppRadius.r16,
+          side: const BorderSide(color: AppColors.gray200),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -310,11 +340,12 @@ class _DeptCard extends StatelessWidget {
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                          colors: [AppColors.violet600, AppColors.violet800],
                         ),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.r12,
                       ),
-                      child: const Icon(Icons.business, color: Colors.white, size: 22),
+                      child: const Icon(Icons.business,
+                          color: Colors.white, size: 22),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -323,14 +354,16 @@ class _DeptCard extends StatelessWidget {
                         children: [
                           Text(
                             dept['name'] ?? '',
-                            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                            style: tt.titleSmall
+                                ?.copyWith(fontWeight: AppFontWeight.semibold),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (subtitle.isNotEmpty)
                             Text(
                               subtitle,
-                              style: tt.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+                              style: tt.bodySmall
+                                  ?.copyWith(color: AppColors.gray500),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -338,7 +371,8 @@ class _DeptCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.chevron_right, size: 20, color: Color(0xFFD1D5DB)),
+                    const Icon(Icons.chevron_right,
+                        size: 20, color: AppColors.gray300),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -349,17 +383,17 @@ class _DeptCard extends StatelessWidget {
                     _DeptChip(
                       icon: Icons.people,
                       label: '$memberCount μέλη',
-                      color: const Color(0xFFDC2626),
+                      color: AppColors.red600,
                     ),
                     _DeptChip(
                       icon: Icons.miscellaneous_services,
                       label: '$serviceCount υπηρεσίες',
-                      color: const Color(0xFF059669),
+                      color: AppColors.emerald600,
                     ),
                     _DeptChip(
                       icon: Icons.directions_car,
                       label: '$vehicleCount οχήματα',
-                      color: const Color(0xFFD97706),
+                      color: AppColors.amber600,
                     ),
                   ],
                 ),
@@ -376,7 +410,8 @@ class _DeptChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
-  const _DeptChip({required this.icon, required this.label, required this.color});
+  const _DeptChip(
+      {required this.icon, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -384,14 +419,18 @@ class _DeptChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color.withAlpha(18),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.r8,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500)),
+          Text(label,
+              style: TextStyle(
+                  fontSize: AppFontSize.base,
+                  color: color,
+                  fontWeight: AppFontWeight.medium)),
         ],
       ),
     );
@@ -417,8 +456,8 @@ class _MiniStat extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          borderRadius: AppRadius.r12,
+          border: Border.all(color: AppColors.gray200),
         ),
         child: Row(
           children: [
@@ -427,8 +466,14 @@ class _MiniStat extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(value, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: color)),
-                Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+                Text(value,
+                    style: TextStyle(
+                        fontWeight: AppFontWeight.bold,
+                        fontSize: AppFontSize.xl,
+                        color: color)),
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: AppFontSize.sm, color: AppColors.gray500)),
               ],
             ),
           ],

@@ -6,6 +6,7 @@ import '../providers/department_provider.dart';
 import '../services/pwa_service.dart';
 import '../widgets/offline_banner.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mitroo_frontend/theme/theme.dart';
 import 'dart:math' as math;
 
 /// Responsive shell: bottom nav on mobile, sidebar on desktop (≥900px).
@@ -31,7 +32,14 @@ class _ShellScreenState extends State<ShellScreen> {
     final auth = context.watch<AuthProvider>();
     final showAdmin = auth.canAccessAdminPanel;
 
-    final mainPaths = ['/services', '/victims', '/items', '/vehicles', if (showAdmin) '/admin', '/chat'];
+    final mainPaths = [
+      '/services',
+      '/victims',
+      '/items',
+      '/vehicles',
+      if (showAdmin) '/admin',
+      '/chat'
+    ];
 
     final location = GoRouterState.of(context).matchedLocation;
     final fullUri = GoRouterState.of(context).uri.toString();
@@ -165,7 +173,11 @@ class _DesktopSidebar extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF6B0000), Color(0xFFC62828), Color(0xFFD84315)],
+          colors: [
+            AppColors.brandDark,
+            AppColors.brandPrimary,
+            AppColors.orangeDeep
+          ],
           stops: [0.0, 0.55, 1.0],
         ),
       ),
@@ -193,8 +205,8 @@ class _DesktopSidebar extends StatelessWidget {
                       'R.C.D.',
                       style: GoogleFonts.inter(
                         color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                        fontSize: AppFontSize.xl2,
+                        fontWeight: AppFontWeight.bold,
                         letterSpacing: 2.5,
                       ),
                     ),
@@ -268,7 +280,8 @@ class _DesktopSidebar extends StatelessWidget {
                           icon: Icons.business_outlined,
                           selectedIcon: Icons.business,
                           label: 'Τμήματα',
-                          selected: currentPath.startsWith('/admin/departments'),
+                          selected:
+                              currentPath.startsWith('/admin/departments'),
                           onTap: () => context.push('/admin/departments'),
                           indent: true,
                         ),
@@ -277,7 +290,8 @@ class _DesktopSidebar extends StatelessWidget {
                             icon: Icons.school_outlined,
                             selectedIcon: Icons.school,
                             label: 'Ειδικότητες',
-                            selected: currentPath.startsWith('/admin/specializations'),
+                            selected: currentPath
+                                .startsWith('/admin/specializations'),
                             onTap: () => context.push('/admin/specializations'),
                             indent: true,
                           ),
@@ -285,7 +299,8 @@ class _DesktopSidebar extends StatelessWidget {
                       if (auth.isMissionAdmin || isSysAdmin) ...[
                         const Padding(
                           padding: EdgeInsets.only(top: 8),
-                          child: _SidebarBrandSectionLabel('Διαχείριση Υπηρεσιών'),
+                          child:
+                              _SidebarBrandSectionLabel('Διαχείριση Υπηρεσιών'),
                         ),
                         ..._buildDeptServiceItems(context, isSysAdmin),
                       ],
@@ -298,13 +313,14 @@ class _DesktopSidebar extends StatelessWidget {
                 margin: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.white.withAlpha(15),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.r12,
                 ),
                 child: InkWell(
                   onTap: () => context.push('/profile'),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.r12,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
                     child: Row(
                       children: [
                         CircleAvatar(
@@ -316,8 +332,8 @@ class _DesktopSidebar extends StatelessWidget {
                                 : 'U',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
+                              fontWeight: AppFontWeight.semibold,
+                              fontSize: AppFontSize.base,
                             ),
                           ),
                         ),
@@ -327,11 +343,13 @@ class _DesktopSidebar extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                auth.displayName.isNotEmpty ? auth.displayName : 'Χρήστης',
+                                auth.displayName.isNotEmpty
+                                    ? auth.displayName
+                                    : 'Χρήστης',
                                 style: GoogleFonts.inter(
                                   color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                                  fontSize: AppFontSize.md,
+                                  fontWeight: AppFontWeight.semibold,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -340,13 +358,14 @@ class _DesktopSidebar extends StatelessWidget {
                                 auth.isAdmin ? 'Διαχειριστής' : 'Εθελοντής',
                                 style: GoogleFonts.inter(
                                   color: Colors.white.withAlpha(150),
-                                  fontSize: 11,
+                                  fontSize: AppFontSize.sm,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right, size: 16, color: Colors.white54),
+                        const Icon(Icons.chevron_right,
+                            size: 16, color: Colors.white54),
                       ],
                     ),
                   ),
@@ -376,7 +395,10 @@ class _DesktopSidebar extends StatelessWidget {
       return [
         Padding(
           padding: const EdgeInsets.only(left: 24, top: 4, bottom: 4),
-          child: Text('Κανένα τμήμα', style: TextStyle(fontSize: 12, color: Colors.white.withAlpha(120))),
+          child: Text('Κανένα τμήμα',
+              style: TextStyle(
+                  fontSize: AppFontSize.base,
+                  color: Colors.white.withAlpha(120))),
         ),
       ];
     }
@@ -384,7 +406,8 @@ class _DesktopSidebar extends StatelessWidget {
     return depts.map((dept) {
       final deptName = dept['name'] ?? 'Τμήμα';
       final deptId = dept['id'] as int;
-      final path = '/admin/services?departmentId=$deptId&departmentName=${Uri.encodeComponent(deptName)}';
+      final path =
+          '/admin/services?departmentId=$deptId&departmentName=${Uri.encodeComponent(deptName)}';
       // Check if this department's services page is currently active
       final isActive = currentUri.contains('departmentId=$deptId');
 
@@ -415,8 +438,8 @@ class _SidebarBrandSectionLabel extends StatelessWidget {
       child: Text(
         label.toUpperCase(),
         style: GoogleFonts.inter(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
+          fontSize: AppFontSize.xs,
+          fontWeight: AppFontWeight.bold,
           letterSpacing: 1.5,
           color: Colors.white.withAlpha(120),
         ),
@@ -473,7 +496,7 @@ class _BrandSidebarItemState extends State<_BrandSidebarItem> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppRadius.r10,
           ),
           child: Row(
             children: [
@@ -488,8 +511,11 @@ class _BrandSidebarItemState extends State<_BrandSidebarItem> {
                   widget.label,
                   style: GoogleFonts.inter(
                     fontSize: widget.indent ? 13 : 14,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: selected ? Colors.white : Colors.white.withAlpha(200),
+                    fontWeight: selected
+                        ? AppFontWeight.semibold
+                        : AppFontWeight.medium,
+                    color:
+                        selected ? Colors.white : Colors.white.withAlpha(200),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
