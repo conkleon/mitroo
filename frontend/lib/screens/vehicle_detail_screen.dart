@@ -58,10 +58,12 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       ]);
       if (mounted) {
         setState(() {
-          if (results[0].statusCode == 200)
+          if (results[0].statusCode == 200) {
             _vehicle = jsonDecode(results[0].body);
-          if (results[1].statusCode == 200)
+          }
+          if (results[1].statusCode == 200) {
             _comments = jsonDecode(results[1].body) as List;
+          }
           _loading = false;
         });
       }
@@ -178,14 +180,18 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                   'type': typeCtrl.text.trim(),
                   if (isAdmin) 'departmentId': selectedDeptId,
                 };
-                if (regCtrl.text.isNotEmpty)
+                if (regCtrl.text.isNotEmpty) {
                   data['registrationNumber'] = regCtrl.text.trim();
-                if (serialCtrl.text.isNotEmpty)
+                }
+                if (serialCtrl.text.isNotEmpty) {
                   data['serialNumber'] = serialCtrl.text.trim();
-                if (locationCtrl.text.isNotEmpty)
+                }
+                if (locationCtrl.text.isNotEmpty) {
                   data['location'] = locationCtrl.text.trim();
-                if (descCtrl.text.isNotEmpty)
+                }
+                if (descCtrl.text.isNotEmpty) {
                   data['description'] = descCtrl.text.trim();
+                }
                 final meterVal = num.tryParse(meterCtrl.text);
                 if (meterVal != null) data['currentMeter'] = meterVal;
 
@@ -926,18 +932,23 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
       MapEntry('Όνομα', v['name'] ?? ''),
       MapEntry('Τύπος', vehicleTypeLabel(v['type'])),
     ];
-    if (v['registrationNumber'] != null)
+    if (v['registrationNumber'] != null) {
       entries.add(MapEntry('Αρ. Κυκλοφορίας', v['registrationNumber']));
-    if (v['serialNumber'] != null)
+    }
+    if (v['serialNumber'] != null) {
       entries.add(MapEntry('Σειριακός Αρ.', v['serialNumber']));
-    if (v['location'] != null)
+    }
+    if (v['location'] != null) {
       entries.add(MapEntry('Τοποθεσία', v['location']));
-    if (v['description'] != null && v['description'].toString().isNotEmpty)
+    }
+    if (v['description'] != null && v['description'].toString().isNotEmpty) {
       entries.add(MapEntry('Περιγραφή', v['description']));
+    }
     entries.add(MapEntry('Μετρητής',
         '${v['currentMeter'] ?? 0} ${(v['meterType'] ?? 'km') == 'hours' ? 'h' : 'km'}'));
-    if (v['department'] != null)
+    if (v['department'] != null) {
       entries.add(MapEntry('Τμήμα', v['department']['name'] ?? ''));
+    }
     final owner = v['owner'] as Map<String, dynamic>?;
     if (owner != null && (auth.isAdmin || auth.isDeptAdmin)) {
       entries.add(

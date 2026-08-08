@@ -140,25 +140,34 @@ class _CreateVictimScreenState extends State<CreateVictimScreen> {
 
   Map<String, dynamic>? _buildVitalSigns() {
     final data = <String, dynamic>{};
-    if (_systolicCtrl.text.isNotEmpty)
+    if (_systolicCtrl.text.isNotEmpty) {
       data['systolicBP'] = int.tryParse(_systolicCtrl.text);
-    if (_diastolicCtrl.text.isNotEmpty)
+    }
+    if (_diastolicCtrl.text.isNotEmpty) {
       data['diastolicBP'] = int.tryParse(_diastolicCtrl.text);
+    }
     if (_hrCtrl.text.isNotEmpty) data['heartRate'] = int.tryParse(_hrCtrl.text);
-    if (_rrCtrl.text.isNotEmpty)
+    if (_rrCtrl.text.isNotEmpty) {
       data['respiratoryRate'] = int.tryParse(_rrCtrl.text);
-    if (_spo2Ctrl.text.isNotEmpty)
+    }
+    if (_spo2Ctrl.text.isNotEmpty) {
       data['oxygenSat'] = int.tryParse(_spo2Ctrl.text);
-    if (_tempCtrl.text.isNotEmpty)
+    }
+    if (_tempCtrl.text.isNotEmpty) {
       data['temperature'] = double.tryParse(_tempCtrl.text);
-    if (_glucoseCtrl.text.isNotEmpty)
+    }
+    if (_glucoseCtrl.text.isNotEmpty) {
       data['bloodGlucose'] = double.tryParse(_glucoseCtrl.text);
-    if (_painCtrl.text.isNotEmpty)
+    }
+    if (_painCtrl.text.isNotEmpty) {
       data['painScore'] = int.tryParse(_painCtrl.text);
-    if (_measuredByCtrl.text.isNotEmpty)
+    }
+    if (_measuredByCtrl.text.isNotEmpty) {
       data['measuredBy'] = _measuredByCtrl.text.trim();
-    if (_vitalNotesCtrl.text.isNotEmpty)
+    }
+    if (_vitalNotesCtrl.text.isNotEmpty) {
       data['notes'] = _vitalNotesCtrl.text.trim();
+    }
     return data.isEmpty ? null : data;
   }
 

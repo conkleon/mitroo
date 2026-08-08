@@ -151,10 +151,12 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                         'type': typeCtrl.text.trim(),
                         'meterType': meterType,
                       };
-                      if (regCtrl.text.isNotEmpty)
+                      if (regCtrl.text.isNotEmpty) {
                         data['registrationNumber'] = regCtrl.text.trim();
-                      if (!isPersonal && selectedDeptId != null)
+                      }
+                      if (!isPersonal && selectedDeptId != null) {
                         data['departmentId'] = selectedDeptId;
+                      }
                       final err =
                           await context.read<VehicleProvider>().create(data);
                       if (ctx.mounted) Navigator.pop(ctx);

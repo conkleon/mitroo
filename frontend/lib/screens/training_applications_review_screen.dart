@@ -94,8 +94,9 @@ class _TrainingApplicationsReviewScreenState
 
     if (confirmed != true) return;
     final body = <String, dynamic>{};
-    if (notesCtrl.text.trim().isNotEmpty)
+    if (notesCtrl.text.trim().isNotEmpty) {
       body['reviewNotes'] = notesCtrl.text.trim();
+    }
 
     final res =
         await _api.patch('/training-applications/$id/reject', body: body);

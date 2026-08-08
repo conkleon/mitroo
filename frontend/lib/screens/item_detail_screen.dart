@@ -284,8 +284,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                               initialDate: expirationDate ??
                                   DateTime.now().add(const Duration(days: 365)),
                             );
-                            if (picked != null)
+                            if (picked != null) {
                               setSt(() => expirationDate = picked);
+                            }
                           },
                           borderRadius: AppRadius.r10,
                           child: InputDecorator(

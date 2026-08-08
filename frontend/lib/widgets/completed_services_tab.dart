@@ -100,11 +100,12 @@ class CompletedServicesTabState extends State<CompletedServicesTab>
         _hasMore = data.length >= _limit;
       }
     } catch (_) {}
-    if (mounted)
+    if (mounted) {
       setState(() {
         _loading = false;
         _filtering = false;
       });
+    }
   }
 
   Future<void> _loadMore() async {
@@ -127,8 +128,9 @@ class CompletedServicesTabState extends State<CompletedServicesTab>
     final buf = StringBuffer(
       '/services?departmentId=${widget.departmentId}&includeEnrollments=true&includeExpired=true&lifecycleStatus=completed&page=$page&limit=$_limit',
     );
-    if (_search.isNotEmpty)
+    if (_search.isNotEmpty) {
       buf.write('&search=${Uri.encodeComponent(_search)}');
+    }
     if (_dateFrom != null) buf.write('&fromDate=${_fmtDate(_dateFrom!)}');
     if (_dateTo != null) buf.write('&toDate=${_fmtEndOfDay(_dateTo!)}');
     return buf.toString();

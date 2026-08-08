@@ -831,8 +831,9 @@ class _ItemsScreenState extends State<ItemsScreen> {
                             initialDate: expirationDate ??
                                 DateTime.now().add(const Duration(days: 365)),
                           );
-                          if (picked != null)
+                          if (picked != null) {
                             setSt(() => expirationDate = picked);
+                          }
                         },
                       ),
                       if (expirationDate != null)
@@ -867,22 +868,28 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   'quantity': quantity,
                   'departmentId': selectedDeptId
                 };
-                if (barcodeCtrl.text.isNotEmpty)
+                if (barcodeCtrl.text.isNotEmpty) {
                   data['barCode'] = barcodeCtrl.text.trim();
-                if (locationCtrl.text.isNotEmpty)
+                }
+                if (locationCtrl.text.isNotEmpty) {
                   data['location'] = locationCtrl.text.trim();
-                if (descCtrl.text.isNotEmpty)
+                }
+                if (descCtrl.text.isNotEmpty) {
                   data['description'] = descCtrl.text.trim();
-                if (expirationDate != null)
+                }
+                if (expirationDate != null) {
                   data['expirationDate'] = expirationDate!.toIso8601String();
-                if (selectedCategoryId != null)
+                }
+                if (selectedCategoryId != null) {
                   data['categoryId'] = selectedCategoryId;
+                }
                 final err = await context.read<ItemProvider>().create(data);
                 if (ctx.mounted) Navigator.pop(ctx);
                 if (err != null) {
-                  if (mounted)
+                  if (mounted) {
                     ScaffoldMessenger.of(context)
                         .showSnackBar(SnackBar(content: Text(err)));
+                  }
                 } else {
                   _fetch();
                 }

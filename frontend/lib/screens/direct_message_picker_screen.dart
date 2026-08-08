@@ -35,11 +35,12 @@ class _DirectMessagePickerScreenState extends State<DirectMessagePickerScreen> {
 
   Future<void> _load() async {
     final groups = await context.read<ChatProvider>().fetchDmCandidates();
-    if (mounted)
+    if (mounted) {
       setState(() {
         _groups = groups;
         _loading = false;
       });
+    }
   }
 
   List<DmCandidateGroup> get _filtered {

@@ -828,11 +828,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             cancelText: 'Άκυρο',
                             confirmText: 'Επιλογή',
                           );
-                          if (picked != null)
+                          if (picked != null) {
                             setState(() {
                               _dateFrom = picked;
                               _svcPage = 0;
                             });
+                          }
                         },
                       ),
                       const SizedBox(width: 8),
@@ -854,11 +855,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             cancelText: 'Άκυρο',
                             confirmText: 'Επιλογή',
                           );
-                          if (picked != null)
+                          if (picked != null) {
                             setState(() {
                               _dateTo = picked;
                               _svcPage = 0;
                             });
+                          }
                         },
                       ),
                     ]),

@@ -83,10 +83,12 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
           FilledButton(
             onPressed: () async {
               final data = <String, dynamic>{'name': nameCtrl.text.trim()};
-              if (descCtrl.text.isNotEmpty)
+              if (descCtrl.text.isNotEmpty) {
                 data['description'] = descCtrl.text.trim();
-              if (locationCtrl.text.isNotEmpty)
+              }
+              if (locationCtrl.text.isNotEmpty) {
                 data['location'] = locationCtrl.text.trim();
+              }
               final err = await context.read<DepartmentProvider>().create(data);
               if (ctx.mounted) Navigator.pop(ctx);
               if (err != null && mounted) {

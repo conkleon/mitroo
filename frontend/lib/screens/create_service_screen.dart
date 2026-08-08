@@ -106,8 +106,9 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
           _hoursTrainersCtrl.text = '${svc['defaultHoursTrainers'] ?? 0}';
           _hoursTEPCtrl.text = '${svc['defaultHoursTEP'] ?? 0}';
           _maxParticipantsCtrl.text = '${svc['maxParticipants'] ?? 100}';
-          if (svc['startAt'] != null)
+          if (svc['startAt'] != null) {
             _startAt = DateTime.tryParse(svc['startAt']);
+          }
           if (svc['endAt'] != null) _endAt = DateTime.tryParse(svc['endAt']);
           _selectedDeptId = svc['departmentId'] as int?;
           final dept = svc['department'] as Map<String, dynamic>?;
@@ -179,12 +180,15 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
       'departmentId': _selectedDeptId,
       'name': _nameCtrl.text.trim(),
     };
-    if (_descCtrl.text.trim().isNotEmpty)
+    if (_descCtrl.text.trim().isNotEmpty) {
       data['description'] = _descCtrl.text.trim();
-    if (_locationCtrl.text.trim().isNotEmpty)
+    }
+    if (_locationCtrl.text.trim().isNotEmpty) {
       data['location'] = _locationCtrl.text.trim();
-    if (_carrierCtrl.text.trim().isNotEmpty)
+    }
+    if (_carrierCtrl.text.trim().isNotEmpty) {
       data['carrier'] = _carrierCtrl.text.trim();
+    }
     data['defaultHours'] = int.tryParse(_hoursCtrl.text) ?? 0;
     data['defaultHoursVol'] = int.tryParse(_hoursVolCtrl.text) ?? 0;
     data['defaultHoursTraining'] = int.tryParse(_hoursTrainingCtrl.text) ?? 0;
@@ -194,8 +198,9 @@ class _CreateServiceScreenState extends State<CreateServiceScreen> {
     if (_startAt != null) data['startAt'] = _startAt!.toUtc().toIso8601String();
     if (_endAt != null) data['endAt'] = _endAt!.toUtc().toIso8601String();
 
-    if (_selectedServiceTypeId != null)
+    if (_selectedServiceTypeId != null) {
       data['serviceTypeId'] = _selectedServiceTypeId;
+    }
 
     if (widget.isEditing) {
       // ── Update existing service ──

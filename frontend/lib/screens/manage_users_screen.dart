@@ -456,15 +456,17 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                     }
                   } else {
                     final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
-                    if (mounted)
+                    if (mounted) {
                       ScaffoldMessenger.of(context)
                           .showSnackBar(SnackBar(content: Text(err)));
+                    }
                   }
                 } catch (e) {
                   if (ctx.mounted) Navigator.pop(ctx);
-                  if (mounted)
+                  if (mounted) {
                     ScaffoldMessenger.of(context)
                         .showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+                  }
                 }
               },
               child: const Text('Δημιουργία'),

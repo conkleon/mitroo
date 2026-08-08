@@ -706,8 +706,9 @@ class _ItemsCsvScreenState extends State<ItemsCsvScreen> {
                 child: const Text('Άκυρο')),
             FilledButton(
               onPressed: () async {
-                if (nameCtrl.text.trim().isEmpty || selectedDeptId == null)
+                if (nameCtrl.text.trim().isEmpty || selectedDeptId == null) {
                   return;
+                }
                 final err = await context
                     .read<CategoryProvider>()
                     .create(nameCtrl.text.trim(), selectedDeptId!);

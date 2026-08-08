@@ -2216,11 +2216,12 @@ class _VictimsSectionState extends State<_VictimsSection> {
       serviceId: widget.serviceId,
       limit: 100,
     );
-    if (mounted)
+    if (mounted) {
       setState(() {
         _victims = List<Map<String, dynamic>>.from(provider.victims);
         _loading = false;
       });
+    }
   }
 
   @override

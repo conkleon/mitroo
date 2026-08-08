@@ -105,24 +105,33 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
           FilledButton(
             onPressed: () async {
               final data = <String, dynamic>{};
-              if (systolicCtrl.text.isNotEmpty)
+              if (systolicCtrl.text.isNotEmpty) {
                 data['systolicBP'] = int.tryParse(systolicCtrl.text);
-              if (diastolicCtrl.text.isNotEmpty)
+              }
+              if (diastolicCtrl.text.isNotEmpty) {
                 data['diastolicBP'] = int.tryParse(diastolicCtrl.text);
-              if (hrCtrl.text.isNotEmpty)
+              }
+              if (hrCtrl.text.isNotEmpty) {
                 data['heartRate'] = int.tryParse(hrCtrl.text);
-              if (rrCtrl.text.isNotEmpty)
+              }
+              if (rrCtrl.text.isNotEmpty) {
                 data['respiratoryRate'] = int.tryParse(rrCtrl.text);
-              if (spo2Ctrl.text.isNotEmpty)
+              }
+              if (spo2Ctrl.text.isNotEmpty) {
                 data['oxygenSat'] = int.tryParse(spo2Ctrl.text);
-              if (tempCtrl.text.isNotEmpty)
+              }
+              if (tempCtrl.text.isNotEmpty) {
                 data['temperature'] = double.tryParse(tempCtrl.text);
-              if (glucoseCtrl.text.isNotEmpty)
+              }
+              if (glucoseCtrl.text.isNotEmpty) {
                 data['bloodGlucose'] = double.tryParse(glucoseCtrl.text);
-              if (painCtrl.text.isNotEmpty)
+              }
+              if (painCtrl.text.isNotEmpty) {
                 data['painScore'] = int.tryParse(painCtrl.text);
-              if (measuredByCtrl.text.isNotEmpty)
+              }
+              if (measuredByCtrl.text.isNotEmpty) {
                 data['measuredBy'] = measuredByCtrl.text;
+              }
               if (notesCtrl.text.isNotEmpty) data['notes'] = notesCtrl.text;
 
               final err = await context
@@ -240,13 +249,16 @@ class _VictimDetailScreenState extends State<VictimDetailScreen> {
                 final data = <String, dynamic>{
                   'action': actionCtrl.text.trim()
                 };
-                if (materialCtrl.text.isNotEmpty)
+                if (materialCtrl.text.isNotEmpty) {
                   data['materialUsed'] = materialCtrl.text;
+                }
                 if (selectedItemId != null) data['itemId'] = selectedItemId;
-                if (consumedCtrl.text.isNotEmpty)
+                if (consumedCtrl.text.isNotEmpty) {
                   data['consumedNote'] = consumedCtrl.text;
-                if (performedByCtrl.text.isNotEmpty)
+                }
+                if (performedByCtrl.text.isNotEmpty) {
                   data['performedBy'] = performedByCtrl.text;
+                }
                 if (notesCtrl.text.isNotEmpty) data['notes'] = notesCtrl.text;
 
                 final err = await context

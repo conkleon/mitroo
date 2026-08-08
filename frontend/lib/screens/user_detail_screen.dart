@@ -199,10 +199,12 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                   'isAdmin': isAdmin,
                   'rank': rank,
                 };
-                if (phoneCtrl.text.trim().isNotEmpty)
+                if (phoneCtrl.text.trim().isNotEmpty) {
                   body['phonePrimary'] = phoneCtrl.text.trim();
-                if (addressCtrl.text.trim().isNotEmpty)
+                }
+                if (addressCtrl.text.trim().isNotEmpty) {
                   body['address'] = addressCtrl.text.trim();
+                }
                 try {
                   final res =
                       await _api.patch('/users/${widget.userId}', body: body);
@@ -211,15 +213,17 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                     _load();
                   } else {
                     final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
-                    if (mounted)
+                    if (mounted) {
                       ScaffoldMessenger.of(context)
                           .showSnackBar(SnackBar(content: Text(err)));
+                    }
                   }
                 } catch (e) {
                   if (ctx.mounted) Navigator.pop(ctx);
-                  if (mounted)
+                  if (mounted) {
                     ScaffoldMessenger.of(context)
                         .showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+                  }
                 }
               },
               child: const Text('Αποθήκευση'),
@@ -239,14 +243,16 @@ class _UserDetailBodyState extends State<UserDetailBody> {
         setState(() => _user!['isAdmin'] = value);
       } else {
         final err = jsonDecode(res.body)['error'] ?? 'Αποτυχία';
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text(err)));
+        }
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+      }
     }
   }
 
@@ -283,9 +289,10 @@ class _UserDetailBodyState extends State<UserDetailBody> {
             const SnackBar(content: Text('Αποτυχία διαγραφής χρήστη')));
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Σφάλμα: $e')));
+      }
     }
   }
 
@@ -322,8 +329,9 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                   displayStringForOption: (d) => d['name'] ?? '',
                   optionsBuilder: (textEditingValue) {
                     final q = textEditingValue.text.toLowerCase();
-                    if (q.isEmpty)
+                    if (q.isEmpty) {
                       return available.cast<Map<String, dynamic>>();
+                    }
                     return available.cast<Map<String, dynamic>>().where((d) =>
                         (d['name'] ?? '').toString().toLowerCase().contains(q));
                   },
@@ -437,15 +445,17 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                         } else {
                           final err =
                               jsonDecode(res.body)['error'] ?? 'Αποτυχία';
-                          if (mounted)
+                          if (mounted) {
                             ScaffoldMessenger.of(context)
                                 .showSnackBar(SnackBar(content: Text(err)));
+                          }
                         }
                       } catch (e) {
                         if (ctx.mounted) Navigator.pop(ctx);
-                        if (mounted)
+                        if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Σφάλμα: $e')));
+                        }
                       }
                     },
               child: const Text('Προσθήκη'),
@@ -519,9 +529,10 @@ class _UserDetailBodyState extends State<UserDetailBody> {
                           _load();
                         }
                       } catch (e) {
-                        if (mounted)
+                        if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Σφάλμα: $e')));
+                        }
                       }
                     },
                   );
