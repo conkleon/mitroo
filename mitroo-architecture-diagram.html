@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mitroo Architecture Diagram</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" integrity="sha384-en/ztfPSRkGfME4KIm05joYXynqzUgbsG5nMrj/xEFAHXkeZfO3yMK8QQ+mP7p1/" crossorigin="anonymous"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: white;
+    }
+
+    .container { max-width: 1300px; margin: 0 auto; }
+
+    .header { margin-bottom: 2rem; }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .pulse-dot {
+      width: 12px;
+      height: 12px;
+      background: #22d3ee;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-left: 1.75rem; }
+
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 1rem;
+      border: 1px solid #1e293b;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+
+    svg { width: 100%; min-width: 1100px; display: block; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 0.75rem;
+      border: 1px solid #1e293b;
+      padding: 1.25rem;
+    }
+
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.75rem; }
+
+    .card li { margin-bottom: 0.375rem; }
+
+    .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem; }
+
+    .toolbar { display: flex; gap: 0.5rem; margin-left: auto; flex-shrink: 0; align-items: center; }
+    .toolbar-toggle {
+      background: transparent; border: none; color: #475569; cursor: pointer;
+      font-size: 1.25rem; line-height: 1; padding: 0.25rem 0.5rem; border-radius: 0.375rem;
+      transition: color 0.2s, background 0.2s;
+    }
+    .toolbar-toggle:hover { color: #94a3b8; background: rgba(30, 41, 59, 0.5); }
+    .toolbar-actions { display: none; gap: 0.5rem; }
+    .toolbar.expanded .toolbar-actions { display: flex; }
+    .toolbar-actions button {
+      background: rgba(30, 41, 59, 0.8); border: 1px solid #334155; color: #94a3b8;
+      padding: 0.375rem 0.75rem; border-radius: 0.375rem; font-family: inherit;
+      font-size: 0.75rem; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .toolbar-actions button:hover { background: rgba(51, 65, 85, 0.8); color: white; border-color: #475569; }
+
+    @media print { body { background: #020617; padding: 1rem; } .toolbar { display: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="container" id="report-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>Mitroo Architecture</h1>
+        <div class="toolbar">
+          <div class="toolbar-actions">
+            <button onclick="copyAsImage(this)">📋 Copy</button>
+            <button onclick="downloadPNG(this)">🖼️ PNG</button>
+            <button onclick="downloadPDF(this)">📄 PDF</button>
+          </div>
+          <button class="toolbar-toggle" onclick="this.parentElement.classList.toggle('expanded')" title="Export options" aria-label="Export options">⋯</button>
+        </div>
+      </div>
+      <p class="subtitle">Flutter Web · Node/Express/TypeScript · PostgreSQL + Redis · Docker Compose — Ε.Ε.Σ. asset &amp; volunteer management</p>
+    </div>
+
+    <!-- Main Diagram -->
+    <div class="diagram-container">
+      <svg viewBox="0 0 1300 980">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+        </defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+        </pattern>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- ============================= ARROWS / CONNECTORS ============================= -->
+
+        <!-- Users -> Frontend -->
+        <line x1="125" y1="140" x2="125" y2="178" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="150" y="163" fill="#94a3b8" font-size="8">HTTPS</text>
+
+        <!-- Frontend -> Push Service (subscribe) -->
+        <line x1="340" y1="180" x2="340" y2="142" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="270" y="165" fill="#22d3ee" font-size="7.5">subscribe()</text>
+
+        <!-- Push Service -> Frontend (delivery) -->
+        <line x1="400" y1="142" x2="400" y2="180" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#arrowhead)"/>
+        <text x="406" y="165" fill="#94a3b8" font-size="7.5">deliver</text>
+
+        <!-- Backend -> Push Service (send) -->
+        <path d="M 560 510 L 560 110 L 472 110" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="575" y="300" fill="#34d399" font-size="8">web-push send</text>
+        <text x="575" y="312" fill="#34d399" font-size="8">(VAPID)</text>
+
+        <!-- Frontend -> Nginx -->
+        <line x1="180" y1="430" x2="180" y2="518" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="196" y="478" fill="#94a3b8" font-size="8">HTTPS + WSS</text>
+        <text x="196" y="489" fill="#94a3b8" font-size="8">:8080</text>
+
+        <!-- Nginx -> Backend -->
+        <line x1="300" y1="575" x2="338" y2="575" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="319" y="566" fill="#94a3b8" font-size="7" text-anchor="middle">/api/*</text>
+
+        <!-- Backend -> Postgres -->
+        <line x1="680" y1="555" x2="738" y2="555" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="709" y="549" fill="#94a3b8" font-size="7.5" text-anchor="middle">Prisma</text>
+
+        <!-- Backend -> Redis -->
+        <line x1="680" y1="710" x2="738" y2="710" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="709" y="704" fill="#94a3b8" font-size="7.5" text-anchor="middle">ioredis</text>
+
+        <!-- Backend -> External integrations bus -->
+        <line x1="680" y1="640" x2="950" y2="640" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="815" y="634" fill="#94a3b8" font-size="7.5" text-anchor="middle">external services</text>
+        <line x1="950" y1="565" x2="950" y2="865" stroke="#94a3b8" stroke-width="1.5"/>
+        <line x1="950" y1="565" x2="978" y2="565" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="950" y1="705" x2="978" y2="705" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="950" y1="865" x2="978" y2="865" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+        <!-- Backend -> EAME generator -->
+        <line x1="510" y1="790" x2="510" y2="828" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="525" y="812" fill="#94a3b8" font-size="7.5">member codes</text>
+
+        <!-- ============================= COMPONENT BOXES ============================= -->
+
+        <!-- Users -->
+        <rect x="40" y="70" width="170" height="70" rx="6" fill="#0f172a"/>
+        <rect x="40" y="70" width="170" height="70" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="125" y="100" fill="white" font-size="11" font-weight="600" text-anchor="middle">Volunteers / Staff</text>
+        <text x="125" y="116" fill="#94a3b8" font-size="9" text-anchor="middle">Browser (desktop / mobile)</text>
+
+        <!-- Push Service (external) -->
+        <rect x="260" y="70" width="210" height="70" rx="6" fill="#0f172a"/>
+        <rect x="260" y="70" width="210" height="70" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="365" y="100" fill="white" font-size="11" font-weight="600" text-anchor="middle">Browser Push Service</text>
+        <text x="365" y="116" fill="#94a3b8" font-size="8" text-anchor="middle">FCM / Mozilla push endpoints (VAPID)</text>
+
+        <!-- Frontend -->
+        <rect x="40" y="180" width="430" height="250" rx="8" fill="#0f172a"/>
+        <rect x="40" y="180" width="430" height="250" rx="8" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="255" y="208" fill="white" font-size="12" font-weight="600" text-anchor="middle">Flutter Web App</text>
+        <text x="255" y="224" fill="#22d3ee" font-size="9" text-anchor="middle">frontend/lib/</text>
+        <text x="58" y="248" fill="#cbd5e1" font-size="8">• GoRouter + auth guard (router.dart)</text>
+        <text x="58" y="266" fill="#cbd5e1" font-size="8">• Provider/ChangeNotifier — 10 domains</text>
+        <text x="58" y="284" fill="#cbd5e1" font-size="8">• PWA: service worker + install prompt</text>
+        <text x="58" y="302" fill="#cbd5e1" font-size="8">• Offline outbox (SharedPreferences)</text>
+        <text x="58" y="320" fill="#cbd5e1" font-size="8">• Socket.IO client (real-time chat)</text>
+        <text x="58" y="338" fill="#cbd5e1" font-size="8">• Web Push subscription (VAPID)</text>
+
+        <!-- Docker Compose Boundary -->
+        <rect x="40" y="470" width="890" height="460" rx="12" fill="rgba(251, 191, 36, 0.05)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="350" y="488" fill="#fbbf24" font-size="10" font-weight="600">Docker Compose — mitroo-network (production)</text>
+        <text x="350" y="502" fill="#fbbf24" font-size="7">dev: docker-compose.dev.yml → Postgres + Redis only; backend &amp; frontend run on host</text>
+
+        <!-- Nginx -->
+        <rect x="70" y="520" width="230" height="110" rx="6" fill="#0f172a"/>
+        <rect x="70" y="520" width="230" height="110" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="185" y="545" fill="white" font-size="11" font-weight="600" text-anchor="middle">Nginx</text>
+        <text x="185" y="561" fill="#94a3b8" font-size="8" text-anchor="middle">:8080 (published) · frontend container</text>
+        <text x="185" y="577" fill="#94a3b8" font-size="8" text-anchor="middle">serves Flutter web build (static)</text>
+        <text x="185" y="593" fill="#94a3b8" font-size="8" text-anchor="middle">reverse-proxy /api/* → backend:4000</text>
+
+        <!-- Backend -->
+        <rect x="340" y="510" width="340" height="280" rx="6" fill="#0f172a"/>
+        <rect x="340" y="510" width="340" height="280" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="510" y="535" fill="white" font-size="12" font-weight="600" text-anchor="middle">Node / Express API</text>
+        <text x="510" y="550" fill="#34d399" font-size="8" text-anchor="middle">backend/src (server.ts → app.ts)</text>
+        <text x="358" y="575" fill="#cbd5e1" font-size="8">• REST /api/* — 14 route modules</text>
+        <text x="358" y="593" fill="#cbd5e1" font-size="8">• Zod validation + JWT auth (admin guard)</text>
+        <text x="358" y="611" fill="#cbd5e1" font-size="8">• Multer uploads + Sharp image processing</text>
+        <text x="358" y="629" fill="#cbd5e1" font-size="8">• Socket.IO server (chat rooms, presence)</text>
+        <text x="358" y="647" fill="#cbd5e1" font-size="8">• Cron: hourly ext. sync, 15-min chat cleanup</text>
+        <text x="358" y="665" fill="#cbd5e1" font-size="8">• AES-256-GCM encryption (encryption.ts)</text>
+
+        <!-- Postgres -->
+        <rect x="740" y="510" width="170" height="110" rx="6" fill="#0f172a"/>
+        <rect x="740" y="510" width="170" height="110" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="825" y="538" fill="white" font-size="11" font-weight="600" text-anchor="middle">PostgreSQL 16</text>
+        <text x="825" y="554" fill="#94a3b8" font-size="8" text-anchor="middle">Prisma ORM</text>
+        <text x="825" y="568" fill="#94a3b8" font-size="7" text-anchor="middle">Dept · User · Service · Item ·</text>
+        <text x="825" y="580" fill="#94a3b8" font-size="7" text-anchor="middle">Vehicle · Chat · Victim …</text>
+
+        <!-- Redis -->
+        <rect x="740" y="660" width="170" height="110" rx="6" fill="#0f172a"/>
+        <rect x="740" y="660" width="170" height="110" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="825" y="688" fill="white" font-size="11" font-weight="600" text-anchor="middle">Redis 7 (ioredis)</text>
+        <text x="825" y="704" fill="#94a3b8" font-size="8" text-anchor="middle">cache / ephemeral state</text>
+        <text x="825" y="718" fill="#94a3b8" font-size="7.5" text-anchor="middle">128MB · allkeys-lru</text>
+
+        <!-- EAME generator (internal helper) -->
+        <rect x="340" y="830" width="340" height="60" rx="6" fill="#0f172a"/>
+        <rect x="340" y="830" width="340" height="60" rx="6" fill="rgba(6, 78, 59, 0.25)" stroke="#34d399" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <text x="510" y="852" fill="white" font-size="10" font-weight="600" text-anchor="middle">EAME Code Generator</text>
+        <text x="510" y="868" fill="#94a3b8" font-size="7.5" text-anchor="middle">eame.ts — auto member IDs, per-specialization prefix</text>
+
+        <!-- Volumes / env note -->
+        <text x="70" y="915" fill="#64748b" font-size="7.5">Volumes: pgdata · redisdata · uploads_data</text>
+        <text x="70" y="928" fill="#64748b" font-size="7.5">Shared root .env — frontend gets API_BASE_URL via --dart-define at build time</text>
+
+        <!-- SMTP -->
+        <rect x="980" y="520" width="280" height="90" rx="6" fill="#0f172a"/>
+        <rect x="980" y="520" width="280" height="90" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="1120" y="548" fill="white" font-size="11" font-weight="600" text-anchor="middle">SMTP (Nodemailer)</text>
+        <text x="1120" y="564" fill="#94a3b8" font-size="8" text-anchor="middle">password reset · invites ·</text>
+        <text x="1120" y="578" fill="#94a3b8" font-size="8" text-anchor="middle">training/status emails (Greek)</text>
+
+        <!-- FHIR -->
+        <rect x="980" y="660" width="280" height="110" rx="6" fill="#0f172a"/>
+        <rect x="980" y="660" width="280" height="110" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="1120" y="688" fill="white" font-size="11" font-weight="600" text-anchor="middle">External EHR Systems</text>
+        <text x="1120" y="704" fill="#94a3b8" font-size="8" text-anchor="middle">FHIR R4 Bundle</text>
+        <text x="1120" y="718" fill="#94a3b8" font-size="7.5" text-anchor="middle">GET /victims/:id/fhir (export)</text>
+        <text x="1120" y="731" fill="#94a3b8" font-size="7.5" text-anchor="middle">POST /victims/fhir (import, API key)</text>
+
+        <!-- Legacy Mitroo -->
+        <rect x="980" y="800" width="280" height="130" rx="6" fill="#0f172a"/>
+        <rect x="980" y="800" width="280" height="130" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="1120" y="825" fill="white" font-size="11" font-weight="600" text-anchor="middle">Legacy Mitroo System</text>
+        <text x="1120" y="841" fill="#94a3b8" font-size="8" text-anchor="middle">mitroo.redcross.gr</text>
+        <text x="1120" y="855" fill="#94a3b8" font-size="7.5" text-anchor="middle">PHP/CodeIgniter · cookie + CSRF session</text>
+        <text x="1120" y="868" fill="#94a3b8" font-size="7.5" text-anchor="middle">auth (no REST API)</text>
+        <text x="1120" y="884" fill="#94a3b8" font-size="7.5" text-anchor="middle">scrape + write-back</text>
+        <text x="1120" y="897" fill="#94a3b8" font-size="7.5" text-anchor="middle">(mitrooClient.ts)</text>
+
+        <!-- ============================= LEGEND ============================= -->
+        <text x="1080" y="75" fill="white" font-size="10" font-weight="600">Legend</text>
+
+        <rect x="1080" y="86" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="1102" y="94" fill="#94a3b8" font-size="8">Frontend (Flutter)</text>
+
+        <rect x="1080" y="104" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="1102" y="112" fill="#94a3b8" font-size="8">Backend (Node/Express)</text>
+
+        <rect x="1080" y="122" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="1102" y="130" fill="#94a3b8" font-size="8">Database</text>
+
+        <rect x="1080" y="140" width="16" height="10" rx="2" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1"/>
+        <text x="1102" y="148" fill="#94a3b8" font-size="8">External Service</text>
+
+        <rect x="1080" y="158" width="16" height="10" rx="2" fill="transparent" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="1102" y="166" fill="#94a3b8" font-size="8">Deployment Boundary</text>
+
+        <line x1="1080" y1="180" x2="1096" y2="180" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="1102" y="183" fill="#94a3b8" font-size="8">Async / Delivery Flow</text>
+      </svg>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>Client</h3>
+        </div>
+        <ul>
+          <li>• Flutter Web SPA, GoRouter + auth guard</li>
+          <li>• Provider/ChangeNotifier, one per domain</li>
+          <li>• PWA: install prompt, service worker</li>
+          <li>• Offline outbox for victim reports</li>
+          <li>• Socket.IO client + Web Push (VAPID)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>Backend &amp; Data</h3>
+        </div>
+        <ul>
+          <li>• Express + TypeScript, Zod validation</li>
+          <li>• JWT auth, admin guard, FHIR API-key path</li>
+          <li>• Socket.IO server, cron jobs (sync, cleanup)</li>
+          <li>• PostgreSQL 16 (Prisma) + Redis 7 (ioredis)</li>
+          <li>• AES-256-GCM for stored sync credentials</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>Integrations &amp; Deployment</h3>
+        </div>
+        <ul>
+          <li>• SMTP (Nodemailer) — transactional email</li>
+          <li>• FHIR R4 import/export for external EHRs</li>
+          <li>• Legacy mitroo.redcross.gr sync (cookie/CSRF)</li>
+          <li>• Docker Compose: dev (DBs only) vs. prod (full stack)</li>
+          <li>• Nginx reverse-proxies /api/ → backend:4000</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <p class="footer">
+      Mitroo • Ε.Ε.Σ. organisation asset management &amp; team dispatch • Flutter Web · Node/Express/TypeScript · PostgreSQL · Redis · Docker Compose
+    </p>
+  </div>
+
+  <script>
+    async function copyAsImage(btn) {
+      const orig = btn.textContent;
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        btn.textContent = '✓ Copied!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+
+    async function downloadPNG(btn) {
+      const orig = btn.textContent;
+      btn.textContent = '⏳ ...';
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const link = document.createElement('a');
+        link.download = 'mitroo-architecture-diagram.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        btn.textContent = '✓ Done!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+
+    async function downloadPDF(btn) {
+      const orig = btn.textContent;
+      btn.textContent = '⏳ ...';
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
+        const pdf = new jsPDF({ orientation, unit: 'px', format: [canvas.width, canvas.height], hotfixes: ['px_scaling'] });
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save('mitroo-architecture-diagram.pdf');
+        btn.textContent = '✓ Done!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+  </script>
+</body>
+</html>

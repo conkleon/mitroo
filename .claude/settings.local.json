@@ -131,7 +131,14 @@
       "Bash(echo \"exit=$?\")",
       "PowerShell(Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{N='UsedGB';E={[math]::Round\\($_.Used/1GB,2\\)}}, @{N='FreeGB';E={[math]::Round\\($_.Free/1GB,2\\)}})",
       "PowerShell($env:TEMP=\"E:\\\\Temp\"; $env:TMP=\"E:\\\\Temp\"; [System.Environment]::GetEnvironmentVariable\\('TEMP','User'\\); [System.Environment]::GetEnvironmentVariable\\('TMP','User'\\); Get-ChildItem \"C:\\\\Users\\\\conkl\\\\AppData\\\\Local\\\\Temp\" -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum | Select-Object Count, @{N='SizeGB';E={[math]::Round\\($_.Sum/1GB,2\\)}})",
-      "Bash(xargs grep -l \"supertest\\\\|prisma-mock\\\\|jest.mock.*prisma\")"
+      "Bash(xargs grep -l \"supertest\\\\|prisma-mock\\\\|jest.mock.*prisma\")",
+      "Bash(xargs wc -l)",
+      "Bash(dart format *)",
+      "Bash(git diff *)",
+      "Bash(wc -l /tmp_service_card.diff)",
+      "Bash(wc -l /tmp_admin.diff)",
+      "Bash(tee /e/Temp/claude/D--Documents-GitHub-mitroo/b887c5b1-0c94-40f4-98ff-3b710a6f3d3d/scratchpad/analyze_after.txt)",
+      "Read(//e/Temp/claude/D--Documents-GitHub-mitroo/b887c5b1-0c94-40f4-98ff-3b710a6f3d3d/scratchpad/**)"
     ]
   }
 }
