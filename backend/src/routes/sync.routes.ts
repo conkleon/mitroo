@@ -3,6 +3,7 @@ import { z } from "zod";
 import prisma from "../lib/prisma";
 import { authenticate, isMissionAdminInDepartment } from "../middleware/auth";
 import { encrypt } from "../lib/encryption";
+import { isMitrooSyncEnabled } from "../lib/mitrooConfig";
 import {
   syncUsers,
   syncAllServices,
@@ -16,6 +17,13 @@ import {
 
 const router = Router();
 router.use(authenticate);
+
+// Manual sync actions are unavailable while MITROO_SYNC_ENABLED=false.
+// The config endpoints stay reachable so credentials can still be managed.
+router.use("/:id/sync", (req: Request, res: Response, next) => {
+  if (req.path === "/config" || isMitrooSyncEnabled()) return next();
+  res.status(503).json({ error: "Ο συγχρονισμός με το Mitroo είναι απενεργοποιημένος" });
+});
 
 async function requireSyncAdmin(req: Request, res: Response, deptId: number): Promise<boolean> {
   if (req.user!.isAdmin) return true;
@@ -52,7 +60,7 @@ router.get("/:id/sync/config", async (req: Request, res: Response) => {
   });
 
   if (!config) {
-    res.json({ configured: false, syncEnabled: false });
+    res.json({ configured: false, syncEnabled: false, globalSyncEnabled: isMitrooSyncEnabled() });
     return;
   }
 
@@ -61,6 +69,7 @@ router.get("/:id/sync/config", async (req: Request, res: Response) => {
     username: config.externalUsername,
     password: "••••••••",
     syncEnabled: config.syncEnabled,
+    globalSyncEnabled: isMitrooSyncEnabled(),
     lastUserSyncAt: config.lastUserSyncAt,
     lastServiceSyncAt: config.lastServiceSyncAt,
     lastFinalizedSyncAt: config.lastFinalizedSyncAt,

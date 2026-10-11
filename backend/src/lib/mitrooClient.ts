@@ -1,6 +1,8 @@
 // Client for the original Mitroo system (mitroo.redcross.gr).
 // Uses cookie+CSRF session auth — no REST API, all server-side PHP/CodeIgniter.
 
+import { isMitrooSyncEnabled, MitrooSyncDisabledError } from "./mitrooConfig";
+
 /** Thrown when the original Mitroo system explicitly rejects a request; `.message` is its own error text. */
 export class MitrooRemoteError extends Error {
   constructor(message: string) {
@@ -136,6 +138,7 @@ export class MitrooClient {
   private csrfToken = "";
 
   constructor(baseUrl: string) {
+    if (!isMitrooSyncEnabled()) throw new MitrooSyncDisabledError();
     this.baseUrl = baseUrl.replace(/\/$/, "");
   }
 

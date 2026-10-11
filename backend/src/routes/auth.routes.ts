@@ -8,6 +8,7 @@ import { authenticate } from "../middleware/auth";
 import { sendPasswordResetEmail } from "../lib/email";
 import { autoUpdateSyncConfig, syncUserApplications, syncUserDepartments } from "../lib/mitrooSync";
 import { MitrooClient } from "../lib/mitrooClient";
+import { isMitrooSyncEnabled } from "../lib/mitrooConfig";
 
 const router = Router();
 
@@ -98,6 +99,7 @@ async function loginViaExternalMitroo(
   | { user: AuthUser | null; emailConflict: boolean; memberDepartment?: string; isExternalAdmin: boolean }
   | null
 > {
+  if (!isMitrooSyncEnabled()) return null;
   const client = new MitrooClient(EXTERNAL_BASE_URL);
   debugExternal("login attempt", { email });
   try {
@@ -331,7 +333,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
     // Fire-and-forget: sync profile data (externalId, department, phones, birthdate,
     // address, specializations) from external Mitroo on every successful local login.
-    (async () => {
+    if (isMitrooSyncEnabled()) (async () => {
       try {
         const client = new MitrooClient(EXTERNAL_BASE_URL);
         await client.login(data.email, data.password);
@@ -602,7 +604,7 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
       } catch (emailErr) {
         console.error("Failed to send password reset email:", emailErr);
       }
-    } else {
+    } else if (isMitrooSyncEnabled()) {
       // No local user — forward to original Mitroo's forgot-password flow
       try {
         const client = new MitrooClient(EXTERNAL_BASE_URL);

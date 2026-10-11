@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import prisma from "./prisma";
 import { encrypt, decrypt } from "./encryption";
 import { MitrooClient, MitrooRemoteError, ExternalMission, ExternalShift, ExternalShiftMember } from "./mitrooClient";
+import { isMitrooSyncEnabled } from "./mitrooConfig";
 
 const EXTERNAL_BASE_URL =
   process.env.MITROO_EXTERNAL_BASE_URL ?? "https://mitroo.redcross.gr";
@@ -1865,7 +1866,7 @@ export async function writeBackNewService(serviceId: number): Promise<void> {
     where: { departmentId: service.departmentId },
     select: { syncEnabled: true },
   });
-  if (!config?.syncEnabled) return;
+  if (!isMitrooSyncEnabled() || !config?.syncEnabled) return;
 
   try {
     const client = await getClient(service.departmentId);
@@ -1950,7 +1951,7 @@ export async function writeBackServiceDelete(serviceId: number): Promise<void> {
     where: { departmentId: service.departmentId },
     select: { syncEnabled: true },
   });
-  if (!config?.syncEnabled) return;
+  if (!isMitrooSyncEnabled() || !config?.syncEnabled) return;
 
   try {
     const client = await getClient(service.departmentId);
@@ -2039,7 +2040,7 @@ export async function writeBackAssignment(serviceId: number, userId: number): Pr
     where: { departmentId: service.departmentId },
     select: { syncEnabled: true },
   });
-  if (!config?.syncEnabled) {
+  if (!isMitrooSyncEnabled() || !config?.syncEnabled) {
     console.log(`[mitrooSync] writeBackAssignment: skipped — sync not enabled for dept ${service.departmentId}`);
     return;
   }
@@ -2146,7 +2147,7 @@ export async function writeBackHoursUpdate(serviceId: number, userId: number): P
     where: { departmentId: service.departmentId },
     select: { syncEnabled: true },
   });
-  if (!config?.syncEnabled) return;
+  if (!isMitrooSyncEnabled() || !config?.syncEnabled) return;
 
   try {
     const client = await getClient(service.departmentId);
@@ -2214,7 +2215,7 @@ export async function writeBackRejection(
   });
   console.log(`[mitrooSync] writeBackRejection: deptId=${service.departmentId} syncEnabled=${config?.syncEnabled}`);
 
-  if (!config?.syncEnabled) {
+  if (!isMitrooSyncEnabled() || !config?.syncEnabled) {
     console.log(`[mitrooSync] writeBackRejection: SKIP — sync not enabled for department ${service.departmentId}`);
     return;
   }
@@ -2290,7 +2291,7 @@ export async function writeBackParticipation(serviceId: number, userId: number):
     where: { departmentId: service.departmentId },
     select: { syncEnabled: true },
   });
-  if (!config?.syncEnabled) {
+  if (!isMitrooSyncEnabled() || !config?.syncEnabled) {
     console.log(`[mitrooSync] writeBackParticipation: SKIP — sync not enabled for department ${service.departmentId}`);
     return;
   }
@@ -2356,7 +2357,7 @@ export async function syncEnrollmentRequestOrThrow(serviceId: number, userId: nu
     where: { departmentId: service.departmentId },
     select: { syncEnabled: true },
   });
-  if (!config?.syncEnabled) return null;
+  if (!isMitrooSyncEnabled() || !config?.syncEnabled) return null;
 
   const client = await getClient(service.departmentId);
 
@@ -2429,7 +2430,7 @@ export async function writeBackUnenroll(
     where: { departmentId: service.departmentId },
     select: { syncEnabled: true },
   });
-  if (!config?.syncEnabled) return;
+  if (!isMitrooSyncEnabled() || !config?.syncEnabled) return;
 
   try {
     const client = await getClient(service.departmentId);
@@ -2478,7 +2479,7 @@ export async function writeBackServiceClose(serviceId: number): Promise<void> {
     where: { departmentId: service.departmentId },
     select: { syncEnabled: true },
   });
-  if (!config?.syncEnabled) return;
+  if (!isMitrooSyncEnabled() || !config?.syncEnabled) return;
 
   try {
     const client = await getClient(service.departmentId);
@@ -2514,7 +2515,7 @@ export async function writeBackServiceComplete(serviceId: number): Promise<void>
     where: { departmentId: service.departmentId },
     select: { syncEnabled: true },
   });
-  if (!config?.syncEnabled) return;
+  if (!isMitrooSyncEnabled() || !config?.syncEnabled) return;
 
   try {
     const client = await getClient(service.departmentId);
@@ -2536,6 +2537,7 @@ export async function writeBackServiceComplete(serviceId: number): Promise<void>
 
 export async function syncUserApplications(userId: number): Promise<SyncResult> {
   const result: SyncResult = { created: 0, updated: 0, errors: [] };
+  if (!isMitrooSyncEnabled()) return result;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -2730,6 +2732,7 @@ export async function syncUserApplications(userId: number): Promise<SyncResult> 
 
 export async function syncUserDepartments(userId: number): Promise<SyncResult> {
   const result: SyncResult = { created: 0, updated: 0, errors: [] };
+  if (!isMitrooSyncEnabled()) return result;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -2805,6 +2808,7 @@ export async function autoUpdateSyncConfig(
   password: string,
   userId?: number,
 ): Promise<void> {
+  if (!isMitrooSyncEnabled()) return;
   let dept = await prisma.department.findFirst({
     where: { name: { equals: memberDepartment, mode: "insensitive" } },
     select: { id: true },
@@ -3024,6 +3028,7 @@ export async function diagMissionHours(
 // ── Hourly cron: sync all departments that have credentials ─────────────────
 
 export async function autoSyncAllDepartments(): Promise<void> {
+  if (!isMitrooSyncEnabled()) return;
   const configs = await prisma.departmentSyncConfig.findMany({
     select: { departmentId: true },
   });

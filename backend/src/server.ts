@@ -19,6 +19,7 @@ import app from "./app";
 import { initSocket } from "./socket";
 import { cleanupExpiredChats } from "./lib/chatCleanup";
 import { autoSyncAllDepartments } from "./lib/mitrooSync";
+import { isMitrooSyncEnabled } from "./lib/mitrooConfig";
 
 const PORT = parseInt(process.env.APP_PORT || "4000", 10);
 
@@ -29,7 +30,11 @@ initSocket(httpServer);
 setInterval(cleanupExpiredChats, 15 * 60 * 1000);
 
 // Hourly auto-sync of all departments from original Mitroo
-setInterval(autoSyncAllDepartments, 60 * 60 * 1000);
+if (isMitrooSyncEnabled()) {
+  setInterval(autoSyncAllDepartments, 60 * 60 * 1000);
+} else {
+  console.log("Mitroo sync disabled (MITROO_SYNC_ENABLED=false) — skipping hourly auto-sync.");
+}
 
 const fhirSystemUserId = parseInt(process.env.FHIR_SYSTEM_USER_ID ?? '', 10);
 if (process.env.FHIR_API_KEY && (!fhirSystemUserId || fhirSystemUserId <= 0)) {
