@@ -96,6 +96,11 @@ const MAX_FINALIZED_MISSION_PAGES = 500;
 const MAX_SHIFT_APPLICATION_PAGES = 100;
 const MAX_VOLUNTEER_PAGES = 200;
 const EXTERNAL_DEBUG = process.env.MITROO_EXTERNAL_DEBUG === "1";
+// Mitroo rejects logins from non-browser user agents (Node's default "node")
+// with "Η σύνδεση δεν ήταν δυνατή. [E-UA-01]", so every request sends this.
+const BROWSER_USER_AGENT =
+  process.env.MITROO_USER_AGENT ??
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
 
 const debugExternal = (message: string, context?: Record<string, unknown>) => {
   if (!EXTERNAL_DEBUG) return;
@@ -171,18 +176,48 @@ export class MitrooClient {
     this.csrfToken = csrfMatch[1];
     this._extractCookies(loginPageRes.headers);
 
-    // Step 2: POST credentials
+    // Step 2: POST credentials exactly as the browser form does (plain form
+    // submit, including the submit button's value).
     const body = new URLSearchParams({
       identity: username,
       password,
       rccrmtk: this.csrfToken,
       remember: "1",
+      submit: "Σύνδεση",
     });
-    const loginRes = await this._post("/index.php/auth/login", body, { followRedirects: false });
+    const loginRes = await this._post("/index.php/auth/login", body, {
+      followRedirects: false,
+      xhr: false,
+    });
     this._extractCookies(loginRes.headers);
 
     if (!this.cookies["rccrm_app_sessions"]) {
       throw new Error("Login failed: session cookie not set — check credentials");
+    }
+
+    // Mitroo redirects via an empty 200 with a `Refresh: 0;url=...` header
+    // (CodeIgniter redirect(..., 'refresh')). Success goes to /member; failure
+    // goes back to auth/login with the reason flashed into <div id="message">.
+    const target =
+      loginRes.headers.get("location") ??
+      loginRes.headers.get("refresh")?.match(/url=(.*)$/i)?.[1]?.trim() ??
+      "";
+    if (!target || target.includes("/auth/login")) {
+      let remoteMessage = "";
+      if (target) {
+        const page = await this._get("/index.php/auth/login");
+        this._extractCookies(page.headers);
+        const m = (await page.text()).match(/id="message"[^>]*>([\s\S]*?)<\/div>/i);
+        remoteMessage = m ? m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
+      }
+      console.warn("[MitrooClient] login rejected", {
+        username,
+        status: loginRes.status,
+        target,
+        remoteMessage,
+      });
+      if (remoteMessage) throw new MitrooRemoteError(`Login failed: ${remoteMessage}`);
+      throw new Error("Login failed: Mitroo did not authenticate the session — check credentials");
     }
   }
 
@@ -1086,19 +1121,26 @@ export class MitrooClient {
 
   private async _get(path: string): Promise<Response> {
     return fetch(`${this.baseUrl}${path}`, {
-      headers: { Cookie: this._cookieHeader() },
+      headers: { "User-Agent": BROWSER_USER_AGENT, Cookie: this._cookieHeader() },
       redirect: "follow",
     });
   }
 
   private async _xhr(path: string): Promise<Response> {
-    return fetch(`${this.baseUrl}${path}`, {
+    const res = await fetch(`${this.baseUrl}${path}`, {
       headers: {
+        "User-Agent": BROWSER_USER_AGENT,
         Cookie: this._cookieHeader(),
         "X-Requested-With": "XMLHttpRequest",
         Accept: "application/json, text/javascript, */*; q=0.01",
       },
     });
+    // Mitroo answers unauthenticated requests with a redirect to the login
+    // page; fail loudly instead of handing its HTML to JSON.parse.
+    if (res.redirected && res.url.includes("/auth/login")) {
+      throw new Error(`Mitroo session is not authenticated (redirected to login page) for ${path}`);
+    }
+    return res;
   }
 
   private async _post(
@@ -1107,6 +1149,7 @@ export class MitrooClient {
     opts: { followRedirects?: boolean; xhr?: boolean } = {},
   ): Promise<Response> {
     const headers: Record<string, string> = {
+      "User-Agent": BROWSER_USER_AGENT,
       Cookie: this._cookieHeader(),
       "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
     };
